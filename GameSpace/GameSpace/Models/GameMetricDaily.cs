@@ -1,0 +1,25 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace GameSpace.Models;
+
+public partial class GameMetricDaily
+{
+    public int Id { get; set; }
+
+    public int? GameId { get; set; }
+
+    public int? MetricId { get; set; }
+
+    public DateOnly? Date { get; set; }
+
+    public decimal? Value { get; set; }
+
+    public string? AggMethod { get; set; }
+
+    public string? Quality { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+}

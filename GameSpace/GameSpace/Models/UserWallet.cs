@@ -1,0 +1,11 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace GameSpace.Models;
+
+public partial class UserWallet
+{
+    public int UserId { get; set; }
+
+    public int UserPoint { get; set; }
+}
