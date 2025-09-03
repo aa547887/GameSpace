@@ -1,0 +1,24 @@
+﻿@model List<GameSpace.Areas.social_hub.Models.ViewModels.MessageViewModel>
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<link href="~/css/social_hub/chat.css" rel="stylesheet" />
+
+<div class="chat-container">
+    <div class="chat-window">
+        <div class="messages">
+            @foreach (var msg in Model)
+            {
+                <div class="message @(msg.IsMine ? "mine" : "other")">
+                    <div class="content">@msg.Content</div>
+                    <div class="time">@msg.Time.ToString("HH:mm")</div>
+                </div>
+            }
+        </div>
+        <form asp-action="Send" method="post" class="input-form">
+            <input type="text" name="message" placeholder="輸入訊息..." autocomplete="off" />
+            <button type="submit">送出</button>
+        </form>
+    </div>
+</div>
