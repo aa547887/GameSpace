@@ -362,6 +362,9 @@ INSERT INTO ManagerRole (Manager_Id, ManagerRole_Id) VALUES
 (30000099, 2),
 (30000100, 8);
 
+ALTER TABLE [ManagerRolePermission] 
+ALTER COLUMN [role_name] NVARCHAR(50) NOT NULL;
+
 INSERT INTO ManagerRolePermission VALUES
 (1, N'管理者平台管理人員', 1, 1, 1, 1, 1, 1),
 (2, N'使用者與論壇管理精理', 0, 1, 0, 1, 0, 1),
@@ -384,7 +387,8 @@ ALTER COLUMN [Email] NVARCHAR(50) NOT NULL;
 ALTER TABLE [User_Introduce] 
 ALTER COLUMN [Address] NVARCHAR(100) NOT NULL;
 
-
+ALTER TABLE [User_Introduce] 
+ALTER COLUMN [User_NickName] NVARCHAR(50) NOT NULL;
 INSERT INTO User_Introduce (User_ID, User_NickName, Gender, IdNumber, Cellphone, Email, Address, DateOfBirth, Create_Account, User_Picture, User_Introduce)  VALUES
 (10000001, N'DragonKnight88', 'M', 'A123456789', '0912345001', N'dragon388@email.com', N'台北市信義區松高路101號', '1988-03-15', '2021-01-15 09:30:00', NULL, N'喜歡騎重機和攝影的工程師'),
 (10000002, N'TechGuru92', 'F', 'B234567890', '0923456002', N'techguru92@email.com', N'新北市板橋區文化路202號', '1992-07-22', '2021-01-16 10:15:30', NULL, N'科技達人，專精AI與機器學習'),
