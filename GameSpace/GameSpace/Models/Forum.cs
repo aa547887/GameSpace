@@ -14,4 +14,8 @@ public partial class Forum
     public string? Description { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Game? Game { get; set; }
+
+    public virtual ICollection<Thread> Threads { get; set; } = new List<Thread>();
 }

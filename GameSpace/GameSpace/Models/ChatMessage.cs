@@ -20,4 +20,10 @@ public partial class ChatMessage
     public bool IsRead { get; set; }
 
     public bool IsSent { get; set; }
+
+    public virtual ManagerDatum? Manager { get; set; }
+
+    public virtual User? Receiver { get; set; }
+
+    public virtual User Sender { get; set; } = null!;
 }

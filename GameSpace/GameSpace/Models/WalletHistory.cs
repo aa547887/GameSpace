@@ -18,4 +18,6 @@ public partial class WalletHistory
     public string? Description { get; set; }
 
     public DateTime ChangeTime { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

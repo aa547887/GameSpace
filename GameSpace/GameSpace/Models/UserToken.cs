@@ -16,4 +16,6 @@ public partial class UserToken
     public string Value { get; set; } = null!;
 
     public DateTime ExpireAt { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

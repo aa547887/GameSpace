@@ -26,4 +26,6 @@ public partial class UserIntroduce
     public byte[]? UserPicture { get; set; }
 
     public string? UserIntroduce1 { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

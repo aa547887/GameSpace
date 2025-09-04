@@ -16,4 +16,8 @@ public partial class PostMetricSnapshot
     public string? DetailsJson { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Game? Game { get; set; }
+
+    public virtual Post Post { get; set; } = null!;
 }

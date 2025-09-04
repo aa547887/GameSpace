@@ -29,17 +29,17 @@ public partial class Pet
 
     public string SkinColor { get; set; } = null!;
 
-    public DateTime SkinColorChangedTime { get; set; }
+    public DateTime ColorChangedTime { get; set; }
 
     public string BackgroundColor { get; set; } = null!;
 
     public DateTime BackgroundColorChangedTime { get; set; }
 
-    public int PointsChangedSkinColor { get; set; }
+    public int PointsChanged { get; set; }
 
-    public int PointsChangedBackgroundColor { get; set; }
+    public DateTime PointsChangedTime { get; set; }
 
-    public int PointsGainedLevelUp { get; set; }
+    public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
 
-    public DateTime PointsGainedTimeLevelUp { get; set; }
+    public virtual User User { get; set; } = null!;
 }

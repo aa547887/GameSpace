@@ -7,11 +7,11 @@ public partial class OfficialStoreRanking
 {
     public int RankingId { get; set; }
 
-    public string? PeriodType { get; set; }
+    public string PeriodType { get; set; } = null!;
 
-    public DateOnly? RankingDate { get; set; }
+    public DateOnly RankingDate { get; set; }
 
-    public int? ProductId { get; set; }
+    public int ProductId { get; set; }
 
     public string? RankingMetric { get; set; }
 
@@ -21,5 +21,7 @@ public partial class OfficialStoreRanking
 
     public int? TradingVolume { get; set; }
 
-    public DateTime? RankingUpdatedAt { get; set; }
+    public DateTime RankingUpdatedAt { get; set; }
+
+    public virtual ProductInfo Product { get; set; } = null!;
 }

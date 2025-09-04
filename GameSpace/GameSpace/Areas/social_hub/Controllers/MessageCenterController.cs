@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
@@ -20,83 +19,59 @@ namespace GameSpace.Areas.social_hub.Controllers
 			_context = context;
 		}
 
-		// GET: /MessageCenter
+		// =========================
+		// 讀取通知列表（測試用）
+		// =========================
 		public async Task<IActionResult> Index()
 		{
-			var notifications = await (
-				from n in _context.Notifications
-				join s in _context.NotificationSources
-					on n.SourceId equals s.SourceId
-				join a in _context.NotificationActions
-					on n.ActionId equals a.ActionId
-				join u in _context.Users
-					on n.SenderId equals u.UserId into userGroup
-				from u in userGroup.DefaultIfEmpty() // 如果發送者是管理員，可為 null
-				join m in _context.ManagerRoles
-					on n.SenderManagerId equals m.ManagerId into managerGroup
-				from m in managerGroup.DefaultIfEmpty()
-				orderby n.CreatedAt descending
-				select new NotificationViewModel
+			// 暫時手動指定測試用 UserId（一般使用者）
+			int userId = 10000012; // 替換成資料庫裡的一般使用者 Id
+
+			var notifications = await _context.NotificationRecipients
+				.Where(nr => nr.UserId == userId)
+				.Include(nr => nr.Notification)
+					.ThenInclude(n => n.Action)
+				.Include(nr => nr.Notification)
+					.ThenInclude(n => n.Source)
+				.Include(nr => nr.Notification)
+					.ThenInclude(n => n.Sender)
+				.Include(nr => nr.Notification)
+					.ThenInclude(n => n.SenderManager)
+				.OrderByDescending(nr => nr.Notification.CreatedAt)
+				.ToListAsync();
+
+			var model = notifications
+				.Where(nr => nr.Notification != null)
+				.Select(nr => new NotificationViewModel
 				{
-					NotificationId = n.NotificationId,
-					NotificationTitle = n.NotificationTitle,
-					NotificationMessage = n.NotificationMessage,
-					SourceName = s.SourceName,
-					ActionName = a.ActionName,
-					SenderName = u != null ? u.UserName : (m != null ? "暫無使用著" : "系統"),
-					CreatedAt = n.CreatedAt,
-					IsRead = false // 如果要抓已讀，需要 join NotificationRecipients
-				}
-			).ToListAsync();
+					NotificationId = nr.Notification.NotificationId,
+					NotificationTitle = nr.Notification.NotificationTitle,
+					NotificationMessage = nr.Notification.NotificationMessage,
+					CreatedAt = nr.Notification.CreatedAt,
+					IsRead = nr.IsRead,
+					// 判斷發送者是一般使用者或管理員
+					SenderName = nr.Notification.Sender?.UserName
+								 ?? nr.Notification.SenderManager?.ManagerName
+								 ?? "系統",
+					ActionName = nr.Notification.Action?.ActionName ?? "未設定",
+					SourceName = nr.Notification.Source?.SourceName ?? "未設定"
+				})
+				.ToList();
 
-			return View(notifications);
-		}
-
-
-		// GET: /MessageCenter/Create
-		public IActionResult Create()
-		{
-			return View();
-		}
-
-		// POST: /MessageCenter/Create
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(Notification model, int[] recipientUserIds)
-		{
-			if (ModelState.IsValid)
-			{
-				model.CreatedAt = DateTime.Now;
-
-				_context.Notifications.Add(model);
-				await _context.SaveChangesAsync();
-
-				// 建立收件者
-				foreach (var userId in recipientUserIds)
-				{
-					var recipient = new NotificationRecipient
-					{
-						NotificationId = model.NotificationId,
-						UserId = userId,
-						IsRead = false
-					};
-					_context.NotificationRecipients.Add(recipient);
-				}
-
-				await _context.SaveChangesAsync();
-				return RedirectToAction(nameof(Index));
-			}
 			return View(model);
 		}
 
-		// POST: /MessageCenter/MarkAsRead/5
+		// =========================
+		// 標記通知為已讀
+		// =========================
 		[HttpPost]
-		public async Task<IActionResult> MarkAsRead(int id, int userId)
+		public async Task<IActionResult> MarkAsRead(int recipientId)
 		{
-			var recipient = await _context.NotificationRecipients
-				.FirstOrDefaultAsync(r => r.NotificationId == id && r.UserId == userId);
+			var recipient = await _context.NotificationRecipients.FindAsync(recipientId);
+			if (recipient == null)
+				return NotFound();
 
-			if (recipient != null && !recipient.IsRead)
+			if (!recipient.IsRead)
 			{
 				recipient.IsRead = true;
 				recipient.ReadAt = DateTime.Now;
@@ -105,6 +80,44 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 			return Ok();
 		}
+
+		// =========================
+		// 新增通知（測試用）
+		// =========================
+		[HttpGet]
+		public async Task<IActionResult> TestNotification()
+		{
+			// 指定收件人一般使用者 Id
+			int userId = 10000012; // Users 表中存在的一般使用者
+
+			var user = await _context.Users.FindAsync(userId);
+			if (user == null)
+				return Content($"UserId {userId} 不存在");
+
+			// 建立測試通知（管理員發送）
+			var notification = new Notification
+			{
+				SourceId = 1,
+				ActionId = 1,
+				SenderId = null,            // 現在可以為 null
+				SenderManagerId = 30000012, // 管理員發送
+				NotificationTitle = "測試通知",
+				NotificationMessage = "這是一則測試通知",
+				CreatedAt = DateTime.Now
+			};
+
+			notification.NotificationRecipients.Add(new NotificationRecipient
+			{
+				UserId = 10000012, // 一般使用者
+				IsRead = false
+			});
+
+
+
+			_context.Notifications.Add(notification);
+			await _context.SaveChangesAsync();
+
+			return Content("測試通知已新增完成！");
+		}
 	}
 }
-

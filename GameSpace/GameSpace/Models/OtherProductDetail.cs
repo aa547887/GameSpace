@@ -7,13 +7,13 @@ public partial class OtherProductDetail
 {
     public int ProductId { get; set; }
 
-    public string? ProductName { get; set; }
+    public string ProductName { get; set; } = null!;
 
     public string? ProductDescription { get; set; }
 
-    public int? SupplierId { get; set; }
+    public int SupplierId { get; set; }
 
-    public int? PlatformId { get; set; }
+    public int? MerchTypeId { get; set; }
 
     public string? DigitalCode { get; set; }
 
@@ -27,5 +27,11 @@ public partial class OtherProductDetail
 
     public string? Material { get; set; }
 
-    public string? StockQuantity { get; set; }
+    public int StockQuantity { get; set; }
+
+    public virtual MerchType? MerchType { get; set; }
+
+    public virtual ProductInfo Product { get; set; } = null!;
+
+    public virtual Supplier Supplier { get; set; } = null!;
 }

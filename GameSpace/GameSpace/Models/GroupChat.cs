@@ -16,4 +16,8 @@ public partial class GroupChat
     public DateTime? SentAt { get; set; }
 
     public bool IsSent { get; set; }
+
+    public virtual Group? Group { get; set; }
+
+    public virtual User? Sender { get; set; }
 }

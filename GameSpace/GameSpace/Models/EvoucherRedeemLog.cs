@@ -16,4 +16,10 @@ public partial class EvoucherRedeemLog
     public DateTime ScannedAt { get; set; }
 
     public string Status { get; set; } = null!;
+
+    public virtual Evoucher Evoucher { get; set; } = null!;
+
+    public virtual EvoucherToken? Token { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

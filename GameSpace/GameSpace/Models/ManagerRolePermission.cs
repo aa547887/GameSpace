@@ -20,4 +20,6 @@ public partial class ManagerRolePermission
     public bool? PetRightsManagement { get; set; }
 
     public bool? CustomerService { get; set; }
+
+    public virtual ICollection<ManagerDatum> Managers { get; set; } = new List<ManagerDatum>();
 }

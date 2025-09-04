@@ -5,13 +5,13 @@ namespace GameSpace.Models;
 
 public partial class ProductInfoAuditLog
 {
-    public long? LogId { get; set; }
+    public long LogId { get; set; }
 
-    public int? ProductId { get; set; }
+    public int ProductId { get; set; }
 
-    public string? ActionType { get; set; }
+    public string ActionType { get; set; } = null!;
 
-    public string? FieldName { get; set; }
+    public string FieldName { get; set; } = null!;
 
     public string? OldValue { get; set; }
 
@@ -19,5 +19,7 @@ public partial class ProductInfoAuditLog
 
     public int? ManagerId { get; set; }
 
-    public DateTime? ChangedAt { get; set; }
+    public DateTime ChangedAt { get; set; }
+
+    public virtual ProductInfo Product { get; set; } = null!;
 }

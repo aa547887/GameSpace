@@ -14,4 +14,6 @@ public partial class UserRight
     public bool? MessagePermission { get; set; }
 
     public bool? SalesAuthority { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

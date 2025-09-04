@@ -12,4 +12,8 @@ public partial class GameSourceMap
     public int? SourceId { get; set; }
 
     public string? ExternalKey { get; set; }
+
+    public virtual Game? Game { get; set; }
+
+    public virtual MetricSource? Source { get; set; }
 }
