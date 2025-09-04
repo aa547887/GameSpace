@@ -12,4 +12,6 @@ public partial class MemberSalesProfile
     public string? BankAccountNumber { get; set; }
 
     public byte[]? AccountCoverPhoto { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

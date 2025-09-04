@@ -28,4 +28,12 @@ public partial class Post
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual User? CreatedByNavigation { get; set; }
+
+    public virtual Game? Game { get; set; }
+
+    public virtual PostMetricSnapshot? PostMetricSnapshot { get; set; }
+
+    public virtual ICollection<PostSource> PostSources { get; set; } = new List<PostSource>();
 }

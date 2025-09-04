@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.19" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
@@ -26,7 +27,6 @@
     <Folder Include="Areas\OnlineStore\Data\" />
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
-    <Folder Include="Areas\social_hub\Models\" />
     <Folder Include="wwwroot\lib\image\" />
   </ItemGroup>
 

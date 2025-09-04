@@ -16,4 +16,6 @@ public partial class Reaction
     public string? Kind { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual User? User { get; set; }
 }

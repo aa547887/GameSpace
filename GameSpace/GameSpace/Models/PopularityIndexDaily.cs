@@ -14,4 +14,6 @@ public partial class PopularityIndexDaily
     public decimal? IndexValue { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Game? Game { get; set; }
 }

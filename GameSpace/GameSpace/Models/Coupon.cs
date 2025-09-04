@@ -20,4 +20,8 @@ public partial class Coupon
     public DateTime? UsedTime { get; set; }
 
     public int? UsedInOrderId { get; set; }
+
+    public virtual CouponType CouponType { get; set; } = null!;
+
+    public virtual User User { get; set; } = null!;
 }

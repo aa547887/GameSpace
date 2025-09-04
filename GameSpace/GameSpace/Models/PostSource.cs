@@ -14,4 +14,6 @@ public partial class PostSource
     public string? Url { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Post? Post { get; set; }
 }

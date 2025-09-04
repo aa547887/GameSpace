@@ -7,5 +7,9 @@ public partial class UserWallet
 {
     public int UserId { get; set; }
 
-    public int UserPoint { get; set; }
+    public int? UserPoint { get; set; }
+
+    public string? CouponNumber { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

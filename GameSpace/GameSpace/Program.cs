@@ -1,4 +1,4 @@
-using GameSpace.Data;
+ï»¿using GameSpace.Data;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,18 +17,28 @@ namespace GameSpace
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			//´ú¸Õdiª`¤J
-			var GaneSpaceConnectionString =
-				builder.Configuration.GetConnectionString("GameSpace");
+			//æ¸¬è©¦diæ³¨å…¥
+			var gameSpaceConnectionString = builder.Configuration.GetConnectionString("GameSpace");
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
-			options.UseSqlServer(GaneSpaceConnectionString));
+				options.UseSqlServer(gameSpaceConnectionString));
+
 			//
 
 			builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-            builder.Services.AddControllersWithViews();
+           
 
-            var app = builder.Build();
+
+			// è¨»å†Š MVC æœå‹™
+			builder.Services.AddControllersWithViews();
+
+			// âœ… è¨»å†Š SignalR
+			builder.Services.AddSignalR();
+
+			var app = builder.Build();
+
+			
+										
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -42,25 +52,31 @@ namespace GameSpace
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
+			app.UseHttpsRedirection();
+			app.UseStaticFiles();
 
-            app.UseRouting();
+			app.UseRouting();
 
-            app.UseAuthorization();
+			app.UseAuthentication(); // Identity
+			app.UseAuthorization();
 
-			// ¥ı¥[ area ªº¸ô¥Ñ ­«­n
+			// å…ˆåŠ  area çš„è·¯ç”± é‡è¦
 			app.MapControllerRoute(
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-			// ¦A¥[¤@¯ëªº default ¸ô¥Ñ
+			// å†åŠ ä¸€èˆ¬çš„ default è·¯ç”±
 			app.MapControllerRoute(
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}");
 			app.MapRazorPages();
 
-            app.Run();
+
+			// è¨»å†Š SignalR hub
+			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub");
+
+
+			app.Run();
         }
     }
 }

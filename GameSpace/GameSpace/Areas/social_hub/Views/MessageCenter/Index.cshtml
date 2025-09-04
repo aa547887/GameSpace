@@ -1,0 +1,46 @@
+﻿@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.NotificationViewModel>?
+
+@{
+    ViewData["Title"] = "後台通知主頁";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (Model == null || !Model.Any())
+{
+    <p>目前沒有通知</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>標題</th>
+                <th>內容</th>
+                <th>來源</th>
+                <th>行為</th>
+                <th>發送者</th>
+                <th>建立時間</th>
+                <th>已讀</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@(item.NotificationTitle ?? "未設定")</td>
+                    <td>@(item.NotificationMessage ?? "")</td>
+                    <td>@(item.SourceName ?? "未設定")</td>
+                    <td>@(item.ActionName ?? "未設定")</td>
+                    <td>@(item.SenderName ?? "系統")</td>
+                    <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <span class="badge @(item.IsRead ? "bg-success" : "bg-warning text-dark")">
+                            @(item.IsRead ? "已讀" : "未讀")
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

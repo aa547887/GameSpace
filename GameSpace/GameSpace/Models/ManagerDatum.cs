@@ -24,4 +24,18 @@ public partial class ManagerDatum
     public bool ManagerLockoutEnabled { get; set; }
 
     public DateTime? ManagerLockoutEnd { get; set; }
+
+    public virtual Admin? Admin { get; set; }
+
+    public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+
+    public virtual ICollection<Mute> Mutes { get; set; } = new List<Mute>();
+
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+
+    public virtual ICollection<OrderStatusHistory> OrderStatusHistories { get; set; } = new List<OrderStatusHistory>();
+
+    public virtual ICollection<Style> Styles { get; set; } = new List<Style>();
+
+    public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
 }

@@ -14,4 +14,10 @@ public partial class GroupBlock
     public int? BlockedBy { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual User? BlockedByNavigation { get; set; }
+
+    public virtual Group? Group { get; set; }
+
+    public virtual User? User { get; set; }
 }

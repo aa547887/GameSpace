@@ -14,4 +14,8 @@ public partial class NotificationRecipient
     public bool IsRead { get; set; }
 
     public DateTime? ReadAt { get; set; }
+
+    public virtual Notification Notification { get; set; } = null!;
+
+    public virtual User User { get; set; } = null!;
 }

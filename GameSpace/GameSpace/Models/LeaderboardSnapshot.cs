@@ -18,4 +18,6 @@ public partial class LeaderboardSnapshot
     public decimal? IndexValue { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Game? Game { get; set; }
 }

@@ -18,4 +18,12 @@ public partial class Evoucher
     public DateTime AcquiredTime { get; set; }
 
     public DateTime? UsedTime { get; set; }
+
+    public virtual ICollection<EvoucherRedeemLog> EvoucherRedeemLogs { get; set; } = new List<EvoucherRedeemLog>();
+
+    public virtual ICollection<EvoucherToken> EvoucherTokens { get; set; } = new List<EvoucherToken>();
+
+    public virtual EvoucherType EvoucherType { get; set; } = null!;
+
+    public virtual User User { get; set; } = null!;
 }

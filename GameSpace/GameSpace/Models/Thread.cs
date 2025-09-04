@@ -18,4 +18,10 @@ public partial class Thread
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual User? AuthorUser { get; set; }
+
+    public virtual Forum? Forum { get; set; }
+
+    public virtual ICollection<ThreadPost> ThreadPosts { get; set; } = new List<ThreadPost>();
 }
