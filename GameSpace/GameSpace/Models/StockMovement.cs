@@ -18,6 +18,4 @@ public partial class StockMovement
     public DateTime CreatedAt { get; set; }
 
     public string? Note { get; set; }
-
-    public virtual OrderInfo? Order { get; set; }
 }

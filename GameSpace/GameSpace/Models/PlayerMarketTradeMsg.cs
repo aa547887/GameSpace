@@ -14,4 +14,6 @@ public partial class PlayerMarketTradeMsg
     public string? MessageText { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual PlayerMarketOrderTradepage? POrderTradepage { get; set; }
 }

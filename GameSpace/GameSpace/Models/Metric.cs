@@ -9,9 +9,9 @@ public partial class Metric
 
     public int? SourceId { get; set; }
 
-    public string Code { get; set; } = null!;
+    public string? Code { get; set; }
 
-    public string Unit { get; set; } = null!;
+    public string? Unit { get; set; }
 
     public string? Description { get; set; }
 

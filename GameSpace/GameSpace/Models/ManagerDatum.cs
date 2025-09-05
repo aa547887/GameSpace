@@ -33,8 +33,6 @@ public partial class ManagerDatum
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<OrderStatusHistory> OrderStatusHistories { get; set; } = new List<OrderStatusHistory>();
-
     public virtual ICollection<Style> Styles { get; set; } = new List<Style>();
 
     public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();

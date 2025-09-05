@@ -18,4 +18,10 @@ public partial class PlayerMarketOrderTradepage
     public DateTime? BuyerReceivedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+
+    public virtual PlayerMarketOrderInfo? POrder { get; set; }
+
+    public virtual PlayerMarketProductInfo? PProduct { get; set; }
+
+    public virtual ICollection<PlayerMarketTradeMsg> PlayerMarketTradeMsgs { get; set; } = new List<PlayerMarketTradeMsg>();
 }

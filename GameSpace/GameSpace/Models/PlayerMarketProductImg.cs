@@ -10,4 +10,6 @@ public partial class PlayerMarketProductImg
     public int? PProductId { get; set; }
 
     public string? PProductImgUrl { get; set; }
+
+    public virtual PlayerMarketProductInfo? PProduct { get; set; }
 }

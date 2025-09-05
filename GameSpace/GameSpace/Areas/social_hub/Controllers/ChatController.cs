@@ -1,68 +1,114 @@
 ﻿using GameSpace.Areas.social_hub.Models.ViewModels;
+using GameSpace.Areas.social_hub.Hubs;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
 	public class ChatController : Controller
 	{
-		private static List<MessageViewModel> Messages = new List<MessageViewModel>
+		private readonly GameSpacedatabaseContext _db;
+		private readonly IHubContext<ChatHub> _hub;
+		public ChatController(GameSpacedatabaseContext db, IHubContext<ChatHub> hub)
 		{
-			new MessageViewModel{ User="Alice", Content="嗨，你好！", Time=DateTime.Now.AddMinutes(-10), IsMine=false },
-			new MessageViewModel{ User="Me", Content="你好！最近怎麼樣？", Time=DateTime.Now.AddMinutes(-9), IsMine=true }
-		};
+			_db = db;
+			_hub = hub;
+		}
 
-		public IActionResult Index()
+		public IActionResult Index() => View();
+
+		// 聯絡人（先給前 50 名）
+		[HttpGet]
+		public async Task<IActionResult> Contacts()
 		{
-			return View();
+			int.TryParse(Request.Cookies["sh_uid"], out var me);
+			var users = await _db.Users
+				.AsNoTracking()
+				.Where(u => u.UserId != me)
+				.OrderBy(u => u.UserId)
+				.Take(50)
+				.Select(u => new { id = u.UserId, name = u.UserName ?? u.UserAccount ?? $"User {u.UserId}" })
+				.ToListAsync();
+
+			return Json(users);
+		}
+
+		// 1 對 1 歷史（雙向），支援 before 分頁
+		// GET /social_hub/Chat/History?peerId=123&before=2025-09-05T03:00:00.000Z&take=20
+		[HttpGet]
+		public async Task<IActionResult> History(int peerId, string? before, int take = 20)
+		{
+			if (peerId <= 0) return Json(Array.Empty<MessageViewModel>());
+			int.TryParse(Request.Cookies["sh_uid"], out var me);
+			if (me <= 0) return Json(Array.Empty<MessageViewModel>());
+
+			DateTime? beforeTime = null;
+			if (!string.IsNullOrWhiteSpace(before) && DateTime.TryParse(before, out var b)) beforeTime = b.ToUniversalTime();
+
+			IQueryable<ChatMessage> q = _db.ChatMessages.AsNoTracking()
+				.Where(m =>
+					(m.SenderId == me && m.ReceiverId == peerId) ||
+					(m.SenderId == peerId && m.ReceiverId == me));
+
+			if (beforeTime.HasValue)
+				q = q.Where(m => m.SentAt < beforeTime.Value);
+
+			var rows = await q
+				.OrderByDescending(m => m.SentAt)
+				.Take(Math.Clamp(take, 1, 50))
+				.Select(m => new MessageViewModel
+				{
+					MessageId = m.MessageId,
+					SenderId = m.SenderId,
+					User = m.Sender.UserName ?? m.Sender.UserAccount ?? $"User {m.SenderId}",
+					Content = m.ChatContent,
+					Time = m.SentAt,
+					IsMine = (m.SenderId == me),
+					IsRead = m.IsRead
+				})
+				.ToListAsync();
+
+			rows.Reverse(); // 舊->新
+			return Json(rows);
+		}
+
+		// 對方→我 的未讀訊息，設為已讀（並推播讀回條）
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> MarkRead(int peerId, string upToIso)
+		{
+			if (peerId <= 0) return Json(new { updated = 0 });
+			int.TryParse(Request.Cookies["sh_uid"], out var me);
+			if (me <= 0) return Json(new { updated = 0 });
+
+			if (!DateTime.TryParse(upToIso, out var upTo))
+				upTo = DateTime.UtcNow;
+
+			var msgs = await _db.ChatMessages
+				.Where(m => m.SenderId == peerId && m.ReceiverId == me && !m.IsRead && m.SentAt <= upTo)
+				.ToListAsync();
+
+			foreach (var m in msgs) m.IsRead = true;
+			var updated = await _db.SaveChangesAsync();
+
+			await _hub.Clients.Group($"u:{peerId}")
+				.SendAsync("ReadReceipt", new { fromUserId = me, upToIso });
+
+			return Json(new { updated });
 		}
 
 		[HttpGet]
-		public JsonResult GetMessages()
+		public IActionResult WhoAmI()
 		{
-			return Json(Messages);
+			var id = 0;
+			int.TryParse(Request.Cookies["sh_uid"], out id);
+			var name = Request.Cookies["sh_uname"] ?? "訪客";
+			return Json(new { id, name });
 		}
 
-		[HttpPost]
-		public JsonResult SendMessage([FromForm] string message)
-		{
-			if (!string.IsNullOrWhiteSpace(message))
-			{
-				// 加入自己的訊息
-				Messages.Add(new MessageViewModel
-				{
-					User = "Me",
-					Content = message,
-					Time = DateTime.Now,
-					IsMine = true
-				});
 
-				// 模擬對方的回覆（延遲 1 秒）
-				Task.Run(async () =>
-				{
-					await Task.Delay(1000);
-					Messages.Add(new MessageViewModel
-					{
-						User = "Alice",
-						Content = GetAutoReply(message),
-						Time = DateTime.Now,
-						IsMine = false
-					});
-				});
-			}
-			return Json(new { success = true });
-		}
-
-		// 簡單的自動回覆邏輯
-		private string GetAutoReply(string input)
-		{
-			if (input.Contains("你好") || input.Contains("hi", StringComparison.OrdinalIgnoreCase))
-				return "嗨嗨！很高興跟你聊天～";
-			if (input.Contains("天氣"))
-				return "今天天氣還不錯，你有出去走走嗎？";
-			if (input.Contains("掰"))
-				return "好呀～下次再聊！";
-			return "嗯嗯，我懂你的意思！";
-		}
 	}
 }

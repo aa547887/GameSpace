@@ -7,9 +7,9 @@ public partial class Style
 {
     public int StyleId { get; set; }
 
-    public string StyleName { get; set; } = null!;
+    public string? StyleName { get; set; }
 
-    public string EffectDesc { get; set; } = null!;
+    public string? EffectDesc { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

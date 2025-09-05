@@ -1,11 +1,12 @@
-﻿using GameSpace.Areas.social_hub.Models.ViewModels;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using GameSpace.Areas.social_hub.Services;
 using GameSpace.Data;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
@@ -13,111 +14,209 @@ namespace GameSpace.Areas.social_hub.Controllers
 	public class MessageCenterController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
+		private readonly INotificationService _notificationService;
 
-		public MessageCenterController(GameSpacedatabaseContext context)
+		public MessageCenterController(GameSpacedatabaseContext context, INotificationService notificationService)
 		{
 			_context = context;
+			_notificationService = notificationService;
 		}
 
 		// =========================
-		// 讀取通知列表（測試用）
+		// 小工具：從 Cookie 取 int
+		// =========================
+		private int? TryGetCookieInt(string key)
+		{
+			if (!Request.Cookies.TryGetValue(key, out var val)) return null;
+			return int.TryParse(val, out var n) ? n : (int?)null;
+		}
+
+		// =========================
+		// Admin 檢視所有通知（簡易總覽）
+		// GET: social_hub/MessageCenter
 		// =========================
 		public async Task<IActionResult> Index()
 		{
-			// 暫時手動指定測試用 UserId（一般使用者）
-			int userId = 10000012; // 替換成資料庫裡的一般使用者 Id
-
-			var notifications = await _context.NotificationRecipients
-				.Where(nr => nr.UserId == userId)
-				.Include(nr => nr.Notification)
-					.ThenInclude(n => n.Action)
-				.Include(nr => nr.Notification)
-					.ThenInclude(n => n.Source)
-				.Include(nr => nr.Notification)
-					.ThenInclude(n => n.Sender)
-				.Include(nr => nr.Notification)
-					.ThenInclude(n => n.SenderManager)
-				.OrderByDescending(nr => nr.Notification.CreatedAt)
+			// 管理總覽：列出最近的通知（含來源/行為/發送者/收件人數）
+			var list = await _context.Notifications
+				.AsNoTracking()
+				.OrderByDescending(n => n.NotificationId)
+				.Select(n => new NotificationAdminListItemVM
+				{
+					NotificationId = n.NotificationId,
+					NotificationTitle = n.NotificationTitle,
+					NotificationMessage = n.NotificationMessage,
+					// ↓ 依你實際模型名稱調整（例如 Source.SourceName / Action.ActionName）
+					SourceName = n.Source != null ? n.Source.SourceName : null,
+					ActionName = n.Action != null ? n.Action.ActionName : null,
+					SenderName =
+						n.Sender != null
+							? (n.Sender.UserName ?? n.Sender.UserAccount)       // 如果沒有 UserName/UserAccount，請改為你的欄位
+							: (n.SenderManager != null
+								? n.SenderManager.ManagerName                   // 若管理員名稱欄位不同，請調整
+								: "系統"),
+					CreatedAt = n.CreatedAt,                                   // 若是 Nullable，請加 ?? DateTime.UtcNow
+					RecipientCount = _context.NotificationRecipients.Count(r => r.NotificationId == n.NotificationId)
+				})
+				.Take(200)
 				.ToListAsync();
 
-			var model = notifications
-				.Where(nr => nr.Notification != null)
-				.Select(nr => new NotificationViewModel
-				{
-					NotificationId = nr.Notification.NotificationId,
-					NotificationTitle = nr.Notification.NotificationTitle,
-					NotificationMessage = nr.Notification.NotificationMessage,
-					CreatedAt = nr.Notification.CreatedAt,
-					IsRead = nr.IsRead,
-					// 判斷發送者是一般使用者或管理員
-					SenderName = nr.Notification.Sender?.UserName
-								 ?? nr.Notification.SenderManager?.ManagerName
-								 ?? "系統",
-					ActionName = nr.Notification.Action?.ActionName ?? "未設定",
-					SourceName = nr.Notification.Source?.SourceName ?? "未設定"
-				})
-				.ToList();
-
-			return View(model);
+			return View(list);
 		}
 
 		// =========================
-		// 標記通知為已讀
+		// 使用者收件匣（依 Cookie 的 sh_uid）
+		// GET: social_hub/MessageCenter/Inbox
+		// =========================
+		public async Task<IActionResult> Inbox()
+		{
+			var uid = TryGetCookieInt("sh_uid");
+			if (uid is null || uid.Value <= 0)
+				return Unauthorized(); // 或返回空列表 View，看你需求
+
+			var list = await _context.NotificationRecipients
+				.AsNoTracking()
+				.Where(nr => nr.UserId == uid.Value)
+				.OrderByDescending(nr => nr.RecipientId)
+				.Select(nr => new NotificationInboxItemVM
+				{
+					RecipientId = nr.RecipientId,
+					NotificationId = nr.NotificationId,
+					NotificationTitle = nr.Notification.NotificationTitle,
+					NotificationMessage = nr.Notification.NotificationMessage,
+					SourceName = nr.Notification.Source != null ? nr.Notification.Source.SourceName : null,
+					ActionName = nr.Notification.Action != null ? nr.Notification.Action.ActionName : null,
+					SenderName =
+						nr.Notification.Sender != null
+							? (nr.Notification.Sender.UserName ?? nr.Notification.Sender.UserAccount)
+							: (nr.Notification.SenderManager != null
+								? nr.Notification.SenderManager.ManagerName
+								: "系統"),
+					CreatedAt = nr.Notification.CreatedAt,
+					IsRead = nr.IsRead
+				})
+				.Take(200)
+				.ToListAsync();
+
+			return View(list);
+		}
+
+		// =========================
+		// 將單一收件明細標記為已讀
+		// POST: social_hub/MessageCenter/MarkRead/5
 		// =========================
 		[HttpPost]
-		public async Task<IActionResult> MarkAsRead(int recipientId)
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> MarkRead(int id)
 		{
-			var recipient = await _context.NotificationRecipients.FindAsync(recipientId);
-			if (recipient == null)
-				return NotFound();
+			var rec = await _context.NotificationRecipients.FirstOrDefaultAsync(r => r.RecipientId == id);
+			if (rec == null) return NotFound();
 
-			if (!recipient.IsRead)
+			if (!rec.IsRead)
 			{
-				recipient.IsRead = true;
-				recipient.ReadAt = DateTime.Now;
+				rec.IsRead = true;
+				// 若你的模型有 ReadAt 欄位可加上：
+				// rec.ReadAt = DateTime.UtcNow;
 				await _context.SaveChangesAsync();
 			}
 
-			return Ok();
+			return RedirectToAction(nameof(Inbox));
 		}
 
 		// =========================
-		// 新增通知（測試用）
+		// 建立通知（Admin）
+		// GET: social_hub/MessageCenter/Create
 		// =========================
-		[HttpGet]
-		public async Task<IActionResult> TestNotification()
+		public IActionResult Create()
 		{
-			// 指定收件人一般使用者 Id
-			int userId = 10000012; // Users 表中存在的一般使用者
+			// TODO: 若需要來源/行為下拉選單，請在 ViewData 填入選項
+			return View();
+		}
 
-			var user = await _context.Users.FindAsync(userId);
-			if (user == null)
-				return Content($"UserId {userId} 不存在");
-
-			// 建立測試通知（管理員發送）
-			var notification = new Notification
+		// =========================
+		// 建立通知（Admin）
+		// POST: social_hub/MessageCenter/Create
+		// =========================
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Create(
+			[Bind("NotificationTitle,NotificationMessage,SourceId,ActionId")] Notification notification,
+			List<int> recipientIds)
+		{
+			if (!ModelState.IsValid)
 			{
-				SourceId = 1,
-				ActionId = 1,
-				SenderId = null,            // 現在可以為 null
-				SenderManagerId = 30000012, // 管理員發送
-				NotificationTitle = "測試通知",
-				NotificationMessage = "這是一則測試通知",
-				CreatedAt = DateTime.Now
-			};
+				// TODO: 若有下拉需要回填，請在這裡放 ViewData 後回傳
+				return View(notification);
+			}
 
-			notification.NotificationRecipients.Add(new NotificationRecipient
+			int? senderUserId = TryGetCookieInt("sh_uid");
+			int? senderManagerId = TryGetCookieInt("sh_mid");
+
+			// 使用服務處理 FK 決策、收件人去重與驗證
+			var added = await _notificationService.CreateAsync(
+				notification,
+				recipientIds ?? Enumerable.Empty<int>(),
+				senderUserId,
+				senderManagerId
+			);
+
+			TempData["Msg"] = $"✅ 已建立通知 #{notification.NotificationId}，成功寄給 {added} 位收件人。";
+			return RedirectToAction(nameof(Index));
+		}
+
+		// =========================
+		// （選用）刪除通知主檔（若要保留歷史，建議不要提供）
+		// =========================
+		public async Task<IActionResult> Delete(int id)
+		{
+			var n = await _context.Notifications.AsNoTracking().FirstOrDefaultAsync(x => x.NotificationId == id);
+			if (n == null) return NotFound();
+			return View(n);
+		}
+
+		[HttpPost, ActionName("Delete")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> DeleteConfirmed(int id)
+		{
+			var n = await _context.Notifications.FirstOrDefaultAsync(x => x.NotificationId == id);
+			if (n != null)
 			{
-				UserId = 10000012, // 一般使用者
-				IsRead = false
-			});
+				// 先刪收件明細，再刪主檔（避免 FK）
+				var recs = _context.NotificationRecipients.Where(r => r.NotificationId == id);
+				_context.NotificationRecipients.RemoveRange(recs);
+				_context.Notifications.Remove(n);
+				await _context.SaveChangesAsync();
+				TempData["Msg"] = "已刪除通知與其收件明細。";
+			}
+			return RedirectToAction(nameof(Index));
+		}
 
+		// =========================
+		// 內部用 VM（避免相依外部 ViewModel）
+		// =========================
+		public class NotificationAdminListItemVM
+		{
+			public int NotificationId { get; set; }
+			public string? NotificationTitle { get; set; }
+			public string? NotificationMessage { get; set; }
+			public string? SourceName { get; set; }
+			public string? ActionName { get; set; }
+			public string? SenderName { get; set; }
+			public DateTime CreatedAt { get; set; }
+			public int RecipientCount { get; set; }
+		}
 
-
-			_context.Notifications.Add(notification);
-			await _context.SaveChangesAsync();
-
-			return Content("測試通知已新增完成！");
+		public class NotificationInboxItemVM
+		{
+			public int RecipientId { get; set; }
+			public int NotificationId { get; set; }
+			public string? NotificationTitle { get; set; }
+			public string? NotificationMessage { get; set; }
+			public string? SourceName { get; set; }
+			public string? ActionName { get; set; }
+			public string? SenderName { get; set; }
+			public DateTime CreatedAt { get; set; }
+			public bool IsRead { get; set; }
 		}
 	}
 }

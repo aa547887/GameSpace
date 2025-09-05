@@ -18,8 +18,4 @@ public partial class OrderStatusHistory
     public DateTime ChangedAt { get; set; }
 
     public string? Note { get; set; }
-
-    public virtual ManagerDatum? ChangedByNavigation { get; set; }
-
-    public virtual OrderInfo Order { get; set; } = null!;
 }

@@ -1,0 +1,210 @@
+﻿@model GameSpace.Models.Notification
+@{
+    ViewData["Title"] = "新增通知";
+    var recipientMode = (string)(ViewBag.RecipientMode ?? "specific");
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">@ViewData["Title"]</h1>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">通知內容</h6>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-list-ul"></i> 回列表
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" id="notifyForm">
+                        @Html.AntiForgeryToken()
+
+                        @if (ViewBag.AllErrors != null)
+                        {
+                            <div class="alert alert-danger">@ViewBag.AllErrors</div>
+                        }
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <!-- 標題：20 -->
+                        <div class="form-group">
+                            <label asp-for="NotificationTitle" class="control-label"></label>
+                            <input asp-for="NotificationTitle" class="form-control" placeholder="輸入通知標題"
+                                   maxlength="20" id="titleInput" />
+                            <small class="form-text text-muted">
+                                最多 20 字，剩餘 <span id="titleRemain">20</span> 字。
+                            </small>
+                            <span asp-validation-for="NotificationTitle" class="text-danger"></span>
+                        </div>
+
+                        <!-- 內容：255 -->
+                        <div class="form-group">
+                            <label asp-for="NotificationMessage" class="control-label"></label>
+                            <textarea asp-for="NotificationMessage" class="form-control" rows="4" placeholder="輸入通知內容"
+                                      maxlength="255" id="msgInput"></textarea>
+                            <small class="form-text text-muted">
+                                最多 255 字，剩餘 <span id="msgRemain">255</span> 字。
+                            </small>
+                            <span asp-validation-for="NotificationMessage" class="text-danger"></span>
+                        </div>
+
+                        <!-- 來源 / 動作 -->
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label class="control-label">來源 (Source)</label>
+                                <select asp-for="SourceId" class="form-control" asp-items="ViewBag.Sources">
+                                    <option value="">請選擇來源</option>
+                                </select>
+                                <span asp-validation-for="SourceId" class="text-danger"></span>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="control-label">動作 (Action)</label>
+                                <select asp-for="ActionId" class="form-control" asp-items="ViewBag.Actions">
+                                    <option value="">請選擇動作</option>
+                                </select>
+                                <span asp-validation-for="ActionId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- 收件人模式 -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">發送對象</label>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="modeSpecific" name="recipientMode" value="specific"
+                                       class="custom-control-input" @(recipientMode == "specific" ? "checked" : "")>
+                                <label class="custom-control-label" for="modeSpecific">指定使用者（多選）</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="modeAllUsers" name="recipientMode" value="all_users"
+                                       class="custom-control-input" @(recipientMode == "all_users" ? "checked" : "")>
+                                <label class="custom-control-label" for="modeAllUsers">全體使用者</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="modeAllManagers" name="recipientMode" value="all_managers"
+                                       class="custom-control-input" @(recipientMode == "all_managers" ? "checked" : "")>
+                                <label class="custom-control-label" for="modeAllManagers">全體管理員</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="modeBoth" name="recipientMode" value="both"
+                                       class="custom-control-input" @(recipientMode == "both" ? "checked" : "")>
+                                <label class="custom-control-label" for="modeBoth">全體使用者 + 管理員</label>
+                            </div>
+                            <small class="form-text text-muted">
+                                管理員會以「管理員帳號對應的使用者帳號」寄送；若找不到對應使用者帳號，會被略過。
+                            </small>
+                        </div>
+
+                        <!-- 指定使用者（多選） -->
+                        <div id="specificPanel" class="form-group" style="display:none;">
+                            <label class="control-label">選擇收件人（可多選）</label>
+                            <select id="recipientMulti" name="recipientIds" class="form-control" multiple size="10" asp-items="ViewBag.Users"></select>
+                            <small class="form-text text-muted">
+                                按住 Ctrl/⌘ 可多選。下方顯示已選名單。
+                            </small>
+
+                            <div class="mt-2">
+                                <span class="badge badge-info" id="selectedCount">已選 0 人</span>
+                            </div>
+                            <div class="mt-2">
+                                <pre class="p-2 bg-light border" id="selectedPreview" style="max-height:180px; overflow:auto;">（目前沒有選擇）</pre>
+                            </div>
+                        </div>
+
+                        <!-- 可選：群組、發送者 -->
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label asp-for="GroupId" class="control-label">群組 (可選)</label>
+                                <select asp-for="GroupId" class="form-control" asp-items="ViewBag.Groups">
+                                    <option value="">不指定群組</option>
+                                </select>
+                                <span asp-validation-for="GroupId" class="text-danger"></span>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="control-label" for="SenderManagerId">發送管理員 (可選)</label>
+                                <select asp-for="SenderManagerId" class="form-control" asp-items="ViewBag.Managers">
+                                    <option value="">不指定管理員</option>
+                                </select>
+                                <small class="form-text text-muted">SenderId / SenderManagerId 可擇一或皆空。</small>
+                                <span asp-validation-for="SenderManagerId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label class="control-label" for="SenderId">發送使用者 (可選)</label>
+                                <select asp-for="SenderId" class="form-control" asp-items="ViewBag.Users">
+                                    <option value="">不指定使用者</option>
+                                </select>
+                                <span asp-validation-for="SenderId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a asp-action="Index" class="btn btn-light mr-2">取消</a>
+                            <button type="submit" class="btn btn-primary">送出</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <div class="mb-1"><strong>小提醒</strong></div>
+                <ul class="mb-0">
+                    <li>標題最多 20 字、內容最多 255 字（Excel 規格）。</li>
+                    <li>可群發：全體使用者 / 全體管理員 / 兩者；或指定多位使用者。</li>
+                    <li>管理員寄送會以「管理員帳號 ↔ 使用者帳號」對應後的使用者 ID 寄出。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // 字數提示
+        function bindRemain(inputId, remainId, max) {
+            const inp = document.getElementById(inputId);
+            const rem = document.getElementById(remainId);
+            const upd = () => rem.textContent = Math.max(0, max - (inp.value ? inp.value.length : 0));
+            inp.addEventListener('input', upd);
+            upd();
+        }
+        bindRemain('titleInput', 'titleRemain', 20);
+        bindRemain('msgInput',   'msgRemain',   255);
+
+        // 切換收件人模式
+        function toggleSpecificPanel() {
+            const mode = document.querySelector('input[name="recipientMode"]:checked')?.value || 'specific';
+            document.getElementById('specificPanel').style.display = (mode === 'specific') ? '' : 'none';
+        }
+        ['modeSpecific','modeAllUsers','modeAllManagers','modeBoth'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', toggleSpecificPanel);
+        });
+        // 初始化
+        toggleSpecificPanel();
+
+        // 多選預覽
+        const multi = document.getElementById('recipientMulti');
+        const countBadge = document.getElementById('selectedCount');
+        const preview = document.getElementById('selectedPreview');
+
+        function refreshPreview() {
+            const sel = Array.from(multi.selectedOptions).map(o => ({ id: o.value, name: o.text }));
+            countBadge.textContent = `已選 ${sel.length} 人`;
+            if (sel.length === 0) {
+                preview.textContent = '（目前沒有選擇）';
+            } else {
+                preview.textContent = sel.map(x => `${x.id}\t${x.name}`).join('\n');
+            }
+        }
+        if (multi) {
+            multi.addEventListener('change', refreshPreview);
+            refreshPreview();
+        }
+    </script>
+}

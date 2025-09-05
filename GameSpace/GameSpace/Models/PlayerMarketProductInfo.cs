@@ -28,4 +28,14 @@ public partial class PlayerMarketProductInfo
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<PlayerMarketOrderInfo> PlayerMarketOrderInfos { get; set; } = new List<PlayerMarketOrderInfo>();
+
+    public virtual ICollection<PlayerMarketOrderTradepage> PlayerMarketOrderTradepages { get; set; } = new List<PlayerMarketOrderTradepage>();
+
+    public virtual ICollection<PlayerMarketProductImg> PlayerMarketProductImgs { get; set; } = new List<PlayerMarketProductImg>();
+
+    public virtual ICollection<PlayerMarketRanking> PlayerMarketRankings { get; set; } = new List<PlayerMarketRanking>();
+
+    public virtual User? Seller { get; set; }
 }

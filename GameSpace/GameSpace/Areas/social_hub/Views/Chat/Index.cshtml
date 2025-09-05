@@ -1,140 +1,41 @@
 ﻿@{
-    ViewData["Title"] = "SignalR Floating Chat";
+    ViewData["Title"] = "聊天測試（1 對 1）";
+    var meIdStr = Context.Request.Cookies["sh_uid"] ?? "0";
+    var meName = Context.Request.Cookies["sh_uname"] ?? "訪客";
 }
 
-<link href="~/lib/social_hub/chat.css" rel="stylesheet" />
+<link href="~/lib/social_hub/css/chat.css" rel="stylesheet" />
+<link href="~/lib/social_hub/css/chat-1to1.css" rel="stylesheet" />
 
-<div class="chat-container">
-    <!-- 視窗控制 -->
-    <div class="chat-header">
-        <button class="minimize">–</button>
-        <button class="maximize">⬜</button>
-        <button class="close">×</button>
-    </div>
+<meta name="me-id" content="@meIdStr" />
+<meta name="me-name" content="@meName" />
 
-    <div class="chat-window">
-        <!-- 登入區 -->
-        <div id="loginArea">
-            <h3 style="text-align:center;margin-bottom:10px;">聊天室登入</h3>
-            <input id="userNameInput" placeholder="輸入你的名字" />
-            <button id="loginBtn">登入聊天室</button>
-        </div>
 
-        <!-- 聊天區 -->
-        <div id="chatArea" style="display:none;">
-            <div class="messages" id="messages"></div>
-            <form id="chatForm" class="input-form">
-                <input type="text" id="messageInput" placeholder="輸入訊息..." autocomplete="off" />
-                <button type="submit">送出</button>
-            </form>
-        </div>
-    </div>
+
+<div class="chat-layout" style="display:flex; gap:12px; height:70vh;">
+    <!-- 聯絡人 -->
+    <aside class="contacts" style="width:260px; border:1px solid #ddd; border-radius:8px; overflow:auto;">
+        <div class="p-2"><strong>聯絡人</strong></div>
+        <ul id="contactList" class="list-unstyled m-0"></ul>
+    </aside>
+
+    <!-- 對話 -->
+    <section class="dialog" style="flex:1; border:1px solid #ddd; border-radius:8px; display:flex; flex-direction:column;">
+        <div id="peerTitle" class="p-2 border-bottom">尚未選擇對象</div>
+        <div id="messages" class="flex-grow-1" style="overflow:auto; padding:8px;"></div>
+        <form id="chatForm" class="p-2 border-top" style="display:flex; gap:8px;">
+            <input id="messageInput" class="form-control" placeholder="輸入訊息..." autocomplete="off" />
+            <button class="btn btn-primary" type="submit" disabled id="sendBtn">送出</button>
+        </form>
+    </section>
 </div>
 
+<!-- 安全：穩定取得 AntiForgery Token -->
+<form id="__af" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.7/signalr.min.js"></script>
-    <script>
-        let userName = "";
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/social_hub/chatHub")
-            .build();
-
-        const messagesDiv = document.getElementById("messages");
-        const chatArea = document.getElementById("chatArea");
-        const loginArea = document.getElementById("loginArea");
-
-        connection.on("ReceiveMessage", (user, message, time) => {
-            const cssClass = user === userName ? "mine" : "other";
-            const msgHtml = `<div class="message ${cssClass}">
-                                <div class="content">${message}</div>
-                                <div class="time">${time}</div>
-                             </div>`;
-            messagesDiv.innerHTML += msgHtml;
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-
-        connection.start().catch(err => console.error(err));
-
-        document.getElementById("loginBtn").addEventListener("click", () => {
-            const name = document.getElementById("userNameInput").value.trim();
-            if(name === "") return;
-            userName = name;
-            connection.invoke("RegisterUser", userName).catch(err => console.error(err));
-            loginArea.style.display = "none";
-            chatArea.style.display = "flex";
-        });
-
-        document.getElementById("chatForm").addEventListener("submit", e => {
-            e.preventDefault();
-            const msg = document.getElementById("messageInput").value.trim();
-            if(msg === "") return;
-            connection.invoke("SendMessage", msg).catch(err => console.error(err));
-            document.getElementById("messageInput").value = "";
-        });
-
-        // 拖曳修正
-        let chatContainer = document.querySelector(".chat-container");
-        let dragX=0, dragY=0, isDragging=false;
-
-        chatContainer.addEventListener("mousedown", e=>{
-            if(e.target.tagName==="BUTTON") return;
-            isDragging=true;
-            chatContainer.classList.add("dragging");
-            dragX=e.clientX;
-            dragY=e.clientY;
-        });
-
-        document.addEventListener("mousemove", e=>{
-            if(!isDragging) return;
-            let dx=e.clientX-dragX;
-            let dy=e.clientY-dragY;
-            dragX=e.clientX;
-            dragY=e.clientY;
-            let currentTransform=chatContainer.style.transform||"translate(0px,0px)";
-            let match=currentTransform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-            let curX = match ? parseFloat(match[1]) : 0;
-            let curY = match ? parseFloat(match[2]) : 0;
-            chatContainer.style.transform = `translate(${curX+dx}px,${curY+dy}px)`;
-        });
-
-        document.addEventListener("mouseup", ()=>{
-            if(isDragging){
-                isDragging=false;
-                chatContainer.classList.remove("dragging");
-            }
-        });
-
-        // 窗口控制
-        const minimizeBtn = document.querySelector(".chat-header .minimize");
-        const maximizeBtn = document.querySelector(".chat-header .maximize");
-        const closeBtn = document.querySelector(".chat-header .close");
-
-        let isMaximized=false;
-        minimizeBtn.addEventListener("click", ()=> {
-            chatArea.style.display = chatArea.style.display === "none" ? "flex" : "none";
-        });
-
-        maximizeBtn.addEventListener("click", ()=>{
-            if(!isMaximized){
-                chatContainer.style.top="0";
-                chatContainer.style.left="0";
-                chatContainer.style.width="100%";
-                chatContainer.style.height="100vh";
-                chatContainer.style.bottom="auto";
-                chatContainer.style.right="auto";
-            }else{
-                chatContainer.style.width="400px";
-                chatContainer.style.height="500px";
-                chatContainer.style.bottom="20px";
-                chatContainer.style.right="20px";
-                chatContainer.style.top="auto";
-                chatContainer.style.left="auto";
-            }
-            isMaximized=!isMaximized;
-        });
-
-        closeBtn.addEventListener("click", ()=>{
-            chatContainer.style.display="none";
-        });
-    </script>
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script src="~/lib/social_hub/js/chat-1to1.js"></script>
 }

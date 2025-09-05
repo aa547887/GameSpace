@@ -7,7 +7,7 @@ public partial class Mute
 {
     public int MuteId { get; set; }
 
-    public string MuteName { get; set; } = null!;
+    public string? MuteName { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
