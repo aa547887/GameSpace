@@ -22,6 +22,4 @@ public partial class OfficialStoreRanking
     public int? TradingVolume { get; set; }
 
     public DateTime RankingUpdatedAt { get; set; }
-
-    public virtual ProductInfo Product { get; set; } = null!;
 }

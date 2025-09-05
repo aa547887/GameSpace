@@ -1,0 +1,35 @@
+﻿@model GameSpace.Areas.social_hub.Models.LoginViewModel
+@{
+    ViewData["Title"] = "登入（使用者）";
+}
+
+<h3 class="mb-3">@ViewData["Title"]</h3>
+
+<form asp-action="Login" method="post" class="card p-4" style="max-width:420px;">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label asp-for="Account" class="form-label"></label>
+        <input asp-for="Account" class="form-control" autocomplete="username" />
+        <span asp-validation-for="Account" class="text-danger"></span>
+        <div class="form-text">輸入 UserAccount / UserName</div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label"></label>
+        <input asp-for="Password" class="form-control" autocomplete="current-password" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="RememberMe" class="form-check-input" />
+        <label asp-for="RememberMe" class="form-check-label"></label>
+    </div>
+
+    <input type="hidden" asp-for="ReturnUrl" />
+    <button type="submit" class="btn btn-primary w-100">登入</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

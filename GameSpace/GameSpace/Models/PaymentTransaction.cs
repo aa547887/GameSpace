@@ -26,6 +26,4 @@ public partial class PaymentTransaction
     public DateTime? ConfirmedAt { get; set; }
 
     public string? Meta { get; set; }
-
-    public virtual OrderInfo Order { get; set; } = null!;
 }

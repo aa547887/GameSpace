@@ -7,11 +7,11 @@ public partial class User
 {
     public int UserId { get; set; }
 
-    public string? UserName { get; set; }
+    public string UserName { get; set; } = null!;
 
-    public string? UserAccount { get; set; }
+    public string UserAccount { get; set; } = null!;
 
-    public string? UserPassword { get; set; }
+    public string UserPassword { get; set; } = null!;
 
     public bool UserEmailConfirmed { get; set; }
 
@@ -31,12 +31,6 @@ public partial class User
 
     public virtual ICollection<ChatMessage> ChatMessageSenders { get; set; } = new List<ChatMessage>();
 
-    public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
-
-    public virtual ICollection<EvoucherRedeemLog> EvoucherRedeemLogs { get; set; } = new List<EvoucherRedeemLog>();
-
-    public virtual ICollection<Evoucher> Evouchers { get; set; } = new List<Evoucher>();
-
     public virtual ICollection<GroupBlock> GroupBlockBlockedByNavigations { get; set; } = new List<GroupBlock>();
 
     public virtual ICollection<GroupBlock> GroupBlockUsers { get; set; } = new List<GroupBlock>();
@@ -49,13 +43,15 @@ public partial class User
 
     public virtual MemberSalesProfile? MemberSalesProfile { get; set; }
 
-    public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
-
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();
+    public virtual ICollection<PlayerMarketOrderInfo> PlayerMarketOrderInfoBuyers { get; set; } = new List<PlayerMarketOrderInfo>();
+
+    public virtual ICollection<PlayerMarketOrderInfo> PlayerMarketOrderInfoSellers { get; set; } = new List<PlayerMarketOrderInfo>();
+
+    public virtual ICollection<PlayerMarketProductInfo> PlayerMarketProductInfos { get; set; } = new List<PlayerMarketProductInfo>();
 
     public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 
@@ -75,11 +71,5 @@ public partial class User
 
     public virtual UserSalesInformation? UserSalesInformation { get; set; }
 
-    public virtual ICollection<UserSignInStat> UserSignInStats { get; set; } = new List<UserSignInStat>();
-
     public virtual ICollection<UserToken> UserTokens { get; set; } = new List<UserToken>();
-
-    public virtual UserWallet? UserWallet { get; set; }
-
-    public virtual ICollection<WalletHistory> WalletHistories { get; set; } = new List<WalletHistory>();
 }

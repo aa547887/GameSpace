@@ -151,21 +151,13 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<UserWallet> UserWallets { get; set; }
 
-    public virtual DbSet<VwForumOverview> VwForumOverviews { get; set; }
-
-    public virtual DbSet<VwPostsWithSnapshot> VwPostsWithSnapshots { get; set; }
-
-    public virtual DbSet<VwThreadActivity> VwThreadActivities { get; set; }
-
-    public virtual DbSet<VwThreadPostsFlat> VwThreadPostsFlats { get; set; }
-
     public virtual DbSet<WalletHistory> WalletHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Admin>(entity =>
         {
-            entity.HasKey(e => e.ManagerId).HasName("PK__Admins__5A6073FC25738460");
+            entity.HasKey(e => e.ManagerId).HasName("PK__Admins__5A6073FC64EF085E");
 
             entity.Property(e => e.ManagerId)
                 .ValueGeneratedNever()
@@ -175,40 +167,34 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Manager).WithOne(p => p.Admin)
                 .HasForeignKey<Admin>(d => d.ManagerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Admins__manager___2022C2A6");
+                .HasConstraintName("FK__Admins__manager___0E04126B");
         });
 
         modelBuilder.Entity<BannedWord>(entity =>
         {
-            entity.HasKey(e => e.WordId).HasName("PK__banned_w__7FFA1D403514B58B");
+            entity.HasKey(e => e.WordId).HasName("PK__banned_w__7FFA1D406FBDDC61");
 
             entity.ToTable("banned_words");
 
             entity.Property(e => e.WordId).HasColumnName("word_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Word)
-                .HasMaxLength(100)
+                .HasMaxLength(50)
                 .HasColumnName("word");
         });
 
         modelBuilder.Entity<Bookmark>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__bookmark__3213E83FE0BF66EB");
+            entity.HasKey(e => e.Id).HasName("PK__bookmark__3213E83F2689F12E");
 
             entity.ToTable("bookmarks");
-
-            entity.HasIndex(e => new { e.TargetType, e.TargetId }, "IX_bookmarks_target");
-
-            entity.HasIndex(e => new { e.UserId, e.TargetType, e.TargetId }, "UQ_bookmarks_user_target").IsUnique();
 
             entity.HasIndex(e => new { e.UserId, e.TargetType, e.TargetId }, "bookmarks_index_20").IsUnique();
 
             entity.HasIndex(e => new { e.TargetType, e.TargetId }, "bookmarks_index_21");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.TargetId).HasColumnName("target_id");
             entity.Property(e => e.TargetType)
                 .HasMaxLength(50)
@@ -218,22 +204,22 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Bookmarks)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__bookmarks__User___11D4A34F");
+                .HasConstraintName("FK__bookmarks__User___6BAEFA67");
         });
 
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.MessageId).HasName("PK__Chat_Mes__0BBF6EE69E0E503A");
+            entity.HasKey(e => e.MessageId).HasName("PK__Chat_Mes__0BBF6EE62FA772B9");
 
             entity.ToTable("Chat_Message");
 
-            entity.HasIndex(e => e.SentAt, "Chat_Message_index_3");
+            entity.HasIndex(e => e.SentAt, "Chat_Message_index_35");
 
-            entity.HasIndex(e => new { e.ReceiverId, e.SentAt }, "Chat_Message_index_4");
+            entity.HasIndex(e => new { e.ReceiverId, e.SentAt }, "Chat_Message_index_36");
 
             entity.Property(e => e.MessageId).HasColumnName("message_id");
             entity.Property(e => e.ChatContent)
-                .HasMaxLength(100)
+                .HasMaxLength(255)
                 .HasColumnName("chat_content");
             entity.Property(e => e.IsRead).HasColumnName("is_read");
             entity.Property(e => e.IsSent)
@@ -246,53 +232,49 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Manager).WithMany(p => p.ChatMessages)
                 .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Chat_Mess__manag__29AC2CE0");
+                .HasConstraintName("FK__Chat_Mess__manag__178D7CA5");
 
             entity.HasOne(d => d.Receiver).WithMany(p => p.ChatMessageReceivers)
                 .HasForeignKey(d => d.ReceiverId)
-                .HasConstraintName("FK__Chat_Mess__recei__2B947552");
+                .HasConstraintName("FK__Chat_Mess__recei__1975C517");
 
             entity.HasOne(d => d.Sender).WithMany(p => p.ChatMessageSenders)
                 .HasForeignKey(d => d.SenderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Chat_Mess__sende__2AA05119");
+                .HasConstraintName("FK__Chat_Mess__sende__1881A0DE");
         });
 
         modelBuilder.Entity<Coupon>(entity =>
         {
-            entity.HasKey(e => e.CouponId).HasName("PK__Coupon__384AF1DAAC746407");
-
-            entity.ToTable("Coupon");
+            entity
+                .HasNoKey()
+                .ToTable("Coupon");
 
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.CouponId }, "Coupon_index_26");
 
-            entity.HasIndex(e => e.CouponCode, "UQ__Coupon__D34908004051B80B").IsUnique();
-
-            entity.Property(e => e.CouponId).HasColumnName("CouponID");
-            entity.Property(e => e.AcquiredTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
             entity.Property(e => e.CouponCode)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.CouponId).HasColumnName("CouponID");
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.UsedInOrderId).HasColumnName("UsedInOrderID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.CouponType).WithMany(p => p.Coupons)
-                .HasForeignKey(d => d.CouponTypeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Coupon__CouponTy__178D7CA5");
+            entity.HasOne(d => d.UsedInOrder).WithMany()
+                .HasForeignKey(d => d.UsedInOrderId)
+                .HasConstraintName("FK__Coupon__UsedInOr__6991A7CB");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Coupons)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Coupon__UserID__1881A0DE");
+                .HasConstraintName("FK__Coupon__UserID__689D8392");
         });
 
         modelBuilder.Entity<CouponType>(entity =>
         {
-            entity.HasKey(e => e.CouponTypeId).HasName("PK__CouponTy__095BEDBBA997B784");
-
-            entity.ToTable("CouponType");
+            entity
+                .HasNoKey()
+                .ToTable("CouponType");
 
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -304,112 +286,83 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Evoucher>(entity =>
         {
-            entity.HasKey(e => e.EvoucherId).HasName("PK__EVoucher__BC18D35E1464F1FB");
-
-            entity.ToTable("EVoucher");
+            entity
+                .HasNoKey()
+                .ToTable("EVoucher");
 
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.EvoucherId }, "EVoucher_index_27");
 
-            entity.HasIndex(e => e.EvoucherCode, "UQ__EVoucher__FFC16097F4A2727A").IsUnique();
-
-            entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
-            entity.Property(e => e.AcquiredTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
             entity.Property(e => e.EvoucherCode)
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("EVoucherCode");
+            entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
             entity.Property(e => e.EvoucherTypeId).HasColumnName("EVoucherTypeID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.EvoucherType).WithMany(p => p.Evouchers)
-                .HasForeignKey(d => d.EvoucherTypeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__EVoucher__EVouch__1975C517");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Evouchers)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__EVoucher__UserID__1A69E950");
+                .HasConstraintName("FK__EVoucher__UserID__6B79F03D");
         });
 
         modelBuilder.Entity<EvoucherRedeemLog>(entity =>
         {
-            entity.HasKey(e => e.RedeemId).HasName("PK__EVoucher__C9E468F725989671");
-
-            entity.ToTable("EVoucherRedeemLog");
+            entity
+                .HasNoKey()
+                .ToTable("EVoucherRedeemLog");
 
             entity.HasIndex(e => new { e.EvoucherId, e.ScannedAt }, "EVoucherRedeemLog_index_28");
 
             entity.HasIndex(e => new { e.UserId, e.ScannedAt }, "EVoucherRedeemLog_index_29");
 
-            entity.Property(e => e.RedeemId).HasColumnName("RedeemID");
             entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
-            entity.Property(e => e.ScannedAt).HasDefaultValueSql("('SYSUTCDATETIME()')");
+            entity.Property(e => e.RedeemId).HasColumnName("RedeemID");
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.TokenId).HasColumnName("TokenID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Evoucher).WithMany(p => p.EvoucherRedeemLogs)
-                .HasForeignKey(d => d.EvoucherId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__EVoucherR__EVouc__1C5231C2");
-
-            entity.HasOne(d => d.Token).WithMany(p => p.EvoucherRedeemLogs)
-                .HasForeignKey(d => d.TokenId)
-                .HasConstraintName("FK__EVoucherR__Token__1D4655FB");
-
-            entity.HasOne(d => d.User).WithMany(p => p.EvoucherRedeemLogs)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__EVoucherR__UserI__1E3A7A34");
+                .HasConstraintName("FK__EVoucherR__UserI__61F08603");
         });
 
         modelBuilder.Entity<EvoucherToken>(entity =>
         {
-            entity.HasKey(e => e.TokenId).HasName("PK__EVoucher__658FEE8A7AB9BACD");
+            entity
+                .HasNoKey()
+                .ToTable("EVoucherToken");
 
-            entity.ToTable("EVoucherToken");
-
-            entity.HasIndex(e => e.Token, "UQ__EVoucher__1EB4F81773C394B6").IsUnique();
-
-            entity.Property(e => e.TokenId).HasColumnName("TokenID");
             entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
             entity.Property(e => e.Token)
                 .HasMaxLength(64)
                 .IsUnicode(false);
-
-            entity.HasOne(d => d.Evoucher).WithMany(p => p.EvoucherTokens)
-                .HasForeignKey(d => d.EvoucherId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__EVoucherT__EVouc__1B5E0D89");
+            entity.Property(e => e.TokenId).HasColumnName("TokenID");
         });
 
         modelBuilder.Entity<EvoucherType>(entity =>
         {
-            entity.HasKey(e => e.EvoucherTypeId).HasName("PK__EVoucher__CC0CEC9B7111CD6C");
+            entity
+                .HasNoKey()
+                .ToTable("EVoucherType");
 
-            entity.ToTable("EVoucherType");
-
-            entity.Property(e => e.EvoucherTypeId).HasColumnName("EVoucherTypeID");
             entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.EvoucherTypeId).HasColumnName("EVoucherTypeID");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.ValueAmount).HasColumnType("decimal(10, 2)");
         });
 
         modelBuilder.Entity<Forum>(entity =>
         {
-            entity.HasKey(e => e.ForumId).HasName("PK__forums__69A2FA580B436E14");
+            entity.HasKey(e => e.ForumId).HasName("PK__forums__69A2FA58CFFF3479");
 
             entity.ToTable("forums");
-
-            entity.HasIndex(e => e.GameId, "UQ_forums_game_id").IsUnique();
 
             entity.HasIndex(e => e.GameId, "forums_index_15").IsUnique();
 
             entity.Property(e => e.ForumId).HasColumnName("forum_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Description)
                 .HasMaxLength(300)
                 .HasColumnName("description");
@@ -421,26 +374,24 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Game).WithOne(p => p.Forum)
                 .HasForeignKey<Forum>(d => d.GameId)
-                .HasConstraintName("FK__forums__game_id__0B27A5C0");
+                .HasConstraintName("FK__forums__game_id__6501FCD8");
         });
 
         modelBuilder.Entity<Game>(entity =>
         {
-            entity.HasKey(e => e.GameId).HasName("PK__games__FFE11FCF9BD32B00");
+            entity.HasKey(e => e.GameId).HasName("PK__games__FFE11FCFDAD0C969");
 
             entity.ToTable("games");
-
-            entity.HasIndex(e => e.NameZh, "IX_games_name_zh");
 
             entity.Property(e => e.GameId).HasColumnName("game_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Genre)
-                .HasMaxLength(30)
+                .HasMaxLength(50)
                 .HasColumnName("genre");
             entity.Property(e => e.Name)
-                .HasMaxLength(100)
+                .HasMaxLength(50)
                 .HasColumnName("name");
             entity.Property(e => e.NameZh)
                 .HasMaxLength(100)
@@ -449,7 +400,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<GameMetricDaily>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__game_met__3213E83F9C7B6040");
+            entity.HasKey(e => e.Id).HasName("PK__game_met__3213E83F3E2670CA");
 
             entity.ToTable("game_metric_daily");
 
@@ -461,14 +412,16 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.AggMethod)
-                .HasMaxLength(255)
+                .HasMaxLength(20)
+                .IsUnicode(false)
                 .HasColumnName("agg_method");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Date).HasColumnName("date");
             entity.Property(e => e.GameId).HasColumnName("game_id");
             entity.Property(e => e.MetricId).HasColumnName("metric_id");
             entity.Property(e => e.Quality)
-                .HasMaxLength(255)
+                .HasMaxLength(20)
+                .IsUnicode(false)
                 .HasColumnName("quality");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             entity.Property(e => e.Value)
@@ -477,20 +430,17 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Game).WithMany(p => p.GameMetricDailies)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__game_metr__game___02925FBF");
+                .HasConstraintName("FK__game_metr__game___09FE775D");
 
             entity.HasOne(d => d.Metric).WithMany(p => p.GameMetricDailies)
                 .HasForeignKey(d => d.MetricId)
-                .HasConstraintName("FK__game_metr__metri__038683F8");
+                .HasConstraintName("FK__game_metr__metri__0AF29B96");
         });
 
         modelBuilder.Entity<GameProductDetail>(entity =>
         {
-            entity.HasKey(e => e.ProductId);
+            entity.HasNoKey();
 
-            entity.Property(e => e.ProductId)
-                .ValueGeneratedNever()
-                .HasColumnName("product_id");
             entity.Property(e => e.DownloadLink)
                 .HasMaxLength(500)
                 .HasColumnName("download_link");
@@ -502,24 +452,16 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("platform_name");
             entity.Property(e => e.ProductDescription).HasColumnName("product_description");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ProductName)
                 .HasMaxLength(200)
                 .HasColumnName("product_name");
             entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
-
-            entity.HasOne(d => d.Product).WithOne(p => p.GameProductDetail)
-                .HasForeignKey<GameProductDetail>(d => d.ProductId)
-                .HasConstraintName("FK_GameDetails_ProductInfo");
-
-            entity.HasOne(d => d.Supplier).WithMany(p => p.GameProductDetails)
-                .HasForeignKey(d => d.SupplierId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_GameDetails_Supplier");
         });
 
         modelBuilder.Entity<GameSourceMap>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__game_sou__3213E83F09D919AD");
+            entity.HasKey(e => e.Id).HasName("PK__game_sou__3213E83F28A4459D");
 
             entity.ToTable("game_source_map");
 
@@ -536,40 +478,40 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Game).WithMany(p => p.GameSourceMaps)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__game_sour__game___00AA174D");
+                .HasConstraintName("FK__game_sour__game___08162EEB");
 
             entity.HasOne(d => d.Source).WithMany(p => p.GameSourceMaps)
                 .HasForeignKey(d => d.SourceId)
-                .HasConstraintName("FK__game_sour__sourc__019E3B86");
+                .HasConstraintName("FK__game_sour__sourc__090A5324");
         });
 
         modelBuilder.Entity<Group>(entity =>
         {
-            entity.HasKey(e => e.GroupId).HasName("PK__Groups__D57795A0040F83BA");
+            entity.HasKey(e => e.GroupId).HasName("PK__Groups__D57795A04E6A602C");
 
             entity.Property(e => e.GroupId).HasColumnName("group_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.GroupName)
-                .HasMaxLength(1)
+                .HasMaxLength(10)
                 .HasColumnName("group_name");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Groups)
                 .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__Groups__created___2C88998B");
+                .HasConstraintName("FK__Groups__created___1A69E950");
         });
 
         modelBuilder.Entity<GroupBlock>(entity =>
         {
-            entity.HasKey(e => e.BlockId).HasName("PK__Group_Bl__A67E647DC19BDA0A");
+            entity.HasKey(e => e.BlockId).HasName("PK__Group_Bl__A67E647D7FFDE20E");
 
             entity.ToTable("Group_Block");
 
-            entity.HasIndex(e => new { e.GroupId, e.UserId }, "Group_Block_index_7").IsUnique();
+            entity.HasIndex(e => new { e.GroupId, e.UserId }, "Group_Block_index_39").IsUnique();
 
-            entity.HasIndex(e => e.GroupId, "Group_Block_index_8");
+            entity.HasIndex(e => e.GroupId, "Group_Block_index_40");
 
-            entity.HasIndex(e => e.UserId, "Group_Block_index_9");
+            entity.HasIndex(e => e.UserId, "Group_Block_index_41");
 
             entity.Property(e => e.BlockId).HasColumnName("block_id");
             entity.Property(e => e.BlockedBy).HasColumnName("blocked_by");
@@ -579,30 +521,30 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.BlockedByNavigation).WithMany(p => p.GroupBlockBlockedByNavigations)
                 .HasForeignKey(d => d.BlockedBy)
-                .HasConstraintName("FK__Group_Blo__block__3335971A");
+                .HasConstraintName("FK__Group_Blo__block__2116E6DF");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupBlocks)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Group_Blo__group__314D4EA8");
+                .HasConstraintName("FK__Group_Blo__group__1F2E9E6D");
 
             entity.HasOne(d => d.User).WithMany(p => p.GroupBlockUsers)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Group_Blo__User___324172E1");
+                .HasConstraintName("FK__Group_Blo__User___2022C2A6");
         });
 
         modelBuilder.Entity<GroupChat>(entity =>
         {
-            entity.HasKey(e => e.GroupChatId).HasName("PK__Group_Ch__C4565A19F098E7B2");
+            entity.HasKey(e => e.GroupChatId).HasName("PK__Group_Ch__C4565A19CEDFBF18");
 
             entity.ToTable("Group_Chat");
 
-            entity.HasIndex(e => e.GroupId, "Group_Chat_index_5");
+            entity.HasIndex(e => e.GroupId, "Group_Chat_index_37");
 
-            entity.HasIndex(e => new { e.GroupId, e.SentAt }, "Group_Chat_index_6");
+            entity.HasIndex(e => new { e.GroupId, e.SentAt }, "Group_Chat_index_38");
 
             entity.Property(e => e.GroupChatId).HasColumnName("group_chat_id");
             entity.Property(e => e.GroupChatContent)
-                .HasMaxLength(1)
+                .HasMaxLength(255)
                 .HasColumnName("group_chat_content");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
             entity.Property(e => e.IsSent)
@@ -613,16 +555,16 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupChats)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Group_Cha__group__2F650636");
+                .HasConstraintName("FK__Group_Cha__group__1D4655FB");
 
             entity.HasOne(d => d.Sender).WithMany(p => p.GroupChats)
                 .HasForeignKey(d => d.SenderId)
-                .HasConstraintName("FK__Group_Cha__sende__30592A6F");
+                .HasConstraintName("FK__Group_Cha__sende__1E3A7A34");
         });
 
         modelBuilder.Entity<GroupMember>(entity =>
         {
-            entity.HasKey(e => new { e.GroupId, e.UserId }).HasName("PK__Group_Me__C7714CB903B19631");
+            entity.HasKey(e => new { e.GroupId, e.UserId }).HasName("PK__Group_Me__C7714CB9F56F94CE");
 
             entity.ToTable("Group_Member");
 
@@ -634,17 +576,17 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Group).WithMany(p => p.GroupMembers)
                 .HasForeignKey(d => d.GroupId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Group_Mem__group__2D7CBDC4");
+                .HasConstraintName("FK__Group_Mem__group__1B5E0D89");
 
             entity.HasOne(d => d.User).WithMany(p => p.GroupMembers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Group_Mem__User___2E70E1FD");
+                .HasConstraintName("FK__Group_Mem__User___1C5231C2");
         });
 
         modelBuilder.Entity<LeaderboardSnapshot>(entity =>
         {
-            entity.HasKey(e => e.SnapshotId).HasName("PK__leaderbo__C27CFBF7BC5C353C");
+            entity.HasKey(e => e.SnapshotId).HasName("PK__leaderbo__C27CFBF749AA0C32");
 
             entity.ToTable("leaderboard_snapshots");
 
@@ -661,23 +603,24 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnType("decimal(18, 4)")
                 .HasColumnName("index_value");
             entity.Property(e => e.Period)
-                .HasMaxLength(255)
+                .HasMaxLength(20)
+                .IsUnicode(false)
                 .HasColumnName("period");
             entity.Property(e => e.Rank).HasColumnName("rank");
             entity.Property(e => e.Ts).HasColumnName("ts");
 
             entity.HasOne(d => d.Game).WithMany(p => p.LeaderboardSnapshots)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__leaderboa__game___056ECC6A");
+                .HasConstraintName("FK__leaderboa__game___062DE679");
         });
 
         modelBuilder.Entity<ManagerDatum>(entity =>
         {
-            entity.HasKey(e => e.ManagerId).HasName("PK__ManagerD__AE5FEFAD8366CA9D");
+            entity.HasKey(e => e.ManagerId).HasName("PK__ManagerD__AE5FEFAD638D88FF");
 
-            entity.HasIndex(e => e.ManagerEmail, "UQ__ManagerD__0890969E55245EF4").IsUnique();
+            entity.HasIndex(e => e.ManagerEmail, "UQ__ManagerD__0890969EC9C76047").IsUnique();
 
-            entity.HasIndex(e => e.ManagerAccount, "UQ__ManagerD__62B5E211ADDDC932").IsUnique();
+            entity.HasIndex(e => e.ManagerAccount, "UQ__ManagerD__62B5E21119A93877").IsUnique();
 
             entity.Property(e => e.ManagerId)
                 .ValueGeneratedNever()
@@ -709,14 +652,14 @@ public partial class GameSpacedatabaseContext : DbContext
                     r => r.HasOne<ManagerRolePermission>().WithMany()
                         .HasForeignKey("ManagerRoleId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__ManagerRo__Manag__7EC1CEDB"),
+                        .HasConstraintName("FK__ManagerRo__Manag__0CDAE408"),
                     l => l.HasOne<ManagerDatum>().WithMany()
                         .HasForeignKey("ManagerId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__ManagerRo__Manag__7DCDAAA2"),
+                        .HasConstraintName("FK__ManagerRo__Manag__0BE6BFCF"),
                     j =>
                     {
-                        j.HasKey("ManagerId", "ManagerRoleId").HasName("PK__ManagerR__6270897E1786AF08");
+                        j.HasKey("ManagerId", "ManagerRoleId").HasName("PK__ManagerR__6270897EA52FCCCF");
                         j.ToTable("ManagerRole");
                         j.IndexerProperty<int>("ManagerId").HasColumnName("Manager_Id");
                         j.IndexerProperty<int>("ManagerRoleId").HasColumnName("ManagerRole_Id");
@@ -725,7 +668,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<ManagerRolePermission>(entity =>
         {
-            entity.HasKey(e => e.ManagerRoleId).HasName("PK__ManagerR__C2F66D3D6305A122");
+            entity.HasKey(e => e.ManagerRoleId).HasName("PK__ManagerR__C2F66D3DC40C7408");
 
             entity.ToTable("ManagerRolePermission");
 
@@ -741,26 +684,32 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<MemberSalesProfile>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__MemberSa__206D9170DB01B726");
+            entity.HasKey(e => e.UserId).HasName("PK__MemberSa__206D9170B9BF5CEA");
 
             entity.ToTable("MemberSalesProfile");
 
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("User_Id");
-            entity.Property(e => e.BankAccountNumber).HasMaxLength(255);
+            entity.Property(e => e.BankAccountNumber)
+                .HasMaxLength(30)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.User).WithOne(p => p.MemberSalesProfile)
                 .HasForeignKey<MemberSalesProfile>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MemberSal__User___7BE56230");
+                .HasConstraintName("FK__MemberSal__User___119F9925");
         });
 
         modelBuilder.Entity<MerchType>(entity =>
         {
-            entity.ToTable("MerchType");
+            entity
+                .HasNoKey()
+                .ToTable("MerchType");
 
-            entity.Property(e => e.MerchTypeId).HasColumnName("merch_type_id");
+            entity.Property(e => e.MerchTypeId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("merch_type_id");
             entity.Property(e => e.MerchTypeName)
                 .HasMaxLength(50)
                 .HasColumnName("merch_type_name");
@@ -768,11 +717,9 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Metric>(entity =>
         {
-            entity.HasKey(e => e.MetricId).HasName("PK__metrics__13D5DCA4426BC063");
+            entity.HasKey(e => e.MetricId).HasName("PK__metrics__13D5DCA4360F643C");
 
             entity.ToTable("metrics");
-
-            entity.HasIndex(e => new { e.SourceId, e.Code }, "UQ_metrics_source_code").IsUnique();
 
             entity.HasIndex(e => new { e.SourceId, e.Code }, "metrics_index_0").IsUnique();
 
@@ -783,7 +730,7 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("code");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Description)
-                .HasMaxLength(150)
+                .HasMaxLength(50)
                 .HasColumnName("description");
             entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.SourceId).HasColumnName("source_id");
@@ -794,62 +741,53 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Source).WithMany(p => p.Metrics)
                 .HasForeignKey(d => d.SourceId)
-                .HasConstraintName("FK__metrics__source___7FB5F314");
+                .HasConstraintName("FK__metrics__source___0DCF0841");
         });
 
         modelBuilder.Entity<MetricSource>(entity =>
         {
-            entity.HasKey(e => e.SourceId).HasName("PK__metric_s__3035A9B6A01E7136");
+            entity.HasKey(e => e.SourceId).HasName("PK__metric_s__3035A9B60C38D610");
 
             entity.ToTable("metric_sources");
 
             entity.Property(e => e.SourceId).HasColumnName("source_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
             entity.Property(e => e.Note)
-                .HasMaxLength(200)
+                .HasMaxLength(50)
                 .HasColumnName("note");
         });
 
         modelBuilder.Entity<MiniGame>(entity =>
         {
-            entity.HasKey(e => e.PlayId).HasName("PK__MiniGame__7CA45E842B3C968E");
-
-            entity.ToTable("MiniGame");
+            entity
+                .HasNoKey()
+                .ToTable("MiniGame");
 
             entity.HasIndex(e => new { e.UserId, e.StartTime }, "MiniGame_index_24");
 
             entity.HasIndex(e => new { e.PetId, e.StartTime }, "MiniGame_index_25");
 
-            entity.Property(e => e.PlayId).HasColumnName("PlayID");
+            entity.Property(e => e.CouponGained)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.PetId).HasColumnName("PetID");
-            entity.Property(e => e.Result)
-                .HasMaxLength(10)
-                .HasDefaultValue("Unknown");
-            entity.Property(e => e.SpeedMultiplier)
-                .HasDefaultValue(1m)
-                .HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.StartTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
+            entity.Property(e => e.PlayId).HasColumnName("PlayID");
+            entity.Property(e => e.Result).HasMaxLength(10);
+            entity.Property(e => e.SpeedMultiplier).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Pet).WithMany(p => p.MiniGames)
-                .HasForeignKey(d => d.PetId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MiniGame__PetID__1699586C");
-
-            entity.HasOne(d => d.User).WithMany(p => p.MiniGames)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MiniGame__UserID__15A53433");
+                .HasConstraintName("FK__MiniGame__UserID__6F7F8B4B");
         });
 
         modelBuilder.Entity<Mute>(entity =>
         {
-            entity.HasKey(e => e.MuteId).HasName("PK__Mutes__84EE96EB706DFF1A");
+            entity.HasKey(e => e.MuteId).HasName("PK__Mutes__84EE96EB9DD35443");
 
             entity.Property(e => e.MuteId).HasColumnName("mute_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -858,27 +796,27 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("is_active");
             entity.Property(e => e.ManagerId).HasColumnName("manager_id");
             entity.Property(e => e.MuteName)
-                .HasMaxLength(100)
+                .HasMaxLength(10)
                 .HasColumnName("mute_name");
 
             entity.HasOne(d => d.Manager).WithMany(p => p.Mutes)
                 .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Mutes__manager_i__2116E6DF");
+                .HasConstraintName("FK__Mutes__manager_i__0EF836A4");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__E059842F41D185D1");
+            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__E059842FEBC56A47");
 
             entity.Property(e => e.NotificationId).HasColumnName("notification_id");
             entity.Property(e => e.ActionId).HasColumnName("action_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
             entity.Property(e => e.NotificationMessage)
-                .HasMaxLength(100)
+                .HasMaxLength(255)
                 .HasColumnName("notification_message");
             entity.Property(e => e.NotificationTitle)
-                .HasMaxLength(100)
+                .HasMaxLength(20)
                 .HasColumnName("notification_title");
             entity.Property(e => e.SenderId).HasColumnName("sender_id");
             entity.Property(e => e.SenderManagerId).HasColumnName("sender_manager_id");
@@ -887,47 +825,50 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Action).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.ActionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__actio__1293BD5E");
+                .HasConstraintName("FK__Notificat__actio__11D4A34F");
 
             entity.HasOne(d => d.Group).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Notificat__group__26CFC035");
+                .HasConstraintName("FK__Notificat__group__14B10FFA");
 
             entity.HasOne(d => d.Sender).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SenderId)
-                .HasConstraintName("FK__Notificat__sende__24E777C3");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Notificat__sende__12C8C788");
 
             entity.HasOne(d => d.SenderManager).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SenderManagerId)
-                .HasConstraintName("FK__Notificat__sende__25DB9BFC");
+                .HasConstraintName("FK__Notificat__sende__13BCEBC1");
 
             entity.HasOne(d => d.Source).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SourceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__sourc__1387E197");
+                .HasConstraintName("FK__Notificat__sourc__10E07F16");
         });
 
         modelBuilder.Entity<NotificationAction>(entity =>
         {
-            entity.HasKey(e => e.ActionId).HasName("PK__Notifica__74EFC217A15400CA");
+            entity.HasKey(e => e.ActionId).HasName("PK__Notifica__74EFC2176383B96B");
 
             entity.ToTable("Notification_Actions");
 
-            entity.HasIndex(e => e.ActionName, "Notification_Actions_index_0").IsUnique();
+            entity.HasIndex(e => e.ActionName, "Notification_Actions_index_32").IsUnique();
 
             entity.Property(e => e.ActionId).HasColumnName("action_id");
             entity.Property(e => e.ActionName)
-                .HasMaxLength(100)
+                .HasMaxLength(10)
                 .HasColumnName("action_name");
         });
 
         modelBuilder.Entity<NotificationRecipient>(entity =>
         {
-            entity.HasKey(e => e.RecipientId).HasName("PK__Notifica__FA0A4027A76D414B");
+            entity.HasKey(e => e.RecipientId).HasName("PK__Notifica__FA0A4027FE384C6D");
 
             entity.ToTable("Notification_Recipients");
 
             entity.HasIndex(e => new { e.UserId, e.IsRead, e.RecipientId }, "IX_Inbox");
+
+            entity.HasIndex(e => new { e.NotificationId, e.UserId }, "Notification_Recipients_index_33").IsUnique();
 
             entity.Property(e => e.RecipientId).HasColumnName("recipient_id");
             entity.Property(e => e.IsRead).HasColumnName("is_read");
@@ -938,58 +879,56 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Notification).WithMany(p => p.NotificationRecipients)
                 .HasForeignKey(d => d.NotificationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__notif__119F9925");
+                .HasConstraintName("FK__Notificat__notif__15A53433");
 
             entity.HasOne(d => d.User).WithMany(p => p.NotificationRecipients)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__User___28B808A7");
+                .HasConstraintName("FK__Notificat__User___1699586C");
         });
 
         modelBuilder.Entity<NotificationSource>(entity =>
         {
-            entity.HasKey(e => e.SourceId).HasName("PK__Notifica__3035A9B607A7A5F0");
+            entity.HasKey(e => e.SourceId).HasName("PK__Notifica__3035A9B6AB2C5CDE");
 
             entity.ToTable("Notification_Sources");
 
             entity.Property(e => e.SourceId).HasColumnName("source_id");
             entity.Property(e => e.SourceName)
-                .HasMaxLength(100)
+                .HasMaxLength(10)
                 .HasColumnName("source_name");
         });
 
         modelBuilder.Entity<OfficialStoreRanking>(entity =>
         {
-            entity.HasKey(e => e.RankingId).HasName("PK_Official_StoreRanking");
+            entity
+                .HasNoKey()
+                .ToTable("Official_Store_Ranking");
 
-            entity.ToTable("Official_Store_Ranking");
-
-            entity.Property(e => e.RankingId).HasColumnName("ranking_id");
             entity.Property(e => e.PeriodType)
                 .HasMaxLength(20)
                 .HasColumnName("period_type");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.RankingDate).HasColumnName("ranking_date");
+            entity.Property(e => e.RankingId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("ranking_id");
             entity.Property(e => e.RankingMetric)
                 .HasMaxLength(50)
                 .HasColumnName("ranking_metric");
             entity.Property(e => e.RankingPosition).HasColumnName("ranking_position");
             entity.Property(e => e.RankingUpdatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasDefaultValueSql("(getdate())")
                 .HasColumnName("ranking_updated_at");
             entity.Property(e => e.TradingAmount)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("trading_amount");
             entity.Property(e => e.TradingVolume).HasColumnName("trading_volume");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.OfficialStoreRankings)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK_OSR_ProductInfo");
         });
 
         modelBuilder.Entity<OrderAddress>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__OrderAdd__46596229DBE3931D");
+            entity.HasKey(e => e.OrderId).HasName("PK__OrderAdd__465962297AF1A4A5");
 
             entity.Property(e => e.OrderId)
                 .ValueGeneratedNever()
@@ -1015,16 +954,11 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Zipcode)
                 .HasMaxLength(10)
                 .HasColumnName("zipcode");
-
-            entity.HasOne(d => d.Order).WithOne(p => p.OrderAddress)
-                .HasForeignKey<OrderAddress>(d => d.OrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_OrderAddresses_Order");
         });
 
         modelBuilder.Entity<OrderInfo>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__OrderInf__46596229184FD12E");
+            entity.HasKey(e => e.OrderId).HasName("PK__OrderInf__46596229C3B9E39E");
 
             entity.ToTable("OrderInfo");
 
@@ -1064,13 +998,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<OrderItem>(entity =>
         {
-            entity.HasKey(e => e.ItemId).HasName("PK__OrderIte__52020FDDEA8DA3E3");
-
-            entity.HasIndex(e => e.OrderId, "IX_OrderItems_OrderId");
-
-            entity.HasIndex(e => e.OrderId, "IX_OrderItems_OrderId_Cover");
-
-            entity.HasIndex(e => new { e.OrderId, e.LineNo }, "UQ_OrderItems_Order_Line").IsUnique();
+            entity.HasKey(e => e.ItemId).HasName("PK__OrderIte__52020FDD2D390A7A");
 
             entity.Property(e => e.ItemId).HasColumnName("item_id");
             entity.Property(e => e.LineNo).HasColumnName("line_no");
@@ -1078,8 +1006,8 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.Subtotal)
-                .HasComputedColumnSql("([unit_price]*[quantity])", true)
-                .HasColumnType("decimal(29, 2)")
+                .HasComputedColumnSql("(CONVERT([decimal](18,2),[unit_price]*[quantity]))", true)
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("subtotal");
             entity.Property(e => e.UnitPrice)
                 .HasColumnType("decimal(18, 2)")
@@ -1088,16 +1016,14 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_OrderItems_Order");
+                .HasConstraintName("FK__OrderItem__order__5A4F643B");
         });
 
         modelBuilder.Entity<OrderStatusHistory>(entity =>
         {
-            entity.HasKey(e => e.HistoryId).HasName("PK__OrderSta__096AA2E982D02A48");
+            entity.HasKey(e => e.HistoryId).HasName("PK__OrderSta__096AA2E9A89BA70E");
 
             entity.ToTable("OrderStatusHistory");
-
-            entity.HasIndex(e => e.OrderId, "IX_OrderStatusHistory_OrderId");
 
             entity.Property(e => e.HistoryId).HasColumnName("history_id");
             entity.Property(e => e.ChangedAt)
@@ -1114,24 +1040,12 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ToStatus)
                 .HasMaxLength(30)
                 .HasColumnName("to_status");
-
-            entity.HasOne(d => d.ChangedByNavigation).WithMany(p => p.OrderStatusHistories)
-                .HasForeignKey(d => d.ChangedBy)
-                .HasConstraintName("FK_OrderStatusHistory_Manager");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.OrderStatusHistories)
-                .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_OrderStatusHistory_Order");
         });
 
         modelBuilder.Entity<OtherProductDetail>(entity =>
         {
-            entity.HasKey(e => e.ProductId);
+            entity.HasNoKey();
 
-            entity.Property(e => e.ProductId)
-                .ValueGeneratedNever()
-                .HasColumnName("product_id");
             entity.Property(e => e.Color)
                 .HasMaxLength(50)
                 .HasColumnName("color");
@@ -1146,6 +1060,7 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("material");
             entity.Property(e => e.MerchTypeId).HasColumnName("merch_type_id");
             entity.Property(e => e.ProductDescription).HasColumnName("product_description");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ProductName)
                 .HasMaxLength(200)
                 .HasColumnName("product_name");
@@ -1157,29 +1072,11 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Weight)
                 .HasMaxLength(50)
                 .HasColumnName("weight");
-
-            entity.HasOne(d => d.MerchType).WithMany(p => p.OtherProductDetails)
-                .HasForeignKey(d => d.MerchTypeId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("FK_OtherDetails_MerchType");
-
-            entity.HasOne(d => d.Product).WithOne(p => p.OtherProductDetail)
-                .HasForeignKey<OtherProductDetail>(d => d.ProductId)
-                .HasConstraintName("FK_OtherDetails_ProductInfo");
-
-            entity.HasOne(d => d.Supplier).WithMany(p => p.OtherProductDetails)
-                .HasForeignKey(d => d.SupplierId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_OtherDetails_Supplier");
         });
 
         modelBuilder.Entity<PaymentTransaction>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__PaymentT__ED1FC9EAA1E2E210");
-
-            entity.HasIndex(e => e.OrderId, "IX_PaymentTransactions_OrderId");
-
-            entity.HasIndex(e => new { e.OrderId, e.Status }, "IX_PaymentTransactions_Order_Status");
+            entity.HasKey(e => e.PaymentId).HasName("PK__PaymentT__ED1FC9EA68A49FF1");
 
             entity.Property(e => e.PaymentId).HasColumnName("payment_id");
             entity.Property(e => e.Amount)
@@ -1206,46 +1103,37 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.TxnType)
                 .HasMaxLength(30)
                 .HasColumnName("txn_type");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.PaymentTransactions)
-                .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PaymentTransactions_Order");
         });
 
         modelBuilder.Entity<Pet>(entity =>
         {
-            entity.HasKey(e => e.PetId).HasName("PK__Pet__48E53802B70849C0");
-
-            entity.ToTable("Pet");
+            entity
+                .HasNoKey()
+                .ToTable("Pet");
 
             entity.HasIndex(e => e.UserId, "Pet_index_23");
 
+            entity.Property(e => e.BackgroundColor).HasMaxLength(50);
             entity.Property(e => e.PetId).HasColumnName("PetID");
-            entity.Property(e => e.BackgroundColor)
-                .HasMaxLength(50)
-                .HasDefaultValue("粉藍");
-            entity.Property(e => e.BackgroundColorChangedTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
-            entity.Property(e => e.ColorChangedTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
-            entity.Property(e => e.LevelUpTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
-            entity.Property(e => e.PetName)
-                .HasMaxLength(50)
-                .HasDefaultValue("小可愛");
-            entity.Property(e => e.PointsChangedTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
+            entity.Property(e => e.PetName).HasMaxLength(50);
+            entity.Property(e => e.PointsChangedBackgroundColor).HasColumnName("PointsChanged_BackgroundColor");
+            entity.Property(e => e.PointsChangedSkinColor).HasColumnName("PointsChanged_SkinColor");
+            entity.Property(e => e.PointsGainedLevelUp).HasColumnName("PointsGained_LevelUp");
+            entity.Property(e => e.PointsGainedTimeLevelUp).HasColumnName("PointsGainedTime_LevelUp");
             entity.Property(e => e.SkinColor)
-                .HasMaxLength(50)
-                .HasDefaultValue("#ADD8E6");
+                .HasMaxLength(10)
+                .IsUnicode(false);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Pets)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Pet__UserID__14B10FFA");
+                .HasConstraintName("FK__Pet__UserID__6E8B6712");
         });
 
         modelBuilder.Entity<PlayerMarketOrderInfo>(entity =>
         {
-            entity.HasKey(e => e.POrderId).HasName("PK__PlayerMa__AACAAD70386B7CAF");
+            entity.HasKey(e => e.POrderId).HasName("PK__PlayerMa__AACAAD70C933BAFC");
 
             entity.ToTable("PlayerMarketOrderInfo");
 
@@ -1267,11 +1155,23 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.PQuantity).HasColumnName("p_quantity");
             entity.Property(e => e.PUnitPrice).HasColumnName("p_unit_price");
             entity.Property(e => e.SellerId).HasColumnName("seller_id");
+
+            entity.HasOne(d => d.Buyer).WithMany(p => p.PlayerMarketOrderInfoBuyers)
+                .HasForeignKey(d => d.BuyerId)
+                .HasConstraintName("FK__PlayerMar__buyer__0A338187");
+
+            entity.HasOne(d => d.PProduct).WithMany(p => p.PlayerMarketOrderInfos)
+                .HasForeignKey(d => d.PProductId)
+                .HasConstraintName("FK__PlayerMar__p_pro__084B3915");
+
+            entity.HasOne(d => d.Seller).WithMany(p => p.PlayerMarketOrderInfoSellers)
+                .HasForeignKey(d => d.SellerId)
+                .HasConstraintName("FK__PlayerMar__selle__093F5D4E");
         });
 
         modelBuilder.Entity<PlayerMarketOrderTradepage>(entity =>
         {
-            entity.HasKey(e => e.POrderTradepageId).HasName("PK__PlayerMa__4E2C726DA64EE618");
+            entity.HasKey(e => e.POrderTradepageId).HasName("PK__PlayerMa__4E2C726D362DA57F");
 
             entity.ToTable("PlayerMarketOrderTradepage");
 
@@ -1284,22 +1184,34 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.POrderPlatformFee).HasColumnName("p_order_platform_fee");
             entity.Property(e => e.PProductId).HasColumnName("p_product_id");
             entity.Property(e => e.SellerTransferredAt).HasColumnName("seller_transferred_at");
+
+            entity.HasOne(d => d.POrder).WithMany(p => p.PlayerMarketOrderTradepages)
+                .HasForeignKey(d => d.POrderId)
+                .HasConstraintName("FK__PlayerMar__p_ord__0B27A5C0");
+
+            entity.HasOne(d => d.PProduct).WithMany(p => p.PlayerMarketOrderTradepages)
+                .HasForeignKey(d => d.PProductId)
+                .HasConstraintName("FK__PlayerMar__p_pro__0C1BC9F9");
         });
 
         modelBuilder.Entity<PlayerMarketProductImg>(entity =>
         {
-            entity.HasKey(e => e.PProductImgId).HasName("PK__PlayerMa__75AAE6F0158EFF22");
+            entity.HasKey(e => e.PProductImgId).HasName("PK__PlayerMa__75AAE6F0C6CBADFB");
 
             entity.Property(e => e.PProductImgId)
                 .ValueGeneratedNever()
                 .HasColumnName("p_product_img_id");
             entity.Property(e => e.PProductId).HasColumnName("p_product_id");
             entity.Property(e => e.PProductImgUrl).HasColumnName("p_product_img_url");
+
+            entity.HasOne(d => d.PProduct).WithMany(p => p.PlayerMarketProductImgs)
+                .HasForeignKey(d => d.PProductId)
+                .HasConstraintName("FK__PlayerMar__p_pro__075714DC");
         });
 
         modelBuilder.Entity<PlayerMarketProductInfo>(entity =>
         {
-            entity.HasKey(e => e.PProductId).HasName("PK__PlayerMa__A33C8165042F3EC0");
+            entity.HasKey(e => e.PProductId).HasName("PK__PlayerMa__A33C81652AD0DD1E");
 
             entity.ToTable("PlayerMarketProductInfo");
 
@@ -1331,11 +1243,15 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.SellerId).HasColumnName("seller_id");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Seller).WithMany(p => p.PlayerMarketProductInfos)
+                .HasForeignKey(d => d.SellerId)
+                .HasConstraintName("FK__PlayerMar__selle__0662F0A3");
         });
 
         modelBuilder.Entity<PlayerMarketRanking>(entity =>
         {
-            entity.HasKey(e => e.PRankingId).HasName("PK__PlayerMa__2B50ED32732477C5");
+            entity.HasKey(e => e.PRankingId).HasName("PK__PlayerMa__2B50ED32026B4213");
 
             entity.ToTable("PlayerMarketRanking");
 
@@ -1356,11 +1272,15 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("p_trading_amount");
             entity.Property(e => e.PTradingVolume).HasColumnName("p_trading_volume");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(d => d.PProduct).WithMany(p => p.PlayerMarketRankings)
+                .HasForeignKey(d => d.PProductId)
+                .HasConstraintName("FK__PlayerMar__p_pro__047AA831");
         });
 
         modelBuilder.Entity<PlayerMarketTradeMsg>(entity =>
         {
-            entity.HasKey(e => e.TradeMsgId).HasName("PK__PlayerMa__C2FA77A2B358B180");
+            entity.HasKey(e => e.TradeMsgId).HasName("PK__PlayerMa__C2FA77A23EC155AE");
 
             entity.ToTable("PlayerMarketTradeMsg");
 
@@ -1375,11 +1295,15 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasMaxLength(1)
                 .HasColumnName("msg_from");
             entity.Property(e => e.POrderTradepageId).HasColumnName("p_order_tradepage_id");
+
+            entity.HasOne(d => d.POrderTradepage).WithMany(p => p.PlayerMarketTradeMsgs)
+                .HasForeignKey(d => d.POrderTradepageId)
+                .HasConstraintName("FK__PlayerMar__p_ord__0D0FEE32");
         });
 
         modelBuilder.Entity<PopularityIndexDaily>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__populari__3213E83F1F6E3B21");
+            entity.HasKey(e => e.Id).HasName("PK__populari__3213E83F08C19225");
 
             entity.ToTable("popularity_index_daily");
 
@@ -1397,12 +1321,12 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Game).WithMany(p => p.PopularityIndexDailies)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__popularit__game___047AA831");
+                .HasConstraintName("FK__popularit__game___0539C240");
         });
 
         modelBuilder.Entity<Post>(entity =>
         {
-            entity.HasKey(e => e.PostId).HasName("PK__posts__3ED787667664226C");
+            entity.HasKey(e => e.PostId).HasName("PK__posts__3ED78766F2C1BEAE");
 
             entity.ToTable("posts");
 
@@ -1413,7 +1337,9 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasIndex(e => new { e.Status, e.CreatedAt }, "posts_index_13");
 
             entity.Property(e => e.PostId).HasColumnName("post_id");
-            entity.Property(e => e.BodyMd).HasColumnName("body_md");
+            entity.Property(e => e.BodyMd)
+                .HasMaxLength(3000)
+                .HasColumnName("body_md");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.GameId).HasColumnName("game_id");
@@ -1424,10 +1350,10 @@ public partial class GameSpacedatabaseContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("status");
             entity.Property(e => e.Title)
-                .HasMaxLength(200)
+                .HasMaxLength(50)
                 .HasColumnName("title");
             entity.Property(e => e.Tldr)
-                .HasMaxLength(500)
+                .HasMaxLength(50)
                 .HasColumnName("tldr");
             entity.Property(e => e.Type)
                 .HasMaxLength(50)
@@ -1436,16 +1362,16 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__posts__created_b__075714DC");
+                .HasConstraintName("FK__posts__created_b__0169315C");
 
             entity.HasOne(d => d.Game).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__posts__game_id__0662F0A3");
+                .HasConstraintName("FK__posts__game_id__07220AB2");
         });
 
         modelBuilder.Entity<PostMetricSnapshot>(entity =>
         {
-            entity.HasKey(e => e.PostId).HasName("PK__post_met__3ED787667CA8D1EA");
+            entity.HasKey(e => e.PostId).HasName("PK__post_met__3ED7876644BB3452");
 
             entity.ToTable("post_metric_snapshot");
 
@@ -1462,17 +1388,17 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Game).WithMany(p => p.PostMetricSnapshots)
                 .HasForeignKey(d => d.GameId)
-                .HasConstraintName("FK__post_metr__game___093F5D4E");
+                .HasConstraintName("FK__post_metr__game___035179CE");
 
             entity.HasOne(d => d.Post).WithOne(p => p.PostMetricSnapshot)
                 .HasForeignKey<PostMetricSnapshot>(d => d.PostId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__post_metr__post___084B3915");
+                .HasConstraintName("FK__post_metr__post___025D5595");
         });
 
         modelBuilder.Entity<PostSource>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__post_sou__3213E83FBE40E755");
+            entity.HasKey(e => e.Id).HasName("PK__post_sou__3213E83FA633BB17");
 
             entity.ToTable("post_sources");
 
@@ -1482,63 +1408,56 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.PostId).HasColumnName("post_id");
             entity.Property(e => e.SourceName)
-                .HasMaxLength(200)
+                .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("source_name");
             entity.Property(e => e.Url)
-                .HasMaxLength(1000)
+                .HasMaxLength(300)
                 .IsUnicode(false)
                 .HasColumnName("url");
 
             entity.HasOne(d => d.Post).WithMany(p => p.PostSources)
                 .HasForeignKey(d => d.PostId)
-                .HasConstraintName("FK__post_sour__post___0A338187");
+                .HasConstraintName("FK__post_sour__post___04459E07");
         });
 
         modelBuilder.Entity<ProductCode>(entity =>
         {
-            entity.HasKey(e => e.ProductCode1);
-
-            entity.ToTable("ProductCode");
+            entity
+                .HasNoKey()
+                .ToTable("ProductCode");
 
             entity.Property(e => e.ProductCode1)
                 .HasMaxLength(50)
                 .HasColumnName("product_code");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductCodes)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK_ProductCode_ProductInfo");
         });
 
         modelBuilder.Entity<ProductImage>(entity =>
         {
-            entity.HasKey(e => e.ProductimgId);
+            entity.HasNoKey();
 
-            entity.Property(e => e.ProductimgId).HasColumnName("productimg_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ProductimgAltText)
                 .HasMaxLength(255)
                 .HasColumnName("productimg_alt_text");
+            entity.Property(e => e.ProductimgId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("productimg_id");
             entity.Property(e => e.ProductimgUpdatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasDefaultValueSql("(getdate())")
                 .HasColumnName("productimg_updated_at");
             entity.Property(e => e.ProductimgUrl)
                 .HasMaxLength(500)
                 .HasColumnName("productimg_url");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK_ProductImages_ProductInfo");
         });
 
         modelBuilder.Entity<ProductInfo>(entity =>
         {
-            entity.HasKey(e => e.ProductId);
+            entity
+                .HasNoKey()
+                .ToTable("ProductInfo");
 
-            entity.ToTable("ProductInfo");
-
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.CurrencyCode)
                 .HasMaxLength(10)
                 .HasDefaultValue("TWD")
@@ -1547,11 +1466,14 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
             entity.Property(e => e.ProductCreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasDefaultValueSql("(getdate())")
                 .HasColumnName("product_created_at");
             entity.Property(e => e.ProductCreatedBy)
                 .HasMaxLength(50)
                 .HasColumnName("product_created_by");
+            entity.Property(e => e.ProductId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("product_id");
             entity.Property(e => e.ProductName)
                 .HasMaxLength(200)
                 .HasColumnName("product_name");
@@ -1567,48 +1489,44 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<ProductInfoAuditLog>(entity =>
         {
-            entity.HasKey(e => e.LogId);
+            entity
+                .HasNoKey()
+                .ToTable("ProductInfoAuditLog");
 
-            entity.ToTable("ProductInfoAuditLog");
-
-            entity.Property(e => e.LogId).HasColumnName("log_id");
             entity.Property(e => e.ActionType)
                 .HasMaxLength(30)
                 .HasColumnName("action_type");
             entity.Property(e => e.ChangedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasDefaultValueSql("(getdate())")
                 .HasColumnName("changed_at");
             entity.Property(e => e.FieldName)
                 .HasMaxLength(100)
                 .HasColumnName("field_name");
+            entity.Property(e => e.LogId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("log_id");
             entity.Property(e => e.ManagerId).HasColumnName("Manager_Id");
             entity.Property(e => e.NewValue).HasColumnName("new_value");
             entity.Property(e => e.OldValue).HasColumnName("old_value");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductInfoAuditLogs)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK_Audit_ProductInfo");
+            entity.HasOne(d => d.Manager).WithMany()
+                .HasForeignKey(d => d.ManagerId)
+                .HasConstraintName("FK__ProductIn__Manag__038683F8");
         });
 
         modelBuilder.Entity<Reaction>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__reaction__3213E83FC5B81BAC");
+            entity.HasKey(e => e.Id).HasName("PK__reaction__3213E83F940B04A4");
 
             entity.ToTable("reactions");
-
-            entity.HasIndex(e => new { e.TargetType, e.TargetId }, "IX_reactions_target");
-
-            entity.HasIndex(e => new { e.UserId, e.TargetType, e.TargetId, e.Kind }, "UQ_reactions_user_target_kind").IsUnique();
 
             entity.HasIndex(e => new { e.UserId, e.TargetType, e.TargetId, e.Kind }, "reactions_index_18").IsUnique();
 
             entity.HasIndex(e => new { e.TargetType, e.TargetId }, "reactions_index_19");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Kind)
                 .HasMaxLength(50)
                 .IsUnicode(false)
@@ -1622,14 +1540,16 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Reactions)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__reactions__User___10E07F16");
+                .HasConstraintName("FK__reactions__User___6ABAD62E");
         });
 
         modelBuilder.Entity<Relation>(entity =>
         {
-            entity.HasKey(e => e.RelationId).HasName("PK__Relation__C409F32355E06628");
+            entity.HasKey(e => e.RelationId).HasName("PK__Relation__C409F3232DD45963");
 
             entity.ToTable("Relation");
+
+            entity.HasIndex(e => new { e.UserId, e.FriendId }, "Relation_index_42").IsUnique();
 
             entity.Property(e => e.RelationId).HasColumnName("relation_id");
             entity.Property(e => e.CreatedAt)
@@ -1646,22 +1566,22 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Friend).WithMany(p => p.RelationFriends)
                 .HasForeignKey(d => d.FriendId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__friend__351DDF8C");
+                .HasConstraintName("FK__Relation__friend__22FF2F51");
 
             entity.HasOne(d => d.Status).WithMany(p => p.Relations)
                 .HasForeignKey(d => d.StatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__status__361203C5");
+                .HasConstraintName("FK__Relation__status__23F3538A");
 
             entity.HasOne(d => d.User).WithMany(p => p.RelationUsers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__User_I__3429BB53");
+                .HasConstraintName("FK__Relation__User_I__220B0B18");
         });
 
         modelBuilder.Entity<RelationStatus>(entity =>
         {
-            entity.HasKey(e => e.StatusId).HasName("PK__Relation__3683B53132CDB4CF");
+            entity.HasKey(e => e.StatusId).HasName("PK__Relation__3683B531F9D20A4A");
 
             entity.ToTable("Relation_Status");
 
@@ -1673,11 +1593,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Shipment>(entity =>
         {
-            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__41466E599DAE56EF");
-
-            entity.HasIndex(e => e.OrderId, "IX_Shipments_OrderId");
-
-            entity.HasIndex(e => e.ShipmentCode, "UQ_Shipments_Code").IsUnique();
+            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__41466E5960054AD2");
 
             entity.Property(e => e.ShipmentId).HasColumnName("shipment_id");
             entity.Property(e => e.Carrier)
@@ -1698,22 +1614,11 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.TrackingNo)
                 .HasMaxLength(100)
                 .HasColumnName("tracking_no");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.Shipments)
-                .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Shipments_Order");
         });
 
         modelBuilder.Entity<StockMovement>(entity =>
         {
-            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022D261B93A");
-
-            entity.HasIndex(e => e.OrderId, "IX_StockMovements_Order");
-
-            entity.HasIndex(e => new { e.ProductId, e.CreatedAt }, "IX_StockMovements_Product");
-
-            entity.HasIndex(e => new { e.ProductId, e.CreatedAt }, "IX_StockMovements_Product_Time");
+            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022C599FC06");
 
             entity.Property(e => e.MovementId).HasColumnName("movement_id");
             entity.Property(e => e.ChangeQty).HasColumnName("change_qty");
@@ -1728,36 +1633,36 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Reason)
                 .HasMaxLength(30)
                 .HasColumnName("reason");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.StockMovements)
-                .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("FK_StockMovements_Order");
         });
 
         modelBuilder.Entity<Style>(entity =>
         {
-            entity.HasKey(e => e.StyleId).HasName("PK__Styles__D333B397618718E7");
+            entity.HasKey(e => e.StyleId).HasName("PK__Styles__D333B397F7F49430");
 
             entity.Property(e => e.StyleId).HasColumnName("style_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.EffectDesc)
-                .HasMaxLength(100)
+                .HasMaxLength(255)
                 .HasColumnName("effect_desc");
             entity.Property(e => e.ManagerId).HasColumnName("manager_id");
             entity.Property(e => e.StyleName)
-                .HasMaxLength(100)
+                .HasMaxLength(10)
                 .HasColumnName("style_name");
 
             entity.HasOne(d => d.Manager).WithMany(p => p.Styles)
                 .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Styles__manager___220B0B18");
+                .HasConstraintName("FK__Styles__manager___0FEC5ADD");
         });
 
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity.ToTable("Supplier");
+            entity
+                .HasNoKey()
+                .ToTable("Supplier");
 
-            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.SupplierId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("supplier_id");
             entity.Property(e => e.SupplierName)
                 .HasMaxLength(100)
                 .HasColumnName("supplier_name");
@@ -1765,19 +1670,15 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Thread>(entity =>
         {
-            entity.HasKey(e => e.ThreadId).HasName("PK__threads__7411E2F0C4FF8B27");
+            entity.HasKey(e => e.ThreadId).HasName("PK__threads__7411E2F035E8CC2A");
 
             entity.ToTable("threads");
-
-            entity.HasIndex(e => new { e.ForumId, e.UpdatedAt }, "IX_threads_forum_updated");
 
             entity.HasIndex(e => new { e.ForumId, e.UpdatedAt }, "threads_index_16");
 
             entity.Property(e => e.ThreadId).HasColumnName("thread_id");
             entity.Property(e => e.AuthorUserId).HasColumnName("author_User_ID");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.ForumId).HasColumnName("forum_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
@@ -1786,26 +1687,22 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(50)
                 .HasColumnName("title");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("updated_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
             entity.HasOne(d => d.AuthorUser).WithMany(p => p.Threads)
                 .HasForeignKey(d => d.AuthorUserId)
-                .HasConstraintName("FK__threads__author___0D0FEE32");
+                .HasConstraintName("FK__threads__author___66EA454A");
 
             entity.HasOne(d => d.Forum).WithMany(p => p.Threads)
                 .HasForeignKey(d => d.ForumId)
-                .HasConstraintName("FK__threads__forum_i__0C1BC9F9");
+                .HasConstraintName("FK__threads__forum_i__00750D23");
         });
 
         modelBuilder.Entity<ThreadPost>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__thread_p__3213E83F9154CA26");
+            entity.HasKey(e => e.Id).HasName("PK__thread_p__3213E83F966AF56F");
 
             entity.ToTable("thread_posts");
-
-            entity.HasIndex(e => new { e.ThreadId, e.CreatedAt }, "IX_thread_posts_thread_created");
 
             entity.HasIndex(e => new { e.ThreadId, e.CreatedAt }, "thread_posts_index_17");
 
@@ -1814,44 +1711,40 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ContentMd)
                 .HasMaxLength(3000)
                 .HasColumnName("content_md");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.ParentPostId).HasColumnName("parent_post_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("status");
             entity.Property(e => e.ThreadId).HasColumnName("thread_id");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasColumnName("updated_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
             entity.HasOne(d => d.AuthorUser).WithMany(p => p.ThreadPosts)
                 .HasForeignKey(d => d.AuthorUserId)
-                .HasConstraintName("FK__thread_po__autho__0EF836A4");
+                .HasConstraintName("FK__thread_po__autho__68D28DBC");
 
             entity.HasOne(d => d.ParentPost).WithMany(p => p.InverseParentPost)
                 .HasForeignKey(d => d.ParentPostId)
-                .HasConstraintName("FK__thread_po__paren__0FEC5ADD");
+                .HasConstraintName("FK__thread_po__paren__69C6B1F5");
 
             entity.HasOne(d => d.Thread).WithMany(p => p.ThreadPosts)
                 .HasForeignKey(d => d.ThreadId)
-                .HasConstraintName("FK__thread_po__threa__0E04126B");
+                .HasConstraintName("FK__thread_po__threa__67DE6983");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__206D9190C687FA53");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__206D9190FA40893F");
 
-            entity.HasIndex(e => e.UserName, "UQ__Users__5F1A10861843AB73").IsUnique();
+            entity.HasIndex(e => e.UserName, "UQ__Users__5F1A108682A83552").IsUnique();
 
-            entity.HasIndex(e => e.UserAccount, "UQ__Users__899F4A917F9CF43B").IsUnique();
+            entity.HasIndex(e => e.UserAccount, "UQ__Users__899F4A91E5EF8DB8").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("User_ID");
             entity.Property(e => e.UserAccessFailedCount).HasColumnName("User_AccessFailedCount");
             entity.Property(e => e.UserAccount)
-                .HasMaxLength(100)
+                .HasMaxLength(30)
                 .HasColumnName("User_Account");
             entity.Property(e => e.UserEmailConfirmed).HasColumnName("User_EmailConfirmed");
             entity.Property(e => e.UserLockoutEnabled)
@@ -1859,10 +1752,10 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("User_LockoutEnabled");
             entity.Property(e => e.UserLockoutEnd).HasColumnName("User_LockoutEnd");
             entity.Property(e => e.UserName)
-                .HasMaxLength(100)
+                .HasMaxLength(30)
                 .HasColumnName("User_name");
             entity.Property(e => e.UserPassword)
-                .HasMaxLength(200)
+                .HasMaxLength(30)
                 .HasColumnName("User_Password");
             entity.Property(e => e.UserPhoneNumberConfirmed).HasColumnName("User_PhoneNumberConfirmed");
             entity.Property(e => e.UserTwoFactorEnabled).HasColumnName("User_TwoFactorEnabled");
@@ -1870,30 +1763,34 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<UserIntroduce>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User_Int__206D91902661F54D");
+            entity.HasKey(e => e.UserId).HasName("PK__User_Int__206D91909E25154A");
 
             entity.ToTable("User_Introduce");
 
-            entity.HasIndex(e => e.IdNumber, "UQ__User_Int__62DF803312534020").IsUnique();
+            entity.HasIndex(e => e.IdNumber, "UQ__User_Int__62DF8033EDDD19FD").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__User_Int__A9D10534A2E81491").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__User_Int__A9D10534CAA16AC5").IsUnique();
 
-            entity.HasIndex(e => e.Cellphone, "UQ__User_Int__CDE19CF24D69869F").IsUnique();
+            entity.HasIndex(e => e.Cellphone, "UQ__User_Int__CDE19CF29F238F26").IsUnique();
 
-            entity.HasIndex(e => e.UserNickName, "UQ__User_Int__DAFD02CF7EFC6E03").IsUnique();
+            entity.HasIndex(e => e.UserNickName, "UQ__User_Int__DAFD02CF797EB192").IsUnique();
 
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("User_ID");
             entity.Property(e => e.Address).HasMaxLength(100);
-            entity.Property(e => e.Cellphone).HasMaxLength(255);
+            entity.Property(e => e.Cellphone)
+                .HasMaxLength(30)
+                .IsUnicode(false);
             entity.Property(e => e.CreateAccount).HasColumnName("Create_Account");
             entity.Property(e => e.Email).HasMaxLength(50);
             entity.Property(e => e.Gender)
                 .HasMaxLength(1)
                 .IsUnicode(false)
                 .IsFixedLength();
-            entity.Property(e => e.IdNumber).HasMaxLength(255);
+            entity.Property(e => e.IdNumber)
+                .HasMaxLength(30)
+                .IsUnicode(false);
             entity.Property(e => e.UserIntroduce1)
                 .HasMaxLength(200)
                 .HasColumnName("User_Introduce");
@@ -1905,12 +1802,12 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.UserIntroduce)
                 .HasForeignKey<UserIntroduce>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_Intr__User___79FD19BE");
+                .HasConstraintName("FK__User_Intr__User___0FB750B3");
         });
 
         modelBuilder.Entity<UserRight>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User_Rig__206D9170BA32CB4F");
+            entity.HasKey(e => e.UserId).HasName("PK__User_Rig__206D91702DB5DE3E");
 
             entity.ToTable("User_Rights");
 
@@ -1922,12 +1819,12 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.UserRight)
                 .HasForeignKey<UserRight>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_Righ__User___7AF13DF7");
+                .HasConstraintName("FK__User_Righ__User___10AB74EC");
         });
 
         modelBuilder.Entity<UserSalesInformation>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User_Sal__206D9170533CB91B");
+            entity.HasKey(e => e.UserId).HasName("PK__User_Sal__206D9170797CCA09");
 
             entity.ToTable("User_Sales_Information");
 
@@ -1939,30 +1836,30 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.UserSalesInformation)
                 .HasForeignKey<UserSalesInformation>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_Sale__User___7CD98669");
+                .HasConstraintName("FK__User_Sale__User___1293BD5E");
         });
 
         modelBuilder.Entity<UserSignInStat>(entity =>
         {
-            entity.HasKey(e => e.LogId).HasName("PK__UserSign__5E5499A8754B59EE");
+            entity.HasNoKey();
 
             entity.HasIndex(e => new { e.UserId, e.SignTime }, "UserSignInStats_index_22");
 
+            entity.Property(e => e.CouponGained)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.LogId).HasColumnName("LogID");
-            entity.Property(e => e.ExpGainedTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
-            entity.Property(e => e.PointsChangedTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
-            entity.Property(e => e.SignTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserSignInStats)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UserSignI__UserI__13BCEBC1");
+                .HasConstraintName("FK__UserSignI__UserI__6D9742D9");
         });
 
         modelBuilder.Entity<UserToken>(entity =>
         {
-            entity.HasKey(e => e.TokenId).HasName("PK__UserToke__AA16D540871A3D02");
+            entity.HasKey(e => e.TokenId).HasName("PK__UserToke__AA16D540EFFF863A");
 
             entity.Property(e => e.TokenId).HasColumnName("Token_ID");
             entity.Property(e => e.Name).HasMaxLength(50);
@@ -1973,140 +1870,46 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.UserTokens)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UserToken__User___4F47C5E3");
+                .HasConstraintName("FK__UserToken__User___0EC32C7A");
         });
 
         modelBuilder.Entity<UserWallet>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User_wal__206D9170931E7DC4");
+            entity
+                .HasNoKey()
+                .ToTable("User_Wallet");
 
-            entity.ToTable("User_wallet");
-
-            entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
-                .HasColumnName("User_Id");
-            entity.Property(e => e.CouponNumber)
-                .HasMaxLength(1)
-                .IsUnicode(false)
-                .HasColumnName("Coupon_Number");
+            entity.Property(e => e.UserId).HasColumnName("User_Id");
             entity.Property(e => e.UserPoint).HasColumnName("User_Point");
 
-            entity.HasOne(d => d.User).WithOne(p => p.UserWallet)
-                .HasForeignKey<UserWallet>(d => d.UserId)
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_wall__User___12C8C788");
-        });
-
-        modelBuilder.Entity<VwForumOverview>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("vw_forum_overview");
-
-            entity.Property(e => e.ForumId).HasColumnName("forum_id");
-            entity.Property(e => e.ForumName)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("forum_name");
-            entity.Property(e => e.GameId).HasColumnName("game_id");
-            entity.Property(e => e.LastActivityAt).HasColumnName("last_activity_at");
-            entity.Property(e => e.ReplyCount).HasColumnName("reply_count");
-            entity.Property(e => e.ThreadCount).HasColumnName("thread_count");
-        });
-
-        modelBuilder.Entity<VwPostsWithSnapshot>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("vw_posts_with_snapshot");
-
-            entity.Property(e => e.GameId).HasColumnName("game_id");
-            entity.Property(e => e.IndexValue)
-                .HasColumnType("decimal(18, 4)")
-                .HasColumnName("index_value");
-            entity.Property(e => e.PostId).HasColumnName("post_id");
-            entity.Property(e => e.PublishedAt).HasColumnName("published_at");
-            entity.Property(e => e.SnapshotDate).HasColumnName("snapshot_date");
-            entity.Property(e => e.SourceCount).HasColumnName("source_count");
-            entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("status");
-            entity.Property(e => e.Title)
-                .HasMaxLength(200)
-                .HasColumnName("title");
-            entity.Property(e => e.Tldr)
-                .HasMaxLength(500)
-                .HasColumnName("tldr");
-        });
-
-        modelBuilder.Entity<VwThreadActivity>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("vw_thread_activity");
-
-            entity.Property(e => e.AuthorUserId).HasColumnName("author_User_ID");
-            entity.Property(e => e.BookmarkCount).HasColumnName("bookmark_count");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.ForumId).HasColumnName("forum_id");
-            entity.Property(e => e.LikeCount).HasColumnName("like_count");
-            entity.Property(e => e.ReplyCount).HasColumnName("reply_count");
-            entity.Property(e => e.ThreadId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("thread_id");
-            entity.Property(e => e.Title)
-                .HasMaxLength(50)
-                .HasColumnName("title");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-        });
-
-        modelBuilder.Entity<VwThreadPostsFlat>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("vw_thread_posts_flat");
-
-            entity.Property(e => e.AuthorUserId).HasColumnName("author_User_ID");
-            entity.Property(e => e.ContentMd)
-                .HasMaxLength(3000)
-                .HasColumnName("content_md");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.ParentPostId).HasColumnName("parent_post_id");
-            entity.Property(e => e.PostId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("post_id");
-            entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("status");
-            entity.Property(e => e.ThreadId).HasColumnName("thread_id");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                .HasConstraintName("FK__User_Wall__User___6CA31EA0");
         });
 
         modelBuilder.Entity<WalletHistory>(entity =>
         {
-            entity.HasKey(e => e.LogId).HasName("PK__WalletHi__5E5499A8A37D6164");
-
-            entity.ToTable("WalletHistory");
+            entity
+                .HasNoKey()
+                .ToTable("WalletHistory");
 
             entity.HasIndex(e => new { e.UserId, e.ChangeTime }, "WalletHistory_index_30");
 
             entity.HasIndex(e => new { e.ChangeType, e.ChangeTime }, "WalletHistory_index_31");
 
-            entity.Property(e => e.LogId).HasColumnName("LogID");
-            entity.Property(e => e.ChangeTime).HasDefaultValueSql("('SYSUTCDATETIME()')");
             entity.Property(e => e.ChangeType).HasMaxLength(10);
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.ItemCode)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.LogId).HasColumnName("LogID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.WalletHistories)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__WalletHis__UserI__1F2E9E6D");
+                .HasConstraintName("FK__WalletHis__UserI__62E4AA3C");
         });
         modelBuilder.HasSequence("SeqOrderCode")
             .StartsAt(100000000001L)

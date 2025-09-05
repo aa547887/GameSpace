@@ -21,11 +21,15 @@ public partial class MiniGame
 
     public int ExpGained { get; set; }
 
-    public DateTime? ExpGainedTime { get; set; }
+    public DateTime ExpGainedTime { get; set; }
 
-    public int PointsChanged { get; set; }
+    public int PointsGained { get; set; }
 
-    public DateTime? PointsChangedTime { get; set; }
+    public DateTime PointsGainedTime { get; set; }
+
+    public string CouponGained { get; set; } = null!;
+
+    public DateTime CouponGainedTime { get; set; }
 
     public int HungerDelta { get; set; }
 
@@ -40,8 +44,6 @@ public partial class MiniGame
     public DateTime? EndTime { get; set; }
 
     public bool Aborted { get; set; }
-
-    public virtual Pet Pet { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
 }

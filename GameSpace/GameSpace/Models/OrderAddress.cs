@@ -20,6 +20,4 @@ public partial class OrderAddress
     public string City { get; set; } = null!;
 
     public string Country { get; set; } = null!;
-
-    public virtual OrderInfo Order { get; set; } = null!;
 }

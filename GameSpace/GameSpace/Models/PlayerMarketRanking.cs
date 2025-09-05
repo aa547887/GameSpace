@@ -22,4 +22,6 @@ public partial class PlayerMarketRanking
     public int? PTradingVolume { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual PlayerMarketProductInfo? PProduct { get; set; }
 }

@@ -20,6 +20,4 @@ public partial class EvoucherType
     public int TotalAvailable { get; set; }
 
     public string? Description { get; set; }
-
-    public virtual ICollection<Evoucher> Evouchers { get; set; } = new List<Evoucher>();
 }

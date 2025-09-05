@@ -11,13 +11,17 @@ public partial class UserSignInStat
 
     public int UserId { get; set; }
 
-    public int PointsChanged { get; set; }
+    public int PointsGained { get; set; }
+
+    public DateTime PointsGainedTime { get; set; }
 
     public int ExpGained { get; set; }
 
-    public DateTime PointsChangedTime { get; set; }
-
     public DateTime ExpGainedTime { get; set; }
+
+    public string CouponGained { get; set; } = null!;
+
+    public DateTime CouponGainedTime { get; set; }
 
     public virtual User User { get; set; } = null!;
 }

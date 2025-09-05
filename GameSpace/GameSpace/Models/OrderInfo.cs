@@ -25,15 +25,5 @@ public partial class OrderInfo
 
     public DateTime? CompletedAt { get; set; }
 
-    public virtual OrderAddress? OrderAddress { get; set; }
-
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-
-    public virtual ICollection<OrderStatusHistory> OrderStatusHistories { get; set; } = new List<OrderStatusHistory>();
-
-    public virtual ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
-
-    public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
-
-    public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 }

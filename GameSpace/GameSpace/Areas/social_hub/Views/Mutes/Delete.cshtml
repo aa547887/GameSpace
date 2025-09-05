@@ -1,45 +1,47 @@
 ﻿@model GameSpace.Models.Mute
-
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "刪除穢語";
 }
 
-<h1>Delete</h1>
+<div class="card shadow border-danger">
+    <div class="card-header d-flex align-items-center justify-content-between bg-danger text-white">
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="m-0">@ViewData["Title"]</h5>
+            <span class="badge bg-light text-danger">Danger</span>
+        </div>
+        <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-arrow-left"></i> 返回
+        </a>
+    </div>
 
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Mute</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.MuteName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.MuteName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.IsActive)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsActive)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ManagerId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ManagerId)
-        </dd>
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="MuteId" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="fas fa-triangle-exclamation"></i>
+            確定要刪除這筆資料嗎？此動作無法復原。
+        </div>
+
+        <dl class="row mb-4">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">@Model.MuteId</dd>
+
+            <dt class="col-sm-3">名稱</dt>
+            <dd class="col-sm-9 fw-semibold">@Model.MuteName</dd>
+
+            <dt class="col-sm-3">啟用</dt>
+            <dd class="col-sm-9">@((Model.IsActive ? "是" : "否"))</dd>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="MuteId" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-light text-danger border-danger">
+                    <i class="fas fa-trash"></i> 確認刪除
+                </button>
+                <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-secondary">
+                    取消
+                </a>
+            </div>
+        </form>
+    </div>
 </div>

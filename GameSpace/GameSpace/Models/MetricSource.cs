@@ -7,7 +7,7 @@ public partial class MetricSource
 {
     public int SourceId { get; set; }
 
-    public string Name { get; set; } = null!;
+    public string? Name { get; set; }
 
     public string? Note { get; set; }
 

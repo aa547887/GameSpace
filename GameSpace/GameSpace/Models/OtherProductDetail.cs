@@ -5,7 +5,7 @@ namespace GameSpace.Models;
 
 public partial class OtherProductDetail
 {
-    public int ProductId { get; set; }
+    public int? ProductId { get; set; }
 
     public string ProductName { get; set; } = null!;
 
@@ -28,10 +28,4 @@ public partial class OtherProductDetail
     public string? Material { get; set; }
 
     public int StockQuantity { get; set; }
-
-    public virtual MerchType? MerchType { get; set; }
-
-    public virtual ProductInfo Product { get; set; } = null!;
-
-    public virtual Supplier Supplier { get; set; } = null!;
 }

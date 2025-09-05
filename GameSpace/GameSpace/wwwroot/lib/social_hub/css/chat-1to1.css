@@ -1,0 +1,63 @@
+﻿/* Basic vertical layout */
+#messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: auto;
+}
+
+/* Message bubble base */
+.message {
+    max-width: 72%;
+    display: flex;
+    flex-direction: column;
+}
+
+    /* Partner on left */
+    .message.other {
+        align-self: flex-start;
+    }
+
+        .message.other .content {
+            background: #f2f3f5;
+            color: #222;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border-top-left-radius: 4px;
+            word-break: break-word;
+        }
+
+    /* Mine on right */
+    .message.mine {
+        align-self: flex-end;
+        text-align: right;
+    }
+
+        .message.mine .content {
+            background: #0d6efd; /* change to your brand color if needed */
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border-top-right-radius: 4px;
+            word-break: break-word;
+        }
+
+    /* Time & read mark */
+    .message .meta {
+        margin-top: 2px;
+        font-size: 12px;
+        opacity: .7;
+    }
+
+    .message.mine .meta {
+        align-self: flex-end;
+    }
+
+.readmark {
+    margin-left: 6px;
+    opacity: .5;
+}
+
+    .readmark.on {
+        opacity: 1;
+    }

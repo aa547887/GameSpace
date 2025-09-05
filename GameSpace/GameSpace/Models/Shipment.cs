@@ -22,6 +22,4 @@ public partial class Shipment
     public string Status { get; set; } = null!;
 
     public string? Note { get; set; }
-
-    public virtual OrderInfo Order { get; set; } = null!;
 }

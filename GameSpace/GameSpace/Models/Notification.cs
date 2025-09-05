@@ -11,13 +11,13 @@ public partial class Notification
 
     public int ActionId { get; set; }
 
-    public int? SenderId { get; set; }
+    public int SenderId { get; set; }
 
     public int? SenderManagerId { get; set; }
 
-    public string NotificationTitle { get; set; } = null!;
+    public string? NotificationTitle { get; set; }
 
-    public string NotificationMessage { get; set; } = null!;
+    public string? NotificationMessage { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -29,7 +29,7 @@ public partial class Notification
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
-    public virtual User? Sender { get; set; }
+    public virtual User Sender { get; set; } = null!;
 
     public virtual ManagerDatum? SenderManager { get; set; }
 
