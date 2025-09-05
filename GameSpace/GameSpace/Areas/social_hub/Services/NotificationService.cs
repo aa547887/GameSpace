@@ -28,17 +28,17 @@ namespace GameSpace.Areas.social_hub.Services
 			if (senderManagerId.HasValue && senderManagerId.Value > 0)
 			{
 				notification.SenderManagerId = senderManagerId;
-				notification.SenderId = null;
+				//notification.SenderId = null;
 			}
 			else if (senderUserId.HasValue && senderUserId.Value > 0)
 			{
-				notification.SenderId = senderUserId;
+				//notification.SenderId = senderUserId;
 				notification.SenderManagerId = null;
 			}
 			else
 			{
 				// 系統訊息
-				notification.SenderId = null;
+				//notification.SenderId = null;
 				notification.SenderManagerId = null;
 			}
 
