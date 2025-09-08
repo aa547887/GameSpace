@@ -8,11 +8,13 @@
 <form asp-action="AdminLogin" method="post" class="card p-4" style="max-width:420px;">
     @Html.AntiForgeryToken()
 
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
     <div class="mb-3">
         <label asp-for="Account" class="form-label"></label>
         <input asp-for="Account" class="form-control" autocomplete="username" />
         <span asp-validation-for="Account" class="text-danger"></span>
-        <div class="form-text">輸入管理員帳號</div>
+        <div class="form-text">輸入管理員帳號（或直接輸入數字 ID 以測試）</div>
     </div>
 
     <div class="mb-3">
@@ -29,6 +31,10 @@
     <input type="hidden" asp-for="ReturnUrl" />
     <button type="submit" class="btn btn-primary w-100">登入</button>
 </form>
+
+<div class="mt-3">
+    <a class="btn btn-link p-0" href="@Url.Action("UserLogin", "Home", new { area = "social_hub", returnUrl = Model?.ReturnUrl })">改用「使用者登入」</a>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
