@@ -1,0 +1,31 @@
+﻿@model IEnumerable<GameSpace.Models.Forum>
+
+<h2>論壇列表</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>名稱</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var f in Model)
+        {
+            <tr>
+                <td>@f.ForumId</td>
+                <td>@f.Name</td>
+                <td>
+                    <a class="btn btn-sm btn-primary"
+                       asp-area="Forum"
+                       asp-controller="Threads"
+                       asp-action="List"
+                       asp-route-forumId="@f.ForumId">
+                        進入
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,67 @@
+﻿@model IEnumerable<GameSpace.Areas.Forum.Models.Metric.MetricListItemVm>
+@{
+    ViewData["Title"] = "指標清單";
+}
+
+<h2>指標清單</h2>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+       @*  <select name="sourceId" class="form-select">
+            <option value="">全部來源</option>
+            @foreach (var opt in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Sources)
+            {
+                <option value="@opt.Value" selected="@(Request.Query["sourceId"] == opt.Value ? "selected" : null)">@opt.Text</option>
+            }
+        </select> *@
+        <select name="sourceId" class="form-select" asp-items="ViewBag.Sources">
+            <option value="" selected="@(ViewBag.SourceId == null ? "selected" : null)">全部來源</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <input class="form-control" type="text" name="q" value="@ViewBag.Q" placeholder="代碼/說明" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">查詢</button>
+        <a asp-action="Create" class="btn btn-success">新增</a>
+    </div>
+    <div class="d-flex gap-2 mb-3">
+        <a asp-area="Forum" asp-controller="Imports" asp-action="Defs"
+           class="btn btn-outline-secondary">匯入定義（Metrics/Mapping）</a>
+        <a asp-area="Forum" asp-controller="Imports" asp-action="Daily"
+           class="btn btn-outline-secondary">匯入每日數據（JSON）</a>
+    </div>
+</form>
+
+<table class="table table-bordered table-sm">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>來源</th>
+            <th>代碼</th>
+            <th>單位</th>
+            <th>說明</th>
+            <th>啟用</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var x in Model)
+        {
+            <tr>
+                <td>@x.MetricId</td>
+                <td>@x.SourceName (@x.SourceId)</td>
+                <td>@x.Code</td>
+                <td>@x.Unit</td>
+                <td>@x.Description</td>
+                <td>@(x.IsActive ? "✅" : "❌")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@x.MetricId" class="btn btn-sm btn-warning">編輯</a>
+                    <form asp-action="ToggleActive" asp-route-id="@x.MetricId" method="post" style="display:inline">
+                        <button class="btn btn-sm btn-secondary">啟用/停用</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

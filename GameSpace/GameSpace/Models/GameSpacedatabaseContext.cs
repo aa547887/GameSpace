@@ -470,6 +470,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasIndex(e => new { e.SourceId, e.ExternalKey }, "game_source_map_index_2");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.ExternalKey)
                 .HasMaxLength(255)
                 .HasColumnName("external_key");
@@ -833,6 +834,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Sender).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SenderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Notificat__sende__12C8C788");
 
             entity.HasOne(d => d.SenderManager).WithMany(p => p.Notifications)

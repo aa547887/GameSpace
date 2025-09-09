@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.19" />
@@ -18,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Forum\Data\" />
-    <Folder Include="Areas\Forum\Models\" />
+    <Folder Include="Areas\Forum\Views\NewFolder\" />
     <Folder Include="Areas\MemberManagement\Data\" />
     <Folder Include="Areas\MemberManagement\Models\" />
     <Folder Include="Areas\MiniGame\Data\" />

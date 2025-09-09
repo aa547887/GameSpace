@@ -1,0 +1,65 @@
+﻿@model GameSpace.Areas.Forum.Models.PostsListVm
+@{
+    ViewData["Title"] = "回覆列表";
+}
+
+<h2>@ViewData["Title"] (ThreadId = @Model.ThreadId)</h2>
+
+<p>
+    <a class="btn btn-outline-secondary"
+       asp-area="Forum" asp-controller="Threads" asp-action="List"
+       asp-route-forumId="@ViewBag.ForumId">
+        ← 回主題列表
+    </a>
+</p>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th style="width:80px">ID</th>
+            <th style="width:120px">作者</th>
+            <th>內容</th>
+            <th style="width:120px">狀態</th>
+            <th style="width:100px">讚</th>       <!-- 新增 -->
+            <th style="width:100px">收藏</th>     <!-- 新增 -->
+
+            <th style="width:180px">建立</th>
+            <th style="width:180px">更新</th>
+            <th style="width:150px">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model.Items)
+        {
+            var badge = p.Status switch
+            {
+                "normal" => "badge bg-success",
+                "hidden" => "badge bg-warning text-dark",
+                "deleted" => "badge bg-danger",
+                _ => "badge bg-light text-dark"
+            };
+
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.AuthorName ?? ("User#" + p.AuthorUserId)</td>
+                <td>@p.ContentMd</td>
+                <td><span class="@badge">@p.Status</span></td>
+                <td>@p.LikeCount</td>         <!-- 新增 -->
+                <td>@p.BookmarkCount</td>     <!-- 新增 -->
+
+                <td>@(p.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</td>
+                <td>@(p.UpdatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</td>
+                <td>
+                    <form asp-area="Forum" asp-controller="Threads" asp-action="ChangePostStatus"
+                          method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <input type="hidden" name="threadId" value="@Model.ThreadId" />
+                        <button type="submit" name="status" value="hidden" class="btn btn-sm btn-warning">隱藏</button>
+                        <button type="submit" name="status" value="deleted" class="btn btn-sm btn-danger">刪除</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
