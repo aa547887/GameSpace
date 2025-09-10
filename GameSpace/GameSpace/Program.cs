@@ -31,7 +31,7 @@ namespace GameSpace
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 			// GameSpace 主資料庫（EF DbContext）
-			var gameSpaceConnectionString = builder.Configuration.GetConnectionString("DefaultConnection1")
+			var gameSpaceConnectionString = builder.Configuration.GetConnectionString("GameSpace1")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 				options.UseSqlServer(gameSpaceConnectionString));
