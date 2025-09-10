@@ -1,11 +1,16 @@
 ﻿@{
     ViewData["Title"] = "聊天測試（1 對 1）";
-    var meIdStr = Context.Request.Cookies["gs_id"] ?? "0";
+    var meIdStr = Context.Request.Cookies["sh_uid"] ?? "0";
+    var meName = Context.Request.Cookies["sh_uname"] ?? "訪客";
 }
+
 <link href="~/lib/social_hub/css/chat.css" rel="stylesheet" />
 <link href="~/lib/social_hub/css/chat-1to1.css" rel="stylesheet" />
 
 <meta name="me-id" content="@meIdStr" />
+<meta name="me-name" content="@meName" />
+
+
 
 <div class="chat-layout" style="display:flex; gap:12px; height:70vh;">
     <!-- 聯絡人 -->

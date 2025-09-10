@@ -1,74 +1,49 @@
 ﻿@model GameSpace.Models.Mute
 @{
-    ViewData["Title"] = "詞彙明細";
-    bool canManage = (bool)(ViewBag.CanManageMutes ?? false);
-    bool canAdminAll = (bool)(ViewBag.CanAdminAll ?? false);
-    int currentMid = (int)(ViewBag.ManagerId ?? 0);
-    bool canEditThis = canManage && (canAdminAll || (Model.ManagerId.HasValue && Model.ManagerId.Value == currentMid));
-    string managerName = ViewBag.ManagerName as string ?? "-";
+    ViewData["Title"] = "穢語明細";
 }
-<div class="mutes-header">
-    <h2 class="mutes-title">
-        <span>@ViewData["Title"]</span>
-        @if (!canManage)
-        {
-            <span class="badge rounded-pill badge-readonly">唯讀</span>
-        }
-        else if (!canEditThis)
-        {
 
-            <span class="badge rounded-pill bg-warning text-dark">僅可管理自己建立</span>
-        }
-        else
-        {
-
-            <span class="badge rounded-pill badge-manage">可管理</span>
-        }
-    </h2>
-    <div class="mutes-subtle">
-        <span><i class="far fa-clock me-1"></i>@(Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</span>
+<div class="card shadow">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="m-0">@ViewData["Title"]</h5>
+            <span class="badge bg-info">檢視</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="social_hub" asp-controller="Mutes" asp-action="Edit" asp-route-id="@Model.MuteId" class="btn btn-primary btn-sm">
+                <i class="fas fa-pen"></i> 編輯
+            </a>
+            <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                返回
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="mutes-card">
     <div class="card-body">
-        <dl class="row dl-clean">
-            <dt class="col-sm-2">ID</dt>
-            <dd class="col-sm-10">@Model.MuteId</dd> @* ← 大寫 *@
-            <dt class="col-sm-2">詞彙</dt>
-            <dd class="col-sm-10"><span data-copy="@Model.MuteName" title="點擊複製">@Model.MuteName</span></dd>
-            <dt class="col-sm-2">狀態</dt>
-            <dd class="col-sm-10">
-                @if (Model.IsActive == true)
+        <dl class="row">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">@Model.MuteId</dd>
+
+            <dt class="col-sm-3">名稱</dt>
+            <dd class="col-sm-9 fw-semibold">@Model.MuteName</dd>
+
+            <dt class="col-sm-3">啟用狀態</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsActive)
                 {
-                    <span class="cell-chip on">啟用</span>
+                    <span class="badge bg-success">啟用</span>
                 }
                 else
                 {
-
-                    <span class="cell-chip off">停用</span>
+                    <span class="badge bg-secondary">停用</span>
                 }
             </dd>
-            <dt class="col-sm-2">管理員名稱</dt>
-            <dd class="col-sm-10">@managerName</dd>  @* ← 新增 *@
-            <dt class="col-sm-2">管理員ID</dt>
-            <dd class="col-sm-10">@Model.ManagerId</dd>
-        </dl>
 
-        <div class="d-flex gap-2">
-            <a class="btn btn-secondary" asp-action="Index"><i class="fas fa-arrow-left me-1"></i>返回</a>
-            @if (canEditThis)
-            {
-                <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.MuteId"><i class="fas fa-edit me-1"></i>編輯</a>
-                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.MuteId"><i class="fas fa-trash-alt me-1"></i>刪除</a>
-            }
-        </div>
+            <dt class="col-sm-3">建立時間</dt>
+            <dd class="col-sm-9">@(Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
+
+            <dt class="col-sm-3">管理員</dt>
+            <dd class="col-sm-9">@(Model.ManagerId?.ToString() ?? "-")</dd>
+        </dl>
     </div>
 </div>
-
-@section Styles {
-    <link href="~/lib/social_hub/css/mutes.css" rel="stylesheet" />
-}
-@section Scripts {
-    <script src="~/lib/social_hub/js/mutes.js"></script>
-}

@@ -1,27 +1,28 @@
 ﻿@model GameSpace.Models.Mute
 @{
-    ViewData["Title"] = "新增詞彙";
+    ViewData["Title"] = "新增穢語";
 }
-<div class="mutes-header">
-    <h2 class="mutes-title">
-        <span>@ViewData["Title"]</span>
-        <span class="badge rounded-pill badge-manage">管理</span>
-    </h2>
-    <div class="mutes-subtle">
-        <i class="fas fa-info-circle me-1"></i>建立新的禁詞
-    </div>
-</div>
 
-<div class="mutes-card">
+<div class="card shadow">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="m-0">@ViewData["Title"]</h5>
+            <span class="badge bg-success">建立</span>
+        </div>
+        <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> 返回
+        </a>
+    </div>
+
     <div class="card-body">
-        <form asp-action="Create" method="post" class="js-prevent-double-submit">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
-                <label asp-for="MuteName" class="form-label">詞彙</label>
-                <input asp-for="MuteName" class="form-control" placeholder="請輸入要過濾的詞彙" autocomplete="off" />
+                <label asp-for="MuteName" class="form-label"></label>
+                <input asp-for="MuteName" class="form-control" placeholder="請輸入要遮蔽的字詞" />
                 <span asp-validation-for="MuteName" class="text-danger"></span>
-                <div class="form-text">系統會自動攔截詞彙間夾雜的空白、標點與零寬字。</div>
             </div>
 
             <div class="form-check form-switch mb-3">
@@ -29,18 +30,20 @@
                 <label asp-for="IsActive" class="form-check-label">啟用</label>
             </div>
 
+            @* CreatedAt / ManagerId 改由伺服器端設定，不從表單接收 *@
+
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>儲存</button>
-                <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>返回</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> 儲存
+                </button>
+                <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-secondary">
+                    取消
+                </a>
             </div>
         </form>
     </div>
 </div>
 
-@section Styles {
-    <link href="~/lib/social_hub/css/mutes.css" rel="stylesheet" />
-}
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/lib/social_hub/js/mutes.js"></script>
 }

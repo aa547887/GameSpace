@@ -1,56 +1,47 @@
 ﻿@model GameSpace.Models.Mute
 @{
-    ViewData["Title"] = "刪除詞彙";
-    string managerName = ViewBag.ManagerName as string ?? "-";
+    ViewData["Title"] = "刪除穢語";
 }
-<div class="mutes-header">
-    <h2 class="mutes-title">
-        <span class="text-danger"><i class="fas fa-trash-alt me-2"></i>@ViewData["Title"]</span>
-        <span class="badge rounded-pill bg-danger">不可復原</span>
-    </h2>
-    <div class="mutes-subtle">
-        <i class="far fa-clock me-1"></i>@(Model?.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))
+
+<div class="card shadow border-danger">
+    <div class="card-header d-flex align-items-center justify-content-between bg-danger text-white">
+        <div class="d-flex align-items-center gap-3">
+            <h5 class="m-0">@ViewData["Title"]</h5>
+            <span class="badge bg-light text-danger">Danger</span>
+        </div>
+        <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-arrow-left"></i> 返回
+        </a>
     </div>
-</div>
 
-<div class="mutes-card">
     <div class="card-body">
-        <p class="mb-3">確定要刪除下列詞彙嗎？</p>
+        <div class="alert alert-warning">
+            <i class="fas fa-triangle-exclamation"></i>
+            確定要刪除這筆資料嗎？此動作無法復原。
+        </div>
 
-        <dl class="row dl-clean">
-            <dt class="col-sm-2">ID</dt>
-            <dd class="col-sm-10">@Model.MuteId</dd> @* ← 大寫 *@
-            <dt class="col-sm-2">詞彙</dt>
-            <dd class="col-sm-10"><span data-copy="@Model.MuteName" title="點擊複製">@Model.MuteName</span></dd>
-            <dt class="col-sm-2">狀態</dt>
-            <dd class="col-sm-10">
-                @if (Model.IsActive == true)
-                {
-                    <span class="cell-chip on">啟用</span>
-                }
-                else
-                {
+        <dl class="row mb-4">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">@Model.MuteId</dd>
 
-                    <span class="cell-chip off">停用</span>
-                }
-            </dd>
-            <dt class="col-sm-2">管理員名稱</dt>
-            <dd class="col-sm-10">@managerName</dd>  @* ← 新增 *@
-            <dt class="col-sm-2">管理員ID</dt>
-            <dd class="col-sm-10">@Model.ManagerId</dd>
+            <dt class="col-sm-3">名稱</dt>
+            <dd class="col-sm-9 fw-semibold">@Model.MuteName</dd>
+
+            <dt class="col-sm-3">啟用</dt>
+            <dd class="col-sm-9">@((Model.IsActive ? "是" : "否"))</dd>
         </dl>
 
-        <form asp-action="Delete" method="post" class="js-delete-form d-flex gap-2">
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
             <input type="hidden" asp-for="MuteId" />
-            <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>刪除</button>
-            <a class="btn btn-secondary" asp-action="Index"><i class="fas fa-arrow-left me-1"></i>返回</a>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-light text-danger border-danger">
+                    <i class="fas fa-trash"></i> 確認刪除
+                </button>
+                <a asp-area="social_hub" asp-controller="Mutes" asp-action="Index" class="btn btn-outline-secondary">
+                    取消
+                </a>
+            </div>
         </form>
     </div>
 </div>
-
-@section Styles {
-    <link href="~/lib/social_hub/css/mutes.css" rel="stylesheet" />
-}
-@section Scripts {
-    <script src="~/lib/social_hub/js/mutes.js"></script>
-}

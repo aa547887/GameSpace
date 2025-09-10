@@ -1,0 +1,12 @@
+﻿@* 工具列：重載遮蔽詞庫快取 + 成功提示 *@
+<form asp-action="ReloadCache" method="post" class="mb-3">
+    @Html.AntiForgeryToken()
+    <button class="btn btn-sm btn-outline-secondary">
+        重載遮蔽詞庫
+    </button>
+</form>
+
+@if (TempData["Toast"] != null)
+{
+    <div class="alert alert-success">@TempData["Toast"]</div>
+}
