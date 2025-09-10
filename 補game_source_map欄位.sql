@@ -1,0 +1,3 @@
+ALTER TABLE dbo.game_source_map
+ADD CreatedAt DATETIME2 NOT NULL 
+    CONSTRAINT DF_GameSourceMaps_CreatedAt DEFAULT (SYSUTCDATETIME()) WITH VALUES;
