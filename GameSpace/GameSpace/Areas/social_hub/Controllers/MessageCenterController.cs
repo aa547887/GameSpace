@@ -109,8 +109,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (!rec.IsRead)
 			{
 				rec.IsRead = true;
-				// 若你的模型有 ReadAt 欄位可加上：
-				// rec.ReadAt = DateTime.UtcNow;
 				await _context.SaveChangesAsync();
 			}
 			return RedirectToAction(nameof(Index));
@@ -208,7 +206,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 					return View(input);
 			}
 
-			// 使用服務處理 FK 決策、收件人去重與驗證
 			var added = await _notificationService.CreateAsync(
 				input,
 				finalRecipients,
@@ -236,7 +233,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var n = await _context.Notifications.FirstOrDefaultAsync(x => x.NotificationId == id);
 			if (n != null)
 			{
-				// 先刪收件明細，再刪主檔（避免 FK）
 				var recs = _context.NotificationRecipients.Where(r => r.NotificationId == id);
 				_context.NotificationRecipients.RemoveRange(recs);
 				_context.Notifications.Remove(n);

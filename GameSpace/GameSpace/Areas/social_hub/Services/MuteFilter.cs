@@ -15,18 +15,6 @@ namespace GameSpace.Areas.social_hub.Services
 {
 	public sealed class MuteFilter : IMuteFilter
 	{
-		public Regex? Pattern { get; set; }
-		public DateTime BuiltAt { get; set; } = DateTime.UtcNow;
-	}
-
-	public interface IMuteFilter
-	{
-		Task<string> FilterAsync(string input);
-		Task RefreshAsync();
-	}
-
-	public class MuteFilter : IMuteFilter
-	{
 		private readonly GameSpacedatabaseContext _db;
 		private readonly IMemoryCache _cache;
 		private readonly MuteFilterOptions _opt;

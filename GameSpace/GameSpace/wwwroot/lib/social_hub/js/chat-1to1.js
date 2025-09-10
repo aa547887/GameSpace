@@ -22,10 +22,6 @@
 
     // ====== Utils ======
     const $ = (sel) => document.querySelector(sel);
-    function getCookie(name) {
-        const m = document.cookie.match(new RegExp("(^|; )" + name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1") + "=([^;]*)"));
-        return m ? decodeURIComponent(m[2]) : "";
-    }
     function escapeHtml(s) {
         return String(s ?? "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
@@ -33,8 +29,6 @@
     function throttle(fn, ms) {
         let last = 0;
         return (...args) => { const now = Date.now(); if (now - last >= ms) { last = now; fn(...args); } };
-    }
-        };
     }
     function getCsrfToken() {
         const inp = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -54,15 +48,6 @@
     if (!contactsUl || !peerTitle || !messagesEl || !form || !input || !sendBtn) { console.error("[chat-1to1] Missing DOM nodes."); return; }
     if (!window.signalR) { console.error("[chat-1to1] signalR missing."); return; }
 
-    if (!contactsUl || !peerTitle || !messagesEl || !form || !input || !sendBtn) {
-        console.error("[chat-1to1] Missing required DOM nodes.");
-        return;
-    }
-    if (!window.signalR) {
-        console.error("[chat-1to1] @microsoft/signalr not found. Include signalr.js before this file.");
-        return;
-    }
-
     // ====== State ======
     let meId = 0, meName = "訪客";
     let peerId = 0, peerName = "";
@@ -73,7 +58,6 @@
 
     // ====== Self detection: meta -> whoami (no cookie access) ======
     async function initSelf() {
-        // meta
         const metaId = document.querySelector('meta[name="me-id"]')?.content;
         const metaNm = document.querySelector('meta[name="me-name"]')?.content;
         if (metaId && parseInt(metaId, 10) > 0) { meId = parseInt(metaId, 10); meName = metaNm || meName; return; }
@@ -310,7 +294,6 @@
         await startConn();     // 連 Hub
         await loadContacts();  // 載聯絡人 + 徽章
         if (!meId) {
-            // 顯示提示並鎖住輸入（仍可看歷史）
             const banner = document.createElement("div");
             banner.className = "alert alert-warning m-2";
             banner.textContent = "尚未登入，無法傳送訊息。請先從右上角登入。";
