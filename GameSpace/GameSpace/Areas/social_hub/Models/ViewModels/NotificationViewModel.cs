@@ -18,5 +18,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public DateTime CreatedAt { get; set; }
 		public bool IsRead { get; set; }
 	}
-
 }

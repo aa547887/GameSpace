@@ -71,10 +71,6 @@ namespace GameSpace.Areas.social_hub.Hubs
 				q.Enqueue(now);
 				return false;
 			}
-			if (receiverId <= 0)
-			{
-				await Clients.Caller.SendAsync("Error", "NO_PEER");
-				return;
 		}
 
 		// ========== Public Hub APIs ==========
@@ -107,8 +103,6 @@ namespace GameSpace.Areas.social_hub.Hubs
 			{
 				await Clients.Caller.SendAsync("Error", "NO_PEER");
 				return;
-
-			await Clients.Group(UG(partnerId)).SendAsync("ReadReceipt", new { fromUserId = me, upToIso });
 			}
 			if (HitRateLimit(me))
 			{
@@ -145,7 +139,6 @@ namespace GameSpace.Areas.social_hub.Hubs
 				sentAtIso = msg.SentAt.ToString("o")
 			};
 
-			// ✅ 廣播也是用「已過濾」內容（連自己回顯也一樣）
 			await Clients.Group(UG(me)).SendAsync("ReceiveDirect", payload);
 			await Clients.Group(UG(receiverId)).SendAsync("ReceiveDirect", payload);
 		}

@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameSpace.Areas.social_hub.Hubs;
 using GameSpace.Areas.social_hub.Models.ViewModels;
-using GameSpace.Areas.social_hub.Hubs;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
