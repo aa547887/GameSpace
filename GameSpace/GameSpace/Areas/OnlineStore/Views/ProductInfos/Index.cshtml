@@ -1,0 +1,52 @@
+﻿@model IEnumerable<GameSpace.Models.ProductInfo>
+
+<h2>商品清單</h2>
+
+<form method="get" asp-action="Index">
+    <input type="text" name="search" value="@ViewBag.Search" placeholder="搜尋商品名稱或類型" />
+    <button type="submit">搜尋</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>商品名稱</th>
+            <th>類型</th>
+            <th>價格</th>
+            <th>現貨量</th>
+            <th>建立時間</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.ProductId</td>
+                <td>@item.ProductName</td>
+                <td>@item.ProductType</td>
+                <td>@item.Price</td>
+                <td>@item.ShipmentQuantity</td>
+                <td>@item.ProductCreatedAt.ToString("yyyy-MM-dd")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.ProductId">查看</a> |
+                    <a asp-action="Edit" asp-route-id="@item.ProductId">修改</a> |
+                    <a asp-action="Delete" asp-route-id="@item.ProductId">刪除</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div>
+    @if (ViewBag.Page > 1)
+    {
+        <a asp-action="Index" asp-route-page="@(ViewBag.Page - 1)" asp-route-search="@ViewBag.Search">上一頁</a>
+    }
+
+    @if ((ViewBag.Page * ViewBag.PageSize) < ViewBag.TotalCount)
+    {
+        <a asp-action="Index" asp-route-page="@(ViewBag.Page + 1)" asp-route-search="@ViewBag.Search">下一頁</a>
+    }
+</div>
