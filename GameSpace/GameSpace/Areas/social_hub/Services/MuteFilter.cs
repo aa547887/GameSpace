@@ -1,94 +1,129 @@
-﻿using GameSpace.Data;
+﻿// Areas/social_hub/Services/MuteFilter.cs
+using GameSpace.Data;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GameSpace.Areas.social_hub.Services
 {
-	public class MuteConfig
+	public sealed class MuteFilter : IMuteFilter
 	{
 		private readonly GameSpacedatabaseContext _db;
 		private readonly IMemoryCache _cache;
-		private const string CacheKey = "MuteFilter.Pattern";
-		private const int CacheMinutes = 5;
+		private readonly MuteFilterOptions _opt;
 
-		public static readonly string DefaultReplacement = "█";
+		private const string CK_REGEX = "social_hub.mutes.regex";
+		private const string CK_WORDS = "social_hub.mutes.words";
+		private static readonly TimeSpan CACHE_TTL = TimeSpan.FromMinutes(30);
 
-		private static readonly Regex ZeroWidth = new Regex(
-			"[\\u200B-\\u200F\\u202A-\\u202E\\u2060\\uFEFF]",
-			RegexOptions.Compiled
-		);
+		private Regex? _compiled;
+		private string[] _words = Array.Empty<string>();
 
-		public MuteFilter(GameSpacedatabaseContext db, IMemoryCache cache)
+		public MuteFilter(GameSpacedatabaseContext db, IMemoryCache cache, IOptions<MuteFilterOptions> opt)
 		{
 			_db = db;
 			_cache = cache;
+			_opt = opt.Value;
+
+			_compiled = _cache.Get<Regex>(CK_REGEX);
+			_words = _cache.Get<string[]>(CK_WORDS) ?? Array.Empty<string>();
 		}
 
-		private static string Fuzzy(string word)
+		public async Task RefreshAsync(CancellationToken ct = default)
 		{
-			if (string.IsNullOrWhiteSpace(word)) return string.Empty;
-			var src = word.Normalize(NormalizationForm.FormKC);
-			var parts = src.Select(ch => Regex.Escape(ch.ToString()));
-			return string.Join(@"(?:\W|_|\p{Zs}|\p{Cf}){0,2}", parts);
+			var list = await _db.Mutes.AsNoTracking()
+				.Where(m => m.IsActive == true && m.MuteName != null && m.MuteName != "")
+				.OrderByDescending(m => m.MuteId)
+				.Select(m => m.MuteName!)
+				.Distinct()
+				.ToListAsync(ct);
+
+			_words = list.ToArray();
+			_compiled = BuildRegex(_words, _opt);
+
+			_cache.Set(CK_WORDS, _words, CACHE_TTL);
+			if (_compiled != null) _cache.Set(CK_REGEX, _compiled, CACHE_TTL);
 		}
 
-		private async Task<MuteConfig> BuildAsync()
+		public string Apply(string input)
 		{
-			var words = await _db.Mutes
-				.AsNoTracking()
-				.Where(m => m.IsActive)
-				.Select(m => m.MuteName)
-				.ToListAsync();
-
-			if (words == null || words.Count == 0)
-				return new MuteConfig { Pattern = null };
-
-			var patterns = words.Select(Fuzzy).Where(p => !string.IsNullOrEmpty(p));
-			var patternJoined = string.Join("|", patterns);
-
-			var regex = new Regex(
-				patternJoined,
-				RegexOptions.Compiled | RegexOptions.CultureInvariant |
-				RegexOptions.IgnoreCase | RegexOptions.Singleline
-			);
-
-			return new MuteConfig { Pattern = regex, BuiltAt = DateTime.UtcNow };
+			if (string.IsNullOrEmpty(input)) return input;
+			var rx = _compiled ?? BuildFromCacheOrDb();
+			if (rx == null) return input;
+			return rx.Replace(input, Mask);
 		}
 
-		private Task<MuteConfig> GetOrBuildAsync()
-		{
-			if (_cache.TryGetValue(CacheKey, out MuteConfig cfg) && cfg != null)
-				return Task.FromResult(cfg);
+		public Task<string> ApplyAsync(string input, CancellationToken ct = default)
+			=> Task.FromResult(Apply(input));
 
-			return Task.Run(async () =>
+		// === 舊名稱相容 ===
+		public string Filter(string input) => Apply(input);
+		public Task<string> FilterAsync(string input, CancellationToken ct = default)
+			=> ApplyAsync(input, ct);
+
+		// --- 內部 ---
+
+		private Regex? BuildFromCacheOrDb()
+		{
+			if (_compiled != null) return _compiled;
+
+			var cached = _cache.Get<string[]>(CK_WORDS);
+			if (cached == null || cached.Length == 0)
 			{
-				var built = await BuildAsync();
-				_cache.Set(CacheKey, built, TimeSpan.FromMinutes(CacheMinutes));
-				return built;
-			});
+				var loaded = _db.Mutes.AsNoTracking()
+					.Where(m => m.IsActive == true && m.MuteName != null && m.MuteName != "")
+					.Select(m => m.MuteName!)
+					.Distinct()
+					.ToList();
+				_words = loaded.ToArray();
+			}
+			else
+			{
+				_words = cached;
+			}
+
+			_compiled = BuildRegex(_words, _opt);
+			if (_compiled != null) _cache.Set(CK_REGEX, _compiled, CACHE_TTL);
+			return _compiled;
 		}
 
-		public async Task<string> FilterAsync(string input)
+		private static Regex? BuildRegex(System.Collections.Generic.IEnumerable<string> words, MuteFilterOptions opt)
 		{
-			if (string.IsNullOrEmpty(input)) return input ?? string.Empty;
-			var cfg = await GetOrBuildAsync();
-			if (cfg.Pattern == null) return input;
+			var list = words.Where(w => !string.IsNullOrWhiteSpace(w))
+							.Select(w => w.Trim())
+							.Distinct()
+							.ToList();
+			if (list.Count == 0) return null;
 
-			var normalized = input.Normalize(NormalizationForm.FormKC);
-			normalized = ZeroWidth.Replace(normalized, "");
-			return cfg.Pattern.Replace(normalized, _ => DefaultReplacement);
+			string BuildPattern(string w)
+			{
+				if (!opt.FuzzyBetweenCjkChars || w.Length <= 1)
+					return Regex.Escape(w);
+
+				var sb = new StringBuilder();
+				for (int i = 0; i < w.Length; i++)
+				{
+					sb.Append(Regex.Escape(w[i].ToString()));
+					if (i < w.Length - 1)
+						// 允許的干擾字元集合
+						sb.Append(@"[\s\p{P}\p{Sk}\p{Mn}\u200B\u200C\u200D\u2060_\-]*");
+
+				}
+				return sb.ToString();
+			}
+
+			var union = "(" + string.Join("|", list.Select(BuildPattern)) + ")";
+			return new Regex(union, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 		}
 
-		public async Task RefreshAsync()
-		{
-			var cfg = await BuildAsync();
-			_cache.Set(CacheKey, cfg, TimeSpan.FromMinutes(CacheMinutes));
-		}
+		private string Mask(Match m)
+			=> _opt.MaskStyle == MaskStyle.FixedLabel ? _opt.FixedLabel : new string('＊', m.Value.Length);
 	}
 }

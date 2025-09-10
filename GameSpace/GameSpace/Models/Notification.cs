@@ -11,7 +11,7 @@ public partial class Notification
 
     public int ActionId { get; set; }
 
-    public int SenderId { get; set; }
+    public int? SenderId { get; set; }
 
     public int? SenderManagerId { get; set; }
 
@@ -29,7 +29,7 @@ public partial class Notification
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
-    public virtual User Sender { get; set; } = null!;
+    public virtual User? Sender { get; set; }
 
     public virtual ManagerDatum? SenderManager { get; set; }
 

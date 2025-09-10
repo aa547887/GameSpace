@@ -19,8 +19,6 @@ namespace GameSpace.Models
 					.Build();
 				optionsBuilder.UseSqlServer(Configuration.GetConnectionString("GameSpace"));
 			}
-
-
 		}
 	}
 }

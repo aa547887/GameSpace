@@ -133,8 +133,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
-    public virtual DbSet<SupportTicket> SupportTickets { get; set; }
-
     public virtual DbSet<Thread> Threads { get; set; }
 
     public virtual DbSet<ThreadPost> ThreadPosts { get; set; }
@@ -835,7 +833,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasOne(d => d.Sender).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SenderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Notificat__sende__12C8C788");
 
             entity.HasOne(d => d.SenderManager).WithMany(p => p.Notifications)
@@ -1668,27 +1665,6 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.SupplierName)
                 .HasMaxLength(100)
                 .HasColumnName("supplier_name");
-        });
-
-        modelBuilder.Entity<SupportTicket>(entity =>
-        {
-            entity.HasKey(e => e.TicketId).HasName("PK__SupportT__712CC60772004B21");
-
-            entity.HasIndex(e => new { e.AssignedManagerId, e.IsClosed, e.CreatedAt }, "IX_SupportTickets_AssignedManager_Status").IsDescending(false, false, true);
-
-            entity.HasIndex(e => new { e.UserId, e.IsClosed, e.CreatedAt }, "IX_SupportTickets_User_Status").IsDescending(false, false, true);
-
-            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
-            entity.Property(e => e.AssignedManagerId).HasColumnName("assigned_Manager_id");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.IsClosed)
-                .IsRequired()
-                .HasDefaultValueSql("(N'Open')")
-                .HasColumnName("Is_Closed");
-            entity.Property(e => e.StatusText)
-                .HasMaxLength(50)
-                .HasColumnName("Status_Text");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
         });
 
         modelBuilder.Entity<Thread>(entity =>
