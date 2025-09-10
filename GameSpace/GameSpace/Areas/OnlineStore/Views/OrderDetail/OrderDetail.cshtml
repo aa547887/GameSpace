@@ -1,0 +1,173 @@
+﻿@model GameSpace.Areas.OnlineStore.ViewModels.OrderDetailViewModels
+
+@{
+    // 狀態 → badge 顏色
+    string payBadge = (Model.PaymentStatus ?? "").ToUpper() switch
+    {
+        "SUCCESS" => "success",
+        "PENDING" => "warning",
+        "FAIL" or "FAILED" => "danger",
+        _ => "secondary"
+    };
+    string shipBadge = (Model.Status ?? "").ToUpper() switch
+    {
+        "DELIVERED" => "success",
+        "SHIPPED" or "PICKED" => "primary",
+        "READY" or "PROCESSING" => "info",
+        "CANCELLED" => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="container-fluid">
+    <h2 class="mb-4">訂單明細</h2>
+
+    <div class="row g-4">
+        <!-- 左：資訊卡（在 lg 以上寬度占 4 欄） -->
+        <div class="col-12 col-lg-4">
+            <!-- 訂單資訊 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">訂單資訊</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5 col-sm-4 text-muted">訂單代碼</dt>
+                        <dd class="col-7 col-sm-8">@Model.OrderCode</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">會員ID</dt>
+                        <dd class="col-7 col-sm-8">@Model.UserId</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">總金額</dt>
+                        <dd class="col-7 col-sm-8">@Model.OrderTotal.ToString("N2")</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">訂單狀態</dt>
+                        <dd class="col-7 col-sm-8">@Model.OrderStatus</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">下單時間</dt>
+                        <dd class="col-7 col-sm-8">@Model.OrderDate.ToString("yyyy/MM/dd HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- 付款資訊 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">付款資訊</div>
+                <div class="card-body">
+                    <dl class="row mb-2">
+                        <dt class="col-5 col-sm-4 text-muted">付款狀態</dt>
+                        <dd class="col-7 col-sm-8">
+                            <span class="badge bg-@payBadge">@Model.PaymentStatus</span>
+                        </dd>
+                    </dl>
+                    <dl class="row mb-0">
+                        <dt class="col-5 col-sm-4 text-muted">付款代碼</dt>
+                        <dd class="col-7 col-sm-8">@(Model.PaymentCode?.ToString() ?? "-")</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">付款時間</dt>
+                        <dd class="col-7 col-sm-8">@(Model.PaymentAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- 出貨資訊 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">出貨資訊</div>
+                <div class="card-body">
+                    <dl class="row mb-2">
+                        <dt class="col-5 col-sm-4 text-muted">出貨狀態</dt>
+                        <dd class="col-7 col-sm-8">
+                            <span class="badge bg-@shipBadge" >@Model.Status</span>
+                        </dd>
+                    </dl>
+                    <dl class="row mb-0">
+                        <dt class="col-5 col-sm-4 text-muted">出貨單號</dt>
+                        <dd class="col-7 col-sm-8">@(Model.ShipmentCode?.ToString() ?? "-")</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">出貨時間</dt>
+                        <dd class="col-7 col-sm-8">@(Model.ShippedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- 收件地址 -->
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">收件地址</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5 col-sm-4 text-muted">收件人</dt>
+                        <dd class="col-7 col-sm-8">@Model.Recipient</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">電話</dt>
+                        <dd class="col-7 col-sm-8">@Model.Phone</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">郵遞區號</dt>
+                        <dd class="col-7 col-sm-8">@Model.Zipcode</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">城市</dt>
+                        <dd class="col-7 col-sm-8">@Model.City</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">地址</dt>
+                        <dd class="col-7 col-sm-8">@Model.Address1 @Model.Address2</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">國家</dt>
+                        <dd class="col-7 col-sm-8">@Model.Country</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右：明細表（在 lg 以上寬度占 8 欄） -->
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold d-flex justify-content-between">
+                    <span>訂單明細</span>
+                    <span class="text-muted small">共 @Model.Items?.Count() 筆</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.Items == null || !Model.Items.Any())
+                    {
+                        <div class="p-3 text-muted">此訂單沒有明細。</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:60%;">商品名稱</th>
+                                        <th class="text-end" style="width:10%;">數量</th>
+                                        <th class="text-end" style="width:15%;">單價</th>
+                                        <th class="text-end" style="width:15%;">小計</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var it in Model.Items)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @it.ProductName
+                                                <div class="text-muted small">
+                                                    代碼：@(it.ProductCode ?? "-")　·　#@it.ProductId
+                                                </div>
+                                            </td>
+                                            <td class="text-end">@it.Quantity</td>
+                                            <td class="text-end">@it.UnitPrice.ToString("N2")</td>
+                                            <td class="text-end">@it.Subtotal.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="3" class="text-end">明細合計</th>
+                                        <th class="text-end">
+                                            @Model.Items.Sum(i => i.Subtotal).ToString("N2")
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
