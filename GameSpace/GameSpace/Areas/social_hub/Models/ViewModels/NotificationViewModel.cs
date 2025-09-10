@@ -11,5 +11,4 @@
 		public DateTime CreatedAt { get; set; }
 		public bool IsRead { get; set; }
 	}
-
 }

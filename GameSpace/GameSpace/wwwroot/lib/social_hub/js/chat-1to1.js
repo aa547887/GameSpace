@@ -21,10 +21,6 @@
 
     // ====== Utils ======
     const $ = (sel) => document.querySelector(sel);
-    function getCookie(name) {
-        const m = document.cookie.match(new RegExp("(^|; )" + name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1") + "=([^;]*)"));
-        return m ? decodeURIComponent(m[2]) : "";
-    }
     function escapeHtml(s) {
         return String(s ?? "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
@@ -60,15 +56,6 @@
     const input = $("#messageInput");
     const sendBtn = $("#sendBtn");
 
-    if (!contactsUl || !peerTitle || !messagesEl || !form || !input || !sendBtn) {
-        console.error("[chat-1to1] Missing required DOM nodes.");
-        return;
-    }
-    if (!window.signalR) {
-        console.error("[chat-1to1] @microsoft/signalr not found. Include signalr.js before this file.");
-        return;
-    }
-
     // ====== State ======
     let meId = 0;
     let meName = "訪客";
@@ -79,7 +66,6 @@
 
     // ====== Self detection: meta -> cookie -> whoami ======
     async function initSelf() {
-        // meta
         const metaId = document.querySelector('meta[name="me-id"]')?.content;
         const metaNm = document.querySelector('meta[name="me-name"]')?.content;
         if (metaId && parseInt(metaId) > 0) {
@@ -305,7 +291,6 @@
         await startConn();             // 再連線 Hub
         await loadContacts();          // 載入聯絡人
         if (!meId) {
-            // 顯示提示並鎖住輸入（仍可看歷史）
             const banner = document.createElement("div");
             banner.className = "alert alert-warning m-2";
             banner.textContent = "尚未登入，無法傳送訊息。請先從右上角登入。";
