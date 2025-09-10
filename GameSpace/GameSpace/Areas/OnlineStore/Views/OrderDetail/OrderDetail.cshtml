@@ -134,6 +134,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width:60%;">商品名稱</th>
+                                        <th style="width:20%;">商品代碼</th>
                                         <th class="text-end" style="width:10%;">數量</th>
                                         <th class="text-end" style="width:15%;">單價</th>
                                         <th class="text-end" style="width:15%;">小計</th>
@@ -145,10 +146,9 @@
                                         <tr>
                                             <td>
                                                 @it.ProductName
-                                                <div class="text-muted small">
-                                                    代碼：@(it.ProductCode ?? "-")　·　#@it.ProductId
-                                                </div>
+                                                <div class="text-muted small">#@it.ProductId</div>
                                             </td>
+                                            <td class="text-break">@((it.ProductCode ?? "-"))</td>
                                             <td class="text-end">@it.Quantity</td>
                                             <td class="text-end">@it.UnitPrice.ToString("N2")</td>
                                             <td class="text-end">@it.Subtotal.ToString("N2")</td>
@@ -157,7 +157,7 @@
                                 </tbody>
                                 <tfoot class="table-light">
                                     <tr>
-                                        <th colspan="3" class="text-end">明細合計</th>
+                                        <th colspan="4" class="text-end">明細合計</th>
                                         <th class="text-end">
                                             @Model.Items.Sum(i => i.Subtotal).ToString("N2")
                                         </th>
