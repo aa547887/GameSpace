@@ -24,35 +24,32 @@ namespace GameSpace.Areas.social_hub.Services
 			int? senderManagerId
 		)
 		{
-			// 1) 決定 Sender 欄位（避免 FK 衝突）
+			// 1) 寄件者二擇一（或兩者皆空＝系統）
 			if (senderManagerId.HasValue && senderManagerId.Value > 0)
 			{
 				notification.SenderManagerId = senderManagerId;
-				notification.SenderId = null;
+				notification.SenderUserId = null;          // ← 改這裡（不要用 SenderId）
 			}
 			else if (senderUserId.HasValue && senderUserId.Value > 0)
 			{
-				notification.SenderId = senderUserId;
+				notification.SenderUserId = senderUserId;  // ← 改這裡
 				notification.SenderManagerId = null;
 			}
 			else
 			{
-				// 系統訊息
-				notification.SenderId = null;
+				notification.SenderUserId = null;
 				notification.SenderManagerId = null;
 			}
 
-			// 2) CreatedAt 若為非 Nullable DateTime，就用 default 判斷
-			if (notification.CreatedAt == default(DateTime))
-			{
+			// 2) 建立時間（若模型非 nullable）
+			if (notification.CreatedAt == default)
 				notification.CreatedAt = DateTime.UtcNow;
-			}
 
-			// 3) 寫主檔
+			// 3) 寫入主表
 			_db.Notifications.Add(notification);
-			await _db.SaveChangesAsync();
+			await _db.SaveChangesAsync(); // 取得 NotificationId
 
-			// 4) 去重 + 過濾非法 ID
+			// 4) 目標名單：去重、過濾非法
 			var targets = (userIds ?? Array.Empty<int>())
 				.Distinct()
 				.Where(id => id > 0)
@@ -61,25 +58,22 @@ namespace GameSpace.Areas.social_hub.Services
 			if (targets.Count == 0) return 0;
 
 			// 5) 僅保留存在的使用者（避免 FK 失敗）
-			var validUserIds = await _db.Users.AsNoTracking()
+			var validUserIds = await _db.Users
+				.AsNoTracking()
 				.Where(u => targets.Contains(u.UserId))
 				.Select(u => u.UserId)
 				.ToListAsync();
 
-			// 6) 寫收件人明細（移除 DeliveredAt，避免找不到欄位）
-			foreach (var uid in validUserIds)
+			if (validUserIds.Count == 0) return 0;
+
+			// 6) 寫入收件人（ReadAt 預設 NULL，不要設定 IsRead）
+			var recs = validUserIds.Select(uid => new NotificationRecipient
 			{
-				var rec = new NotificationRecipient
-				{
-					NotificationId = notification.NotificationId,
-					UserId = uid,
-					IsRead = false
-					// 如果你的模型有下列欄位，可自行解除註解：
-					// CreatedAt = DateTime.UtcNow,
-					// SendAt = DateTime.UtcNow
-				};
-				_db.NotificationRecipients.Add(rec);
-			}
+				NotificationId = notification.NotificationId,
+				UserId = uid,
+				// ReadAt = null  // 預設就是 NULL
+			});
+			_db.NotificationRecipients.AddRange(recs);
 
 			await _db.SaveChangesAsync();
 			return validUserIds.Count;

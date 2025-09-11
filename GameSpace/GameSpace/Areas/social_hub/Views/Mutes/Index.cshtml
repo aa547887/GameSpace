@@ -108,7 +108,7 @@
                         var canEditThis = canManage && (canAdminAll || (item.ManagerId.HasValue && item.ManagerId.Value == currentMid));
                         <tr>
                             <td>@item.MuteId</td>
-                            <td data-copy="@item.MuteName" title="點擊複製">@item.MuteName</td>
+                            <td data-copy="@item.Word" title="點擊複製">@item.Word</td>
                             <td>
                                 @if (item.IsActive == true)
                                 {
@@ -120,7 +120,7 @@
                                     <span class="cell-chip off">停用</span>
                                 }
                             </td>
-                            <td>@(item.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</td>
+                            <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
                             <td>
                                 @if (item.ManagerId.HasValue)
                                 {

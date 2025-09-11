@@ -11,17 +11,17 @@ public partial class GameSpacedatabaseContext : DbContext
     {
     }
 
-    public virtual DbSet<Admin> Admins { get; set; }
-
     public virtual DbSet<BannedWord> BannedWords { get; set; }
 
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
 
-    public virtual DbSet<ChatMessage> ChatMessages { get; set; }
-
     public virtual DbSet<Coupon> Coupons { get; set; }
 
     public virtual DbSet<CouponType> CouponTypes { get; set; }
+
+    public virtual DbSet<DmConversation> DmConversations { get; set; }
+
+    public virtual DbSet<DmMessage> DmMessages { get; set; }
 
     public virtual DbSet<Evoucher> Evouchers { get; set; }
 
@@ -48,6 +48,8 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<GroupChat> GroupChats { get; set; }
 
     public virtual DbSet<GroupMember> GroupMembers { get; set; }
+
+    public virtual DbSet<GroupReadState> GroupReadStates { get; set; }
 
     public virtual DbSet<LeaderboardSnapshot> LeaderboardSnapshots { get; set; }
 
@@ -129,9 +131,13 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<StockMovement> StockMovements { get; set; }
 
-    public virtual DbSet<Style> Styles { get; set; }
-
     public virtual DbSet<Supplier> Suppliers { get; set; }
+
+    public virtual DbSet<SupportTicket> SupportTickets { get; set; }
+
+    public virtual DbSet<SupportTicketAssignment> SupportTicketAssignments { get; set; }
+
+    public virtual DbSet<SupportTicketMessage> SupportTicketMessages { get; set; }
 
     public virtual DbSet<Thread> Threads { get; set; }
 
@@ -155,21 +161,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Admin>(entity =>
-        {
-            entity.HasKey(e => e.ManagerId).HasName("PK__Admins__5A6073FC64EF085E");
-
-            entity.Property(e => e.ManagerId)
-                .ValueGeneratedNever()
-                .HasColumnName("manager_id");
-            entity.Property(e => e.LastLogin).HasColumnName("last_login");
-
-            entity.HasOne(d => d.Manager).WithOne(p => p.Admin)
-                .HasForeignKey<Admin>(d => d.ManagerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Admins__manager___0E04126B");
-        });
-
         modelBuilder.Entity<BannedWord>(entity =>
         {
             entity.HasKey(e => e.WordId).HasName("PK__banned_w__7FFA1D406FBDDC61");
@@ -205,43 +196,6 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Bookmarks)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__bookmarks__User___6BAEFA67");
-        });
-
-        modelBuilder.Entity<ChatMessage>(entity =>
-        {
-            entity.HasKey(e => e.MessageId).HasName("PK__Chat_Mes__0BBF6EE62FA772B9");
-
-            entity.ToTable("Chat_Message");
-
-            entity.HasIndex(e => e.SentAt, "Chat_Message_index_35");
-
-            entity.HasIndex(e => new { e.ReceiverId, e.SentAt }, "Chat_Message_index_36");
-
-            entity.Property(e => e.MessageId).HasColumnName("message_id");
-            entity.Property(e => e.ChatContent)
-                .HasMaxLength(255)
-                .HasColumnName("chat_content");
-            entity.Property(e => e.IsRead).HasColumnName("is_read");
-            entity.Property(e => e.IsSent)
-                .HasDefaultValue(true)
-                .HasColumnName("is_sent");
-            entity.Property(e => e.ManagerId).HasColumnName("manager_id");
-            entity.Property(e => e.ReceiverId).HasColumnName("receiver_id");
-            entity.Property(e => e.SenderId).HasColumnName("sender_id");
-            entity.Property(e => e.SentAt).HasColumnName("sent_at");
-
-            entity.HasOne(d => d.Manager).WithMany(p => p.ChatMessages)
-                .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Chat_Mess__manag__178D7CA5");
-
-            entity.HasOne(d => d.Receiver).WithMany(p => p.ChatMessageReceivers)
-                .HasForeignKey(d => d.ReceiverId)
-                .HasConstraintName("FK__Chat_Mess__recei__1975C517");
-
-            entity.HasOne(d => d.Sender).WithMany(p => p.ChatMessageSenders)
-                .HasForeignKey(d => d.SenderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Chat_Mess__sende__1881A0DE");
         });
 
         modelBuilder.Entity<Coupon>(entity =>
@@ -282,6 +236,63 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.MinSpend).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Name).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<DmConversation>(entity =>
+        {
+            entity.HasKey(e => e.ConversationId);
+
+            entity.ToTable("DM_Conversations", tb => tb.HasTrigger("TR_DMC_ValidateEndpoints"));
+
+            entity.HasIndex(e => new { e.IsManagerDm, e.Party1Id, e.LastMessageAt }, "IX_DMC_List_ByParty1").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.IsManagerDm, e.Party2Id, e.LastMessageAt }, "IX_DMC_List_ByParty2").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.IsManagerDm, e.Party1Id, e.Party2Id }, "UQ_DM_Conversations_Pair").IsUnique();
+
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsManagerDm).HasColumnName("is_manager_dm");
+            entity.Property(e => e.LastMessageAt).HasColumnName("last_message_at");
+            entity.Property(e => e.Party1Id).HasColumnName("party1_id");
+            entity.Property(e => e.Party2Id).HasColumnName("party2_id");
+        });
+
+        modelBuilder.Entity<DmMessage>(entity =>
+        {
+            entity.HasKey(e => e.MessageId);
+
+            entity.ToTable("DM_Messages", tb =>
+                {
+                    tb.HasTrigger("TR_DMM_AfterInsert_UpdateConversation");
+                    tb.HasTrigger("TR_DMM_InsteadOfUpdate_ReadFlag");
+                });
+
+            entity.HasIndex(e => new { e.ConversationId, e.EditedAt }, "IX_Msg_ConvTime");
+
+            entity.HasIndex(e => e.ConversationId, "IX_Msg_Unread").HasFilter("([is_read]=(0))");
+
+            entity.HasIndex(e => new { e.ConversationId, e.EditedAt }, "IX_Msg_Unread_ForParty1").HasFilter("([is_read]=(0) AND [sender_is_party1]=(0))");
+
+            entity.HasIndex(e => new { e.ConversationId, e.EditedAt }, "IX_Msg_Unread_ForParty2").HasFilter("([is_read]=(0) AND [sender_is_party1]=(1))");
+
+            entity.Property(e => e.MessageId).HasColumnName("message_id");
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id");
+            entity.Property(e => e.EditedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("edited_at");
+            entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.MessageText)
+                .HasMaxLength(255)
+                .HasColumnName("message_text");
+            entity.Property(e => e.ReadAt).HasColumnName("read_at");
+            entity.Property(e => e.SenderIsParty1).HasColumnName("sender_is_party1");
+
+            entity.HasOne(d => d.Conversation).WithMany(p => p.DmMessages)
+                .HasForeignKey(d => d.ConversationId)
+                .HasConstraintName("FK_DM_Messages_Conversation");
         });
 
         modelBuilder.Entity<Evoucher>(entity =>
@@ -439,24 +450,36 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<GameProductDetail>(entity =>
         {
-            entity.HasNoKey();
+            entity.HasKey(e => e.ProductId).HasName("PK__GameProd__47027DF5FC0CBD29");
 
+            entity.Property(e => e.ProductId)
+                .ValueGeneratedNever()
+                .HasColumnName("product_id");
             entity.Property(e => e.DownloadLink)
                 .HasMaxLength(500)
                 .HasColumnName("download_link");
             entity.Property(e => e.GameType)
                 .HasMaxLength(200)
                 .HasColumnName("game_type");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.PlatformId).HasColumnName("platform_id");
             entity.Property(e => e.PlatformName)
                 .HasMaxLength(100)
                 .HasColumnName("platform_name");
             entity.Property(e => e.ProductDescription).HasColumnName("product_description");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.ProductName)
-                .HasMaxLength(200)
-                .HasColumnName("product_name");
             entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+
+            entity.HasOne(d => d.Product).WithOne(p => p.GameProductDetail)
+                .HasForeignKey<GameProductDetail>(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GameProductDetails_ProductInfo");
+
+            entity.HasOne(d => d.Supplier).WithMany(p => p.GameProductDetails)
+                .HasForeignKey(d => d.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GameProductDetails_Supplier");
         });
 
         modelBuilder.Entity<GameSourceMap>(entity =>
@@ -470,6 +493,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasIndex(e => new { e.SourceId, e.ExternalKey }, "game_source_map_index_2");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.ExternalKey)
                 .HasMaxLength(255)
                 .HasColumnName("external_key");
@@ -487,101 +511,141 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Group>(entity =>
         {
-            entity.HasKey(e => e.GroupId).HasName("PK__Groups__D57795A04E6A602C");
+            entity.HasIndex(e => e.GroupName, "IX_Groups_Name");
 
             entity.Property(e => e.GroupId).HasColumnName("group_id");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description)
+                .HasMaxLength(200)
+                .HasColumnName("description");
             entity.Property(e => e.GroupName)
-                .HasMaxLength(10)
+                .HasMaxLength(50)
                 .HasColumnName("group_name");
+            entity.Property(e => e.IsPrivate).HasColumnName("is_private");
+            entity.Property(e => e.OwnerUserId).HasColumnName("owner_user_id");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Groups)
-                .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__Groups__created___1A69E950");
+            entity.HasOne(d => d.OwnerUser).WithMany(p => p.Groups)
+                .HasForeignKey(d => d.OwnerUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Groups_Owner");
         });
 
         modelBuilder.Entity<GroupBlock>(entity =>
         {
-            entity.HasKey(e => e.BlockId).HasName("PK__Group_Bl__A67E647D7FFDE20E");
+            entity.HasKey(e => e.BlockId);
 
             entity.ToTable("Group_Block");
 
-            entity.HasIndex(e => new { e.GroupId, e.UserId }, "Group_Block_index_39").IsUnique();
-
-            entity.HasIndex(e => e.GroupId, "Group_Block_index_40");
-
-            entity.HasIndex(e => e.UserId, "Group_Block_index_41");
+            entity.HasIndex(e => new { e.GroupId, e.UserId }, "UQ_Group_Block_Current")
+                .IsUnique()
+                .HasFilter("([unblocked_at] IS NULL)");
 
             entity.Property(e => e.BlockId).HasColumnName("block_id");
-            entity.Property(e => e.BlockedBy).HasColumnName("blocked_by");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.BlockedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("blocked_at");
+            entity.Property(e => e.BlockedByUserId).HasColumnName("blocked_by_user_id");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
-            entity.Property(e => e.UserId).HasColumnName("User_ID");
+            entity.Property(e => e.Reason)
+                .HasMaxLength(200)
+                .HasColumnName("reason");
+            entity.Property(e => e.UnblockedAt).HasColumnName("unblocked_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.BlockedByNavigation).WithMany(p => p.GroupBlockBlockedByNavigations)
-                .HasForeignKey(d => d.BlockedBy)
-                .HasConstraintName("FK__Group_Blo__block__2116E6DF");
+            entity.HasOne(d => d.BlockedByUser).WithMany(p => p.GroupBlockBlockedByUsers)
+                .HasForeignKey(d => d.BlockedByUserId)
+                .HasConstraintName("FK_Group_Block_ByUser");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupBlocks)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Group_Blo__group__1F2E9E6D");
+                .HasConstraintName("FK_Group_Block_Group");
 
             entity.HasOne(d => d.User).WithMany(p => p.GroupBlockUsers)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Group_Blo__User___2022C2A6");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Group_Block_User");
         });
 
         modelBuilder.Entity<GroupChat>(entity =>
         {
-            entity.HasKey(e => e.GroupChatId).HasName("PK__Group_Ch__C4565A19CEDFBF18");
+            entity.HasKey(e => e.MessageId);
 
             entity.ToTable("Group_Chat");
 
-            entity.HasIndex(e => e.GroupId, "Group_Chat_index_37");
+            entity.HasIndex(e => new { e.GroupId, e.SentAt }, "IX_Group_Chat_Group_SentAt");
 
-            entity.HasIndex(e => new { e.GroupId, e.SentAt }, "Group_Chat_index_38");
-
-            entity.Property(e => e.GroupChatId).HasColumnName("group_chat_id");
-            entity.Property(e => e.GroupChatContent)
-                .HasMaxLength(255)
-                .HasColumnName("group_chat_content");
+            entity.Property(e => e.MessageId).HasColumnName("message_id");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
-            entity.Property(e => e.IsSent)
-                .HasDefaultValue(true)
-                .HasColumnName("is_sent");
-            entity.Property(e => e.SenderId).HasColumnName("sender_id");
-            entity.Property(e => e.SentAt).HasColumnName("sent_at");
+            entity.Property(e => e.MessageText).HasColumnName("message_text");
+            entity.Property(e => e.SenderUserId).HasColumnName("sender_user_id");
+            entity.Property(e => e.SentAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("sent_at");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupChats)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Group_Cha__group__1D4655FB");
+                .HasConstraintName("FK_Group_Chat_Group");
 
-            entity.HasOne(d => d.Sender).WithMany(p => p.GroupChats)
-                .HasForeignKey(d => d.SenderId)
-                .HasConstraintName("FK__Group_Cha__sende__1E3A7A34");
+            entity.HasOne(d => d.SenderUser).WithMany(p => p.GroupChats)
+                .HasForeignKey(d => d.SenderUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Group_Chat_Sender");
         });
 
         modelBuilder.Entity<GroupMember>(entity =>
         {
-            entity.HasKey(e => new { e.GroupId, e.UserId }).HasName("PK__Group_Me__C7714CB9F56F94CE");
-
             entity.ToTable("Group_Member");
 
+            entity.HasIndex(e => new { e.GroupId, e.UserId }, "UQ_Group_Member_Current")
+                .IsUnique()
+                .HasFilter("([left_at] IS NULL)");
+
+            entity.Property(e => e.GroupMemberId).HasColumnName("group_member_id");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
-            entity.Property(e => e.UserId).HasColumnName("User_ID");
-            entity.Property(e => e.IsAdmin).HasColumnName("is_admin");
-            entity.Property(e => e.JoinedAt).HasColumnName("joined_at");
+            entity.Property(e => e.JoinedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("joined_at");
+            entity.Property(e => e.LeftAt).HasColumnName("left_at");
+            entity.Property(e => e.RoleName)
+                .HasMaxLength(20)
+                .HasDefaultValue("member")
+                .HasColumnName("role_name");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupMembers)
                 .HasForeignKey(d => d.GroupId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Group_Mem__group__1B5E0D89");
+                .HasConstraintName("FK_Group_Member_Group");
 
             entity.HasOne(d => d.User).WithMany(p => p.GroupMembers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Group_Mem__User___1C5231C2");
+                .HasConstraintName("FK_Group_Member_User");
+        });
+
+        modelBuilder.Entity<GroupReadState>(entity =>
+        {
+            entity.HasKey(e => e.StateId);
+
+            entity.ToTable("Group_Read_States");
+
+            entity.HasIndex(e => new { e.GroupId, e.UserId }, "UQ_Group_Read_States_GroupUser").IsUnique();
+
+            entity.Property(e => e.StateId).HasColumnName("state_id");
+            entity.Property(e => e.GroupId).HasColumnName("group_id");
+            entity.Property(e => e.LastReadAt).HasColumnName("last_read_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Group).WithMany(p => p.GroupReadStates)
+                .HasForeignKey(d => d.GroupId)
+                .HasConstraintName("FK_Group_Read_States_Group");
+
+            entity.HasOne(d => d.User).WithMany(p => p.GroupReadStates)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Group_Read_States_User");
         });
 
         modelBuilder.Entity<LeaderboardSnapshot>(entity =>
@@ -703,13 +767,11 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<MerchType>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("MerchType");
+            entity.HasKey(e => e.MerchTypeId).HasName("PK__MerchTyp__894B2F3111B26F3C");
 
-            entity.Property(e => e.MerchTypeId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("merch_type_id");
+            entity.ToTable("MerchType");
+
+            entity.Property(e => e.MerchTypeId).HasColumnName("merch_type_id");
             entity.Property(e => e.MerchTypeName)
                 .HasMaxLength(50)
                 .HasColumnName("merch_type_name");
@@ -787,131 +849,160 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Mute>(entity =>
         {
-            entity.HasKey(e => e.MuteId).HasName("PK__Mutes__84EE96EB9DD35443");
+            entity.HasIndex(e => e.Word, "UQ_Mutes_Word").IsUnique();
 
             entity.Property(e => e.MuteId).HasColumnName("mute_id");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.ManagerId).HasColumnName("manager_id");
-            entity.Property(e => e.MuteName)
-                .HasMaxLength(10)
-                .HasColumnName("mute_name");
+            entity.Property(e => e.Replacement)
+                .HasMaxLength(50)
+                .HasColumnName("replacement");
+            entity.Property(e => e.Word)
+                .HasMaxLength(50)
+                .HasColumnName("word");
 
             entity.HasOne(d => d.Manager).WithMany(p => p.Mutes)
                 .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Mutes__manager_i__0EF836A4");
+                .HasConstraintName("FK_Mutes_Manager");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__E059842FEBC56A47");
+            entity.HasIndex(e => new { e.GroupId, e.CreatedAt }, "IX_Notifications_Group_Created").IsDescending(false, true);
+
+            entity.HasIndex(e => new { e.SourceId, e.ActionId, e.CreatedAt }, "IX_Notifications_Source_Action_Created").IsDescending(false, false, true);
 
             entity.Property(e => e.NotificationId).HasColumnName("notification_id");
             entity.Property(e => e.ActionId).HasColumnName("action_id");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
             entity.Property(e => e.GroupId).HasColumnName("group_id");
-            entity.Property(e => e.NotificationMessage)
+            entity.Property(e => e.Message)
                 .HasMaxLength(255)
-                .HasColumnName("notification_message");
-            entity.Property(e => e.NotificationTitle)
-                .HasMaxLength(20)
-                .HasColumnName("notification_title");
-            entity.Property(e => e.SenderId).HasColumnName("sender_id");
+                .HasColumnName("message");
             entity.Property(e => e.SenderManagerId).HasColumnName("sender_manager_id");
+            entity.Property(e => e.SenderUserId).HasColumnName("sender_user_id");
             entity.Property(e => e.SourceId).HasColumnName("source_id");
+            entity.Property(e => e.Title)
+                .HasMaxLength(100)
+                .HasColumnName("title");
 
             entity.HasOne(d => d.Action).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.ActionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__actio__11D4A34F");
+                .HasConstraintName("FK_Notifications_Action");
 
             entity.HasOne(d => d.Group).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.GroupId)
-                .HasConstraintName("FK__Notificat__group__14B10FFA");
-
-            entity.HasOne(d => d.Sender).WithMany(p => p.Notifications)
-                .HasForeignKey(d => d.SenderId)
-                .HasConstraintName("FK__Notificat__sende__12C8C788");
+                .HasConstraintName("FK_Notifications_Group");
 
             entity.HasOne(d => d.SenderManager).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SenderManagerId)
-                .HasConstraintName("FK__Notificat__sende__13BCEBC1");
+                .HasConstraintName("FK_Notifications_SenderManager");
+
+            entity.HasOne(d => d.SenderUser).WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.SenderUserId)
+                .HasConstraintName("FK_Notifications_SenderUser");
 
             entity.HasOne(d => d.Source).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.SourceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__sourc__10E07F16");
+                .HasConstraintName("FK_Notifications_Source");
         });
 
         modelBuilder.Entity<NotificationAction>(entity =>
         {
-            entity.HasKey(e => e.ActionId).HasName("PK__Notifica__74EFC2176383B96B");
+            entity.HasKey(e => e.ActionId);
 
             entity.ToTable("Notification_Actions");
 
-            entity.HasIndex(e => e.ActionName, "Notification_Actions_index_32").IsUnique();
+            entity.HasIndex(e => e.ActionName, "UQ_Notification_Actions_Name").IsUnique();
 
             entity.Property(e => e.ActionId).HasColumnName("action_id");
             entity.Property(e => e.ActionName)
-                .HasMaxLength(10)
+                .HasMaxLength(50)
                 .HasColumnName("action_name");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
         });
 
         modelBuilder.Entity<NotificationRecipient>(entity =>
         {
-            entity.HasKey(e => e.RecipientId).HasName("PK__Notifica__FA0A4027FE384C6D");
+            entity.HasKey(e => e.RecipientId);
 
             entity.ToTable("Notification_Recipients");
 
-            entity.HasIndex(e => new { e.UserId, e.IsRead, e.RecipientId }, "IX_Inbox");
+            entity.HasIndex(e => new { e.ManagerId, e.ReadAt, e.NotificationId }, "IX_Recipients_Manager_Read")
+                .IsDescending(false, false, true)
+                .HasFilter("([manager_id] IS NOT NULL)");
 
-            entity.HasIndex(e => new { e.NotificationId, e.UserId }, "Notification_Recipients_index_33").IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.ReadAt, e.NotificationId }, "IX_Recipients_User_Read")
+                .IsDescending(false, false, true)
+                .HasFilter("([user_id] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.NotificationId, e.ManagerId }, "UQ_Recipients_Notification_Manager")
+                .IsUnique()
+                .HasFilter("([manager_id] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.NotificationId, e.UserId }, "UQ_Recipients_Notification_User")
+                .IsUnique()
+                .HasFilter("([user_id] IS NOT NULL)");
 
             entity.Property(e => e.RecipientId).HasColumnName("recipient_id");
-            entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.ManagerId).HasColumnName("manager_id");
             entity.Property(e => e.NotificationId).HasColumnName("notification_id");
             entity.Property(e => e.ReadAt).HasColumnName("read_at");
-            entity.Property(e => e.UserId).HasColumnName("User_ID");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Manager).WithMany(p => p.NotificationRecipients)
+                .HasForeignKey(d => d.ManagerId)
+                .HasConstraintName("FK_Recipients_Manager");
 
             entity.HasOne(d => d.Notification).WithMany(p => p.NotificationRecipients)
                 .HasForeignKey(d => d.NotificationId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__notif__15A53433");
+                .HasConstraintName("FK_Recipients_Notification");
 
             entity.HasOne(d => d.User).WithMany(p => p.NotificationRecipients)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__User___1699586C");
+                .HasConstraintName("FK_Recipients_User");
         });
 
         modelBuilder.Entity<NotificationSource>(entity =>
         {
-            entity.HasKey(e => e.SourceId).HasName("PK__Notifica__3035A9B6AB2C5CDE");
+            entity.HasKey(e => e.SourceId);
 
             entity.ToTable("Notification_Sources");
 
+            entity.HasIndex(e => e.SourceName, "UQ_Notification_Sources_Name").IsUnique();
+
             entity.Property(e => e.SourceId).HasColumnName("source_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
             entity.Property(e => e.SourceName)
-                .HasMaxLength(10)
+                .HasMaxLength(50)
                 .HasColumnName("source_name");
         });
 
         modelBuilder.Entity<OfficialStoreRanking>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Official_Store_Ranking");
+            entity.HasKey(e => e.RankingId).HasName("PK__Official__95F5B23DDE60FACA");
 
+            entity.ToTable("Official_Store_Ranking");
+
+            entity.Property(e => e.RankingId).HasColumnName("ranking_id");
             entity.Property(e => e.PeriodType)
                 .HasMaxLength(20)
                 .HasColumnName("period_type");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.RankingDate).HasColumnName("ranking_date");
-            entity.Property(e => e.RankingId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("ranking_id");
             entity.Property(e => e.RankingMetric)
                 .HasMaxLength(50)
                 .HasColumnName("ranking_metric");
@@ -1043,8 +1134,11 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<OtherProductDetail>(entity =>
         {
-            entity.HasNoKey();
+            entity.HasKey(e => e.ProductId).HasName("PK__OtherPro__47027DF5D4B3F204");
 
+            entity.Property(e => e.ProductId)
+                .ValueGeneratedNever()
+                .HasColumnName("product_id");
             entity.Property(e => e.Color)
                 .HasMaxLength(50)
                 .HasColumnName("color");
@@ -1054,15 +1148,14 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Dimensions)
                 .HasMaxLength(100)
                 .HasColumnName("dimensions");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Material)
                 .HasMaxLength(50)
                 .HasColumnName("material");
             entity.Property(e => e.MerchTypeId).HasColumnName("merch_type_id");
             entity.Property(e => e.ProductDescription).HasColumnName("product_description");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.ProductName)
-                .HasMaxLength(200)
-                .HasColumnName("product_name");
             entity.Property(e => e.Size)
                 .HasMaxLength(50)
                 .HasColumnName("size");
@@ -1071,6 +1164,20 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.Weight)
                 .HasMaxLength(50)
                 .HasColumnName("weight");
+
+            entity.HasOne(d => d.MerchType).WithMany(p => p.OtherProductDetails)
+                .HasForeignKey(d => d.MerchTypeId)
+                .HasConstraintName("FK_OtherProductDetails_MerchType");
+
+            entity.HasOne(d => d.Product).WithOne(p => p.OtherProductDetail)
+                .HasForeignKey<OtherProductDetail>(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_OtherProductDetails_ProductInfo");
+
+            entity.HasOne(d => d.Supplier).WithMany(p => p.OtherProductDetails)
+                .HasForeignKey(d => d.SupplierId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_OtherProductDetails_Supplier");
         });
 
         modelBuilder.Entity<PaymentTransaction>(entity =>
@@ -1422,76 +1529,91 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<ProductCode>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("ProductCode");
+            entity.HasKey(e => e.ProductCode1).HasName("PK__ProductC__AE1A8CC502EA2584");
+
+            entity.ToTable("ProductCode");
 
             entity.Property(e => e.ProductCode1)
                 .HasMaxLength(50)
                 .HasColumnName("product_code");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductCodes)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductCode_ProductInfo");
         });
 
         modelBuilder.Entity<ProductImage>(entity =>
         {
-            entity.HasNoKey();
+            entity.HasKey(e => e.ProductimgId).HasName("PK__ProductI__4FFACE1528BCC4AC");
 
+            entity.Property(e => e.ProductimgId).HasColumnName("productimg_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ProductimgAltText)
                 .HasMaxLength(255)
                 .HasColumnName("productimg_alt_text");
-            entity.Property(e => e.ProductimgId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("productimg_id");
             entity.Property(e => e.ProductimgUpdatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnName("productimg_updated_at");
             entity.Property(e => e.ProductimgUrl)
                 .HasMaxLength(500)
                 .HasColumnName("productimg_url");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductImages_ProductInfo");
         });
 
         modelBuilder.Entity<ProductInfo>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("ProductInfo");
+            entity.HasKey(e => e.ProductId).HasName("PK__ProductI__47027DF58E47EAE3");
 
+            entity.ToTable("ProductInfo");
+
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.CurrencyCode)
                 .HasMaxLength(10)
                 .HasDefaultValue("TWD")
                 .HasColumnName("currency_code");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
             entity.Property(e => e.ProductCreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnName("product_created_at");
-            entity.Property(e => e.ProductCreatedBy)
-                .HasMaxLength(50)
-                .HasColumnName("product_created_by");
-            entity.Property(e => e.ProductId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("product_id");
+            entity.Property(e => e.ProductCreatedBy).HasColumnName("product_created_by");
             entity.Property(e => e.ProductName)
                 .HasMaxLength(200)
                 .HasColumnName("product_name");
             entity.Property(e => e.ProductType)
-                .HasMaxLength(50)
+                .HasMaxLength(200)
                 .HasColumnName("product_type");
             entity.Property(e => e.ProductUpdatedAt).HasColumnName("product_updated_at");
-            entity.Property(e => e.ProductUpdatedBy)
-                .HasMaxLength(50)
-                .HasColumnName("product_updated_by");
+            entity.Property(e => e.ProductUpdatedBy).HasColumnName("product_updated_by");
             entity.Property(e => e.ShipmentQuantity).HasColumnName("Shipment_Quantity");
+
+            entity.HasOne(d => d.ProductCreatedByNavigation).WithMany(p => p.ProductInfoProductCreatedByNavigations)
+                .HasForeignKey(d => d.ProductCreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductInfo_ManagerData");
+
+            entity.HasOne(d => d.ProductUpdatedByNavigation).WithMany(p => p.ProductInfoProductUpdatedByNavigations)
+                .HasForeignKey(d => d.ProductUpdatedBy)
+                .HasConstraintName("FK_ProductInfo_ManagerData_updatedby");
         });
 
         modelBuilder.Entity<ProductInfoAuditLog>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("ProductInfoAuditLog");
+            entity.HasKey(e => e.LogId).HasName("PK__ProductI__9E2397E0E26EBC39");
 
+            entity.ToTable("ProductInfoAuditLog");
+
+            entity.Property(e => e.LogId).HasColumnName("log_id");
             entity.Property(e => e.ActionType)
                 .HasMaxLength(30)
                 .HasColumnName("action_type");
@@ -1501,17 +1623,19 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.FieldName)
                 .HasMaxLength(100)
                 .HasColumnName("field_name");
-            entity.Property(e => e.LogId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("log_id");
             entity.Property(e => e.ManagerId).HasColumnName("Manager_Id");
             entity.Property(e => e.NewValue).HasColumnName("new_value");
             entity.Property(e => e.OldValue).HasColumnName("old_value");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
 
-            entity.HasOne(d => d.Manager).WithMany()
+            entity.HasOne(d => d.Manager).WithMany(p => p.ProductInfoAuditLogs)
                 .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__ProductIn__Manag__038683F8");
+                .HasConstraintName("FK__ProductInfoAuditLog_ManagerData");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductInfoAuditLogs)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductInfoAuditLog_ProductInfo");
         });
 
         modelBuilder.Entity<Reaction>(entity =>
@@ -1544,49 +1668,62 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Relation>(entity =>
         {
-            entity.HasKey(e => e.RelationId).HasName("PK__Relation__C409F3232DD45963");
-
             entity.ToTable("Relation");
 
-            entity.HasIndex(e => new { e.UserId, e.FriendId }, "Relation_index_42").IsUnique();
+            entity.HasIndex(e => new { e.UserIdSmall, e.UserIdLarge }, "UQ_Relation_UserPair").IsUnique();
 
             entity.Property(e => e.RelationId).HasColumnName("relation_id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysdatetime())")
+                .HasDefaultValueSql("(sysutcdatetime())")
                 .HasColumnName("created_at");
-            entity.Property(e => e.FriendId).HasColumnName("friend_id");
             entity.Property(e => e.FriendNickname)
                 .HasMaxLength(10)
                 .HasColumnName("friend_nickname");
+            entity.Property(e => e.RequestedBy).HasColumnName("requested_by");
             entity.Property(e => e.StatusId).HasColumnName("status_id");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.UserId).HasColumnName("User_ID");
+            entity.Property(e => e.UserIdLarge).HasColumnName("user_id_large");
+            entity.Property(e => e.UserIdSmall).HasColumnName("user_id_small");
 
-            entity.HasOne(d => d.Friend).WithMany(p => p.RelationFriends)
-                .HasForeignKey(d => d.FriendId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__friend__22FF2F51");
+            entity.HasOne(d => d.RequestedByNavigation).WithMany(p => p.RelationRequestedByNavigations)
+                .HasForeignKey(d => d.RequestedBy)
+                .HasConstraintName("FK_Relation_RequestedBy");
 
             entity.HasOne(d => d.Status).WithMany(p => p.Relations)
                 .HasForeignKey(d => d.StatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__status__23F3538A");
+                .HasConstraintName("FK_Relation_Status");
 
-            entity.HasOne(d => d.User).WithMany(p => p.RelationUsers)
-                .HasForeignKey(d => d.UserId)
+            entity.HasOne(d => d.UserIdLargeNavigation).WithMany(p => p.RelationUserIdLargeNavigations)
+                .HasForeignKey(d => d.UserIdLarge)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Relation__User_I__220B0B18");
+                .HasConstraintName("FK_Relation_UserLarge");
+
+            entity.HasOne(d => d.UserIdSmallNavigation).WithMany(p => p.RelationUserIdSmallNavigations)
+                .HasForeignKey(d => d.UserIdSmall)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Relation_UserSmall");
         });
 
         modelBuilder.Entity<RelationStatus>(entity =>
         {
-            entity.HasKey(e => e.StatusId).HasName("PK__Relation__3683B531F9D20A4A");
+            entity.HasKey(e => e.StatusId);
 
             entity.ToTable("Relation_Status");
 
+            entity.HasIndex(e => e.StatusCode, "UQ_Relation_Status_Code").IsUnique();
+
+            entity.HasIndex(e => e.StatusName, "UQ_Relation_Status_Name").IsUnique();
+
             entity.Property(e => e.StatusId).HasColumnName("status_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.StatusCode)
+                .HasMaxLength(30)
+                .HasColumnName("status_code");
             entity.Property(e => e.StatusName)
-                .HasMaxLength(10)
+                .HasMaxLength(30)
                 .HasColumnName("status_name");
         });
 
@@ -1634,37 +1771,133 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("reason");
         });
 
-        modelBuilder.Entity<Style>(entity =>
-        {
-            entity.HasKey(e => e.StyleId).HasName("PK__Styles__D333B397F7F49430");
-
-            entity.Property(e => e.StyleId).HasColumnName("style_id");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.EffectDesc)
-                .HasMaxLength(255)
-                .HasColumnName("effect_desc");
-            entity.Property(e => e.ManagerId).HasColumnName("manager_id");
-            entity.Property(e => e.StyleName)
-                .HasMaxLength(10)
-                .HasColumnName("style_name");
-
-            entity.HasOne(d => d.Manager).WithMany(p => p.Styles)
-                .HasForeignKey(d => d.ManagerId)
-                .HasConstraintName("FK__Styles__manager___0FEC5ADD");
-        });
-
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Supplier");
+            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E853946201");
 
-            entity.Property(e => e.SupplierId)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("supplier_id");
+            entity.ToTable("Supplier");
+
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
             entity.Property(e => e.SupplierName)
                 .HasMaxLength(100)
                 .HasColumnName("supplier_name");
+        });
+
+        modelBuilder.Entity<SupportTicket>(entity =>
+        {
+            entity.HasKey(e => e.TicketId);
+
+            entity.ToTable("Support_Tickets");
+
+            entity.HasIndex(e => new { e.IsClosed, e.AssignedManagerId, e.LastMessageAt }, "IX_Support_Tickets_Closed_Assigned_LastMsg").IsDescending(false, false, true);
+
+            entity.HasIndex(e => new { e.UserId, e.LastMessageAt }, "IX_Support_Tickets_User_LastMsg").IsDescending(false, true);
+
+            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+            entity.Property(e => e.AssignedManagerId).HasColumnName("assigned_manager_id");
+            entity.Property(e => e.CloseNote)
+                .HasMaxLength(255)
+                .HasColumnName("close_note");
+            entity.Property(e => e.ClosedAt).HasColumnName("closed_at");
+            entity.Property(e => e.ClosedByManagerId).HasColumnName("closed_by_manager_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsClosed).HasColumnName("is_closed");
+            entity.Property(e => e.LastMessageAt).HasColumnName("last_message_at");
+            entity.Property(e => e.Subject)
+                .HasMaxLength(100)
+                .HasColumnName("subject");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.AssignedManager).WithMany(p => p.SupportTicketAssignedManagers)
+                .HasForeignKey(d => d.AssignedManagerId)
+                .HasConstraintName("FK_Support_Tickets_AssignedManager");
+
+            entity.HasOne(d => d.ClosedByManager).WithMany(p => p.SupportTicketClosedByManagers)
+                .HasForeignKey(d => d.ClosedByManagerId)
+                .HasConstraintName("FK_Support_Tickets_ClosedBy");
+
+            entity.HasOne(d => d.User).WithMany(p => p.SupportTickets)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Support_Tickets_Users");
+        });
+
+        modelBuilder.Entity<SupportTicketAssignment>(entity =>
+        {
+            entity.HasKey(e => e.AssignmentId);
+
+            entity.ToTable("Support_Ticket_Assignments");
+
+            entity.HasIndex(e => new { e.TicketId, e.AssignedAt }, "IX_Ticket_Assignments_Ticket_Time");
+
+            entity.Property(e => e.AssignmentId).HasColumnName("assignment_id");
+            entity.Property(e => e.AssignedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("assigned_at");
+            entity.Property(e => e.AssignedByManagerId).HasColumnName("assigned_by_manager_id");
+            entity.Property(e => e.FromManagerId).HasColumnName("from_manager_id");
+            entity.Property(e => e.Note)
+                .HasMaxLength(255)
+                .HasColumnName("note");
+            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+            entity.Property(e => e.ToManagerId).HasColumnName("to_manager_id");
+
+            entity.HasOne(d => d.AssignedByManager).WithMany(p => p.SupportTicketAssignmentAssignedByManagers)
+                .HasForeignKey(d => d.AssignedByManagerId)
+                .HasConstraintName("FK_Ticket_Assignments_By");
+
+            entity.HasOne(d => d.FromManager).WithMany(p => p.SupportTicketAssignmentFromManagers)
+                .HasForeignKey(d => d.FromManagerId)
+                .HasConstraintName("FK_Ticket_Assignments_From");
+
+            entity.HasOne(d => d.Ticket).WithMany(p => p.SupportTicketAssignments)
+                .HasForeignKey(d => d.TicketId)
+                .HasConstraintName("FK_Ticket_Assignments_Ticket");
+
+            entity.HasOne(d => d.ToManager).WithMany(p => p.SupportTicketAssignmentToManagers)
+                .HasForeignKey(d => d.ToManagerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Ticket_Assignments_To");
+        });
+
+        modelBuilder.Entity<SupportTicketMessage>(entity =>
+        {
+            entity.HasKey(e => e.MessageId);
+
+            entity.ToTable("Support_Ticket_Messages");
+
+            entity.HasIndex(e => new { e.TicketId, e.SentAt }, "IX_Support_Ticket_Messages_Ticket_SentAt");
+
+            entity.HasIndex(e => new { e.TicketId, e.SentAt }, "IX_Support_Ticket_Messages_Unread_ForManager").HasFilter("([read_by_manager_at] IS NULL)");
+
+            entity.HasIndex(e => new { e.TicketId, e.SentAt }, "IX_Support_Ticket_Messages_Unread_ForUser").HasFilter("([read_by_user_at] IS NULL)");
+
+            entity.Property(e => e.MessageId).HasColumnName("message_id");
+            entity.Property(e => e.MessageText)
+                .HasMaxLength(255)
+                .HasColumnName("message_text");
+            entity.Property(e => e.ReadByManagerAt).HasColumnName("read_by_manager_at");
+            entity.Property(e => e.ReadByUserAt).HasColumnName("read_by_user_at");
+            entity.Property(e => e.SenderManagerId).HasColumnName("sender_manager_id");
+            entity.Property(e => e.SenderUserId).HasColumnName("sender_user_id");
+            entity.Property(e => e.SentAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("sent_at");
+            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+
+            entity.HasOne(d => d.SenderManager).WithMany(p => p.SupportTicketMessages)
+                .HasForeignKey(d => d.SenderManagerId)
+                .HasConstraintName("FK_Support_Ticket_Messages_SenderManager");
+
+            entity.HasOne(d => d.SenderUser).WithMany(p => p.SupportTicketMessages)
+                .HasForeignKey(d => d.SenderUserId)
+                .HasConstraintName("FK_Support_Ticket_Messages_SenderUser");
+
+            entity.HasOne(d => d.Ticket).WithMany(p => p.SupportTicketMessages)
+                .HasForeignKey(d => d.TicketId)
+                .HasConstraintName("FK_Support_Ticket_Messages_Tickets");
         });
 
         modelBuilder.Entity<Thread>(entity =>
