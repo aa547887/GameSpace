@@ -26,7 +26,7 @@
         }
     </h2>
     <div class="mutes-subtle">
-        <span><i class="far fa-clock me-1"></i>@(Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</span>
+        <span><i class="far fa-clock me-1"></i>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
     </div>
 </div>
 
@@ -36,7 +36,7 @@
             <dt class="col-sm-2">ID</dt>
             <dd class="col-sm-10">@Model.MuteId</dd> @* ← 大寫 *@
             <dt class="col-sm-2">詞彙</dt>
-            <dd class="col-sm-10"><span data-copy="@Model.MuteName" title="點擊複製">@Model.MuteName</span></dd>
+            <dd class="col-sm-10"><span data-copy="@Model.Word" title="點擊複製">@Model.Word</span></dd>
             <dt class="col-sm-2">狀態</dt>
             <dd class="col-sm-10">
                 @if (Model.IsActive == true)

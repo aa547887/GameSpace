@@ -25,15 +25,29 @@ public partial class ManagerDatum
 
     public DateTime? ManagerLockoutEnd { get; set; }
 
-    public virtual Admin? Admin { get; set; }
-
-    public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
-
     public virtual ICollection<Mute> Mutes { get; set; } = new List<Mute>();
+
+    public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<Style> Styles { get; set; } = new List<Style>();
+    public virtual ICollection<ProductInfoAuditLog> ProductInfoAuditLogs { get; set; } = new List<ProductInfoAuditLog>();
+
+    public virtual ICollection<ProductInfo> ProductInfoProductCreatedByNavigations { get; set; } = new List<ProductInfo>();
+
+    public virtual ICollection<ProductInfo> ProductInfoProductUpdatedByNavigations { get; set; } = new List<ProductInfo>();
+
+    public virtual ICollection<SupportTicket> SupportTicketAssignedManagers { get; set; } = new List<SupportTicket>();
+
+    public virtual ICollection<SupportTicketAssignment> SupportTicketAssignmentAssignedByManagers { get; set; } = new List<SupportTicketAssignment>();
+
+    public virtual ICollection<SupportTicketAssignment> SupportTicketAssignmentFromManagers { get; set; } = new List<SupportTicketAssignment>();
+
+    public virtual ICollection<SupportTicketAssignment> SupportTicketAssignmentToManagers { get; set; } = new List<SupportTicketAssignment>();
+
+    public virtual ICollection<SupportTicket> SupportTicketClosedByManagers { get; set; } = new List<SupportTicket>();
+
+    public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
 }

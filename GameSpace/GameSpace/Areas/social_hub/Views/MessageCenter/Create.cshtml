@@ -38,24 +38,24 @@
 
                         <!-- 標題：20 -->
                         <div class="form-group">
-                            <label asp-for="NotificationTitle" class="control-label"></label>
-                            <input asp-for="NotificationTitle" class="form-control" placeholder="輸入通知標題"
+                            <label asp-for="Title" class="control-label"></label>
+                            <input asp-for="Title" class="form-control" placeholder="輸入通知標題"
                                    maxlength="20" id="titleInput" />
                             <small class="form-text text-muted">
                                 最多 20 字，剩餘 <span id="titleRemain">20</span> 字。
                             </small>
-                            <span asp-validation-for="NotificationTitle" class="text-danger"></span>
+                            <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
 
                         <!-- 內容：255 -->
                         <div class="form-group">
-                            <label asp-for="NotificationMessage" class="control-label"></label>
-                            <textarea asp-for="NotificationMessage" class="form-control" rows="4" placeholder="輸入通知內容"
+                            <label asp-for="Message" class="control-label"></label>
+                            <textarea asp-for="Message" class="form-control" rows="4" placeholder="輸入通知內容"
                                       maxlength="255" id="msgInput"></textarea>
                             <small class="form-text text-muted">
                                 最多 255 字，剩餘 <span id="msgRemain">255</span> 字。
                             </small>
-                            <span asp-validation-for="NotificationMessage" class="text-danger"></span>
+                            <span asp-validation-for="Message" class="text-danger"></span>
                         </div>
 
                         <!-- 來源 / 動作 -->
@@ -138,7 +138,7 @@
                             </div>
                         </div>
 
-                        <!-- 發送者（展示，實際由 cookie 帶入） -->
+                        <!-- 發送者展示（disabled，不參與綁定） -->
                         <fieldset disabled class="border rounded p-3 mb-3">
                             <legend class="w-auto px-2 small text-muted">發送者（由目前登入者自動帶入）</legend>
                             <div class="form-row">
@@ -182,7 +182,6 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-
     <script>
         // 字數提示
         function bindRemain(inputId, remainId, max) {

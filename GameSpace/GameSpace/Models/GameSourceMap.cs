@@ -13,6 +13,8 @@ public partial class GameSourceMap
 
     public string? ExternalKey { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Game? Game { get; set; }
 
     public virtual MetricSource? Source { get; set; }

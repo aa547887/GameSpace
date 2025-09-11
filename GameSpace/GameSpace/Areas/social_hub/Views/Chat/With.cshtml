@@ -1,0 +1,116 @@
+﻿@* [URL] /social_hub/Chat/With?otherId={對方ID}&isManagerDm={true|false] *@
+@* [用途] 1 對 1 對話頁。左側：聯絡人清單；右側：聊天視窗（符合 chat-1to1.js 與 LINE 風格 CSS） *@
+@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.SimpleChatMessageVM>
+
+@{
+    ViewData["Title"] = "對話";
+    var conversationId = (int?)ViewBag.ConversationId ?? 0;     // [說明] 對話ID（僅顯示用）
+    var otherId = (int?)ViewBag.OtherId ?? 0;            // [說明] 預設欲開啟的對象（可為 0）
+    var isManagerDm = (bool?)ViewBag.IsManagerDm ?? false;   // [說明] 是否管理員對話
+    var gsId = Context.Request.Cookies["gs_id"] ?? Context.Request.Cookies["sh_uid"];
+    var meIdForMeta = int.TryParse(gsId, out var mid) ? mid : 0;
+}
+
+@section Styles {
+    @* [URL] LINE 風格樣式（你的 chat-line.css） *@
+    <link href="~/lib/social_hub/chat-line.css" rel="stylesheet" />
+    <style>
+        /* [備註] 讓右側聊天區有背景色（可選） */
+        .chat-surface {
+            background: var(--line-bg, #f5f7f9);
+        }
+        /* [容器尺寸微調] */
+        .chat-pane {
+            height: 70vh;
+        }
+
+        .contact-pane {
+            height: 70vh;
+            overflow: auto;
+            border-right: 1px solid #e9ecef;
+        }
+        /* [聯絡人按鈕外觀] */
+        #contactList .btn {
+            border-radius: 0;
+            padding: .5rem .75rem;
+        }
+    </style>
+}
+
+@* [可選] 讓 JS 拿到身分（無法讀 HttpOnly cookie 時使用） *@
+<meta name="me-id" content="@meIdForMeta" />
+<meta name="me-name" content="User @meIdForMeta" />
+
+<div class="container my-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0">聊天中心</h3>
+        <div class="text-muted small">[ConvId: @conversationId] [預設對象: @otherId] [isManagerDm: @isManagerDm]</div>
+    </div>
+
+    <div class="row">
+        @* ===== 左側：聯絡人清單（chat-1to1.js 會自動載入 /social_hub/Chat/Contacts） ===== *@
+        <div class="col-12 col-md-3">
+            <div class="contact-pane bg-white rounded shadow-sm">
+                <div class="p-2 border-bottom"><strong>聯絡人</strong></div>
+                <ul id="contactList" class="list-unstyled mb-0">
+                    @* [載入中提示] *@
+                    <li class="px-2 py-2 text-muted">載入中…</li>
+                </ul>
+                <div class="p-2 border-top small text-muted">
+                    <a asp-action="Index" class="text-decoration-none">返回列表</a> @* [URL] /social_hub/Chat *@
+                </div>
+            </div>
+        </div>
+
+        @* ===== 右側：對話區 ===== *@
+        <div class="col-12 col-md-9">
+            <div class="chat-surface rounded shadow-sm p-0 d-flex flex-column chat-pane">
+                @* 標題列（顯示目前對話對象） *@
+                <div class="p-2 border-bottom bg-white d-flex align-items-center justify-content-between">
+                    <div id="peerTitle"><strong>請從左側選擇對象</strong></div>
+                    <div class="small text-muted">即時／輪詢自動切換</div>
+                </div>
+
+                @* 訊息清單（符合你的 CSS：#messages + .message 結構） *@
+                <div id="messages" class="flex-fill p-3">
+                    @* [伺服器端已有歷史訊息的情況：用 .message 結構預先渲染（可選）] *@
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var m in Model)
+                        {
+                            <div class="message @(m.IsMine ? "mine" : "other")" data-time-iso="@m.At.ToString("o")">
+                                <div class="content">@m.Text</div>
+                                <div class="meta">
+                                    <span class="time">@m.At.ToLocalTime().ToString("HH:mm")</span>
+                                    @if (m.IsMine)
+                                    {
+                                        <span class="readmark @(m.IsRead ? "on" : "")">✓</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted small">（尚無訊息，選擇對象後開始對話）</div>
+                    }
+                </div>
+
+                @* 輸入列（符合 chat-1to1.js 的 DOM：#chatForm / #messageInput / #sendBtn） *@
+                <div class="p-2 border-top bg-white">
+                    <form id="chatForm" class="d-flex gap-2">
+                        @* [URL] Anti-Forgery（給 /social_hub/Chat/Send / MarkRead 用） *@
+                        @Html.AntiForgeryToken()
+                        <input id="messageInput" class="form-control" placeholder="[輸入訊息]" maxlength="255" autocomplete="off" />
+                        <button id="sendBtn" class="btn btn-success" type="submit">送出</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* [URL] chat-1to1.js：你剛提供的那支。引用後即可自動運作。 *@
+    <script src="~/lib/social_hub/chat-1to1.js"></script>
+}
