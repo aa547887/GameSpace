@@ -1,52 +1,131 @@
-﻿/* Basic vertical layout */
+﻿/* [LINE-like chat styles for GameSpace 1-to-1]
+   [保留結構] #messages > .message(.mine|.other) > .content + .meta
+   [特色] 白色對方泡泡 + 淡綠我方泡泡、圓角、氣泡尾巴、細邊框、已讀字樣靠右
+*/
+
+/* ========== Tokens ========== */
+:root {
+    --line-brand: #06c755; /* [LINE 品綠：可調] */
+    --line-bg: #f5f7f9; /* [聊天背景] */
+    --line-border: #e6e8ec; /* [泡泡細邊] */
+    --line-other-bg: #ffffff; /* [對方泡泡底色] */
+    --line-other-fg: #1f2937; /* [對方文字] */
+    --line-mine-bg: #c7f5d9; /* [我方泡泡底色（淡綠）] */
+    --line-mine-fg: #0b4124; /* [我方文字] */
+    --line-time: #9aa0a6; /* [時間/次要文字] */
+    --line-shadow: 0 1px 0 rgba(0,0,0,.03); /* [極淡陰影] */
+}
+
+/* [可選] 整體背景（若你的容器就是 #messages，可以拿掉這段） */
+.chat-surface {
+    background: var(--line-bg);
+}
+
+/* ========== 基本縱向排列 ========== */
 #messages {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px; /* [LINE 風格稍微拉開間距] */
     overflow: auto;
+    padding: 2px 4px;
 }
 
-/* Message bubble base */
+/* ========== 泡泡基底 ========== */
 .message {
-    max-width: 72%;
+    max-width: 78%; /* [LINE 泡泡較寬] */
     display: flex;
     flex-direction: column;
 }
 
-    /* Partner on left */
+    /* ===== 對方（靠左） ===== */
     .message.other {
         align-self: flex-start;
     }
 
         .message.other .content {
-            background: #f2f3f5;
-            color: #222;
-            padding: 8px 12px;
-            border-radius: 14px;
-            border-top-left-radius: 4px;
+            position: relative; /* [讓尾巴定位] */
+            background: var(--line-other-bg);
+            color: var(--line-other-fg);
+            padding: 10px 12px;
+            border: 1px solid var(--line-border);
+            border-radius: 18px;
+            border-top-left-radius: 8px; /* [左上角略尖，像 LINE 尾端] */
+            box-shadow: var(--line-shadow);
             word-break: break-word;
         }
 
-    /* Mine on right */
+            .message.other .content::after { /* [左側小尾巴] */
+                content: "";
+                position: absolute;
+                left: -6px;
+                bottom: 0.5rem;
+                width: 0;
+                height: 0;
+                border-right: 6px solid var(--line-other-bg);
+                border-top: 6px solid transparent;
+                border-bottom: 6px solid transparent;
+            }
+
+            .message.other .content::before { /* [尾巴邊框陰影] */
+                content: "";
+                position: absolute;
+                left: -7px;
+                bottom: 0.5rem;
+                width: 0;
+                height: 0;
+                border-right: 7px solid var(--line-border);
+                border-top: 7px solid transparent;
+                border-bottom: 7px solid transparent;
+            }
+
+    /* ===== 我方（靠右） ===== */
     .message.mine {
         align-self: flex-end;
         text-align: right;
     }
 
         .message.mine .content {
-            background: #0d6efd; /* change to your brand color if needed */
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 14px;
-            border-top-right-radius: 4px;
+            position: relative;
+            background: var(--line-mine-bg);
+            color: var(--line-mine-fg);
+            padding: 10px 12px;
+            border: 1px solid rgba(0,0,0,.03);
+            border-radius: 18px;
+            border-top-right-radius: 8px; /* [右上角略尖] */
+            box-shadow: var(--line-shadow);
             word-break: break-word;
         }
 
-    /* Time & read mark */
+            .message.mine .content::after { /* [右側小尾巴] */
+                content: "";
+                position: absolute;
+                right: -6px;
+                bottom: 0.5rem;
+                width: 0;
+                height: 0;
+                border-left: 6px solid var(--line-mine-bg);
+                border-top: 6px solid transparent;
+                border-bottom: 6px solid transparent;
+            }
+
+            .message.mine .content::before { /* [尾巴外緣的淡邊] */
+                content: "";
+                position: absolute;
+                right: -7px;
+                bottom: 0.5rem;
+                width: 0;
+                height: 0;
+                border-left: 7px solid rgba(0,0,0,.03);
+                border-top: 7px solid transparent;
+                border-bottom: 7px solid transparent;
+            }
+
+    /* ===== 時間 / 已讀 ===== */
     .message .meta {
-        margin-top: 2px;
+        margin-top: 4px;
         font-size: 12px;
-        opacity: .7;
+        color: var(--line-time);
+        opacity: .95;
     }
 
     .message.mine .meta {
@@ -55,9 +134,48 @@
 
 .readmark {
     margin-left: 6px;
-    opacity: .5;
+    opacity: .6;
 }
 
     .readmark.on {
         opacity: 1;
+        color: #31a24c;
     }
+/* [已讀：用偏綠的顏色] */
+
+/* ========== 小螢幕優化 ========== */
+@media (max-width:480px) {
+    .message {
+        max-width: 84%;
+    }
+
+        .message .meta {
+            font-size: 11px;
+        }
+}
+
+/* ========== 暗色模式（若需要） ========== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --line-bg: #0f1113;
+        --line-border: #2b2f36;
+        --line-other-bg: #14171a;
+        --line-other-fg: #e5e7eb;
+        --line-mine-bg: #114d2d; /* [深綠] */
+        --line-mine-fg: #d6ffe7;
+        --line-time: #9aa0a6;
+        --line-shadow: none;
+    }
+
+    .chat-surface {
+        background: var(--line-bg);
+    }
+
+    .message.mine .content::before {
+        border-left-color: #0a0c0d;
+    }
+
+    .message.other .content::before {
+        border-right-color: #0a0c0d;
+    }
+}

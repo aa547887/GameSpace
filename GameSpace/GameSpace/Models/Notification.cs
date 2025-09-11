@@ -11,17 +11,17 @@ public partial class Notification
 
     public int ActionId { get; set; }
 
-    public int? SenderId { get; set; }
+    public int? GroupId { get; set; }
+
+    public int? SenderUserId { get; set; }
 
     public int? SenderManagerId { get; set; }
 
-    public string? NotificationTitle { get; set; }
+    public string Title { get; set; } = null!;
 
-    public string? NotificationMessage { get; set; }
+    public string? Message { get; set; }
 
     public DateTime CreatedAt { get; set; }
-
-    public int? GroupId { get; set; }
 
     public virtual NotificationAction Action { get; set; } = null!;
 
@@ -29,9 +29,9 @@ public partial class Notification
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
-    public virtual User? Sender { get; set; }
-
     public virtual ManagerDatum? SenderManager { get; set; }
+
+    public virtual User? SenderUser { get; set; }
 
     public virtual NotificationSource Source { get; set; } = null!;
 }

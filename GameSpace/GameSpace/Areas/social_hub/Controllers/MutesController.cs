@@ -80,7 +80,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 						bool activeFalse = qLower is "停用" or "disabled" or "disable" or "off" or "false";
 
 						baseQuery = baseQuery.Where(m =>
-							m.MuteName.Contains(qTrim) ||
+							m.Word.Contains(qTrim) ||                           // ← 這裡
 							(activeTrue && m.IsActive == true) ||
 							(activeFalse && m.IsActive == false));
 					}
@@ -170,24 +170,25 @@ namespace GameSpace.Areas.social_hub.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireMuteManagePermission]
-		public async Task<IActionResult> Create([Bind("MuteName,IsActive")] Mute input)
+		public async Task<IActionResult> Create([Bind("Word,IsActive")] Mute input)   // ← 改這裡
 		{
-			const int MaxMuteNameLength = 50; // ← 依你的資料庫欄位長度調整（例如 nvarchar(50)）
+			const int MaxWordLength = 50;
 
-			input.MuteName = (input.MuteName ?? string.Empty).Trim();
-			if (string.IsNullOrEmpty(input.MuteName))
-				ModelState.AddModelError("MuteName", "請輸入詞彙。");
-			else if (input.MuteName.Length > MaxMuteNameLength)
-				ModelState.AddModelError("MuteName", $"詞彙長度不可超過 {MaxMuteNameLength} 個字。");
+			input.Word = (input.Word ?? string.Empty).Trim();        // ← 改這裡
+			if (string.IsNullOrEmpty(input.Word))
+				ModelState.AddModelError("Word", "請輸入詞彙。");
+			else if (input.Word.Length > MaxWordLength)
+				ModelState.AddModelError("Word", $"詞彙長度不可超過 {MaxWordLength} 個字。");
 
 			if (ModelState.IsValid)
 			{
+				// DB 一般有唯一索引在 Word，上線時會擋；這裡先行檢查給友善訊息
 				bool dup = await _context.Mutes
 					.AsNoTracking()
-					.AnyAsync(x => x.IsActive == true && x.MuteName == input.MuteName);
+					.AnyAsync(x => x.Word == input.Word);           // ← 不用再加 IsActive 條件了
 
 				if (dup)
-					ModelState.AddModelError("MuteName", "此詞已存在（啟用中）。");
+					ModelState.AddModelError("Word", "此詞已存在。");
 			}
 
 			if (!ModelState.IsValid)
@@ -200,9 +201,9 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 			var entity = new Mute
 			{
-				MuteName = input.MuteName,
+				Word = input.Word,                                   // ← 改這裡
 				IsActive = input.IsActive,
-				CreatedAt = DateTime.Now
+				CreatedAt = DateTime.UtcNow                          // 盡量用 UTC；若 DB 有預設，可不設
 			};
 
 			if (Request.Cookies.TryGetValue("gs_kind", out var k) == true && k == "manager" &&
@@ -254,9 +255,9 @@ namespace GameSpace.Areas.social_hub.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireMuteManagePermission]
-		public async Task<IActionResult> Edit(int id, [Bind("MuteId,MuteName,IsActive")] Mute input)
+		public async Task<IActionResult> Edit(int id, [Bind("MuteId,Word,IsActive")] Mute input)   // ← 改這裡
 		{
-			const int MaxMuteNameLength = 50; // ← 依資料庫欄位長度調整
+			const int MaxWordLength = 50;
 
 			if (id != input.MuteId) return NotFound();
 
@@ -265,21 +266,20 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 			var ctx = await _perm.GetMuteManagementContextAsync(HttpContext);
 			var canAdminAll = ctx.isManager && await _perm.HasAdministratorPrivilegesAsync(ctx.managerId);
-
 			if (!canAdminAll && entity.ManagerId != ctx.managerId) return Forbid();
 
-			input.MuteName = (input.MuteName ?? string.Empty).Trim();
-			if (string.IsNullOrEmpty(input.MuteName))
-				ModelState.AddModelError("MuteName", "請輸入詞彙。");
-			else if (input.MuteName.Length > MaxMuteNameLength)
-				ModelState.AddModelError("MuteName", $"詞彙長度不可超過 {MaxMuteNameLength} 個字。");
+			input.Word = (input.Word ?? string.Empty).Trim();        // ← 改這裡
+			if (string.IsNullOrEmpty(input.Word))
+				ModelState.AddModelError("Word", "請輸入詞彙。");
+			else if (input.Word.Length > MaxWordLength)
+				ModelState.AddModelError("Word", $"詞彙長度不可超過 {MaxWordLength} 個字。");
 
 			bool dup = false;
 			if (ModelState.IsValid)
 			{
 				dup = await _context.Mutes
-					.AnyAsync(x => x.MuteId != id && x.IsActive == true && x.MuteName == input.MuteName);
-				if (dup) ModelState.AddModelError("MuteName", "此詞已存在（啟用中）。");
+					.AnyAsync(x => x.MuteId != id && x.Word == input.Word);  // ← 改這裡
+				if (dup) ModelState.AddModelError("Word", "此詞已存在。");
 			}
 
 			if (!ModelState.IsValid)
@@ -290,12 +290,14 @@ namespace GameSpace.Areas.social_hub.Controllers
 				ViewBag.ManagerId = ctx.managerId;
 				ViewBag.ManagerName = entity.ManagerId.HasValue ? await GetManagerNameAsync(entity.ManagerId.Value) : null;
 
-				entity.MuteName = input.MuteName;
+				// 回填目前輸入（不存 DB）
+				entity.Word = input.Word;                              // ← 改這裡
 				entity.IsActive = input.IsActive;
 				return View(entity);
 			}
 
-			entity.MuteName = input.MuteName;
+			// 實際更新
+			entity.Word = input.Word;                                  // ← 改這裡
 			entity.IsActive = input.IsActive;
 
 			await _context.SaveChangesAsync();

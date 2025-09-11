@@ -39,9 +39,9 @@ namespace GameSpace.Areas.social_hub.Services
 		public async Task RefreshAsync(CancellationToken ct = default)
 		{
 			var list = await _db.Mutes.AsNoTracking()
-				.Where(m => m.IsActive == true && m.MuteName != null && m.MuteName != "")
+				.Where(m => m.IsActive == true && m.Word != null && m.Word != "")
 				.OrderByDescending(m => m.MuteId)
-				.Select(m => m.MuteName!)
+				.Select(m => m.Word!)
 				.Distinct()
 				.ToListAsync(ct);
 
@@ -78,8 +78,8 @@ namespace GameSpace.Areas.social_hub.Services
 			if (cached == null || cached.Length == 0)
 			{
 				var loaded = _db.Mutes.AsNoTracking()
-					.Where(m => m.IsActive == true && m.MuteName != null && m.MuteName != "")
-					.Select(m => m.MuteName!)
+					.Where(m => m.IsActive == true && m.Word != null && m.Word != "")
+					.Select(m => m.Word!)
 					.Distinct()
 					.ToList();
 				_words = loaded.ToArray();

@@ -27,17 +27,15 @@ public partial class User
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
-    public virtual ICollection<ChatMessage> ChatMessageReceivers { get; set; } = new List<ChatMessage>();
-
-    public virtual ICollection<ChatMessage> ChatMessageSenders { get; set; } = new List<ChatMessage>();
-
-    public virtual ICollection<GroupBlock> GroupBlockBlockedByNavigations { get; set; } = new List<GroupBlock>();
+    public virtual ICollection<GroupBlock> GroupBlockBlockedByUsers { get; set; } = new List<GroupBlock>();
 
     public virtual ICollection<GroupBlock> GroupBlockUsers { get; set; } = new List<GroupBlock>();
 
     public virtual ICollection<GroupChat> GroupChats { get; set; } = new List<GroupChat>();
 
     public virtual ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
+
+    public virtual ICollection<GroupReadState> GroupReadStates { get; set; } = new List<GroupReadState>();
 
     public virtual ICollection<Group> Groups { get; set; } = new List<Group>();
 
@@ -57,9 +55,15 @@ public partial class User
 
     public virtual ICollection<Reaction> Reactions { get; set; } = new List<Reaction>();
 
-    public virtual ICollection<Relation> RelationFriends { get; set; } = new List<Relation>();
+    public virtual ICollection<Relation> RelationRequestedByNavigations { get; set; } = new List<Relation>();
 
-    public virtual ICollection<Relation> RelationUsers { get; set; } = new List<Relation>();
+    public virtual ICollection<Relation> RelationUserIdLargeNavigations { get; set; } = new List<Relation>();
+
+    public virtual ICollection<Relation> RelationUserIdSmallNavigations { get; set; } = new List<Relation>();
+
+    public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
+
+    public virtual ICollection<SupportTicket> SupportTickets { get; set; } = new List<SupportTicket>();
 
     public virtual ICollection<ThreadPost> ThreadPosts { get; set; } = new List<ThreadPost>();
 

@@ -14,4 +14,6 @@ public partial class ProductImage
     public string? ProductimgAltText { get; set; }
 
     public DateTime ProductimgUpdatedAt { get; set; }
+
+    public virtual ProductInfo Product { get; set; } = null!;
 }

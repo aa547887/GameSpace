@@ -1,0 +1,71 @@
+﻿@model IEnumerable<GameSpace.Areas.MemberManagement.Models.ManagerRolePermissionVM>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>職位功能查詢表</h1>
+
+@* <p>
+    <a asp-action="Create">Create New</a>
+</p> *@
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(m => m.RoleName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.AdministratorPrivilegesManagement)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.UserStatusManagement)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.ShoppingPermissionManagement)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.MessagePermissionManagement)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.PetRightsManagement)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.CustomerService)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @item.RoleName
+            </td>
+            <td>
+                @item.AdministratorPrivilegesManagement
+            </td>
+            <td>
+                @item.UserStatusManagement
+            </td>
+            <td>
+                @item.ShoppingPermissionManagement
+            </td>
+            <td>
+                @item.MessagePermissionManagement
+            </td>
+            <td>
+                @item.PetRightsManagement
+            </td>
+            <td>
+                @item.CustomerService
+            </td>
+            @* <td>
+                <a asp-action="Edit" asp-route-id="@item.ManagerRoleId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.ManagerRoleId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.ManagerRoleId">Delete</a>
+            </td> *@
+        </tr>
+}
+    </tbody>
+</table>
