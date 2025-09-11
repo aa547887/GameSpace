@@ -1,0 +1,336 @@
+﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductIndexRowVM>
+@* @{
+    //@{ } 區塊先轉成變數
+    ViewData["Title"] = "商品清單";
+    var page     = (int)ViewBag.Page;
+    var pageSize = (int)ViewBag.PageSize;
+    var total    = (int)ViewBag.TotalCount;
+    int lastPage = (int)Math.Ceiling((double)total / pageSize);
+}
+
+<h2 class="mb-3">商品清單</h2>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-sm-4">
+        <input class="form-control" name="search" value="@ViewBag.Search" placeholder="搜尋商品名稱 / 類型..." />
+    </div>
+
+    <div class="col-sm-2">
+        <select class="form-select" name="type">
+            <option value="">全部類型</option>
+            @foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
+            {
+                <option value="@t" selected="@(ViewBag.Type == t ? "selected" : null)">@t</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-sm-2">
+        <select class="form-select" name="status">
+            <option value="active"  selected="@(ViewBag.Status=="active"?"selected":null)">上架</option>
+            <option value="inactive" selected="@(ViewBag.Status=="inactive"?"selected":null)">下架</option>
+            <option value="all"     selected="@(ViewBag.Status=="all"?"selected":null)">全部</option>
+        </select>
+    </div>
+
+    <div class="col-sm-2">
+        <select class="form-select" name="sort">
+            <option value="created_desc" selected="@(ViewBag.Sort=="created_desc"?"selected":null)">最新建立</option>
+            <option value="created_asc"  selected="@(ViewBag.Sort=="created_asc"?"selected":null)">最早建立</option>
+            <option value="updated_desc" selected="@(ViewBag.Sort=="updated_desc"?"selected":null)">最近更新</option>
+            <option value="updated_asc"  selected="@(ViewBag.Sort=="updated_asc"?"selected":null)">最早更新</option>
+            <option value="price_desc"   selected="@(ViewBag.Sort=="price_desc"?"selected":null)">價格高→低</option>
+            <option value="price_asc"    selected="@(ViewBag.Sort=="price_asc"?"selected":null)">價格低→高</option>
+            <option value="name_asc"     selected="@(ViewBag.Sort=="name_asc"?"selected":null)">名稱 A→Z</option>
+            <option value="name_desc"    selected="@(ViewBag.Sort=="name_desc"?"selected":null)">名稱 Z→A</option>
+        </select>
+    </div>
+
+    <div class="col-sm-2 d-grid">
+        <button class="btn btn-primary" type="submit">套用</button>
+    </div>
+</form>
+
+<table class="table table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>商品名稱</th>
+            <th>類型</th>
+            <th class="text-end">價格</th>
+            <th class="text-center">現貨量</th>
+            <th class="text-center">狀態</th>
+            <th>最新異動</th>
+            <th style="width:160px"></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var x in Model)
+    {
+        <tr>
+            <td>
+                <a asp-action="Details" asp-route-id="@x.ProductId">@x.ProductName</a>
+                <div class="small text-muted">建立 @x.ProductCreatedAt:g</div>
+            </td>
+            <td>@x.ProductType</td>
+            <td class="text-end">@x.Price.ToString("N0") @x.CurrencyCode</td>
+            <td class="text-center">@x.ShipmentQuantity</td>
+            <td class="text-center">
+                @if (x.IsActive)
+                {
+                    <span class="badge bg-success">上架</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">下架</span>
+                }
+            </td>
+            <td>
+                @if (x.LastLog != null)
+                {
+                    <div class="small">
+                        Log #@x.LastLog.LogId，
+                        Mgr: @(x.LastLog.ManagerId?.ToString() ?? "-")，
+                        @x.LastLog.ChangedAt:g
+                    </div>
+                }
+                else
+                {
+                    <span class="text-muted small">尚無異動紀錄</span>
+                }
+            </td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@x.ProductId">Edit</a>
+                <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-route-id="@x.ProductId">Details</a>
+                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@x.ProductId">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<!-- 分頁 -->
+<div class="d-flex justify-content-between align-items-center">
+    <div class="text-muted small">
+        第 @(page) / @(lastPage) 頁，共 @(total) 筆
+    </div>
+    <div>
+        <a class="btn btn-sm btn-outline-secondary @(page<=1?"disabled":null)"
+           asp-action="Index"
+           asp-route-page="@(page-1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-search="@ViewBag.Search"
+           asp-route-type="@ViewBag.Type"
+           asp-route-status="@ViewBag.Status"
+           asp-route-sort="@ViewBag.Sort">上一頁</a>
+
+        <a class="btn btn-sm btn-outline-secondary @(page>=lastPage?"disabled":null)"
+           asp-action="Index"
+           asp-route-page="@(page+1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-search="@ViewBag.Search"
+           asp-route-type="@ViewBag.Type"
+           asp-route-status="@ViewBag.Status"
+           asp-route-sort="@ViewBag.Sort">下一頁</a>
+    </div>
+</div> *@
+
+
+
+
+
+@{
+    var page = (int)ViewBag.Page;
+    var pageSize = (int)ViewBag.PageSize;
+    var total = (int)ViewBag.TotalCount;
+    int lastPage = pageSize > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+}
+
+<h2>商品清單</h2>
+
+<form method="get" class="mb-3">
+    <input type="text" name="search" value="@ViewBag.Search" placeholder="搜尋商品名稱/類型..." />
+    <button type="submit">搜尋</button>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>名稱</th>
+            <th>類型</th>
+            <th>價格</th>
+            <th>現貨量</th>
+            <th>狀態</th>
+            <th>建立時間</th>
+            <th>最後異動</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        <tr>
+            <td>@p.ProductName</td>
+            <td>@p.ProductType</td>
+            <td>@p.Price</td>
+            <td>@p.ShipmentQuantity</td>
+            <td>@(p.IsActive ? "上架" : "下架")</td>
+            <td>@p.ProductCreatedAt:g</td>
+            <td>
+                @if (p.LastLog != null)
+                {
+                    <span>Mgr:@p.LastLog.ManagerId, @p.LastLog.ChangedAt:g</span>
+                }
+                else
+                {
+                    <span>尚無紀錄</span>
+                }
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@p.ProductId">編輯</a> |
+                <a asp-action="Details" asp-route-id="@p.ProductId">詳細</a> |
+                <a asp-action="Delete" asp-route-id="@p.ProductId">刪除</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+        第 @(page) / @(lastPage) 頁，共 @(total) 筆
+    </div>
+    <div class="btn-group">
+        <!-- 上一頁 -->
+        <a class="btn btn-sm btn-outline-secondary @(page <= 1 ? "disabled" : "")"
+           asp-action="Index"
+           asp-route-page="@(page - 1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-search="@ViewBag.Search">
+            上一頁
+        </a>
+
+        <!-- 中間頁碼 -->
+        @for (var i = 1; i <= lastPage; i++)
+        {
+            <a class="btn btn-sm @(i == page ? "btn-primary" : "btn-outline-secondary")"
+               asp-action="Index"
+               asp-route-page="@i"
+               asp-route-pageSize="@pageSize"
+               asp-route-search="@ViewBag.Search">
+                @i
+            </a>
+        }
+
+        <!-- 下一頁 -->
+        <a class="btn btn-sm btn-outline-secondary @(page >= lastPage ? "disabled" : "")"
+           asp-action="Index"
+           asp-route-page="@(page + 1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-search="@ViewBag.Search">
+            下一頁
+        </a>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@* @model IEnumerable<GameSpace.Models.ProductInfo>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductType)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Price)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CurrencyCode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ShipmentQuantity)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductCreatedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductUpdatedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsActive)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductCreatedByNavigation)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ProductUpdatedByNavigation)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductType)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Price)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CurrencyCode)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ShipmentQuantity)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductCreatedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductUpdatedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.IsActive)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductCreatedByNavigation.ManagerId)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProductUpdatedByNavigation.ManagerId)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.ProductId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.ProductId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.ProductId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>  *@
