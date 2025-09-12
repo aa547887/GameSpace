@@ -1,192 +1,210 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using GameSpace.Data;
 using GameSpace.Models;
-using GameSpace.Areas.social_hub.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+// ⬇️ 加上這行：用別名避免命名衝突（與 Program.cs 一致）
+using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 
 namespace GameSpace.Areas.social_hub.Hubs
 {
+	/// <summary>
+	/// 1對1聊天 Hub（user↔user）
+	/// 事件：
+	///   - ReceiveDirect({ messageId, senderId, receiverId, content, sentAtIso })
+	///   - ReadReceipt({ fromUserId, upToIso })
+	///   - UnreadUpdate({ total, peerId, unread })
+	///   - Error("NOT_LOGGED_IN" | "NO_PEER" | "BAD_TEXT")
+	/// </summary>
 	public class ChatHub : Hub
 	{
-		private static readonly ConcurrentDictionary<string, string> _connName = new();
-		private static readonly ConcurrentDictionary<int, Queue<DateTime>> _rate = new();
-
 		private readonly GameSpacedatabaseContext _db;
-		private readonly IMuteFilter _mutes;
+		private readonly ILogger<ChatHub> _logger;
+		// ⬇️ 新增：顯示端遮罩服務
+		private readonly IMuteFilterAlias _mute;
 
-		public ChatHub(GameSpacedatabaseContext db, IMuteFilter mutes)
+		// ⬇️ 建構子注入 _mute
+		public ChatHub(GameSpacedatabaseContext db, ILogger<ChatHub> logger, IMuteFilterAlias mute)
 		{
 			_db = db;
-			_mutes = mutes;
+			_logger = logger;
+			_mute = mute;
 		}
-
-		private static string UG(int uid) => $"U_{uid}";
 
 		public override async Task OnConnectedAsync()
 		{
-			if (TryGetUserIdFromCookies(Context.GetHttpContext(), out var me) && me > 0)
-				await Groups.AddToGroupAsync(Context.ConnectionId, UG(me));
+			var (uid, _) = GetIdentity();
+			if (uid > 0)
+			{
+				await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(uid));
+				_logger.LogInformation("User {Uid} connected to ChatHub.", uid);
+			}
+			else
+			{
+				await Clients.Caller.SendAsync("Error", "NOT_LOGGED_IN");
+			}
 			await base.OnConnectedAsync();
 		}
 
 		public override async Task OnDisconnectedAsync(Exception? exception)
 		{
-			if (TryGetUserIdFromCookies(Context.GetHttpContext(), out var me) && me > 0)
-				await Groups.RemoveFromGroupAsync(Context.ConnectionId, UG(me));
+			var (uid, _) = GetIdentity();
+			if (uid > 0)
+				await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(uid));
 			await base.OnDisconnectedAsync(exception);
 		}
 
-		// ========= Helpers =========
-		private static bool TryGetUserIdFromCookies(Microsoft.AspNetCore.Http.HttpContext? http, out int uid)
+		/// <summary>送訊息 → 存 DB(原文) → 推給雙方(遮罩後) → 推對方未讀</summary>
+		public async Task<object> SendMessageTo(int otherId, string text)
 		{
-			uid = 0;
-			if (http == null) return false;
+			var (meId, _) = GetIdentity();
+			if (meId <= 0) throw new HubException("NOT_LOGGED_IN");
+			if (otherId <= 0 || otherId == meId) throw new HubException("NO_PEER");
 
-			// 先舊測試 cookie，再正式 cookie
-			if (http.Request.Cookies.TryGetValue("sh_uid", out var v1) && int.TryParse(v1, out uid) && uid > 0)
-				return true;
-			if (http.Request.Cookies.TryGetValue("gs_id", out var v2) && int.TryParse(v2, out uid) && uid > 0)
-				return true;
-			return false;
-		}
+			if (string.IsNullOrWhiteSpace(text)) throw new HubException("BAD_TEXT");
+			text = text.Trim();
+			if (text.Length > 255) text = text[..255];
 
-		private static bool HitRateLimit(int uid, int limit = 8, int windowSec = 10)
-		{
-			var q = _rate.GetOrAdd(uid, _ => new Queue<DateTime>());
+			var conv = await GetOrCreateConversationAsync(meId, otherId);
+			var iAmP1 = (meId == conv.Party1Id);
+
 			var now = DateTime.UtcNow;
-			lock (q)
-			{
-				while (q.Count > 0 && (now - q.Peek()).TotalSeconds > windowSec) q.Dequeue();
-				if (q.Count >= limit) return true;
-				q.Enqueue(now);
-				return false;
-			}
-		}
-
-		private async Task<DmConversation> GetOrCreateConversationAsync(int me, int other)
-		{
-			// 目前僅處理使用者-使用者（is_manager_dm=false）
-			var p1 = Math.Min(me, other);
-			var p2 = Math.Max(me, other);
-
-			var conv = await _db.DmConversations
-				.SingleOrDefaultAsync(c => c.IsManagerDm == false && c.Party1Id == p1 && c.Party2Id == p2);
-
-			if (conv == null)
-			{
-				conv = new DmConversation
-				{
-					IsManagerDm = false,
-					Party1Id = p1,
-					Party2Id = p2,
-					CreatedAt = DateTime.UtcNow
-				};
-				_db.DmConversations.Add(conv);
-				await _db.SaveChangesAsync();
-			}
-			return conv;
-		}
-
-		private static bool AmIParty1(int me, DmConversation conv) => me == conv.Party1Id;
-
-		// ========= Public Hub APIs =========
-
-		// 只是暱稱顯示（非權限）
-		public Task RegisterUser(string displayName)
-		{
-			_connName[Context.ConnectionId] = string.IsNullOrWhiteSpace(displayName) ? "匿名" : displayName.Trim();
-			return Task.CompletedTask;
-		}
-
-		// 已讀回執：更新 DB 並通知對方
-		public async Task NotifyRead(int partnerId, string upToIso)
-		{
-			if (!TryGetUserIdFromCookies(Context.GetHttpContext(), out var me) || me <= 0) return;
-
-			if (!DateTime.TryParse(upToIso, out var upTo)) upTo = DateTime.UtcNow;
-
-			var conv = await GetOrCreateConversationAsync(me, partnerId);
-			var iAmP1 = AmIParty1(me, conv);
-			var now = DateTime.UtcNow;
-
-			var toUpdate = await _db.DmMessages
-				.Where(m => m.ConversationId == conv.ConversationId
-						 && m.ReadAt == null
-						 && m.SenderIsParty1 != iAmP1
-						 && m.EditedAt <= upTo)
-				.ToListAsync();
-
-			foreach (var m in toUpdate)
-			{
-				m.ReadAt = now;     // 以時間戳為「已讀」判斷依據
-				m.IsRead = true;    // 若模型有此欄位就同步設置
-			}
-			if (toUpdate.Count > 0) await _db.SaveChangesAsync();
-
-			await Clients.Group(UG(partnerId)).SendAsync("ReadReceipt", new { fromUserId = me, upToIso = upTo.ToString("o") });
-		}
-
-		// 主要發送 API（取代 ChatMessages）
-		public async Task SendMessageTo(int receiverId, string content)
-		{
-			if (!TryGetUserIdFromCookies(Context.GetHttpContext(), out var me) || me <= 0)
-			{
-				await Clients.Caller.SendAsync("Error", "NOT_LOGGED_IN");
-				return;
-			}
-			if (receiverId <= 0)
-			{
-				await Clients.Caller.SendAsync("Error", "NO_PEER");
-				return;
-			}
-			if (HitRateLimit(me))
-			{
-				await Clients.Caller.SendAsync("Error", "RATE_LIMIT");
-				return;
-			}
-
-			var text = (content ?? string.Empty).Trim();
-			if (text.Length > 255) text = text[..255]; // DM_Messages.message_text = nvarchar(255)
-
-			// 穢語過濾
-			var filtered = await _mutes.FilterAsync(text);
-
-			// 找/建 1對1 對話
-			var conv = await GetOrCreateConversationAsync(me, receiverId);
-			var iAmP1 = AmIParty1(me, conv);
-
-			// 入庫（DM_Messages）
 			var msg = new DmMessage
 			{
 				ConversationId = conv.ConversationId,
 				SenderIsParty1 = iAmP1,
-				MessageText = filtered,
-				EditedAt = DateTime.UtcNow,
-				IsRead = false // 若模型有欄位就保留；已讀以 ReadAt 判斷
+				MessageText = text,   // ✅ DB 永遠存原文
+				IsRead = false,
+				EditedAt = now
 			};
-			_db.DmMessages.Add(msg);
-			await _db.SaveChangesAsync();
 
-			// 廣播（群組：自己與對方）
+			_db.DmMessages.Add(msg);
+			await _db.SaveChangesAsync(); // 你的 Trigger 會更新 last_message_at
+
+			// ✅ 廣播前遮罩（只影響顯示）
+			var display = _mute.Apply(text);
+
 			var payload = new
 			{
 				messageId = msg.MessageId,
-				conversationId = conv.ConversationId,
-				senderId = me,
-				receiverId = receiverId,
-				content = filtered,
+				senderId = meId,
+				receiverId = otherId,
+				content = display, // ✅ 用遮罩後文字
 				sentAtIso = msg.EditedAt.ToString("o")
 			};
 
-			await Clients.Group(UG(me)).SendAsync("ReceiveDirect", payload);
-			await Clients.Group(UG(receiverId)).SendAsync("ReceiveDirect", payload);
+			await Clients.Group(UserGroup(meId)).SendAsync("ReceiveDirect", payload);
+			await Clients.Group(UserGroup(otherId)).SendAsync("ReceiveDirect", payload);
+
+			// 對方未讀更新
+			await BroadcastUnreadAsync(otherId, meId);
+
+			return new { ok = true, messageId = msg.MessageId, atIso = msg.EditedAt.ToString("o") };
 		}
 
-		// 保持相容
-		public Task SendDirect(int receiverId, string content) => SendMessageTo(receiverId, content);
+		/// <summary>只做讀回執推播；實際清未讀由 HTTP/With 處理</summary>
+		public async Task NotifyRead(int otherId, string? upToIso)
+		{
+			var (meId, _) = GetIdentity();
+			if (meId <= 0 || otherId <= 0) return;
+
+			if (!string.IsNullOrWhiteSpace(upToIso) &&
+				DateTime.TryParse(upToIso, null, DateTimeStyles.RoundtripKind, out _))
+			{
+				await Clients.Group(UserGroup(otherId)).SendAsync("ReadReceipt", new { fromUserId = meId, upToIso });
+			}
+			else
+			{
+				await Clients.Group(UserGroup(otherId)).SendAsync("ReadReceipt", new { fromUserId = meId, upToIso = (string?)null });
+			}
+		}
+
+		public Task RegisterUser(string displayName)
+		{
+			var (meId, _) = GetIdentity();
+			if (meId > 0 && !string.IsNullOrWhiteSpace(displayName))
+				_logger.LogInformation("User {Uid} name: {Name}", meId, displayName.Trim());
+			return Task.CompletedTask;
+		}
+
+		// ===== helpers =====
+		private (int meId, bool isManager) GetIdentity()
+		{
+			var http = Context.GetHttpContext();
+			var idStr = http?.Request.Cookies["gs_id"] ?? http?.Request.Cookies["sh_uid"] ?? "0";
+			int.TryParse(idStr, out var id);
+			var kind = (http?.Request.Cookies["gs_kind"] ?? "user").ToLowerInvariant();
+			return (id, kind == "manager");
+		}
+
+		private static string UserGroup(int userId) => $"U_{userId}";
+
+		private async Task<DmConversation> GetOrCreateConversationAsync(int a, int b)
+		{
+			var conv = await _db.DmConversations
+				.FirstOrDefaultAsync(c => !c.IsManagerDm &&
+					((c.Party1Id == a && c.Party2Id == b) || (c.Party1Id == b && c.Party2Id == a)));
+			if (conv != null) return conv;
+
+			var p1 = Math.Min(a, b);
+			var p2 = Math.Max(a, b);
+			conv = new DmConversation
+			{
+				IsManagerDm = false,
+				Party1Id = p1,
+				Party2Id = p2,
+				CreatedAt = DateTime.UtcNow
+			};
+			_db.DmConversations.Add(conv);
+			try
+			{
+				await _db.SaveChangesAsync();
+				return conv;
+			}
+			catch
+			{
+				return await _db.DmConversations
+					.FirstAsync(c => !c.IsManagerDm && c.Party1Id == p1 && c.Party2Id == p2);
+			}
+		}
+
+		private async Task<(int total, int peerUnread)> ComputeUnreadAsync(int userId, int peerId)
+		{
+			var total = await _db.DmMessages
+				.Where(m => !m.IsRead &&
+					!m.Conversation.IsManagerDm &&
+					(
+						(m.Conversation.Party1Id == userId && !m.SenderIsParty1) ||
+						(m.Conversation.Party2Id == userId && m.SenderIsParty1)
+					))
+				.CountAsync();
+
+			var conv = await _db.DmConversations
+				.FirstOrDefaultAsync(c => !c.IsManagerDm &&
+					((c.Party1Id == userId && c.Party2Id == peerId) ||
+					 (c.Party1Id == peerId && c.Party2Id == userId)));
+
+			var peerUnread = 0;
+			if (conv != null)
+			{
+				var iAmP1 = (conv.Party1Id == userId);
+				peerUnread = await _db.DmMessages
+					.Where(m => m.ConversationId == conv.ConversationId && !m.IsRead && m.SenderIsParty1 != iAmP1)
+					.CountAsync();
+			}
+			return (total, peerUnread);
+		}
+
+		private async Task BroadcastUnreadAsync(int userId, int peerId)
+		{
+			var (total, peerUnread) = await ComputeUnreadAsync(userId, peerId);
+			await Clients.Group(UserGroup(userId))
+				.SendAsync("UnreadUpdate", new { total, peerId, unread = peerUnread });
+		}
 	}
 }

@@ -1,0 +1,90 @@
+﻿@model GameSpace.Areas.social_hub.Models.ViewModels.PagedResult<GameSpace.Areas.social_hub.Models.ViewModels.TicketListItemVM>
+@{
+    var action = (ViewData["action"] as string) ?? "";
+    var q = ViewBag.Query as string ?? "";
+}
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th style="width:90px;">工單ID</th>
+                <th>主旨</th>
+                <th style="width:120px;">使用者ID</th>
+                <th style="width:140px;">指派客服</th>
+                <th style="width:170px;">最後活動</th>
+                <th style="width:100px;">未讀</th>
+                <th style="width:220px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Items == null || Model.Items.Count == 0)
+            {
+                <tr><td colspan="7" class="text-muted">目前沒有資料。</td></tr>
+            }
+            else
+            {
+                foreach (var t in Model.Items)
+                {
+                    <tr>
+                        <td>@t.TicketId</td>
+                        <td>@t.Subject</td>
+                        <td>@t.UserId</td>
+                        <td>@(t.AssignedManagerId?.ToString() ?? "-")</td>
+                        <td>@(t.LastActivityAt.ToString("yyyy/MM/dd HH:mm"))</td>
+                        <td>
+                            @if (t.UnreadForMe > 0)
+                            {
+                                <span class="badge bg-danger">@t.UnreadForMe</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (action == "ListUnassigned")
+                            {
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary me-2 btn-assign-row"
+                                        data-id="@t.TicketId">
+                                    指派給我
+                                </button>
+                            }
+                            <a class="btn btn-sm btn-primary"
+                               href="@Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId })">
+                                進入對話
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Pagination">
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.HasPrev ? "" : "disabled")">
+                <a class="page-link" href="@Url.Action(action, new { page = Model.Page - 1, q })">上一頁</a>
+            </li>
+
+            @{
+                var start = Math.Max(1, Model.Page - 2);
+                var end = Math.Min(Model.TotalPages, Model.Page + 2);
+                for (var p = start; p <= end; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@Url.Action(action, new { page = p, q })">@p</a>
+                    </li>
+                }
+            }
+
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" href="@Url.Action(action, new { page = Model.Page + 1, q })">下一頁</a>
+            </li>
+        </ul>
+    </nav>
+}

@@ -1,0 +1,68 @@
+﻿@model GameSpace.Areas.social_hub.Models.ViewModels.ReassignTicketVM
+@{
+    ViewData["Title"] = "轉單 - 工單 #" + Model.TicketId;
+    var err = TempData["Error"] as string;
+}
+
+<a class="btn btn-link mb-2" href="@Url.Action("Ticket", new { id = Model.TicketId })">← 返回工單</a>
+
+@if (!string.IsNullOrEmpty(err))
+{
+    <div class="alert alert-danger">@err</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <strong>轉單</strong>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-3">工單ID</dt>
+            <dd class="col-9">@Model.TicketId</dd>
+            <dt class="col-3">使用者ID</dt>
+            <dd class="col-9">@Model.UserId</dd>
+            <dt class="col-3">主旨</dt>
+            <dd class="col-9">@Model.Subject</dd>
+            <dt class="col-3">目前指派</dt>
+            <dd class="col-9">@(@Model.CurrentAssignedManagerId?.ToString() ?? "未指派")</dd>
+        </dl>
+
+        <form method="post" action="@Url.Action("ReassignConfirm", "Support", new { area = "social_hub", id = Model.TicketId })">
+            @Html.AntiForgeryToken() <!-- 防偽 -->
+
+            <div class="mb-3">
+                <label for="toManagerId" class="form-label">轉派給（ManagerId）</label>
+
+                @if (Model.CandidateManagerIds != null && Model.CandidateManagerIds.Count > 0)
+                {
+                    <select name="toManagerId" id="toManagerId" class="form-select">
+                        @foreach (var mid in Model.CandidateManagerIds)
+                        {
+                            // 以屬性值控制 selected（null 時 Razor 會省略該屬性）
+                            var selectedAttr = (Model.CurrentAssignedManagerId.HasValue && mid == Model.CurrentAssignedManagerId.Value)
+                            ? "selected" : null;
+
+                            <option value="@mid" selected="@selectedAttr">@mid</option>
+                        }
+                    </select>
+                    <div class="form-text">列表為具客服權限的 ManagerId。</div>
+                }
+                else
+                {
+                    <input name="toManagerId" id="toManagerId" type="number" class="form-control" required />
+                    <div class="form-text">請輸入具客服權限的 ManagerId。</div>
+                }
+            </div>
+
+            <div class="mb-3">
+                <label for="note" class="form-label">備註（可留空，最多255字）</label>
+                <textarea name="note" id="note" class="form-control" maxlength="255" rows="2"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("Ticket", new { id = Model.TicketId })">取消</a>
+                <button type="submit" class="btn btn-warning">確認轉單</button>
+            </div>
+        </form>
+    </div>
+</div>

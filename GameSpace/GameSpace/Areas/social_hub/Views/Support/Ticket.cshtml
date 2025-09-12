@@ -1,0 +1,184 @@
+﻿@model GameSpace.Areas.social_hub.Models.ViewModels.TicketDetailVM
+@{
+    ViewData["Title"] = "工單 #" + Model.TicketId;
+    var disabledCls = Model.IsClosed ? "disabled" : "";
+}
+
+<a href="@Url.Action("Index")" class="btn btn-link mb-2">
+    ← 返回工作台
+</a>
+
+<div class="row g-3">
+    <!-- 左：工單資訊 -->
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <strong>工單資訊</strong>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-4">工單ID</dt>
+                    <dd class="col-8">@Model.TicketId</dd>
+                    <dt class="col-4">使用者ID</dt>
+                    <dd class="col-8">@Model.UserId</dd>
+                    <dt class="col-4">主旨</dt>
+                    <dd class="col-8">@Model.Subject</dd>
+                    <dt class="col-4">狀態</dt>
+                    <dd class="col-8">
+                        @if (Model.IsClosed)
+                        {
+                            <span class="badge bg-secondary">已結單</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">處理中</span>
+                        }
+                    </dd>
+                    <dt class="col-4">指派客服</dt>
+                    <dd class="col-8">@(@Model.AssignedManagerId?.ToString() ?? "未指派")</dd>
+                    <dt class="col-4">建立時間</dt>
+                    <dd class="col-8">@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</dd>
+                    <dt class="col-4">最後訊息</dt>
+                    <dd class="col-8">@((Model.LastMessageAt ?? Model.CreatedAt).ToString("yyyy/MM/dd HH:mm"))</dd>
+
+                    @if (Model.IsClosed)
+                    {
+                        <dt class="col-4">結單時間</dt>
+                        <dd class="col-8">@Model.ClosedAt?.ToString("yyyy/MM/dd HH:mm")</dd>
+                        <dt class="col-4">結單備註</dt>
+                        <dd class="col-8">@Model.CloseNote</dd>
+                    }
+                </dl>
+
+                <hr />
+                <div class="d-flex gap-2 flex-wrap">
+                    @if (Model.CanAssignToMe)
+                    {
+                        <button class="btn btn-sm btn-outline-primary" id="btn-assign">指派給我</button>
+                    }
+                    @if (Model.CanReassign)
+                    {
+                        <a class="btn btn-sm btn-outline-warning" href="@Url.Action("Reassign", new { id = Model.TicketId })">轉單</a>
+                    }
+                    @if (Model.CanClose)
+                    {
+                        <a class="btn btn-sm btn-outline-danger" href="@Url.Action("CloseForm", new { id = Model.TicketId })">結單</a>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 右：訊息串 -->
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>對話紀錄</strong>
+                <div>
+                    第 @Model.Page / @Model.TotalPages 頁（每頁 @Model.PageSize 筆）
+                </div>
+            </div>
+            <div class="card-body" id="message-host">
+                @await Html.PartialAsync("_MessageList", Model.Messages)
+            </div>
+
+            @if (!Model.IsClosed)
+            {
+                <div class="card-footer">
+                    @await Html.PartialAsync("_Composer", Model.TicketId)
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TICKET_ID = @Model.TicketId;
+
+        async function reloadMessages(page=1) {
+            const res = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}&page=${page}`,
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+            const html = await res.text();
+            document.getElementById('message-host').innerHTML = html;
+        }
+
+        document.addEventListener('click', async (e) => {
+            // 分頁（在 _MessageList 的超連結）
+            const a = e.target.closest('#message-host a.page-link');
+            if (a) {
+                e.preventDefault();
+                await reloadMessages(new URL(a.href).searchParams.get('page') ?? 1);
+                return;
+            }
+
+            // 送出訊息
+            if (e.target && e.target.id === 'btn-send') {
+                const ta = document.getElementById('msg-text');
+                const text = (ta.value || '').trim();
+                if (!text) return;
+
+                const fd = new FormData();
+                fd.append('text', text);
+
+                const res = await fetch(`/social_hub/Support/SendMessage?id=${TICKET_ID}`, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin'
+                });
+
+                if (res.ok) {
+                    ta.value = '';
+                    await reloadMessages(1); // 重新載入最新頁
+                } else {
+                    const t = await res.text();
+                    alert('送出失敗：' + t);
+                }
+                return;
+            }
+
+            // 指派給我
+            if (e.target && e.target.id === 'btn-assign') {
+                const res = await fetch(`/social_hub/Support/AssignToMe?id=${TICKET_ID}`, {
+                    method: 'POST', credentials: 'same-origin'
+                });
+                if (res.ok) location.reload();
+                else alert(await res.text());
+                return;
+            }
+
+            // 轉單
+            if (e.target && e.target.id === 'btn-reassign') {
+                const toId = prompt('輸入目標客服的 ManagerId：');
+                if (!toId) return;
+                const note = prompt('備註（可留空）：') || '';
+
+                const fd = new FormData();
+                fd.append('toManagerId', toId);
+                fd.append('note', note);
+
+                const res = await fetch(`/social_hub/Support/Reassign?id=${TICKET_ID}`, {
+                    method: 'POST', body: fd, credentials: 'same-origin'
+                });
+                if (res.ok) location.reload();
+                else alert(await res.text());
+                return;
+            }
+
+            // 結單
+            if (e.target && e.target.id === 'btn-close') {
+                const note = prompt('輸入結單備註（可留空）：') || '';
+                const fd = new FormData();
+                fd.append('closeNote', note);
+
+                const res = await fetch(`/social_hub/Support/Close?id=${TICKET_ID}`, {
+                    method: 'POST', body: fd, credentials: 'same-origin'
+                });
+                if (res.ok) location.reload();
+                else alert(await res.text());
+                return;
+            }
+        });
+    </script>
+}

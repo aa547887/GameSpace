@@ -16,12 +16,10 @@
         }
         else if (!canEditThis)
         {
-
             <span class="badge rounded-pill bg-warning text-dark">僅可管理自己建立</span>
         }
         else
         {
-
             <span class="badge rounded-pill badge-manage">可管理</span>
         }
     </h2>
@@ -34,9 +32,22 @@
     <div class="card-body">
         <dl class="row dl-clean">
             <dt class="col-sm-2">ID</dt>
-            <dd class="col-sm-10">@Model.MuteId</dd> @* ← 大寫 *@
+            <dd class="col-sm-10">@Model.MuteId</dd>
             <dt class="col-sm-2">詞彙</dt>
             <dd class="col-sm-10"><span data-copy="@Model.Word" title="點擊複製">@Model.Word</span></dd>
+
+            <dt class="col-sm-2">替代字</dt>
+            <dd class="col-sm-10">
+                @if (!string.IsNullOrWhiteSpace(Model.Replacement))
+                {
+                    <span data-copy="@Model.Replacement" title="點擊複製">@Model.Replacement</span>
+                }
+                else
+                {
+                    <span class="text-muted">（預設遮罩）</span>
+                }
+            </dd>
+
             <dt class="col-sm-2">狀態</dt>
             <dd class="col-sm-10">
                 @if (Model.IsActive == true)
@@ -45,12 +56,11 @@
                 }
                 else
                 {
-
                     <span class="cell-chip off">停用</span>
                 }
             </dd>
             <dt class="col-sm-2">管理員名稱</dt>
-            <dd class="col-sm-10">@managerName</dd>  @* ← 新增 *@
+            <dd class="col-sm-10">@managerName</dd>
             <dt class="col-sm-2">管理員ID</dt>
             <dd class="col-sm-10">@Model.ManagerId</dd>
         </dl>
