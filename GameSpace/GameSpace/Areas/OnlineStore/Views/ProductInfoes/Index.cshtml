@@ -1,251 +1,671 @@
 ﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductIndexRowVM>
-@* @{
-    //@{ } 區塊先轉成變數
-    ViewData["Title"] = "商品清單";
-    var page     = (int)ViewBag.Page;
-    var pageSize = (int)ViewBag.PageSize;
-    var total    = (int)ViewBag.TotalCount;
-    int lastPage = (int)Math.Ceiling((double)total / pageSize);
+@{
+	var keyword = (string)(ViewBag.Keyword ?? "");
+	var currentType = (string?)ViewBag.Type;
+	int? qtyMin = (int?)ViewBag.QtyMin;
+	int? qtyMax = (int?)ViewBag.QtyMax;
+	var status = (string)(ViewBag.Status ?? "active");
+	var createdFrom = (string?)ViewBag.CreatedFrom;
+	var createdTo = (string?)ViewBag.CreatedTo;
+	var hasLog = (string?)ViewBag.HasLog;
+
+}
+
+@section Styles {
+	<!-- Bootstrap Icons -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+	<!-- DataTables (Bootstrap5) -->
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+	<style>
+		/* 漂亮一點的可點連結 */
+		.link-quiet {
+			color: var(--bs-primary);
+			text-decoration: none;
+		}
+
+			.link-quiet:hover {
+				text-decoration: underline;
+			}
+
+		/* 操作列圖示間距 */
+		.action-icons a {
+			margin-left: .35rem;
+			font-size: 1.05rem;
+		}
+
+		/* DataTables 分頁置中 & 稍微加大 */
+		div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+			justify-content: center;
+		}
+
+		.pagination .page-link {
+			padding: .5rem .9rem;
+		}
+		/* 上方 length 與 info 排版 */
+		div.dataTables_wrapper .dt-top {
+			margin-bottom: .5rem;
+		}
+	</style>
 }
 
 <h2 class="mb-3">商品清單</h2>
 
+<!-- 🔎 篩選列（保留你原本的後端條件） -->
 <form method="get" class="row g-2 mb-3">
-    <div class="col-sm-4">
-        <input class="form-control" name="search" value="@ViewBag.Search" placeholder="搜尋商品名稱 / 類型..." />
-    </div>
+	<div class="col-md-3">
+		<input class="form-control" name="keyword" value="@keyword" placeholder="名稱/類別 關鍵字" />
+	</div>
 
-    <div class="col-sm-2">
-        <select class="form-select" name="type">
-            <option value="">全部類型</option>
-            @foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
-            {
-                <option value="@t" selected="@(ViewBag.Type == t ? "selected" : null)">@t</option>
-            }
-        </select>
-    </div>
+	<div class="col-md-2">
+		<select class="form-select" name="type">
+			<option value="">全部類別</option>
+			@foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
+			{
+				<option value="@t" selected="@(currentType == t ? "selected" : null)">@t</option>
+			}
+		</select>
+	</div>
 
-    <div class="col-sm-2">
-        <select class="form-select" name="status">
-            <option value="active"  selected="@(ViewBag.Status=="active"?"selected":null)">上架</option>
-            <option value="inactive" selected="@(ViewBag.Status=="inactive"?"selected":null)">下架</option>
-            <option value="all"     selected="@(ViewBag.Status=="all"?"selected":null)">全部</option>
-        </select>
-    </div>
+	<div class="col-md-2">
+		<div class="input-group">
+			<span class="input-group-text">存量</span>
+			<input type="number" class="form-control" name="qtyMin" value="@(qtyMin?.ToString() ?? "")" placeholder="最小" />
+			<span class="input-group-text">~</span>
+			<input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" placeholder="最大" />
+		</div>
+	</div>
 
-    <div class="col-sm-2">
-        <select class="form-select" name="sort">
-            <option value="created_desc" selected="@(ViewBag.Sort=="created_desc"?"selected":null)">最新建立</option>
-            <option value="created_asc"  selected="@(ViewBag.Sort=="created_asc"?"selected":null)">最早建立</option>
-            <option value="updated_desc" selected="@(ViewBag.Sort=="updated_desc"?"selected":null)">最近更新</option>
-            <option value="updated_asc"  selected="@(ViewBag.Sort=="updated_asc"?"selected":null)">最早更新</option>
-            <option value="price_desc"   selected="@(ViewBag.Sort=="price_desc"?"selected":null)">價格高→低</option>
-            <option value="price_asc"    selected="@(ViewBag.Sort=="price_asc"?"selected":null)">價格低→高</option>
-            <option value="name_asc"     selected="@(ViewBag.Sort=="name_asc"?"selected":null)">名稱 A→Z</option>
-            <option value="name_desc"    selected="@(ViewBag.Sort=="name_desc"?"selected":null)">名稱 Z→A</option>
-        </select>
-    </div>
+	<div class="col-md-2">
+		<select class="form-select" name="status">
+			<option value="active" selected="@(status == "active" ? "selected" : null)">上架</option>
+			<option value="inactive" selected="@(status == "inactive" ? "selected" : null)">下架</option>
+			<option value="all" selected="@(status == "all" ? "selected" : null)">全部</option>
+		</select>
+	</div>
 
-    <div class="col-sm-2 d-grid">
-        <button class="btn btn-primary" type="submit">套用</button>
-    </div>
+	<div class="col-md-3">
+		<div class="input-group">
+			<span class="input-group-text">建立</span>
+			<input type="date" class="form-control" name="createdFrom" value="@createdFrom" />
+			<span class="input-group-text">~</span>
+			<input type="date" class="form-control" name="createdTo" value="@createdTo" />
+		</div>
+	</div>
+
+	<div class="col-md-3">
+		<select class="form-select" name="hasLog">
+			<option value="" selected="@(string.IsNullOrEmpty(hasLog) ? "selected" : null)">異動紀錄(全部)</option>
+			<option value="yes" selected="@(hasLog == "yes" ? "selected" : null)">有異動</option>
+			<option value="no" selected="@(hasLog == "no" ? "selected" : null)">無異動</option>
+		</select>
+	</div>
+
+	<div class="col-md-2">
+		<button type="submit" class="btn btn-primary w-100">套用條件</button>
+	</div>
+	<a href="javascript:;" class="btn btn-primary mb-2"
+	   data-modal-url="@Url.Action("Create", "ProductInfoes", new { area = "OnlineStore" })">
+		新增商品
+	</a>
 </form>
 
-<table class="table table-hover align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>商品名稱</th>
-            <th>類型</th>
-            <th class="text-end">價格</th>
-            <th class="text-center">現貨量</th>
-            <th class="text-center">狀態</th>
-            <th>最新異動</th>
-            <th style="width:160px"></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var x in Model)
-    {
-        <tr>
-            <td>
-                <a asp-action="Details" asp-route-id="@x.ProductId">@x.ProductName</a>
-                <div class="small text-muted">建立 @x.ProductCreatedAt:g</div>
-            </td>
-            <td>@x.ProductType</td>
-            <td class="text-end">@x.Price.ToString("N0") @x.CurrencyCode</td>
-            <td class="text-center">@x.ShipmentQuantity</td>
-            <td class="text-center">
-                @if (x.IsActive)
-                {
-                    <span class="badge bg-success">上架</span>
-                }
-                else
-                {
-                    <span class="badge bg-secondary">下架</span>
-                }
-            </td>
-            <td>
-                @if (x.LastLog != null)
-                {
-                    <div class="small">
-                        Log #@x.LastLog.LogId，
-                        Mgr: @(x.LastLog.ManagerId?.ToString() ?? "-")，
-                        @x.LastLog.ChangedAt:g
-                    </div>
-                }
-                else
-                {
-                    <span class="text-muted small">尚無異動紀錄</span>
-                }
-            </td>
-            <td class="text-end">
-                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@x.ProductId">Edit</a>
-                <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-route-id="@x.ProductId">Details</a>
-                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@x.ProductId">Delete</a>
-            </td>
-        </tr>
-    }
-    </tbody>
+<!-- 📋 表格：交給 DataTables 分頁/排序/每頁筆數 -->
+<table id="productTable" class="table table-hover align-middle">
+	<thead class="table-light">
+		<tr>
+			<th>名稱</th>
+			<th>類別</th>
+			<th class="text-end">價格</th>
+			<th class="text-center">存量</th>
+			<th class="text-center">狀態</th>
+			<th>建立時間</th>
+			<th>最後異動</th>
+			<th class="text-end">操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var x in Model)
+		{
+			<tr>
+				<td>@x.ProductName</td>
+				<td>@x.ProductType</td>
+				<td class="text-end">@x.Price.ToString("N0")</td>
+				<td class="text-center">@x.ShipmentQuantity</td>
+				<td class="text-center">
+					@if (x.IsActive)
+					{
+						<span class="badge bg-success">上架</span>
+					}
+					else
+					{
+
+						<span class="badge bg-secondary">下架</span>
+					}
+				</td>
+				<td>
+					<a href="#" class="link-quiet"
+					   data-bs-toggle="modal" data-bs-target="#createdModal"
+					   data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+					   data-manager="@x.CreatedByManagerId">
+						@x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
+					</a>
+				</td>
+				<td>
+					@if (x.LastLog is not null)
+					{
+						<a href="#" class="link-quiet"
+						   data-bs-toggle="modal" data-bs-target="#lastLogModal"
+						   data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+						   data-manager="@x.LastLog.ManagerId">
+							@x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
+						</a>
+					}
+					else
+					{
+						<span class="text-muted small">—</span>
+					}
+				</td>
+				<td class="text-end action-icons">
+					<!-- ICON 連結（不是 button 樣式） -->
+					@* 把「新增 / 詳細 / 編輯 / 刪除」的連結改成 用 data-modal-url 開 Modal *@
+					@* <a asp-action="Edit" asp-route-id="@x.ProductId" class="text-primary" data-bs-toggle="tooltip" title="編輯"> *@
+					<a href="javascript:;" class="text-primary" data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="編輯">
+						<i class="bi bi-pencil-square"></i>
+					</a>
+
+					@* <a asp-action="Details" asp-route-id="@x.ProductId" class="text-info" data-bs-toggle="tooltip" title="詳細"> *@
+					<a href="javascript:;" class="text-info" data-modal-url="@Url.Action("Details", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="詳細">
+						<i class="bi bi-card-text"></i>
+					</a>
+					@* <a asp-action="Delete" asp-route-id="@x.ProductId" class="text-danger" data-bs-toggle="tooltip" title="刪除"> *@
+					<a href="javascript:;" class="text-danger" data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="刪除">
+						<i class="bi bi-trash"></i>
+					</a>
+				</td>
+			</tr>
+		}
+	</tbody>
 </table>
 
-<!-- 分頁 -->
-<div class="d-flex justify-content-between align-items-center">
-    <div class="text-muted small">
-        第 @(page) / @(lastPage) 頁，共 @(total) 筆
-    </div>
-    <div>
-        <a class="btn btn-sm btn-outline-secondary @(page<=1?"disabled":null)"
-           asp-action="Index"
-           asp-route-page="@(page-1)"
-           asp-route-pageSize="@pageSize"
-           asp-route-search="@ViewBag.Search"
-           asp-route-type="@ViewBag.Type"
-           asp-route-status="@ViewBag.Status"
-           asp-route-sort="@ViewBag.Sort">上一頁</a>
-
-        <a class="btn btn-sm btn-outline-secondary @(page>=lastPage?"disabled":null)"
-           asp-action="Index"
-           asp-route-page="@(page+1)"
-           asp-route-pageSize="@pageSize"
-           asp-route-search="@ViewBag.Search"
-           asp-route-type="@ViewBag.Type"
-           asp-route-status="@ViewBag.Status"
-           asp-route-sort="@ViewBag.Sort">下一頁</a>
-    </div>
-</div> *@
-
-
-
-
-
-@{
-    var page = (int)ViewBag.Page;
-    var pageSize = (int)ViewBag.PageSize;
-    var total = (int)ViewBag.TotalCount;
-    int lastPage = pageSize > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
-}
-
-<h2>商品清單</h2>
-
-<form method="get" class="mb-3">
-    <input type="text" name="search" value="@ViewBag.Search" placeholder="搜尋商品名稱/類型..." />
-    <button type="submit">搜尋</button>
-</form>
-
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>名稱</th>
-            <th>類型</th>
-            <th>價格</th>
-            <th>現貨量</th>
-            <th>狀態</th>
-            <th>建立時間</th>
-            <th>最後異動</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var p in Model)
-    {
-        <tr>
-            <td>@p.ProductName</td>
-            <td>@p.ProductType</td>
-            <td>@p.Price</td>
-            <td>@p.ShipmentQuantity</td>
-            <td>@(p.IsActive ? "上架" : "下架")</td>
-            <td>@p.ProductCreatedAt:g</td>
-            <td>
-                @if (p.LastLog != null)
-                {
-                    <span>Mgr:@p.LastLog.ManagerId, @p.LastLog.ChangedAt:g</span>
-                }
-                else
-                {
-                    <span>尚無紀錄</span>
-                }
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@p.ProductId">編輯</a> |
-                <a asp-action="Details" asp-route-id="@p.ProductId">詳細</a> |
-                <a asp-action="Delete" asp-route-id="@p.ProductId">刪除</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
-
-<div class="d-flex justify-content-between align-items-center mt-3">
-    <div class="text-muted small">
-        第 @(page) / @(lastPage) 頁，共 @(total) 筆
-    </div>
-    <div class="btn-group">
-        <!-- 上一頁 -->
-        <a class="btn btn-sm btn-outline-secondary @(page <= 1 ? "disabled" : "")"
-           asp-action="Index"
-           asp-route-page="@(page - 1)"
-           asp-route-pageSize="@pageSize"
-           asp-route-search="@ViewBag.Search">
-            上一頁
-        </a>
-
-        <!-- 中間頁碼 -->
-        @for (var i = 1; i <= lastPage; i++)
-        {
-            <a class="btn btn-sm @(i == page ? "btn-primary" : "btn-outline-secondary")"
-               asp-action="Index"
-               asp-route-page="@i"
-               asp-route-pageSize="@pageSize"
-               asp-route-search="@ViewBag.Search">
-                @i
-            </a>
-        }
-
-        <!-- 下一頁 -->
-        <a class="btn btn-sm btn-outline-secondary @(page >= lastPage ? "disabled" : "")"
-           asp-action="Index"
-           asp-route-page="@(page + 1)"
-           asp-route-pageSize="@pageSize"
-           asp-route-search="@ViewBag.Search">
-            下一頁
-        </a>
-    </div>
+<!-- 🪟 建立資訊 Modal（置中） -->
+<div class="modal fade" id="createdModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">建立資訊</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<p><strong>建立時間：</strong><span id="createdAt"></span></p>
+				<p><strong>建立人：</strong><span id="createdBy"></span></p>
+			</div>
+		</div>
+	</div>
 </div>
 
+<!-- 🪟 最後異動 Modal（置中） -->
+<div class="modal fade" id="lastLogModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">最後異動資訊</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<p><strong>最後異動時間：</strong><span id="lastChangedAt"></span></p>
+				<p><strong>異動人：</strong><span id="lastChangedBy"></span></p>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal fade" id="modalHost" tabindex="-1" aria-hidden="true"></div>
+
+
+@section Scripts {
+	<!-- jQuery + DataTables + 語系 -->
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+	<!--載入驗證腳本-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+	<!--前端 JS（載入 Partial 到 Modal + AJAX 送出）-->
+	<script>
+		(function () {
+		  // 開 Modal：透過 data-modal-url 以 GET 把 Partial 裝進 #modalHost
+		  document.addEventListener('click', async (e) => {
+			const a = e.target.closest('[data-modal-url]');
+			if (!a) return;
+			e.preventDefault();
+			const url = a.getAttribute('data-modal-url');
+			const res = await fetch(url, { credentials: 'include' });
+			const html = await res.text();
+			const host = document.getElementById('modalHost');
+			host.innerHTML = html;
+
+			// 重新綁驗證（若有使用 unobtrusive）
+			if (window.jQuery && $.validator && $.validator.unobtrusive) {
+			  $('.js-ajax-form').removeData("validator").removeData("unobtrusiveValidation");
+			  $.validator.unobtrusive.parse('.js-ajax-form');
+			}
+
+			const modal = new bootstrap.Modal(host);
+			modal.show();
+
+			// 綁定 AJAX 送出
+			host.querySelectorAll('form.js-ajax-form').forEach(form => {
+			  form.addEventListener('submit', async (ev) => {
+				ev.preventDefault();
+				const formData = new FormData(form);
+				const postUrl = form.getAttribute('action');
+				const res2 = await fetch(postUrl, {
+				  method: 'POST',
+				  body: formData,
+				  credentials: 'include'
+				});
+
+				const contentType = res2.headers.get('content-type') || '';
+				if (contentType.includes('application/json')) {
+				  const json = await res2.json();
+				  if (json.ok) { location.reload(); }   // 成功：重整清單（你也可以改成更新 DataTable）
+				  else alert('處理失敗');
+				} else {
+				  // 有驗證錯誤 → 伺服器回傳 Partial HTML，把 modal 內容替換
+				  const html2 = await res2.text();
+				  host.innerHTML = html2;
+				  if (window.jQuery && $.validator && $.validator.unobtrusive) {
+					$('.js-ajax-form').removeData("validator").removeData("unobtrusiveValidation");
+					$.validator.unobtrusive.parse('.js-ajax-form');
+				  }
+				}
+			  }, { once: true });
+			});
+		  });
+		})();
+	</script>
+
+	<!-- 沒串AJAX
+	<script>
+		$(function () {
+			// 啟用 Bootstrap tooltip
+			$('[data-bs-toggle="tooltip"]').tooltip();
+
+			// DataTables：關閉內建搜尋（我們用上面的後端條件），開啟排序/每頁筆數/中文化
+			$('#productTable').DataTable({
+				searching: false,
+				ordering:  true,
+				pageLength: 10,
+				lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "全部"]],
+				language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json" },
+				// 版位：上方左 length、右 info；表格；下方置中分頁
+				dom: "<'row dt-top'<'col-sm-6'l><'col-sm-6 text-end'i>>" + "t" +
+					 "<'row mt-3'<'col-12'p>>",
+				columnDefs: [
+					{ targets: -1, orderable: false }, // 操作欄不排序
+				]
+			});
+
+			// 建立資訊 modal
+			const createdModal = document.getElementById('createdModal');
+			createdModal.addEventListener('show.bs.modal', function (event) {
+				const link = event.relatedTarget;
+				document.getElementById('createdAt').textContent = link.getAttribute('data-created') ?? '-';
+				document.getElementById('createdBy').textContent = link.getAttribute('data-manager') ?? '-';
+			});
+
+			// 最後異動 modal
+			const lastLogModal = document.getElementById('lastLogModal');
+			lastLogModal.addEventListener('show.bs.modal', function (event) {
+				const link = event.relatedTarget;
+				document.getElementById('lastChangedAt').textContent = link.getAttribute('data-changed') ?? '-';
+				document.getElementById('lastChangedBy').textContent = link.getAttribute('data-manager') ?? '-';
+			});
+		});
+	</script> -->
+}
+ 
 
 
 
 
+@* 2.0改版@{
+	var page = (int)(ViewBag.Page ?? 1);
+	var pageSize = (int)(ViewBag.PageSize ?? 10);
+	var total = (int)(ViewBag.TotalCount ?? 0);
+	int lastPage = pageSize > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+
+	string sort = (string)(ViewBag.Sort ?? "created_desc");
+	string currentSearch = (string)(ViewBag.Search ?? "");
+	string? currentType = (string?)ViewBag.Type;
+	string status = (string)(ViewBag.Status ?? "active");
+	string? createdFrom = (string?)ViewBag.CreatedFrom;
+	string? createdTo = (string?)ViewBag.CreatedTo;
+	int? qtyMin = (int?)ViewBag.QtyMin;
+	int? qtyMax = (int?)ViewBag.QtyMax;
+
+	// 產生排序用的小工具
+	Func<string, string> asc = col => $"{col}_asc";
+	Func<string, string> desc = col => $"{col}_desc";
+}
+
+<h2 class="mb-3">商品清單</h2>
+
+<!-- 🔎 搜尋 / 篩選 -->
+<form method="get" class="row g-2 mb-3">
+	<div class="col-md-3">
+		<input class="form-control" name="search" value="@currentSearch" placeholder="輸入名稱 / 類別 / 關鍵字" />
+	</div>
+
+	<div class="col-md-2">
+		<select class="form-select" name="type">
+			<span class="input-group-text">類別</span>
+			@foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
+			{
+				<option value="@t" selected="@(ViewBag.Type == t ? "selected" : null)">@t</option>
+			}
+			<option value="">全部</option>
+		</select>
+	</div>
+
+	@* <div class="col-md-2">
+		<div class="input-group">
+			<span class="input-group-text">存量</span>
+			<input type="number" class="form-control" name="qtyMin" value="@(qtyMin?.ToString() ?? "")" placeholder="最小" />
+			<span class="input-group-text">~</span>
+			<input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" placeholder="最大" />
+		</div>
+	</div> *@
+
+@* 	<div class="col-md-2">
+		<select class="form-select" name="status">
+			<option value="active" selected="@(status == "active" ? "selected" : null)">上架</option>
+			<option value="inactive" selected="@(status == "inactive" ? "selected" : null)">下架</option>
+			<option value="all" selected="@(status == "all" ? "selected" : null)">全部</option>
+		</select>
+	</div>
+
+	<div class="col-md-3">
+		<div class="input-group">
+			<span class="input-group-text">建立時間</span>
+			<input type="date" class="form-control" name="createdFrom" value="@createdFrom" />
+			<span class="input-group-text">~</span>
+			<input type="date" class="form-control" name="createdTo" value="@createdTo" />
+		</div>
+	</div>
+
+	<div class="col-md-2">
+		<select class="form-select" name="hasLog">
+			<span class="input-group-text">異動紀錄</span>
+			<option value="yes" selected="@(ViewBag.HasLog == "yes" ? "selected" : null)">有異動</option>
+			<option value="no" selected="@(ViewBag.HasLog == "no" ? "selected" : null)">無異動</option>
+			<option value="">全部</option>
+		</select>
+	</div>
+
+	<div class="col-md-2">
+		<select class="form-select" name="pageSize">
+			<option value="10" selected="@(ViewBag.PageSize == 10 ? "selected" : null)">10</option>
+			<option value="20" selected="@(ViewBag.PageSize == 20 ? "selected" : null)">20</option>
+			<option value="50" selected="@(ViewBag.PageSize == 50 ? "selected" : null)">50</option>
+			<option value="100" selected="@(ViewBag.PageSize == 100 ? "selected" : null)">100</option>
+			<option value="0" selected="@(ViewBag.PageSize == 0 ? "selected" : null)">全部</option>
+		</select>
+	</div>
+
+	<div class="col-md-2">
+		<button type="submit" class="btn btn-primary w-100">搜尋</button>
+	</div>
+
+	<div class="col-12 d-flex gap-2 mt-2">
+		<button type="submit" class="btn btn-primary">套用條件</button>
+		<a class="btn btn-outline-secondary" asp-action="Index">清除</a>
+	</div>
+</form>
+
+<!-- 📋 清單 -->
+<table class="table table-hover align-middle">
+	<thead class="table-light">
+		<tr>
+			<th>
+				名稱
+				<a asp-action="Index" asp-route-sort="@asc("name")"
+				   asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+				   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+				   class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("name")"
+				   asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+				   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+				   class="small">▼</a>
+			</th>
+			<th>
+				類別
+				<a asp-action="Index" asp-route-sort="@asc("type")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("type")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="small">▼</a>
+			</th>
+			<th class="text-end">
+				價格
+				<a asp-action="Index" asp-route-sort="@asc("price")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("price")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="small">▼</a>
+			</th>
+			<th class="text-center">
+				存量
+				<a asp-action="Index" asp-route-sort="@asc("qty")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("qty")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="small">▼</a>
+			</th>
+			<th class="text-center">
+				狀態
+				<a asp-action="Index" asp-route-sort="@asc("status")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("status")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="small">▼</a>
+			</th>
+			<th>
+				建立時間
+				<a asp-action="Index" asp-route-sort="@asc("created")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="ms-1 small">▲</a>
+				<a asp-action="Index" asp-route-sort="@desc("created")" asp-route-search="@currentSearch" asp-route-type="@currentType"
+				   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax" asp-route-status="@status"
+				   asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo" class="small">▼</a>
+			</th>
+			<th>最後異動</th>
+			<th style="width:220px;" class="text-end">操作</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var x in Model)
+		{
+			<tr>
+				<td>@x.ProductName</td>
+				<td>@x.ProductType</td>
+				<td class="text-end">@x.Price.ToString("N0")</td>
+				<td class="text-center">@x.ShipmentQuantity</td>
+				<td class="text-center">
+					@if (x.IsActive)
+					{
+						<span class="badge bg-success">上架</span>
+					}
+					else
+					{
+
+						<span class="badge bg-secondary">下架</span>
+					}
+				</td>
+				<td>
+					<!-- 單擊：顯示建立資訊 -->
+					<a href="#" class="text-decoration-underline"
+					   data-bs-toggle="modal" data-bs-target="#createdModal"
+					   data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+					   data-manager="@x.CreatedByManagerId">
+						@x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
+					</a>
+				</td>
+				<td>
+					@if (x.LastLog is not null)
+					{
+						<a href="#" data-bs-toggle="modal" data-bs-target="#lastLogModal"
+						   data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+						   data-manager="@x.LastLog.ManagerId">
+							@x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
+						</a>
+					}
+					else
+					{
+						<span class="text-muted small">尚無異動紀錄</span>
+					}
+				</td>
+				<td class="text-end">
+					<a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@x.ProductId">Edit</a>
+					<a class="btn btn-sm btn-info text-white" asp-action="Details" asp-route-id="@x.ProductId">Detail</a>
+					<a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@x.ProductId">Delete</a>
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
+
+<!-- 🔢 分頁（縮略 + 保留條件） -->
+@{
+	int startPage = Math.Max(1, page - 2);
+	int endPage = Math.Min(lastPage, page + 2);
+}
+<div class="d-flex justify-content-center mt-4">
+	<div class="btn-group btn-group-lg">
+		@*拉寬
+		第 @(page) / @(lastPage) 頁，共 @(total) 筆
+	</div>
+	<div class="btn-group">
+		<a class="btn btn-sm btn-outline-secondary @(page <= 1 ? "disabled" : null)"
+		   asp-action="Index" asp-route-page="@(page - 1)" asp-route-pageSize="@pageSize"
+		   asp-route-search="@currentSearch" asp-route-type="@currentType"
+		   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+		   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+		   asp-route-sort="@sort">上一頁</a>
+
+		@if (startPage > 1)
+		{
+			<a class="btn btn-sm @(page == 1 ? "btn-primary" : "btn-outline-secondary")"
+			   asp-action="Index" asp-route-page="1" asp-route-pageSize="@pageSize"
+			   asp-route-search="@currentSearch" asp-route-type="@currentType"
+			   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+			   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+			   asp-route-sort="@sort">1</a>
+			@if (startPage > 2)
+			{
+				<span class="btn btn-sm btn-light disabled">…</span>
+			}
+		}
+
+		@for (int i = startPage; i <= endPage; i++)
+		{
+			<a class="btn btn-sm @(i==page?"btn-primary":"btn-outline-secondary")"
+			   asp-action="Index" asp-route-page="@i" asp-route-pageSize="@pageSize"
+			   asp-route-search="@currentSearch" asp-route-type="@currentType"
+			   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+			   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+			   asp-route-sort="@sort">@i</a>
+		}
+
+		@if (endPage < lastPage)
+		{
+			@if (endPage < lastPage - 1)
+			{
+				<span class="btn btn-sm btn-light disabled">…</span>
+			}
+			<a class="btn btn-sm @(page==lastPage?"btn-primary":"btn-outline-secondary")"
+			   asp-action="Index" asp-route-page="@lastPage" asp-route-pageSize="@pageSize"
+			   asp-route-search="@currentSearch" asp-route-type="@currentType"
+			   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+			   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+			   asp-route-sort="@sort">@lastPage</a>
+		}
+
+		<a class="btn btn-sm btn-outline-secondary @(page >= lastPage ? "disabled" : null)"
+		   asp-action="Index" asp-route-page="@(page + 1)" asp-route-pageSize="@pageSize"
+		   asp-route-search="@currentSearch" asp-route-type="@currentType"
+		   asp-route-qtyMin="@qtyMin" asp-route-qtyMax="@qtyMax"
+		   asp-route-status="@status" asp-route-createdFrom="@createdFrom" asp-route-createdTo="@createdTo"
+		   asp-route-sort="@sort">下一頁</a>
+	</div>
+</div>
+
+<!-- 🪟 建立資訊 -->
+<div class="modal fade" id="createdModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<!-- ⬅️ 加上 centered -->
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">建立資訊</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<p><strong>建立時間：</strong><span id="createdAt"></span></p>
+				<p><strong>建立人：</strong><span id="createdBy"></span></p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 🪟 最後異動 -->
+<div class="modal fade" id="lastLogModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<!-- ⬅️ 置中 -->
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">最後異動資訊</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<p><strong>最後異動時間：</strong><span id="lastChangedAt"></span></p>
+				<p><strong>異動人：</strong><span id="lastChangedBy"></span></p>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			// 建立資訊
+			const createdModal = document.getElementById('createdModal');
+			createdModal.addEventListener('show.bs.modal', function (event) {
+				const link = event.relatedTarget;
+				document.getElementById('createdAt').textContent = link.getAttribute('data-created') ?? '-';
+				document.getElementById('createdBy').textContent = link.getAttribute('data-manager') ?? '-';
+			});
+
+			// 最後異動
+			const lastLogModal = document.getElementById('lastLogModal');
+			lastLogModal.addEventListener('show.bs.modal', function (event) {
+				const link = event.relatedTarget;
+				document.getElementById('lastChangedAt').textContent = link.getAttribute('data-changed') ?? '-';
+				document.getElementById('lastChangedBy').textContent = link.getAttribute('data-manager') ?? '-';
+			});
+		});
+	</script>
+} *@ 
 
 
 
 
-
-
-
-
-
-@* @model IEnumerable<GameSpace.Models.ProductInfo>
+@*1.0初版 @model IEnumerable<GameSpace.Models.ProductInfo>
 
 @{
     ViewData["Title"] = "Index";

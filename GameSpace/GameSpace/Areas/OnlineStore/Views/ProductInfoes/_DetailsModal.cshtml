@@ -1,0 +1,31 @@
+﻿@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
+
+<div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">商品詳細</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <dl class="row">
+                <dt class="col-sm-3">商品名稱</dt>
+                <dd class="col-sm-9">@Model.ProductName</dd>
+                <dt class="col-sm-3">商品類別</dt>
+                <dd class="col-sm-9">@Model.ProductType</dd>
+                <dt class="col-sm-3">價格</dt>
+                <dd class="col-sm-9">@Model.Price.ToString("N0") @Model.CurrencyCode</dd>
+                <dt class="col-sm-3">現貨量</dt>
+                <dd class="col-sm-9">@Model.ShipmentQuantity</dd>
+                <dt class="col-sm-3">上架</dt>
+                <dd class="col-sm-9">@((Model.IsActive) ? "是" : "否")</dd>
+                <dt class="col-sm-3">建立</dt>
+                <dd class="col-sm-9">@Model.ProductCreatedAt?.ToString("yyyy/MM/dd tt hh:mm")（Mgr:@Model.ProductCreatedBy）</dd>
+                <dt class="col-sm-3">最後修改</dt>
+                <dd class="col-sm-9">@Model.ProductUpdatedAt?.ToString("yyyy/MM/dd tt hh:mm")（Mgr:@Model.ProductUpdatedBy）</dd>
+            </dl>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">關閉</button>
+        </div>
+    </div>
+</div>

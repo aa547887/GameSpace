@@ -1,0 +1,22 @@
+﻿@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
+
+<div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">確認下架 / 刪除</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form asp-area="OnlineStore" asp-controller="ProductInfoes" asp-action="DeleteConfirmed" method="post" class="js-ajax-form">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <input type="hidden" asp-for="ProductId" />
+                <p>確定要將 <strong>@Model.ProductName</strong> 下架（is_active = 0）嗎？</p>
+                <p class="text-muted small">（建議軟刪除以保留關聯資料與異動紀錄）</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-danger">確定</button>
+            </div>
+        </form>
+    </div>
+</div>

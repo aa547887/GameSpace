@@ -10,4 +10,5 @@ public partial class ProductCode
     public int ProductId { get; set; }
 
     public virtual ProductInfo Product { get; set; } = null!;
+    public string ProductCodein    { get; internal set; }
 }

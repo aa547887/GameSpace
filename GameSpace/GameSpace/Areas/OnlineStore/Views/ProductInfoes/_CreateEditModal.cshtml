@@ -1,0 +1,68 @@
+﻿@* Create / Edit 共用；中文標籤＋驗證；asp-action  *@ 
+@*會由呼叫端決定（我們用同一個 Partial，靠 Model.ProductId 是否為 0 決定要打哪個 action）。*@
+
+@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
+
+<div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">@((Model.ProductId == 0) ? "新增商品" : "編輯商品")</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <form asp-area="OnlineStore" asp-controller="ProductInfoes"
+              asp-action="@(Model.ProductId==0?"Create":"Edit")"
+              method="post" class="js-ajax-form">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="ProductId" />
+
+                <div class="mb-3">
+                    <label asp-for="ProductName" class="form-label"></label>
+                    <input asp-for="ProductName" class="form-control" />
+                    <span asp-validation-for="ProductName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ProductType" class="form-label"></label>
+                    <input asp-for="ProductType" class="form-control" />
+                    <span asp-validation-for="ProductType" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Price" class="form-label"></label>
+                        <input asp-for="Price" class="form-control" />
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="CurrencyCode" class="form-label"></label>
+                        <input asp-for="CurrencyCode" class="form-control" />
+                        <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label asp-for="ShipmentQuantity" class="form-label"></label>
+                        <input asp-for="ShipmentQuantity" class="form-control" />
+                        <span asp-validation-for="ShipmentQuantity" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
