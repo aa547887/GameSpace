@@ -1,0 +1,55 @@
+﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductInfoAuditLogRowVM>
+@{
+    var productId = (int)ViewBag.ProductId;
+    var productName = (string)ViewBag.ProductName;
+}
+<div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">異動紀錄 - @productName (@productId)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            @if (!Model.Any())
+            {
+                <div class="text-muted">目前沒有異動紀錄。</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 90px;">LogId</th>
+                                <th style="width: 100px;">動作</th>
+                                <th style="width: 160px;">時間</th>
+                                <th style="width: 110px;">異動人ID</th>
+                                <th style="width: 160px;">欄位</th>
+                                <th>舊值 → 新值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var x in Model)
+                            {
+                                <tr>
+                                    <td>@x.LogId</td>
+                                    <td>@x.ActionType</td>
+                                    <td>@x.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                                    <td>@(x.ManagerId?.ToString() ?? "-")</td>
+                                    <td>@x.FieldName</td>
+                                    <td>
+                                        <div class="small text-muted">舊：@x.OldValue</div>
+                                        <div>新：@x.NewValue</div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">關閉</button>
+        </div>
+    </div>
+</div>

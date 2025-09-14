@@ -1,4 +1,6 @@
-﻿namespace GameSpace.Areas.OnlineStore.ViewModels
+﻿using System.ComponentModel.DataAnnotations;
+//表格載入
+namespace GameSpace.Areas.OnlineStore.ViewModels
 {
 	public class ProductIndexRowVM
 	{

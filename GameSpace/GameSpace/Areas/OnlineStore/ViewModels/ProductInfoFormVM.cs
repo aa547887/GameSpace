@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+//新增時表格提醒
 namespace GameSpace.Areas.OnlineStore.ViewModels
 {
 	public class ProductInfoFormVM

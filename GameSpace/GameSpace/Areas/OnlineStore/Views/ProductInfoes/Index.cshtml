@@ -1,335 +1,553 @@
 ﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductIndexRowVM>
 @{
-	var keyword = (string)(ViewBag.Keyword ?? "");
-	var currentType = (string?)ViewBag.Type;
-	int? qtyMin = (int?)ViewBag.QtyMin;
-	int? qtyMax = (int?)ViewBag.QtyMax;
-	var status = (string)(ViewBag.Status ?? "active");
-	var createdFrom = (string?)ViewBag.CreatedFrom;
-	var createdTo = (string?)ViewBag.CreatedTo;
-	var hasLog = (string?)ViewBag.HasLog;
+    var keyword = (string)(ViewBag.Keyword ?? "");
+    var currentType = (string?)ViewBag.Type;
+    int? qtyMin = (int?)ViewBag.QtyMin;
+    int? qtyMax = (int?)ViewBag.QtyMax;
+    var status = (string)(ViewBag.Status ?? "active");
+    var createdFrom = (string?)ViewBag.CreatedFrom;
+    var createdTo = (string?)ViewBag.CreatedTo;
+    var hasLog = (string?)ViewBag.HasLog;
 
 }
 
 @section Styles {
-	<!-- Bootstrap Icons -->
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-	<!-- DataTables (Bootstrap5) -->
-	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-	<style>
-		/* 漂亮一點的可點連結 */
-		.link-quiet {
-			color: var(--bs-primary);
-			text-decoration: none;
-		}
+    <!-- Bootstrap Icons& DataTables -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- DataTables (Bootstrap5) -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        /* 漂亮一點的可點連結 */
+        .link-quiet {
+            color: var(--bs-primary);
+            text-decoration: none;
+        }
 
-			.link-quiet:hover {
-				text-decoration: underline;
-			}
+            .link-quiet:hover {
+                text-decoration: underline;
+            }
 
-		/* 操作列圖示間距 */
-		.action-icons a {
-			margin-left: .35rem;
-			font-size: 1.05rem;
-		}
+        /* 操作列圖示間距 */
+        .action-icons a {
+            margin-left: .4rem;
+            font-size: 1.1rem;
+        }
 
-		/* DataTables 分頁置中 & 稍微加大 */
-		div.dataTables_wrapper div.dataTables_paginate ul.pagination {
-			justify-content: center;
-		}
+        /* DataTables 分頁置中 & 稍微加大 */
+        div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+            justify-content: center;
+        }
 
-		.pagination .page-link {
-			padding: .5rem .9rem;
-		}
-		/* 上方 length 與 info 排版 */
-		div.dataTables_wrapper .dt-top {
-			margin-bottom: .5rem;
-		}
-	</style>
+        .pagination .page-link {
+            padding: .5rem .9rem;
+        }
+
+        /* 上方 length 與 info 排版 */
+        div.dataTables_wrapper .dt-top {
+            margin-bottom: .5rem;
+        }
+
+        .link-quiet {
+            color: var(--bs-primary);
+            text-decoration: none;
+        }
+
+            .link-quiet:hover {
+                text-decoration: underline;
+            }
+
+        .action-icons a {
+            margin-left: .4rem;
+            font-size: 1.1rem;
+        }
+
+        /* div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+                                    justify-content: center;
+                                } */
+
+        .pagination .page-link {
+            padding: .5rem .9rem;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: .5rem;
+            justify-content: flex-end;
+            margin-bottom: .5rem;
+        }
+
+        .toast-container-center {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1080;
+        }
+
+    </style>
 }
 
 <h2 class="mb-3">商品清單</h2>
 
-<!-- 🔎 篩選列（保留你原本的後端條件） -->
+<!-- 🔎 篩選列 -->
 <form method="get" class="row g-2 mb-3">
-	<div class="col-md-3">
-		<input class="form-control" name="keyword" value="@keyword" placeholder="名稱/類別 關鍵字" />
-	</div>
+    <div class="col-md-3">
+        <input class="form-control" name="keyword" value="@keyword" placeholder="名稱/類別 關鍵字" />
+    </div>
 
-	<div class="col-md-2">
-		<select class="form-select" name="type">
-			<option value="">全部類別</option>
-			@foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
-			{
-				<option value="@t" selected="@(currentType == t ? "selected" : null)">@t</option>
-			}
-		</select>
-	</div>
+    <div class="col-md-2">
+        <select class="form-select" name="type">
+            <option value="">全部類別</option>
+            @foreach (var t in (IEnumerable<string>)ViewBag.TypeList)
+            {
+                <option value="@t" selected="@(currentType == t ? "selected" : null)">@t</option>
+            }
+        </select>
+    </div>
 
-	<div class="col-md-2">
-		<div class="input-group">
-			<span class="input-group-text">存量</span>
-			<input type="number" class="form-control" name="qtyMin" value="@(qtyMin?.ToString() ?? "")" placeholder="最小" />
-			<span class="input-group-text">~</span>
-			<input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" placeholder="最大" />
-		</div>
-	</div>
+    <div class="col-md-2">
+        <div class="input-group">
+            <span class="input-group-text">存量</span>
+            <input type="number" class="form-control" name="qtyMin" value="@(qtyMin?.ToString() ?? "")" placeholder="最小" />
+            <span class="input-group-text">~</span>
+            <input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" placeholder="最大" />
+        </div>
+    </div>
 
-	<div class="col-md-2">
-		<select class="form-select" name="status">
-			<option value="active" selected="@(status == "active" ? "selected" : null)">上架</option>
-			<option value="inactive" selected="@(status == "inactive" ? "selected" : null)">下架</option>
-			<option value="all" selected="@(status == "all" ? "selected" : null)">全部</option>
-		</select>
-	</div>
+    <div class="col-md-2">
+        <select class="form-select" name="status">
+            <span class="input-group-text">狀態</span>
+            <option value="active" selected="@(status == "active" ? "selected" : null)">上架</option>
+            <option value="inactive" selected="@(status == "inactive" ? "selected" : null)">下架</option>
+            <option value="all" selected="@(status == "all" ? "selected" : null)">全部</option>
+        </select>
+    </div>
 
-	<div class="col-md-3">
-		<div class="input-group">
-			<span class="input-group-text">建立</span>
-			<input type="date" class="form-control" name="createdFrom" value="@createdFrom" />
-			<span class="input-group-text">~</span>
-			<input type="date" class="form-control" name="createdTo" value="@createdTo" />
-		</div>
-	</div>
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-text">建立日期</span>
+            <input type="date" class="form-control" name="createdFrom" value="@createdFrom" />
+            <span class="input-group-text">~</span>
+            <input type="date" class="form-control" name="createdTo" value="@createdTo" />
+        </div>
+    </div>
 
-	<div class="col-md-3">
-		<select class="form-select" name="hasLog">
-			<option value="" selected="@(string.IsNullOrEmpty(hasLog) ? "selected" : null)">異動紀錄(全部)</option>
-			<option value="yes" selected="@(hasLog == "yes" ? "selected" : null)">有異動</option>
-			<option value="no" selected="@(hasLog == "no" ? "selected" : null)">無異動</option>
-		</select>
-	</div>
+    <div class="col-md-3">
+        <select class="form-select" name="hasLog">
+            <option value="" selected="@(string.IsNullOrEmpty(hasLog) ? "selected" : null)">異動紀錄(全部)</option>
+            <option value="yes" selected="@(hasLog == "yes" ? "selected" : null)">有異動</option>
+            <option value="no" selected="@(hasLog == "no" ? "selected" : null)">無異動</option>
+        </select>
+    </div>
 
-	<div class="col-md-2">
-		<button type="submit" class="btn btn-primary w-100">套用條件</button>
-	</div>
-	<a href="javascript:;" class="btn btn-primary mb-2"
-	   data-modal-url="@Url.Action("Create", "ProductInfoes", new { area = "OnlineStore" })">
-		新增商品
-	</a>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">套用條件</button>
+    </div>
+
+    <div class="col-md-2">
+        <!-- 一鍵清除（JS 會清空表單並提交） -->
+        <button type="button" id="btnClearFilters" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-eraser"></i> 清除條件
+        </button>
+    </div>
+
+
+    <div class="toolbar col-md-8 d-flex justify-content-end">
+        <!-- 可愛一點的新增 ICON：星星+加號 -->
+        <a href="javascript:;" class="btn btn-primary"
+           data-modal-url="@Url.Action("Create", "ProductInfoes", new { area = "OnlineStore" })">
+            <i class="bi bi-stars me-1"></i><i class="bi bi-plus-circle-fill"></i> 新增商品
+        </a>
+    </div>
+
+
 </form>
 
 <!-- 📋 表格：交給 DataTables 分頁/排序/每頁筆數 -->
 <table id="productTable" class="table table-hover align-middle">
-	<thead class="table-light">
-		<tr>
-			<th>名稱</th>
-			<th>類別</th>
-			<th class="text-end">價格</th>
-			<th class="text-center">存量</th>
-			<th class="text-center">狀態</th>
-			<th>建立時間</th>
-			<th>最後異動</th>
-			<th class="text-end">操作</th>
-		</tr>
-	</thead>
-	<tbody>
-		@foreach (var x in Model)
-		{
-			<tr>
-				<td>@x.ProductName</td>
-				<td>@x.ProductType</td>
-				<td class="text-end">@x.Price.ToString("N0")</td>
-				<td class="text-center">@x.ShipmentQuantity</td>
-				<td class="text-center">
-					@if (x.IsActive)
-					{
-						<span class="badge bg-success">上架</span>
-					}
-					else
-					{
+    <thead class="table-light">
+        <tr>
+            <th style="width:90px;">商品ID</th>
+            <th>名稱</th>
+            <th>類別</th>
+            <th class="text-end">價格</th>
+            <th class="text-center">存量</th>
+            <th class="text-center">狀態</th>
+            <th>建立時間</th>
+            <th>最後異動</th>
+            <th class="text-end">操作功能</th>
+        </tr>
+        </thead>
+    <tbody>
+        @foreach (var x in Model)
+        {
+            <tr data-id="@x.ProductId">
+                <td>#@x.ProductId</td>
 
-						<span class="badge bg-secondary">下架</span>
-					}
-				</td>
-				<td>
-					<a href="#" class="link-quiet"
-					   data-bs-toggle="modal" data-bs-target="#createdModal"
-					   data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
-					   data-manager="@x.CreatedByManagerId">
-						@x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
-					</a>
-				</td>
-				<td>
-					@if (x.LastLog is not null)
-					{
-						<a href="#" class="link-quiet"
-						   data-bs-toggle="modal" data-bs-target="#lastLogModal"
-						   data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
-						   data-manager="@x.LastLog.ManagerId">
-							@x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
-						</a>
-					}
-					else
-					{
-						<span class="text-muted small">—</span>
-					}
-				</td>
-				<td class="text-end action-icons">
-					<!-- ICON 連結（不是 button 樣式） -->
-					@* 把「新增 / 詳細 / 編輯 / 刪除」的連結改成 用 data-modal-url 開 Modal *@
-					@* <a asp-action="Edit" asp-route-id="@x.ProductId" class="text-primary" data-bs-toggle="tooltip" title="編輯"> *@
-					<a href="javascript:;" class="text-primary" data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="編輯">
-						<i class="bi bi-pencil-square"></i>
-					</a>
+                <td>@x.ProductName</td>
+                <td>@x.ProductType</td>
+                <td class="text-end">@x.Price.ToString("N0")</td>
+                <td class="text-center">@x.ShipmentQuantity</td>
 
-					@* <a asp-action="Details" asp-route-id="@x.ProductId" class="text-info" data-bs-toggle="tooltip" title="詳細"> *@
-					<a href="javascript:;" class="text-info" data-modal-url="@Url.Action("Details", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="詳細">
-						<i class="bi bi-card-text"></i>
-					</a>
-					@* <a asp-action="Delete" asp-route-id="@x.ProductId" class="text-danger" data-bs-toggle="tooltip" title="刪除"> *@
-					<a href="javascript:;" class="text-danger" data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })" title="刪除">
-						<i class="bi bi-trash"></i>
-					</a>
-				</td>
-			</tr>
-		}
-	</tbody>
+                <!-- ✅ 狀態格加 js-active-cell，讓切換後能即時更新 -->
+                <td class="text-center js-active-cell">
+                    @if (x.IsActive)
+                    {
+                        <span class="badge bg-success">上架</span>
+                    }
+                    else
+                    {
+
+                        <span class="badge bg-secondary">下架</span>
+                    }
+                </td>
+                <td>
+                    <a href="#" class="link-quiet"
+                       data-bs-toggle="modal" data-bs-target="#createdModal"
+                       data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+                       data-manager="@x.CreatedByManagerId">
+                        @x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
+                    </a>
+                </td>
+                <td>
+                    @if (x.LastLog is not null)
+                    {
+                        <a href="#" class="link-quiet"
+                           data-bs-toggle="modal" data-bs-target="#lastLogModal"
+                           data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+                           data-manager="@x.LastLog.ManagerId">
+                            @x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
+                        </a>
+                    }
+                    else
+                    {
+
+                        <span class="text-muted small">—</span>
+                    }
+                </td>
+                <td class="text-end action-icons">
+                    <!-- 切換上/下架（JS AJAX） -->
+                    @if (x.IsActive)
+                    {
+                        <a href="javascript:;" class="text-warning js-toggle-active" title="下架（切換）">
+                            <i class="bi bi-toggle-on"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="javascript:;" class="text-success js-toggle-active" title="上架（切換）">
+                            <i class="bi bi-toggle-off"></i>
+                        </a>
+                    }
+
+                    <!-- 詳細 / 編輯 / 軟刪（下架） / 異動紀錄 → Modal（JS AJAX 載入 Partial） -->
+                    <a href="javascript:;" class="text-info" title="詳細"
+                       data-modal-url="@Url.Action("Details", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-card-text"></i>
+                    </a>
+                    <a href="javascript:;" class="text-primary" title="編輯"
+                       data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    @* <a href="javascript:;" class="text-danger" title="下架（軟刪）"
+                       data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-trash"></i>
+                    </a> *@
+                    <a href="javascript:;" class="text-secondary" title="異動紀錄"
+                       data-modal-url="@Url.Action("AuditLog", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-clock-history"></i>
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
 </table>
+
+<!-- Anti-Forgery Token（AJAX 用） -->
+<form id="__af" method="post">@Html.AntiForgeryToken()</form>
+
+<!-- 通用 Modal 容器（⚠️ 僅保留一個，不要重複宣告） -->
+<div class="modal fade" id="modalHost" tabindex="-1" aria-hidden="true"></div>
 
 <!-- 🪟 建立資訊 Modal（置中） -->
 <div class="modal fade" id="createdModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">建立資訊</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
-			<div class="modal-body">
-				<p><strong>建立時間：</strong><span id="createdAt"></span></p>
-				<p><strong>建立人：</strong><span id="createdBy"></span></p>
-			</div>
-		</div>
-	</div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">建立資訊</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>建立時間：</strong><span id="createdAt"></span></p>
+                <p><strong>建立人：</strong><span id="createdBy"></span></p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 🪟 最後異動 Modal（置中） -->
 <div class="modal fade" id="lastLogModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">最後異動資訊</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
-			<div class="modal-body">
-				<p><strong>最後異動時間：</strong><span id="lastChangedAt"></span></p>
-				<p><strong>異動人：</strong><span id="lastChangedBy"></span></p>
-			</div>
-		</div>
-	</div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">最後異動資訊</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>最後異動時間：</strong><span id="lastChangedAt"></span></p>
+                <p><strong>異動人：</strong><span id="lastChangedBy"></span></p>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="modal fade" id="modalHost" tabindex="-1" aria-hidden="true"></div>
+
+<!-- 異動成功 Toast -->
+<div class="toast-container-center">
+    <div id="mainToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="mainToastBody">已完成</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
 
 
 @section Scripts {
-	<!-- jQuery + DataTables + 語系 -->
-	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-	<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-	<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-	<!--載入驗證腳本-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <!-- jQuery & DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-	<!--前端 JS（載入 Partial 到 Modal + AJAX 送出）-->
-	<script>
-		(function () {
-		  // 開 Modal：透過 data-modal-url 以 GET 把 Partial 裝進 #modalHost
-		  document.addEventListener('click', async (e) => {
-			const a = e.target.closest('[data-modal-url]');
-			if (!a) return;
-			e.preventDefault();
-			const url = a.getAttribute('data-modal-url');
-			const res = await fetch(url, { credentials: 'include' });
-			const html = await res.text();
-			const host = document.getElementById('modalHost');
-			host.innerHTML = html;
+    <script>
+        (function(){
+          // DataTables 初始化（前端分頁/排序；圖示小三角由 DataTables CSS 提供）
+          $('#productTable').DataTable({
+            searching: false,   // 我們用上方後端篩選
+            ordering:  true,
+            order: [[6, 'desc']],                 // 第 7 欄（建立時間）預設降冪
+            pageLength: 10,
+            lengthMenu: [[10,20,30,50,100,-1],[10,20,30,50,100,'全部']],
+            language: {                           // 中文語系/頁數資訊
+              emptyTable:   "沒有資料",
+              info:         "顯示第 _START_ 到 _END_ 筆，共 _TOTAL_ 筆",
+              infoEmpty:    "顯示第 0 到 0 筆，共 0 筆",
+              infoFiltered: "(從 _MAX_ 筆資料過濾)",
+              lengthMenu:   "每頁顯示 _MENU_ 筆",
+              loadingRecords:"載入中...",
+              processing:   "處理中...",
+              search:       "快速搜尋：",
+              zeroRecords:  "查無符合資料",
+              paginate: { first:"第一頁", last:"最後一頁", next:"下一頁", previous:"上一頁" },
+              aria: { sortAscending:": 以遞增排序此欄", sortDescending:": 以遞減排序此欄" }
+            },
+            columnDefs: [
+              { targets: -1, orderable: false }   // 最後一欄「功能」不排序
+            ]
+          });
 
-			// 重新綁驗證（若有使用 unobtrusive）
-			if (window.jQuery && $.validator && $.validator.unobtrusive) {
-			  $('.js-ajax-form').removeData("validator").removeData("unobtrusiveValidation");
-			  $.validator.unobtrusive.parse('.js-ajax-form');
-			}
+          // Bootstrap Tooltip（小提示）
+          if (window.bootstrap) {
+            document.querySelectorAll('[title]').forEach(el => { new bootstrap.Tooltip(el); });
+          }
 
-			const modal = new bootstrap.Modal(host);
-			modal.show();
+          // 一鍵清除（前端清空 & 提交） // JS
+          document.getElementById('btnClearFilters')?.addEventListener('click', () => {
+            const form = document.querySelector('form[method="get"]');
+            if (!form) return;
+            form.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(i => i.value = '');
+            form.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+            form.submit();
+          });
 
-			// 綁定 AJAX 送出
-			host.querySelectorAll('form.js-ajax-form').forEach(form => {
-			  form.addEventListener('submit', async (ev) => {
-				ev.preventDefault();
-				const formData = new FormData(form);
-				const postUrl = form.getAttribute('action');
-				const res2 = await fetch(postUrl, {
-				  method: 'POST',
-				  body: formData,
-				  credentials: 'include'
-				});
+          // 建立/最後異動 Modal 值帶入 // JS
+          const createdModal = document.getElementById('createdModal');
+          createdModal?.addEventListener('show.bs.modal', (e) => {
+            const link = e.relatedTarget;
+            document.getElementById('createdAt').textContent = link.getAttribute('data-created') ?? '-';
+            document.getElementById('createdBy').textContent = link.getAttribute('data-manager') ?? '-';
+          });
+          const lastLogModal = document.getElementById('lastLogModal');
+          lastLogModal?.addEventListener('show.bs.modal', (e) => {
+            const link = e.relatedTarget;
+            document.getElementById('lastChangedAt').textContent = link.getAttribute('data-changed') ?? '-';
+            document.getElementById('lastChangedBy').textContent = link.getAttribute('data-manager') ?? '-';
+          });
 
-				const contentType = res2.headers.get('content-type') || '';
-				if (contentType.includes('application/json')) {
-				  const json = await res2.json();
-				  if (json.ok) { location.reload(); }   // 成功：重整清單（你也可以改成更新 DataTable）
-				  else alert('處理失敗');
-				} else {
-				  // 有驗證錯誤 → 伺服器回傳 Partial HTML，把 modal 內容替換
-				  const html2 = await res2.text();
-				  host.innerHTML = html2;
-				  if (window.jQuery && $.validator && $.validator.unobtrusive) {
-					$('.js-ajax-form').removeData("validator").removeData("unobtrusiveValidation");
-					$.validator.unobtrusive.parse('.js-ajax-form');
-				  }
-				}
-			  }, { once: true });
-			});
-		  });
-		})();
-	</script>
+          // 通用載入 Partial 作為 Modal（Create/Edit/Details/Delete/AuditLog） // JS + AJAX
+          document.addEventListener('click', async (e) => {
+            const a = e.target.closest('[data-modal-url]');
+            if (!a) return;
+            e.preventDefault();
+            const url = a.getAttribute('data-modal-url');
+            const res = await fetch(url, { credentials: 'include' });
+            const html = await res.text();
+            const host = document.getElementById('modalHost');
+            host.innerHTML = html;
+            new bootstrap.Modal(host).show();
 
-	<!-- 沒串AJAX
-	<script>
-		$(function () {
-			// 啟用 Bootstrap tooltip
-			$('[data-bs-toggle="tooltip"]').tooltip();
+            // 綁 AJAX 表單提交（Create/Edit/Delete）
+            host.querySelectorAll('form.js-ajax-form').forEach(form => {
+              form.addEventListener('submit', submitAjaxOnce);
+            });
+          });
 
-			// DataTables：關閉內建搜尋（我們用上面的後端條件），開啟排序/每頁筆數/中文化
-			$('#productTable').DataTable({
-				searching: false,
-				ordering:  true,
-				pageLength: 10,
-				lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "全部"]],
-				language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json" },
-				// 版位：上方左 length、右 info；表格；下方置中分頁
-				dom: "<'row dt-top'<'col-sm-6'l><'col-sm-6 text-end'i>>" + "t" +
-					 "<'row mt-3'<'col-12'p>>",
-				columnDefs: [
-					{ targets: -1, orderable: false }, // 操作欄不排序
-				]
-			});
+          // 切換上/下架（不重整即時更新） // JS + AJAX
+          document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.js-toggle-active');
+            if (!btn) return;
+            e.preventDefault();
 
-			// 建立資訊 modal
-			const createdModal = document.getElementById('createdModal');
-			createdModal.addEventListener('show.bs.modal', function (event) {
-				const link = event.relatedTarget;
-				document.getElementById('createdAt').textContent = link.getAttribute('data-created') ?? '-';
-				document.getElementById('createdBy').textContent = link.getAttribute('data-manager') ?? '-';
-			});
+            const tr = btn.closest('tr');
+            const id = tr?.getAttribute('data-id');
+            if (!id) return;
 
-			// 最後異動 modal
-			const lastLogModal = document.getElementById('lastLogModal');
-			lastLogModal.addEventListener('show.bs.modal', function (event) {
-				const link = event.relatedTarget;
-				document.getElementById('lastChangedAt').textContent = link.getAttribute('data-changed') ?? '-';
-				document.getElementById('lastChangedBy').textContent = link.getAttribute('data-manager') ?? '-';
-			});
-		});
-	</script> -->
+            const token = document.querySelector('#__af input[name="__RequestVerificationToken"]').value;
+            const url = '@Url.Action("ToggleActive", "ProductInfoes", new { area = "OnlineStore" })';
+
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ id })
+            });
+
+            const ct = res.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) return location.reload();
+
+            const json = await res.json();
+            showToast(json.msg || '狀態已切換', json.ok);
+
+            // UI 即時更新：徽章與圖示
+            const cell = tr.querySelector('.js-active-cell');
+            if (json.active) {
+              cell.innerHTML = '<span class="badge bg-success">上架</span>';
+              btn.classList.remove('text-success'); btn.classList.add('text-warning');
+              btn.innerHTML = '<i class="bi bi-toggle-on"></i>';
+              btn.setAttribute('title', '下架（切換）');
+            } else {
+              cell.innerHTML = '<span class="badge bg-secondary">下架</span>';
+              btn.classList.remove('text-warning'); btn.classList.add('text-success');
+              btn.innerHTML = '<i class="bi bi-toggle-off"></i>';
+              btn.setAttribute('title', '上架（切換）');
+            }
+          });
+
+          // Toast helper // JS
+          function showToast(msg, ok=true){
+            const toastEl = document.getElementById('mainToast');
+            const body = document.getElementById('mainToastBody');
+            body.textContent = msg || (ok ? '已完成' : '處理失敗');
+            toastEl.classList.toggle('bg-success', ok);
+            toastEl.classList.toggle('bg-danger', !ok);
+            new bootstrap.Toast(toastEl, { delay: 1800 }).show();
+          }
+
+                  // Partial 裡的表單 AJAX 提交（Create/Edit/Delete） // JS + AJAX
+        async function submitAjaxOnce(ev){
+          ev.preventDefault();
+          const form = ev.currentTarget;
+          form.removeEventListener('submit', submitAjaxOnce); // once
+          const formData = new FormData(form);
+          const res = await fetch(form.action, { method:'POST', body:formData, credentials:'include' });
+          const ct = res.headers.get('content-type') || '';
+
+          if (ct.includes('application/json')) {
+            const json = await res.json();
+            showToast(json.msg || '已完成', json.ok);
+            if (!json.ok) return;
+
+            // ✅ 有 updated 代表是 Edit 成功 → 不重整，直接更新該列
+            if (json.updated) {
+              const u  = json.updated;
+              const tr = document.querySelector(`tr[data-id="${u.id}"]`);
+              if (tr) {
+                const table = $('#productTable').DataTable();
+
+                // 對應 9 欄位：0#ID,1名稱,2類別,3價格,4存量,5狀態,6建立時間(不動),7最後異動,8功能(不動)
+                // 1) 名稱 / 類別 / 價格 / 存量
+                tr.children[1].textContent = u.name;
+                tr.children[2].textContent = u.type;
+                tr.children[3].textContent = u.priceN0;
+                tr.children[4].textContent = (u.qty ?? '');
+
+                // 2) 狀態徽章
+                const cellStatus = tr.querySelector('.js-active-cell');
+                if (u.active) cellStatus.innerHTML = '<span class="badge bg-success">上架</span>';
+                else          cellStatus.innerHTML = '<span class="badge bg-secondary">下架</span>';
+
+                // 3) 最後異動欄（用 a 標籤帶 data-* 以便點開彈窗）
+                tr.children[7].innerHTML =
+                  `<a href="#" class="link-quiet"
+                      data-bs-toggle="modal" data-bs-target="#lastLogModal"
+                      data-changed="${u.lastChangedRaw}"
+                      data-manager="${u.lastManagerId}">
+                      ${u.lastChangedText}
+                   </a>`;
+
+                // 4) 通知 DataTables 這列有更新（不換頁）
+                table.row(tr).invalidate().draw(false);
+              }
+
+              // 關掉 Modal
+              bootstrap.Modal.getInstance(document.getElementById('modalHost'))?.hide();
+              return; // 不重整
+            }
+
+            // Create / Delete：先簡單用重整
+            setTimeout(()=> location.reload(), 900);
+          } else {
+            // 驗證失敗：回傳 Partial，替換 modal
+            const html = await res.text();
+            const host = document.getElementById('modalHost');
+            host.innerHTML = html;
+            host.querySelectorAll('form.js-ajax-form').forEach(f => f.addEventListener('submit', submitAjaxOnce));
+          }
+        }
+        })();
+    </script>
 }
- 
 
 
 
+<!-- 沒串AJAX
+    <script>
+        $(function () {
+            // 啟用 Bootstrap tooltip
+            $('[data-bs-toggle="tooltip"]').tooltip();
 
-@* 2.0改版@{
+            // DataTables：關閉內建搜尋（我們用上面的後端條件），開啟排序/每頁筆數/中文化
+            $('#productTable').DataTable({
+                searching: false,
+                ordering:  true,
+                pageLength: 10,
+                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "全部"]],
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json" },
+                // 版位：上方左 length、右 info；表格；下方置中分頁
+                dom: "<'row dt-top'<'col-sm-6'l><'col-sm-6 text-end'i>>" + "t" +
+                     "<'row mt-3'<'col-12'p>>",
+                columnDefs: [
+                    { targets: -1, orderable: false }, // 操作欄不排序
+                ]
+            });
+
+            // 建立資訊 modal
+            const createdModal = document.getElementById('createdModal');
+            createdModal.addEventListener('show.bs.modal', function (event) {
+                const link = event.relatedTarget;
+                document.getElementById('createdAt').textContent = link.getAttribute('data-created') ?? '-';
+                document.getElementById('createdBy').textContent = link.getAttribute('data-manager') ?? '-';
+            });
+
+            // 最後異動 modal
+            const lastLogModal = document.getElementById('lastLogModal');
+            lastLogModal.addEventListener('show.bs.modal', function (event) {
+                const link = event.relatedTarget;
+                document.getElementById('lastChangedAt').textContent = link.getAttribute('data-changed') ?? '-';
+                document.getElementById('lastChangedBy').textContent = link.getAttribute('data-manager') ?? '-';
+            });
+        });
+    </script> -->
+
+<-- @* 2.0改版@{
 	var page = (int)(ViewBag.Page ?? 1);
 	var pageSize = (int)(ViewBag.PageSize ?? 10);
 	var total = (int)(ViewBag.TotalCount ?? 0);
@@ -376,8 +594,7 @@
 			<input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" placeholder="最大" />
 		</div>
 	</div> *@
-
-@* 	<div class="col-md-2">
+    @* 	<div class="col-md-2">
 		<select class="form-select" name="status">
 			<option value="active" selected="@(status == "active" ? "selected" : null)">上架</option>
 			<option value="inactive" selected="@(status == "inactive" ? "selected" : null)">下架</option>
@@ -753,4 +970,4 @@
         </tr>
 }
     </tbody>
-</table>  *@
+</table>  *@-->
