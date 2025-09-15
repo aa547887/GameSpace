@@ -8,20 +8,20 @@
 // ★ 重要 using：
 //   - System：C# 基本型別/工具（DateTime、Math、各種屬性/介面…）
 //   - System.IO：檔案/目錄操作（Path/Directory/FileStream），圖片上傳會用到
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
+    
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
-using GameSpace.Models;
+using System;             // ★ C# 的基礎命名空間
+using System.IO;          // ★(專做檔案/資料夾相關)圖片儲存：Path / FileStream / Directory
+using System.Linq;
+using System.Threading.Tasks;
+using GameSpace.Models;   // ★ EF 實體類別（GameProductDetails/OtherProductDetails/ProductImages）
 using GameSpace.Areas.OnlineStore.ViewModels;
-
 namespace GameSpace.Areas.OnlineStore.Controllers
 {
-    [Area("OnlineStore")]
+	[Area("OnlineStore")]
+        
     public class ProductInfoesController : Controller
     {
         private readonly GameSpacedatabaseContext _context;
@@ -154,9 +154,9 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 
             if (p == null) return NotFound();
 
-            var vm = MapToVM(p);
-            // Partial + AJAX：只回彈窗內容，比整頁重整快
-            return PartialView("_DetailsModal", vm);
+            //var vm = MapToVM(p);
+            //// Partial + AJAX：只回彈窗內容，比整頁重整快
+            return PartialView("_DetailsModal", MapToVM(p));
         }
 
         // ============== DetailPanel（延伸：整合圖片/供應商/明細）=============
@@ -232,12 +232,24 @@ namespace GameSpace.Areas.OnlineStore.Controllers
             return PartialView("_DetailPanelBasic", fallBack);
         }
 
-        // ============== Cards（卡片檢視 Partial）=============
-        [HttpGet]
-        public async Task<IActionResult> Cards()
-        {
-            var list = await _context.ProductInfos.AsNoTracking()
-                .OrderByDescending(x => x.ProductId)
+		// ============== Cards（卡片檢視 Partial;之後可加上更多周邊分類/平台等篩選）=============
+		[HttpGet]
+		public async Task<IActionResult> Cards(string? keyword, string? type, int page = 1, int pageSize = 12)
+		{
+			var q = _context.ProductInfos.AsNoTracking().AsQueryable();
+
+			if (!string.IsNullOrWhiteSpace(keyword))
+				q = q.Where(p => p.ProductName.Contains(keyword) || p.ProductType.Contains(keyword));
+			if (!string.IsNullOrWhiteSpace(type))
+				q = q.Where(p => p.ProductType == type);
+
+			var total = await q.CountAsync();
+			if (pageSize <= 0) pageSize = total > 0 ? total : 1;
+
+            var list = await q
+                .OrderByDescending(p => p.ProductId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new
                 {
                     p.ProductId,
@@ -250,18 +262,18 @@ namespace GameSpace.Areas.OnlineStore.Controllers
                         .OrderByDescending(a => a.ChangedAt)
                         .Select(a => (DateTime?)a.ChangedAt)
                         .FirstOrDefault(),
-                    // ★ 如果沒有 IsPrimary/SortOrder，暫時以 ProductimgId 排
                     ImageUrl = _context.ProductImages
                         .Where(i => i.ProductId == p.ProductId)
-                        //.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder)
+                        // ★ 同上：若沒 IsPrimary/SortOrder，用 .OrderBy(i => i.ProductimgId)
                         .OrderBy(i => i.ProductimgId)
                         .Select(i => i.ProductimgUrl)
                         .FirstOrDefault()
                 })
                 .ToListAsync();
 
-            return PartialView("_CardsGrid", list);
-        }
+            ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = total;
+			return PartialView("_CardsGrid", list); // 你可用我後面附的範例 Partial
+		}
 
         // ============== Create（Modal：新增）=============
         [HttpGet]
@@ -283,136 +295,138 @@ namespace GameSpace.Areas.OnlineStore.Controllers
             // 伺服器端驗證（搭配 DataAnnotations + IValidatableObject）
             if (!ModelState.IsValid)
                 return PartialView("_CreateEditModal", vm);
+			try
+			{
+				// ★ 1) 驗證 FK 值是否存在（避免 SaveChanges 爆）
+				//    你可以視需求把它變成 ModelState.AddModelError 再回 Partial
+				if (vm.ProductType == "game" && !vm.SupplierId.HasValue)
+					return Json(new { ok = false, msg = "遊戲類需選擇供應商。" });
+				if (vm.ProductType == "nogame" && !vm.SupplierId.HasValue)
+					return Json(new { ok = false, msg = "非遊戲類需選擇供應商。" });
 
-            // 1) 寫 ProductInfo（避免 Overposting：只把允許的欄位寫回）
-            var entity = new ProductInfo();
-            ApplyFromVM(entity, vm);
-            entity.ProductCreatedBy = GetCurrentManagerId();
-            entity.ProductCreatedAt = DateTime.Now;
+				// ★ 2) ProductInfo 先存，拿到 ProductId
+				var entity = new ProductInfo();
+				ApplyFromVM(entity, vm);
+				entity.ProductCreatedBy = GetCurrentManagerId();   // ← 請確保這個 id 存在於 ManagerData
+				entity.ProductCreatedAt = DateTime.Now;
 
-            _context.ProductInfos.Add(entity);
-            await _context.SaveChangesAsync(); // ★ 修改點：先存，拿到 ProductId（用於明細/圖片/Log）
+				_context.ProductInfos.Add(entity);
+				await _context.SaveChangesAsync(); // 先存，拿 ProductId
 
-            // 2) 依類型寫入對應 Detail（如果你 VM 還沒顯示這些欄位，可先跳過）
-            if (vm.ProductType == "game")
-            {
-                var gd = new GameProductDetail
-                {
-                    ProductId = entity.ProductId,
-                    SupplierId = vm.SupplierId!.Value, // ★ VM 驗證會確保一定有值
-                    PlatformId = vm.PlatformId,
-                    PlatformName = vm.PlatformName,
-                    GameType = vm.GameType,
-                    DownloadLink = vm.DownloadLink
-                };
-                _context.GameProductDetails.Add(gd);
-            }
-            else // 非遊戲
-            {
-                var od = new OtherProductDetail
-                {
-                    ProductId = entity.ProductId,
-                    SupplierId = vm.SupplierId!.Value,
-                    MerchTypeId = vm.MerchTypeId,
-                    DigitalCode = vm.DigitalCode,
-                    Size = vm.Size,
-                    Color = vm.Color,
-                    Weight = vm.Weight,
-                    Dimensions = vm.Dimensions,
-                    Material = vm.Material,
-                    StockQuantity = vm.ShipmentQuantity ?? 0
-                };
-                _context.OtherProductDetails.Add(od);
-            }
+				// ★ 3) 依類型寫入 Detail（類別名請用你專案實際的單數/複數）
+				if (vm.ProductType == "game")
+				{
+					_context.GameProductDetails.Add(new GameProductDetail
+					{
+						ProductId = entity.ProductId,
+						SupplierId = vm.SupplierId!.Value,
+						PlatformId = vm.PlatformId,
+						PlatformName = vm.PlatformName,
+						GameType = vm.GameType,
+						DownloadLink = vm.DownloadLink,
+						IsActive = true
+					});
+				}
+				else
+				{
+					_context.OtherProductDetails.Add(new OtherProductDetail
+					{
+						ProductId = entity.ProductId,
+						SupplierId = vm.SupplierId!.Value,
+						MerchTypeId = vm.MerchTypeId,
+						DigitalCode = vm.DigitalCode,
+						Size = vm.Size,
+						Color = vm.Color,
+						Weight = vm.Weight,
+						Dimensions = vm.Dimensions,
+						Material = vm.Material,
+						StockQuantity = vm.ShipmentQuantity ?? 0,
+						IsActive = true
+					});
+				}
 
-            // 3) 圖片上傳（示範：存入 wwwroot/uploads/products/{id}/，DB 存相對 URL）
-            if (vm.Images is { Length: > 0 })
-            {
-                var root = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products", entity.ProductId.ToString());
-                Directory.CreateDirectory(root); // 若目錄不存在會建立
+				// ★ 4) 圖片（前端要有 file input + enctype，見下方 View 修正）
+				if (vm.Images is { Length: > 0 })
+				{
+					var root = Path.Combine(Directory.GetCurrentDirectory(),
+											"wwwroot", "uploads", "products", entity.ProductId.ToString());
+					Directory.CreateDirectory(root);
 
-                int sort = 0;
-                foreach (var file in vm.Images)
-                {
-                    if (file.Length <= 0) continue;
+					foreach (var file in vm.Images)
+					{
+						if (file.Length <= 0) continue;
 
-                    // 用 時間戳+原檔名 避免重名覆蓋
-                    var fname = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Path.GetFileName(file.FileName)}";
-                    var fullpath = Path.Combine(root, fname);
-                    using (var fs = new FileStream(fullpath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(fs);
-                    }
+						var fname = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Path.GetFileName(file.FileName)}";
+						var full = Path.Combine(root, fname);
+						using (var fs = new FileStream(full, FileMode.Create))
+							await file.CopyToAsync(fs);
 
-                    var relUrl = $"/uploads/products/{entity.ProductId}/{fname}";
+						var url = $"/uploads/products/{entity.ProductId}/{fname}";
+						_context.ProductImages.Add(new ProductImage
+						{
+							ProductId = entity.ProductId,
+							ProductimgUrl = url,
+							ProductimgAltText = entity.ProductName,
+							ProductimgUpdatedAt = DateTime.Now
+						});
 
-                    // TODO：若 DbSet 名稱不是 ProductImages，請調整
-                    _context.ProductImages.Add(new ProductImage
-                    {
-                        ProductId = entity.ProductId,
-                        ProductimgUrl = relUrl,
-                        ProductimgAltText = entity.ProductName,
-                        ProductimgUpdatedAt = DateTime.Now
-                        // IsPrimary = (sort == 0),   // 你的 DB 有這欄再打開
-                        // SortOrder = sort++
-                    });
+						// ★ 可記錄圖片異動
+						_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+						{
+							ProductId = entity.ProductId,
+							ActionType = "UPDATE",
+							FieldName = "image:add",
+							OldValue = null,
+							NewValue = url,
+							ManagerId = entity.ProductCreatedBy,
+							ChangedAt = DateTime.Now
+						});
+					}
+				}
 
-                    // ★ 圖片新增也記錄到 AuditLog（你之前提出的需求）
-                    _context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-                    {
-                        ProductId = entity.ProductId,
-                        ActionType = "UPDATE",
-                        FieldName = "image:add", // 你指定的格式：image:add / image:remove
-                        OldValue = null,
-                        NewValue = relUrl,
-                        ManagerId = entity.ProductCreatedBy,
-                        ChangedAt = DateTime.Now
-                    });
+				// ★ 5) 寫入 CREATE 紀錄
+				_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+				{
+					ProductId = entity.ProductId,
+					ActionType = "CREATE",
+					FieldName = "(all)",
+					OldValue = null,
+					NewValue = $"Name={entity.ProductName}, Price={entity.Price}, Type={entity.ProductType}",
+					ManagerId = entity.ProductCreatedBy,
+					ChangedAt = DateTime.Now
+				});
 
-                    sort++;
-                }
-            }
+				await _context.SaveChangesAsync();
 
-            // 4) 寫入 AuditLog：CREATE（用摘要即可）
-            _context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-            {
-                ProductId = entity.ProductId,
-                ActionType = "CREATE",
-                FieldName = "(all)",
-                OldValue = null,
-                NewValue = $"Name={entity.ProductName}, Price={entity.Price}, Type={entity.ProductType}",
-                ManagerId = entity.ProductCreatedBy,
-                ChangedAt = DateTime.Now
-            });
-
-            await _context.SaveChangesAsync(); // ★ 統一存檔（Detail/Images/Logs）
-
-            // 回 JSON：前端會顯示 toast；也可即時插入新列或直接重整
-            return Json(new
-            {
-                ok = true,
-                msg = $"「{entity.ProductName}」已新增！",
-                created = new
-                {
-                    id = entity.ProductId,
-                    name = entity.ProductName,
-                    type = entity.ProductType,
-                    priceN0 = entity.Price.ToString("N0"),
-                    qty = entity.ShipmentQuantity,
-                    active = entity.IsActive,
-                    createdText = entity.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm"),
-                    createdRaw = entity.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss"),
-                    createdByManager = entity.ProductCreatedBy,
-                    // 新增當下尚無最後異動
-                    lastChangedText = (string?)null,
-                    lastChangedRaw = (string?)null,
-                    lastManagerId = (int?)null
-                }
-            });
-        }
-
-        // ============== Edit（Modal：編輯）=============
-        [HttpGet]
+				return Json(new
+				{
+					ok = true,
+					msg = $"「{entity.ProductName}」已新增！",
+					created = new
+					{
+						id = entity.ProductId,
+						name = entity.ProductName,
+						type = entity.ProductType,
+						priceN0 = entity.Price.ToString("N0"),
+						qty = entity.ShipmentQuantity,
+						active = entity.IsActive,
+						createdText = entity.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm"),
+						createdRaw = entity.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss"),
+						createdByManager = entity.ProductCreatedBy,
+						lastChangedText = (string?)null,
+						lastChangedRaw = (string?)null,
+						lastManagerId = (int?)null
+					}
+				});
+			}
+			catch (Exception ex)
+			{
+				// ★ 一律回 JSON，前端 toast 才會跳( 才不會卡住)
+				return Json(new { ok = false, msg = $"新增失敗：{ex.Message}" });
+			}
+		}
+		// ============== Edit（Modal：編輯）=============
+		[HttpGet]
         public async Task<IActionResult> Edit(int id) // ★ 一律用 id（和 Url.Action 對應）
         {
             var p = await _context.ProductInfos.FindAsync(id);
@@ -587,13 +601,11 @@ namespace GameSpace.Areas.OnlineStore.Controllers
         }
 
         // ============== Helpers（小工具）=============
-        private int GetCurrentManagerId()
-        {
+        private int GetCurrentManagerId() => 30000060;
+	     
             // TODO：從登入資訊取得實際 manager_id
             // 目前先用假資料方便開發
-            return 1;
-        }
-
+        
         private static ProductInfoFormVM MapToVM(ProductInfo p) => new ProductInfoFormVM
         {
             ProductId = p.ProductId,
@@ -621,6 +633,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
         }
 
         private bool ProductInfoExists(int id)
+
             => _context.ProductInfos.Any(e => e.ProductId == id);
      // -----------（以下保留：舊版 Index 寫法供參考）-----------
         // 你的舊版 Index 我留在專案裡當範例即可；現在的版本用 DataTables 前端分頁/排序，
