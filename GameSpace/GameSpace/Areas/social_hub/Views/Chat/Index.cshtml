@@ -1,76 +1,132 @@
-﻿@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.ConversationListItemVM>
-
+﻿@using GameSpace.Areas.social_hub.Models.ViewModels
+@model GameSpace.Areas.social_hub.Models.ViewModels.ChatHomeVM
 @{
-    ViewData["Title"] = "我的對話";
-    // [說明] 從 Query 判斷是否為管理員對話模式，並在所有連結/表單中帶回去
-    var isManagerDm = string.Equals(Context.Request.Query["isManagerDm"], "true", StringComparison.OrdinalIgnoreCase);
+    ViewData["Title"] = "聊天中心";
+}
+@section Styles {
+    <link href="~/lib/social_hub/css/chat-1to1.css" rel="stylesheet" />
 }
 
-<h2 class="mb-3">@ViewData["Title"]</h2>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="small text-muted">
-        模式：@(isManagerDm ? "管理員對管理員" : "使用者對使用者")
+<div class="container my-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0">聊天中心</h3>
+        <div class="small text-muted">總未讀：<span id="unreadTotal">0</span></div>
     </div>
 
-    @* [URL] GET /social_hub/Chat/With?otherId={id}&isManagerDm={true|false}
-       [用途] 右上角快速開啟對話 *@
-    <form asp-action="With" method="get" class="d-flex align-items-center gap-2">
-        <input type="hidden" name="isManagerDm" value="@(isManagerDm ? "true" : "false")" />
-        <input type="number" class="form-control form-control-sm me-2" name="otherId" min="1"
-               placeholder="[輸入對方ID]" required />
-        <button class="btn btn-sm btn-success" type="submit">開啟</button>
-    </form>
+    <div class="row">
+        <div class="col-12 col-md-3">
+            <div class="bg-white rounded shadow-sm">
+                <div class="p-2 border-bottom"><strong>聯絡人</strong></div>
+                <ul id="contactList" class="list-unstyled mb-0">
+                    <li class="px-2 py-2 text-muted">載入中…</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-9">
+            <div class="bg-white rounded shadow-sm">
+                <div class="p-2 border-bottom"><strong>最近對話</strong></div>
+                <ul class="list-group list-group-flush">
+                    @if (Model?.Conversations?.Any() == true)
+                    {
+                        foreach (var c in Model.Conversations)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <a class="text-decoration-none" asp-action="With" asp-route-otherId="@c.OtherId">
+                                    與 @c.OtherId 的對話
+                                    @if (!string.IsNullOrWhiteSpace(c.LastPreview))
+                                    {
+                                        <small class="text-muted ms-2">@c.LastPreview</small>
+                                    }
+                                </a>
+                                <span class="badge bg-danger @(c.UnreadCount > 0 ? "" : "d-none")"
+                                      data-unread-conv="@c.ConversationId">@c.UnreadCount</span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-muted">尚無對話紀錄</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info">
-        目前沒有對話。你可以用網址
-        <code>/social_hub/Chat?otherId=對方ID&amp;isManagerDm=@(isManagerDm.ToString().ToLower())</code>
-        開始對話，或使用右上角輸入框快速開啟。
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>對方ID</th>
-                    <th>最後訊息時間</th>
-                    <th>未讀</th>
-                    <th style="width:140px;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var c in Model)
-                {
-                    <tr>
-                        <td>@c.OtherId</td>
-                        <td>@(c.LastMessageAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
-                        <td>
-                            @if (c.UnreadCount > 0)
-                            {
-                                <span class="badge bg-warning text-dark">@c.UnreadCount</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">0</span>
-                            }
-                        </td>
-                        <td>
-                            @* [URL] GET /social_hub/Chat/With?otherId={id}&isManagerDm={true|false} *@
-                            <a class="btn btn-sm btn-outline-primary"
-                               asp-action="With"
-                               asp-route-otherId="@c.OtherId"
-                               asp-route-isManagerDm="@(isManagerDm ? "true" : "false")">
-                                進入
-                            </a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+@section Scripts {
+    <script>
+        (() => {
+          const $ = s => document.querySelector(s);
+          const contactList = $("#contactList");
+          const unreadTotal = $("#unreadTotal");
+
+          async function ensureSignalR(){
+            if (window.signalR) return true;
+            const cdns = [
+              "https://cdn.jsdelivr.net/npm/%40microsoft/signalr%408.0.5/dist/browser/signalr.min.js",
+              "https://unpkg.com/%40microsoft/signalr%408.0.5/dist/browser/signalr.min.js"
+            ];
+            for (const src of cdns){
+              try{
+                await new Promise((res,rej)=>{
+                  const s=document.createElement("script");
+                  s.src=src; s.defer=true; s.onload=res; s.onerror=rej;
+                  document.head.appendChild(s);
+                });
+                if (window.signalR) return true;
+              }catch{}
+            }
+            return false;
+          }
+
+          async function loadContacts(){
+            try{
+              const r = await fetch("/social_hub/Chat/Contacts");
+              const arr = await r.json();
+              contactList.innerHTML = "";
+              if (!Array.isArray(arr) || arr.length===0){
+                contactList.innerHTML = `<li class="px-2 py-2 text-muted">沒有好友</li>`; return;
+              }
+              for (const c of arr){
+                const label = c.nick ? `[${c.nick}] ${c.name}` : c.name;
+                const li = document.createElement("li");
+                li.innerHTML = `
+                  <a class="btn w-100 text-start d-flex justify-content-between align-items-center"
+                     href="/social_hub/Chat/With?otherId=${c.id}">
+                    <span>${label}</span>
+                    ${c.unread > 0 ? `<span class="badge bg-danger">${c.unread}</span>` : ""}
+                  </a>`;
+                contactList.appendChild(li);
+              }
+            }catch{
+              contactList.innerHTML = `<li class="px-2 py-2 text-danger">載入失敗</li>`;
+            }
+          }
+
+          async function refreshUnread(){
+            try{
+              const r = await fetch("/social_hub/Chat/UnreadSummary");
+              if(!r.ok) return;
+              const data = await r.json();
+              unreadTotal.textContent = data.total ?? 0;
+            }catch{}
+          }
+
+          loadContacts();
+          refreshUnread();
+
+          (async () => {
+            const ok = await ensureSignalR();
+            if (!ok) return;
+            const conn = new signalR.HubConnectionBuilder()
+              .withUrl("/social_hub/chatHub").withAutomaticReconnect().build();
+            conn.on("UnreadUpdate", data => {
+              if (data && typeof data.total === "number")
+                unreadTotal.textContent = String(data.total);
+            });
+            try{ await conn.start(); }catch{}
+          })();
+        })();
+    </script>
 }

@@ -1,0 +1,167 @@
+﻿@{
+    ViewData["Title"] = "客服工作台";
+    var meId = ViewBag.MeManagerId as int?;
+    var canAssignToOthers = (bool)(ViewBag.CanAssignToOthers ?? false);
+}
+
+<h2 class="mb-3">@ViewData["Title"]</h2>
+
+<div class="alert alert-secondary py-2">
+    目前客服 ManagerId：<strong>@(meId?.ToString() ?? "-")</strong>
+</div>
+
+<ul class="nav nav-pills mb-3" id="support-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-assigned" data-bs-toggle="pill" data-bs-target="#pane-assigned" type="button" role="tab" aria-controls="pane-assigned" aria-selected="true">
+            指派給我 <span class="badge bg-light text-dark ms-1" id="count-assigned">—</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-unassigned" data-bs-toggle="pill" data-bs-target="#pane-unassigned" type="button" role="tab" aria-controls="pane-unassigned" aria-selected="false">
+            未指派 <span class="badge bg-light text-dark ms-1" id="count-unassigned">—</span>
+        </button>
+    </li>
+
+    @* ★ 只有雙權限顯示「未完成」 *@
+    @if (canAssignToOthers)
+    {
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-inprogress" data-bs-toggle="pill" data-bs-target="#pane-inprogress" type="button" role="tab" aria-controls="pane-inprogress" aria-selected="false">
+                未完成 <span class="badge bg-light text-dark ms-1" id="count-inprogress">—</span>
+            </button>
+        </li>
+    }
+
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-closed" data-bs-toggle="pill" data-bs-target="#pane-closed" type="button" role="tab" aria-controls="pane-closed" aria-selected="false">
+            已結單 <span class="badge bg-light text-dark ms-1" id="count-closed">—</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="support-tab-content">
+    <div class="tab-pane fade show active" id="pane-assigned" role="tabpanel" aria-labelledby="tab-assigned">
+        <div class="text-muted">載入中…</div>
+    </div>
+    <div class="tab-pane fade" id="pane-unassigned" role="tabpanel" aria-labelledby="tab-unassigned">
+        <div class="text-muted">載入中…</div>
+    </div>
+
+    @* ★ 未完成容器（僅雙權限才會有） *@
+    @if (canAssignToOthers)
+    {
+        <div class="tab-pane fade" id="pane-inprogress" role="tabpanel" aria-labelledby="tab-inprogress">
+            <div class="text-muted">載入中…</div>
+        </div>
+    }
+
+    <div class="tab-pane fade" id="pane-closed" role="tabpanel" aria-labelledby="tab-closed">
+        <div class="text-muted">載入中…</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function loadCounts() {
+            try {
+                const res = await fetch('/social_hub/Support/GetCounts', { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const d = await res.json();
+                document.getElementById('count-assigned').innerText = (d.assigned ?? 0);
+                document.getElementById('count-unassigned').innerText = (d.unassigned ?? 0);
+                document.getElementById('count-closed').innerText = (d.closed ?? 0);
+                // ★ 若有 inprogress 標籤才更新
+                const cip = document.getElementById('count-inprogress');
+                if (cip) cip.innerText = (d.inprogress ?? 0);
+            } catch (e) { console.error('GetCounts failed', e); }
+        }
+
+        async function renderTo(selector, url) {
+            const host = document.querySelector(selector);
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                host.innerHTML = await res.text();
+            } catch (e) {
+                host.innerHTML = `<div class="alert alert-danger">載入失敗，請重試。</div>`;
+                console.error('renderTo failed', e);
+            }
+        }
+
+        async function renderAssigned(page = 1, q = '') {
+            const url = `/social_hub/Support/ListAssigned?page=${page}&q=${encodeURIComponent(q)}`;
+            await renderTo('#pane-assigned', url);
+        }
+        async function renderUnassigned(page = 1, q = '') {
+            const url = `/social_hub/Support/ListUnassigned?page=${page}&q=${encodeURIComponent(q)}`;
+            await renderTo('#pane-unassigned', url);
+        }
+        // ★ 未完成
+        async function renderInProgress(page = 1, q = '') {
+            const url = `/social_hub/Support/ListInProgress?page=${page}&q=${encodeURIComponent(q)}`;
+            await renderTo('#pane-inprogress', url);
+        }
+        async function renderClosed(page = 1, q = '') {
+            const url = `/social_hub/Support/ListClosed?page=${page}&q=${encodeURIComponent(q)}`;
+            await renderTo('#pane-closed', url);
+        }
+
+        // 分頁事件委派
+        document.addEventListener('click', async (e) => {
+            let a;
+            if (a = e.target.closest('#pane-assigned a.page-link')) {
+                e.preventDefault(); await renderTo('#pane-assigned', a.getAttribute('href')); return loadCounts();
+            }
+            if (a = e.target.closest('#pane-unassigned a.page-link')) {
+                e.preventDefault(); await renderTo('#pane-unassigned', a.getAttribute('href')); return loadCounts();
+            }
+            // ★ 未完成的分頁
+            if (a = e.target.closest('#pane-inprogress a.page-link')) {
+                e.preventDefault(); await renderTo('#pane-inprogress', a.getAttribute('href')); return loadCounts();
+            }
+            if (a = e.target.closest('#pane-closed a.page-link')) {
+                e.preventDefault(); await renderTo('#pane-closed', a.getAttribute('href')); return loadCounts();
+            }
+        });
+
+        // 未指派清單：指派給我（保留原有）
+        document.addEventListener('click', async (e) => {
+            let btn;
+            // 未指派分頁
+            if (btn = e.target.closest('#pane-unassigned .btn-assign-row')) {
+                e.preventDefault(); await assignToMe(btn.dataset.id); return;
+            }
+            // ★ 未完成分頁（列出未指派也可自接）
+            if (btn = e.target.closest('#pane-inprogress .btn-assign-row')) {
+                e.preventDefault(); await assignToMe(btn.dataset.id); return;
+            }
+        });
+
+        async function assignToMe(id) {
+            try {
+                const res = await fetch(`/social_hub/Support/AssignToMe?id=${id}`, { method: 'POST', credentials: 'same-origin' });
+                if (!res.ok) { alert(await res.text()); return; }
+                // 重載兩個相關分頁 + 徽章
+                if (document.getElementById('pane-unassigned')) await renderUnassigned(1);
+                if (document.getElementById('pane-inprogress')) await renderInProgress(1);
+                await renderAssigned(1);
+                await loadCounts();
+            } catch (err) {
+                console.error('AssignToMe failed', err);
+                alert('指派失敗，請稍後再試。');
+            }
+        }
+
+        // 切換分頁時載入
+        document.getElementById('tab-assigned').addEventListener('shown.bs.tab', () => { renderAssigned(1); loadCounts(); });
+        document.getElementById('tab-unassigned').addEventListener('shown.bs.tab', () => { renderUnassigned(1); loadCounts(); });
+        const tabIp = document.getElementById('tab-inprogress');
+        if (tabIp) tabIp.addEventListener('shown.bs.tab', () => { renderInProgress(1); loadCounts(); });
+        document.getElementById('tab-closed').addEventListener('shown.bs.tab', () => { renderClosed(1); loadCounts(); });
+
+        // 首次載入
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAssigned(1);
+            loadCounts();
+        });
+    </script>
+}

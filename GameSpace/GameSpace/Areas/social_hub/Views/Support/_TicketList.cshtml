@@ -1,0 +1,149 @@
+﻿@model GameSpace.Areas.social_hub.Models.ViewModels.PagedResult<GameSpace.Areas.social_hub.Models.ViewModels.TicketListItemVM>
+@{
+    var action = (ViewData["action"] as string) ?? "";
+    var q = ViewBag.Query as string ?? "";
+    var canAssignToOthers = (bool)(ViewBag.CanAssignToOthers ?? false);
+
+    var actUnassigned = nameof(GameSpace.Areas.social_hub.Controllers.SupportController.ListUnassigned);
+    var actAssigned = nameof(GameSpace.Areas.social_hub.Controllers.SupportController.ListAssigned);
+    var actClosed = nameof(GameSpace.Areas.social_hub.Controllers.SupportController.ListClosed);
+    var actInProgress = nameof(GameSpace.Areas.social_hub.Controllers.SupportController.ListInProgress);
+
+    bool IsUnassignedTab() => action == actUnassigned;
+    bool IsAssignedTab() => action == actAssigned;
+    bool IsClosedTab() => action == actClosed;
+    bool IsInProgressTab() => action == actInProgress;
+}
+
+<style>
+    /* 讓被「disabled」的 <a> 也有禁用感且不可點（補強 Bootstrap 對 anchor 的處理） */
+    .btn.disabled[aria-disabled="true"] {
+        pointer-events: none;
+        opacity: .65;
+    }
+</style>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-2">
+        <thead class="table-light">
+            <tr>
+                <th class="text-nowrap" style="width:90px;">工單ID</th>
+                <th>主旨</th>
+                <th class="text-nowrap" style="width:120px;">使用者ID</th>
+                <th class="text-nowrap" style="width:140px;">指派客服</th>
+                <th class="text-nowrap" style="width:170px;">最後活動</th>
+                <th class="text-center text-nowrap" style="width:80px;">未讀</th>
+                <th class="text-end text-nowrap" style="width:360px;">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Items?.Count > 0)
+            {
+                foreach (var t in Model.Items)
+                {
+                    var lastAt = (t.LastMessageAt ?? t.CreatedAt);
+                    var isUnassigned = t.AssignedManagerId == null;
+
+                    // 三顆按鈕的啟用條件
+                    var enableAssignSelf = IsUnassignedTab(); // 只有「未指派」可以自己接
+                    var enableAssignOthers = (IsUnassignedTab() || IsAssignedTab() || IsInProgressTab()) && canAssignToOthers;
+                    var enableEnterChat = IsUnassignedTab() ? false : (IsInProgressTab() ? !isUnassigned : true);
+                    if (IsClosedTab()) { enableAssignSelf = false; enableAssignOthers = false; /* enterChat=true 看歷史 */ }
+
+                    // 按鈕 class（顏色區分）
+                    var btnSelfClass = enableAssignSelf ? "btn btn-success" : "btn btn-outline-success disabled";
+                    var btnOtherClass = enableAssignOthers ? "btn btn-warning" : "btn btn-outline-warning disabled";
+                    var btnChatClass = enableEnterChat ? "btn btn-primary" : "btn btn-outline-secondary disabled";
+
+                    // disabled <a> 需要 aria-disabled/tabindex 幫助可及性與禁止點擊
+                    var disAttr = "aria-disabled=\"true\" tabindex=\"-1\"";
+
+                    <tr>
+                        <td class="text-nowrap">@t.TicketId</td>
+                        <td class="text-truncate" style="max-width: 420px;" title="@t.Subject">@t.Subject</td>
+                        <td class="text-nowrap">@t.UserId</td>
+                        <td class="text-nowrap">@((t.AssignedManagerId?.ToString()) ?? "—")</td>
+                        <td class="text-nowrap">@lastAt.ToString("yyyy/MM/dd HH:mm")</td>
+                        <td class="text-center">
+                            @if (t.UnreadForMe > 0)
+                            {
+                                <span class="badge bg-danger">@t.UnreadForMe</span>
+                            }
+                            else
+                            {
+
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <!-- 指派給我（綠色） -->
+                                <button type="button"
+                                        class="@btnSelfClass btn-assign-row"
+                                        data-id="@t.TicketId"
+                                        @(enableAssignSelf ? null : @Html.Raw("disabled"))
+                                        title="把這張工單指派給自己">
+                                    指派給我
+                                </button>
+
+                                <!-- 指派他人（橘色） -->
+                                @{
+                                    var reassignUrl = Url.Action("Reassign", "Support", new { area = "social_hub", id = t.TicketId });
+                                }
+                                @if (enableAssignOthers)
+                                {
+                                    <a class="@btnOtherClass" href="@reassignUrl" title="指派其他客服處理">指派他人</a>
+                                }
+                                else
+                                {
+                                    <a class="@btnOtherClass" href="#" @Html.Raw(disAttr) title="沒有指派權限或此狀態不可轉單">指派他人</a>
+                                }
+
+                                <!-- 進入對話（藍色） -->
+                                @{
+                                    var chatUrl = Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId });
+                                }
+                                @if (enableEnterChat)
+                                {
+                                    <a class="@btnChatClass" href="@chatUrl">進入對話</a>
+                                }
+                                else
+                                {
+                                    <a class="@btnChatClass" href="#" @Html.Raw(disAttr) title="請先接單或由主管指派後再進入對話">進入對話</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="7" class="text-muted">目前沒有資料。</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Pagination">
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.HasPrev ? "" : "disabled")">
+                <a class="page-link" href="@Url.Action(action, new { page = Model.Page - 1, q })">上一頁</a>
+            </li>
+            @{
+                var start = Math.Max(1, Model.Page - 2);
+                var end = Math.Min(Model.TotalPages, Model.Page + 2);
+                for (var p = start; p <= end; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@Url.Action(action, new { page = p, q })">@p</a>
+                    </li>
+                }
+            }
+            <li class="page-item @(Model.HasNext ? "" : "disabled")">
+                <a class="page-link" href="@Url.Action(action, new { page = Model.Page + 1, q })">下一頁</a>
+            </li>
+        </ul>
+    </nav>
+}

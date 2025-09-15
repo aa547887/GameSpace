@@ -9,8 +9,6 @@ using GameSpace.Areas.social_hub.Services;
 using GameSpace.Areas.social_hub.Filters;
 using System.Collections.Generic;
 
-
-
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
@@ -28,7 +26,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// GET: social_hub/Mutes
-		// using System.Linq; // ← 確保有
 		public async Task<IActionResult> Index(int page = 1, string? q = null)
 		{
 			const int PageSize = 10;
@@ -75,18 +72,18 @@ namespace GameSpace.Areas.social_hub.Controllers
 					}
 					else
 					{
-						// 3) 文字：詞彙包含 或 狀態關鍵字
+						// 3) 文字：詞彙包含 / 替代字包含 / 或狀態關鍵字
 						bool activeTrue = qLower is "啟用" or "enabled" or "enable" or "on" or "true";
 						bool activeFalse = qLower is "停用" or "disabled" or "disable" or "off" or "false";
 
 						baseQuery = baseQuery.Where(m =>
-							m.Word.Contains(qTrim) ||                           // ← 這裡
+							m.Word.Contains(qTrim) ||
+							(m.Replacement != null && m.Replacement.Contains(qTrim)) ||
 							(activeTrue && m.IsActive == true) ||
 							(activeFalse && m.IsActive == false));
 					}
 				}
 			}
-
 
 			// 分頁
 			var totalItems = await baseQuery.CountAsync();
@@ -126,8 +123,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return View(list);
 		}
 
-
-
 		// GET: social_hub/Mutes/Details/5
 		public async Task<IActionResult> Details(int? id)
 		{
@@ -152,8 +147,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 				ViewBag.ManagerName = null;
 
 			return View(mute);
-
-
 		}
 
 		// GET: social_hub/Mutes/Create
@@ -170,25 +163,31 @@ namespace GameSpace.Areas.social_hub.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireMuteManagePermission]
-		public async Task<IActionResult> Create([Bind("Word,IsActive")] Mute input)   // ← 改這裡
+		public async Task<IActionResult> Create([Bind("Word,Replacement,IsActive")] Mute input)
 		{
 			const int MaxWordLength = 50;
+			const int MaxReplacementLength = 50;
 
-			input.Word = (input.Word ?? string.Empty).Trim();        // ← 改這裡
+			input.Word = (input.Word ?? string.Empty).Trim();
+			input.Replacement = (input.Replacement ?? string.Empty).Trim();
+
+			// 驗證 Word
 			if (string.IsNullOrEmpty(input.Word))
 				ModelState.AddModelError("Word", "請輸入詞彙。");
 			else if (input.Word.Length > MaxWordLength)
 				ModelState.AddModelError("Word", $"詞彙長度不可超過 {MaxWordLength} 個字。");
 
+			// 驗證 Replacement（可為空，空白視為 null）
+			if (!string.IsNullOrEmpty(input.Replacement) && input.Replacement.Length > MaxReplacementLength)
+				ModelState.AddModelError("Replacement", $"替代字長度不可超過 {MaxReplacementLength} 個字。");
+
+			// 檢查重複 Word
 			if (ModelState.IsValid)
 			{
-				// DB 一般有唯一索引在 Word，上線時會擋；這裡先行檢查給友善訊息
 				bool dup = await _context.Mutes
 					.AsNoTracking()
-					.AnyAsync(x => x.Word == input.Word);           // ← 不用再加 IsActive 條件了
-
-				if (dup)
-					ModelState.AddModelError("Word", "此詞已存在。");
+					.AnyAsync(x => x.Word == input.Word);
+				if (dup) ModelState.AddModelError("Word", "此詞已存在。");
 			}
 
 			if (!ModelState.IsValid)
@@ -201,27 +200,28 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 			var entity = new Mute
 			{
-				Word = input.Word,                                   // ← 改這裡
+				Word = input.Word,
+				Replacement = string.IsNullOrWhiteSpace(input.Replacement) ? null : input.Replacement,
 				IsActive = input.IsActive,
-				CreatedAt = DateTime.UtcNow                          // 盡量用 UTC；若 DB 有預設，可不設
+				CreatedAt = DateTime.UtcNow
 			};
 
+			// 建立者
 			if (Request.Cookies.TryGetValue("gs_kind", out var k) == true && k == "manager" &&
 				Request.Cookies.TryGetValue("gs_id", out var idStr) == true &&
 				int.TryParse(idStr, out var mid) && mid > 0)
 			{
-				entity.ManagerId = mid; // 建立者
+				entity.ManagerId = mid;
 			}
 
 			_context.Mutes.Add(entity);
 			await _context.SaveChangesAsync();
 			await _muteFilter.RefreshAsync();
 
-			TempData["Msg"] = "已新增詞彙並刷新過濾規則。";
+			TempData["Toast.Success"] = "已新增詞彙並刷新過濾規則。";
+			TempData["Toast.AutoHideMs"] = 4000;
 			return RedirectToAction(nameof(Index));
 		}
-
-
 
 		// GET: social_hub/Mutes/Edit/5
 		[RequireMuteManagePermission]
@@ -235,13 +235,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await _perm.GetMuteManagementContextAsync(HttpContext);
 			var canAdminAll = ctx.isManager && await _perm.HasAdministratorPrivilegesAsync(ctx.managerId);
 
-
 			if (mute.ManagerId.HasValue)
 				ViewBag.ManagerName = await GetManagerNameAsync(mute.ManagerId.Value);
 			else
 				ViewBag.ManagerName = null;
 
-			// ✅ 非超管 → 只能編輯自己建立的
+			// 非超管 → 只能編輯自己建立的
 			if (!canAdminAll && mute.ManagerId != ctx.managerId) return Forbid();
 
 			ViewBag.CanManageMutes = true;
@@ -255,9 +254,10 @@ namespace GameSpace.Areas.social_hub.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireMuteManagePermission]
-		public async Task<IActionResult> Edit(int id, [Bind("MuteId,Word,IsActive")] Mute input)   // ← 改這裡
+		public async Task<IActionResult> Edit(int id, [Bind("MuteId,Word,Replacement,IsActive")] Mute input)
 		{
 			const int MaxWordLength = 50;
+			const int MaxReplacementLength = 50;
 
 			if (id != input.MuteId) return NotFound();
 
@@ -268,17 +268,23 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var canAdminAll = ctx.isManager && await _perm.HasAdministratorPrivilegesAsync(ctx.managerId);
 			if (!canAdminAll && entity.ManagerId != ctx.managerId) return Forbid();
 
-			input.Word = (input.Word ?? string.Empty).Trim();        // ← 改這裡
+			input.Word = (input.Word ?? string.Empty).Trim();
+			input.Replacement = (input.Replacement ?? string.Empty).Trim();
+
+			// 驗證
 			if (string.IsNullOrEmpty(input.Word))
 				ModelState.AddModelError("Word", "請輸入詞彙。");
 			else if (input.Word.Length > MaxWordLength)
 				ModelState.AddModelError("Word", $"詞彙長度不可超過 {MaxWordLength} 個字。");
 
-			bool dup = false;
+			if (!string.IsNullOrEmpty(input.Replacement) && input.Replacement.Length > MaxReplacementLength)
+				ModelState.AddModelError("Replacement", $"替代字長度不可超過 {MaxReplacementLength} 個字。");
+
+			// 檢查重複 Word（排除自己）
 			if (ModelState.IsValid)
 			{
-				dup = await _context.Mutes
-					.AnyAsync(x => x.MuteId != id && x.Word == input.Word);  // ← 改這裡
+				var dup = await _context.Mutes
+					.AnyAsync(x => x.MuteId != id && x.Word == input.Word);
 				if (dup) ModelState.AddModelError("Word", "此詞已存在。");
 			}
 
@@ -291,23 +297,24 @@ namespace GameSpace.Areas.social_hub.Controllers
 				ViewBag.ManagerName = entity.ManagerId.HasValue ? await GetManagerNameAsync(entity.ManagerId.Value) : null;
 
 				// 回填目前輸入（不存 DB）
-				entity.Word = input.Word;                              // ← 改這裡
+				entity.Word = input.Word;
+				entity.Replacement = string.IsNullOrWhiteSpace(input.Replacement) ? null : input.Replacement;
 				entity.IsActive = input.IsActive;
 				return View(entity);
 			}
 
 			// 實際更新
-			entity.Word = input.Word;                                  // ← 改這裡
+			entity.Word = input.Word;
+			entity.Replacement = string.IsNullOrWhiteSpace(input.Replacement) ? null : input.Replacement;
 			entity.IsActive = input.IsActive;
 
 			await _context.SaveChangesAsync();
 			await _muteFilter.RefreshAsync();
 
-			TempData["Msg"] = "已更新詞彙並刷新過濾規則。";
+			TempData["Toast.Success"] = "已更新詞彙並刷新過濾規則。";
+			TempData["Toast.AutoHideMs"] = 4000;
 			return RedirectToAction(nameof(Index));
 		}
-
-
 
 		// GET: social_hub/Mutes/Delete/5
 		[RequireMuteManagePermission]
@@ -321,13 +328,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await _perm.GetMuteManagementContextAsync(HttpContext);
 			var canAdminAll = ctx.isManager && await _perm.HasAdministratorPrivilegesAsync(ctx.managerId);
 
-
 			if (mute.ManagerId.HasValue)
 				ViewBag.ManagerName = await GetManagerNameAsync(mute.ManagerId.Value);
 			else
 				ViewBag.ManagerName = null;
 
-			// ✅ 非超管 → 只能刪除自己建立的
+			// 非超管 → 只能刪除自己建立的
 			if (!canAdminAll && mute.ManagerId != ctx.managerId) return Forbid();
 
 			ViewBag.CanManageMutes = true;
@@ -349,14 +355,27 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await _perm.GetMuteManagementContextAsync(HttpContext);
 			var canAdminAll = ctx.isManager && await _perm.HasAdministratorPrivilegesAsync(ctx.managerId);
 
-			// ✅ 非超管 → 只能刪除自己建立的
+			// 非超管 → 只能刪除自己建立的
 			if (!canAdminAll && entity.ManagerId != ctx.managerId) return Forbid();
 
 			_context.Mutes.Remove(entity);
 			await _context.SaveChangesAsync();
 			await _muteFilter.RefreshAsync();
 
-			TempData["Msg"] = "已刪除詞彙並刷新過濾規則。";
+			TempData["Toast.Success"] = "已刪除詞彙並刷新過濾規則。";
+			TempData["Toast.AutoHideMs"] = 4000;
+			return RedirectToAction(nameof(Index));
+		}
+
+		// ★ POST: 重載詞庫（集中回 Index 顯示 _Toast）
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		[RequireMuteManagePermission]
+		public async Task<IActionResult> Reload()
+		{
+			await _muteFilter.RefreshAsync();
+			TempData["Toast.Success"] = "已重載詞庫快取。";
+			TempData["Toast.AutoHideMs"] = 4000;
 			return RedirectToAction(nameof(Index));
 		}
 
@@ -386,6 +405,5 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var name = ExtractManagerName(mgr);
 			return string.IsNullOrWhiteSpace(name) ? $"管理員#{managerId}" : name;
 		}
-
 	}
 }
