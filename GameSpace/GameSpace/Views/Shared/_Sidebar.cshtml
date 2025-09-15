@@ -1,12 +1,16 @@
 ﻿<nav class="navbar-nav flex-column w-100">
 
     <!-- Dashboard -->
-    <a class="nav-link d-flex align-items-center text-white" href="#">
+    <a class="nav-link d-flex align-items-center text-white" asp-action="" asp-controller="Login" asp-action="Login">
         <i class="fas fa-tachometer-alt me-2"></i>
-        <span class="sidebar-text d-none d-sm-inline">Dashboard</span>
+        <span class="sidebar-text d-none d-sm-inline">Login</span>
+    </a>
+    <a class="nav-link d-flex align-items-center text-white" asp-action="" asp-controller="Login" asp-action="Success">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        <span class="sidebar-text d-none d-sm-inline">身分確認</span>
     </a>
 
-    <!-- Layouts 折疊 -->
+    @* <!-- Layouts 折疊 -->
     <a class="nav-link d-flex align-items-center text-white" data-bs-toggle="collapse" href="#collapseLayouts" role="button" aria-expanded="false" aria-controls="collapseLayouts">
         <i class="fas fa-columns me-2"></i>
         <span class="sidebar-text d-none d-sm-inline">Layouts</span>
@@ -54,6 +58,6 @@
     <!-- Footer / Login Info -->
     <div class="mt-auto text-white small ps-3">
         Logged in as: Start Bootstrap
-    </div>
+    </div> *@
 
 </nav>

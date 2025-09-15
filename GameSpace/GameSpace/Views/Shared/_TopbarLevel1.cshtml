@@ -1,11 +1,18 @@
-﻿<nav class="navbar navbar-expand-lg navbar-dark shadow-sm custom-bg-dark">
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+@{
+    Layout = null;                       // 重要：避免 partial 套用 _Layout
+    var tokens = Xsrf.GetAndStoreTokens(Context); // 產生並設置防偽 cookie
+}
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm custom-bg-dark">
     <div class="container-fluid p-0 d-flex">
 
-        <!-- 左側 GameSpace / 背景區，固定寬度 -->
+        <!-- 左側品牌 -->
         <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width:250px; height:100%;">
-            <a class="navbar-brand mb-0 text-white" asp-area="" asp-controller="Home" asp-action="Index">
-                GameSpace
-            </a>
+            <a class="navbar-brand mb-0 text-white" asp-area="" asp-controller="Home" asp-action="Index">GameSpace</a>
         </div>
 
         <!-- 中間導航 -->
@@ -17,41 +24,90 @@
 
             <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
                 <ul class="navbar-nav">
-                    <li class="nav-item mx-2">
-                        <a class="nav-link text-white" asp-area="MemberManagement" asp-controller="Home" asp-action="Index">會員</a>
-                    </li>
-                    <li class="nav-item mx-2">
-                        <a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="Index">訊息管理</a>
-                    </li>
-                    <li class="nav-item mx-2">
-                        <a class="nav-link text-white" asp-area="OnlineStore" asp-controller="Home" asp-action="Index">商城</a>
-                    </li>
-                    <li class="nav-item mx-2">
-                        <a class="nav-link text-white" asp-area="Forum" asp-controller="Home" asp-action="Index">論壇</a>
-                    </li>
-                    <li class="nav-item mx-2">
-                        <a class="nav-link text-white" asp-area="MiniGame" asp-controller="Home" asp-action="Index">小遊戲</a>
-                    </li>
+                    <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="MemberManagement" asp-controller="Home" asp-action="Index">會員</a></li>
+                    <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="Index">訊息管理</a></li>
+                    <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="OnlineStore" asp-controller="Home" asp-action="Index">商城</a></li>
+                    <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="Forum" asp-controller="Home" asp-action="Index">論壇</a></li>
+                    <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="MiniGame" asp-controller="Home" asp-action="Index">小遊戲</a></li>
                 </ul>
             </div>
         </div>
 
         <!-- 右側使用者選單 -->
+        @{
+            var adminAuth = await Context.AuthenticateAsync("AdminCookie");
+            var adminPrincipal = adminAuth.Succeeded ? adminAuth.Principal : null;
+
+            var userHasManager = (User?.Identity?.IsAuthenticated ?? false)
+            && User.HasClaim(c => c.Type == "IsManager" && c.Value == "true");
+            var principal = userHasManager ? User : adminPrincipal;
+
+            string? adminId = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? adminName = principal?.Identity?.Name;
+
+            var adminRoles = principal?.Claims
+            .Where(c => c.Type == ClaimTypes.Role || c.Type.Equals("role", StringComparison.OrdinalIgnoreCase))
+            .Select(c => (c.Value ?? "").Trim())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct()
+            .ToList() ?? new List<string>();
+        }
+
         <div class="d-flex align-items-center me-3">
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="userDropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="d-none d-lg-inline me-2">測試文字</span>
-                        <img class="img-profile rounded-circle" src="~/lib/image/undraw_profile.svg" style="width:30px; height:30px; object-fit:cover;">
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown1">
-                        <li><a class="dropdown-item" href="#">測試</a></li>
-                        <li><a class="dropdown-item" href="#">設定</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">登出</a></li>
-                    </ul>
-                </li>
-            </ul>
+            @if (principal != null)
+            {
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#"
+                           id="userDropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-none d-lg-inline me-2">@(!string.IsNullOrWhiteSpace(adminName) ? adminName : "未登入")</span>
+                            <img class="img-profile rounded-circle" src="~/lib/image/undraw_profile.svg" style="width:30px; height:30px; object-fit:cover;">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown1" style="min-width: 260px;">
+                            <li><h6 class="dropdown-header">已登入</h6></li>
+                            <li>
+                                <span class="dropdown-item-text small text-muted">
+                                    <i class="fa-solid fa-id-badge me-1"></i> ID：@adminId
+                                </span>
+                            </li>
+                            <li>
+                                <span class="dropdown-item-text text-muted d-flex flex-wrap align-items-center">
+                                    <i class="fa-solid fa-shield-halved"></i>&nbsp;角色：
+                                    @if (adminRoles.Count > 0)
+                                    {
+                                        foreach (var r in adminRoles)
+                                        {
+                                            <span class="badge text-black ms-1 mt-1">@r</span>
+                                        }
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-black ms-1">（無）</span>
+                                    }
+                                </span>
+                            </li>
+
+                            <li><hr class="dropdown-divider" /></li>
+
+                            <li>
+                                <form asp-area="" asp-controller="Login" asp-action="Logout" method="post" class="px-2">
+                                    <input type="hidden" name="@tokens.FormFieldName" value="@tokens.RequestToken" />
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fa-solid fa-right-from-bracket me-2"></i> 登出
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            }
+            else
+            {
+                <a asp-area="" asp-controller="Login" asp-action="Index" class="btn btn-sm btn-outline-light">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> 後台登入
+                </a>
+            }
         </div>
 
     </div>

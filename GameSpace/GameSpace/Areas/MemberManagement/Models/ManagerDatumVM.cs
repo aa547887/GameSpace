@@ -10,16 +10,19 @@ namespace GameSpace.Areas.MemberManagement.Models;
 public partial class ManagerDatumVM
 {
     [Display(Name ="管理者編號")]
-	public int ManagerId { get; set; } 
+	public int ManagerId { get; set; }
+	[Required]
 	[Display(Name = "管理者姓名")]
 	public string? ManagerName { get; set; } = string.Empty;
+	[Required]
 	[Display(Name = "管理者帳號")]
 	public string? ManagerAccount { get; set; } = string.Empty;
+	[Required]
 	[Display(Name = "管理者密碼")]
 	public string? ManagerPassword { get; set; }
-
+	[Display(Name="創建帳號時間")]
     public DateTime? AdministratorRegistrationDate { get; set; }
-	[Display(Name = "管理者信箱")]
+	[Required, EmailAddress, Display(Name = "管理者信箱")]
 	public string ManagerEmail { get; set; } = null!;
 
     public bool ManagerEmailConfirmed { get; set; }

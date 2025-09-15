@@ -1,73 +1,58 @@
 ﻿@model GameSpace.Areas.MemberManagement.Models.ManagerDatumVM
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "管理者帳號創建";
+    var nextId = ViewBag.NextManagerId as int?; // 由 Controller 提供
 }
 
-<h1>Create</h1>
-
-<h4>ManagerDatum</h4>
+<h1>@ViewData["Title"]</h1>
 <hr />
+
+<div class="alert alert-info">
+    系統將自動指派 <strong>管理者編號</strong>：<strong>@(nextId?.ToString() ?? "-")</strong><br />
+</div>
+
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
+    <div class="col-md-5">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="ManagerId" class="control-label"></label>
-                <input asp-for="ManagerId" class="form-control" />
-                <span asp-validation-for="ManagerId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ManagerName" class="control-label"></label>
+
+            <div class="mb-3">
+                <label asp-for="ManagerName" class="form-label"></label>
                 <input asp-for="ManagerName" class="form-control" />
                 <span asp-validation-for="ManagerName" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="ManagerAccount" class="control-label"></label>
+
+            <div class="mb-3">
+                <label asp-for="ManagerAccount" class="form-label"></label>
                 <input asp-for="ManagerAccount" class="form-control" />
                 <span asp-validation-for="ManagerAccount" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="ManagerPassword" class="control-label"></label>
+
+            <div class="mb-3">
+                <label asp-for="ManagerPassword" class="form-label"></label>
                 <input asp-for="ManagerPassword" class="form-control" />
                 <span asp-validation-for="ManagerPassword" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="AdministratorRegistrationDate" class="control-label"></label>
-                <input asp-for="AdministratorRegistrationDate" class="form-control" />
-                <span asp-validation-for="AdministratorRegistrationDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ManagerEmail" class="control-label"></label>
+
+            <div class="mb-3">
+                <label asp-for="ManagerEmail" class="form-label"></label>
                 <input asp-for="ManagerEmail" class="form-control" />
                 <span asp-validation-for="ManagerEmail" class="text-danger"></span>
             </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="ManagerEmailConfirmed" /> @Html.DisplayNameFor(model => model.ManagerEmailConfirmed)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="ManagerAccessFailedCount" class="control-label"></label>
-                <input asp-for="ManagerAccessFailedCount" class="form-control" />
-                <span asp-validation-for="ManagerAccessFailedCount" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ManagerLockoutEnd" class="control-label"></label>
-                <input asp-for="ManagerLockoutEnd" class="form-control" />
-                <span asp-validation-for="ManagerLockoutEnd" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">建立</button>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2">返回列表</a>
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
+

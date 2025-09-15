@@ -4,114 +4,186 @@ using GameSpace.Data;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
+
 // ---- 型別別名（避免方案裡若有重複介面/命名空間不一致，導致 DI 對不到）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
 using MuteFilterAlias = GameSpace.Areas.social_hub.Services.MuteFilter;
 using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.NotificationService;
-// ✅ 新增：權限服務的別名
+// 權限服務的別名
 using IManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.IManagerPermissionService;
 using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
 
-namespace GameSpace
+// ---------------------- 服務註冊 ----------------------
+// [保留] 頂層語句：只需要這一個 builder，請先刪除舊的 namespace Program/Main 結構
+var builder = WebApplication.CreateBuilder(args);
+
+// [保留] Identity 用的 ApplicationDbContext（你的 DefaultConnection）
+var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
+	?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(identityConn));
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+// [保留] GameSpace 主資料庫
+var gameSpaceConn = builder.Configuration.GetConnectionString("GameSpace")
+	?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+builder.Services.AddDbContext<GameSpacedatabaseContext>(options => options.UseSqlServer(gameSpaceConn));
+
+// [保留] ASP.NET Core Identity（網站前台或會員系統用）
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-	public class Program
+	options.SignIn.RequireConfirmedAccount = true;
+}).AddEntityFrameworkStores<ApplicationDbContext>();
+
+// [保留] MVC
+builder.Services.AddControllersWithViews();
+
+// [保留] social_hub 相關服務註冊
+builder.Services.AddMemoryCache();
+builder.Services.Configure<MuteFilterOptions>(o =>
+{
+	o.MaskStyle = MaskStyle.Asterisks;   // 或 FixedLabel
+	o.FixedLabel = "【封鎖】";
+	o.FuzzyBetweenCjkChars = true;
+});
+builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
+builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
+builder.Services.AddScoped<IManagerPermissionServiceAlias, ManagerPermissionServiceAlias>();
+
+// [保留] SignalR
+builder.Services.AddSignalR();
+
+// [新增] Session（登入流程/OTP 要用）
+builder.Services.AddSession(opt =>
+{
+	opt.IdleTimeout = TimeSpan.FromMinutes(30);
+	opt.Cookie.HttpOnly = true;
+	opt.Cookie.IsEssential = true;
+});
+
+// ★★ 重要：獨立的後台 Cookie 方案，避免干擾 Identity 的 Cookie（Identity 仍用它的）
+const string AdminCookieScheme = "AdminCookie";
+
+// [新增] 後台 Cookie 驗證（給 LoginController 用）+「AJAX 401 不重導」
+builder.Services.AddAuthentication(options =>
+{
+	// 不動 Identity 的預設方案，只是額外加一個後台 Cookie 方案
+})
+.AddCookie(AdminCookieScheme, opt =>
+{
+	opt.LoginPath = "/Login";
+	opt.LogoutPath = "/Login/Logout";
+	opt.AccessDeniedPath = "/Login/Denied";
+	opt.Cookie.Name = "GameSpace.Admin";
+	opt.SlidingExpiration = true;
+	opt.ExpireTimeSpan = TimeSpan.FromHours(4);
+
+	// ★ 讓 AJAX/API 端點在未登入/無權限時回 401/403，而不是 Redirect
+	opt.Events = new CookieAuthenticationEvents
 	{
-		public static async Task Main(string[] args) // ⬅ 改成 async
+		OnRedirectToLogin = ctx =>
 		{
-			var builder = WebApplication.CreateBuilder(args);
-
-			// Add services to the container.
-			var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-				?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-				options.UseSqlServer(connectionString));
-			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-			// GameSpace 主資料庫（EF DbContext）
-			var gameSpaceConnectionString = builder.Configuration.GetConnectionString("GameSpace")
-				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
-			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
-				options.UseSqlServer(gameSpaceConnectionString));
-
-			// ASP.NET Core Identity
-			builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-				.AddEntityFrameworkStores<ApplicationDbContext>();
-
-			// MVC
-			builder.Services.AddControllersWithViews();
-
-			// ===== social_hub 相關服務註冊 =====
-			builder.Services.AddMemoryCache();
-
-			// 穢語過濾選項（一定要有，MuteFilter 透過 IOptions<> 取得）
-			builder.Services.Configure<MuteFilterOptions>(o =>
+			// 針對你會用 fetch 的端點（例如 /Login/Me）直接回 401
+			if (ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase))
 			{
-				o.MaskStyle = MaskStyle.Asterisks;   // 或 FixedLabel
-				o.FixedLabel = "【封鎖】";
-				o.FuzzyBetweenCjkChars = true;       // 允許 CJK 中夾雜空白/標點/零寬
-			});
-
-			// 用別名註冊，避免命名空間撞名
-			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
-			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
-			// ✅ 新增：權限服務註冊（Mutes Create/Edit/Delete 的授權會用到）
-			builder.Services.AddScoped<IManagerPermissionServiceAlias, ManagerPermissionServiceAlias>();
-
-			// SignalR
-			builder.Services.AddSignalR();
-
-			var app = builder.Build();
-
-			// 啟動時預載詞庫（失敗不擋站）
-			using (var scope = app.Services.CreateScope())
-			{
-				try
-				{
-					var filter = scope.ServiceProvider.GetRequiredService<IMuteFilterAlias>();
-					await filter.RefreshAsync(); // 預熱 Regex 與快取
-												 // 若不想把 Main 改 async，可改：filter.RefreshAsync().GetAwaiter().GetResult();
-				}
-				catch { /* ignore */ }
+				ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+				return Task.CompletedTask;
 			}
 
-			// Configure the HTTP request pipeline.
-			if (app.Environment.IsDevelopment())
+			// 一般 AJAX 判斷：X-Requested-With 或 Accept 要 JSON
+			var isAjax =
+				string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+				|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
+
+			if (isAjax)
 			{
-				app.UseMigrationsEndPoint();
+				ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+				return Task.CompletedTask;
 			}
-			else
+
+			// 其餘情況維持原本導向登入頁
+			ctx.Response.Redirect(ctx.RedirectUri);
+			return Task.CompletedTask;
+		},
+		OnRedirectToAccessDenied = ctx =>
+		{
+			// 無權限時（403）也同樣處理 AJAX
+			var isAjax =
+				string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+				|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
+
+			if (isAjax)
 			{
-				app.UseExceptionHandler("/Home/Error");
-				app.UseHsts();
+				ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+				return Task.CompletedTask;
 			}
 
-			app.UseHttpsRedirection();
-			app.UseStaticFiles();
-
-			app.UseRouting();
-
-			app.UseAuthentication(); // Identity
-			app.UseAuthorization();
-
-			// 先加 area 的路由（重要）
-			app.MapControllerRoute(
-				name: "areas",
-				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
-
-			// 再加一般的 default 路由
-			app.MapControllerRoute(
-				name: "default",
-				pattern: "{controller=Home}/{action=Index}/{id?}");
-
-			app.MapRazorPages();
-
-			// 註冊 SignalR hub（使用完整型別名稱，避免命名空間衝突）
-			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub");
-
-			await app.RunAsync(); // ⬅ 搭配 async Main
+			ctx.Response.Redirect(ctx.RedirectUri);
+			return Task.CompletedTask;
 		}
+	};
+});
+
+// ★ 建立授權政策（對應我們寫入的 perm:* Claims）
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
+	options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
+	options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
+	options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
+	options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
+	options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
+});
+
+var app = builder.Build();
+
+// [保留] 啟動時預載詞庫（失敗不擋站）
+using (var scope = app.Services.CreateScope())
+{
+	try
+	{
+		var filter = scope.ServiceProvider.GetRequiredService<IMuteFilterAlias>();
+		await filter.RefreshAsync(); // 預熱 Regex 與快取
 	}
+	catch { /* ignore */ }
 }
+
+// ---------------------- 中介層管線 ----------------------
+if (app.Environment.IsDevelopment())
+{
+	app.UseMigrationsEndPoint();
+}
+else
+{
+	app.UseExceptionHandler("/Home/Error");
+	app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseSession();          // [順序確認] 要在 Auth 前
+app.UseAuthentication();   // 會同時支援 Identity 的 Cookie 與 AdminCookie
+app.UseAuthorization();
+
+// [保留] 先 Areas 再 default
+app.MapControllerRoute(
+	name: "areas",
+	pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+	name: "default",
+	pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// [保留] 若使用 Identity UI
+app.MapRazorPages();
+
+// [保留] SignalR hub
+app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub");
+
+await app.RunAsync();
+
