@@ -16,6 +16,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		{
 			_dbContext = dbContext;
 		}
+		#region 取得訂單明細
 
 		// GET: /OnlineStore/Orders/Detail/123
 		[HttpGet]
@@ -146,5 +147,60 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 
 			return View("OrderDetail", vm); // ⑦ 把 ViewModel 丟給你現成的 OrderDetail.cshtml
 		}
+		#endregion
+
+		[HttpGet]
+		public IActionResult Search(string? q, string scope = "all")
+		{
+			if (string.IsNullOrWhiteSpace(q))
+			{
+				ViewBag.Q = "";
+				return View(new List<OrderInfo>()); // 先回傳空清單
+			}
+
+			// 只示範：當數字 → 當 order_id / order_code 查
+			// 之後再教你擴充模糊查
+			IQueryable<OrderInfo> query = _dbContext.OrderInfos.AsNoTracking();
+			switch (scope)
+			{
+				case "order_id":
+					if (int.TryParse(q, out var id))
+						query = query.Where(o => o.OrderId == id);
+					else
+					    query = query.Where(o => false);
+						break;
+				case "order_code":
+					if (long.TryParse(q, out var code))
+						query = query.Where(o => o.OrderCode == code);
+					else
+						query = query.Where(o => false);
+					break;
+				default: // "all"：先嘗試 code，再嘗試 id（誰符合就出現誰）
+					bool hasCode = long.TryParse(q, out var codeAll);
+					bool hasId = int.TryParse(q, out var idAll);
+
+					if (hasCode || hasId)
+					{
+						query = query.Where(o =>
+							(hasCode && o.OrderCode == codeAll) ||
+							(hasId && o.OrderId == idAll));
+					}
+					else
+					{
+						query = query.Where(o => false);
+					}
+					break;
+			}
+
+			var results = query
+				.OrderByDescending(o => o.OrderDate)
+				.Take(50) // 先限 50 筆
+				.ToList();
+
+			ViewBag.Q = q;
+			return View(results);
+		}
+
 	}
 }
+

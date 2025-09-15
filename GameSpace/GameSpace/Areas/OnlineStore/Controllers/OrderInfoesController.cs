@@ -12,17 +12,17 @@ namespace GameSpace.Areas.OnlineStore.Controllers
     [Area("OnlineStore")]
     public class OrderInfoesController : Controller
     {
-        private readonly GameSpacedatabaseContext _context;
+        private readonly GameSpacedatabaseContext _dbContext;
 
-        public OrderInfoesController(GameSpacedatabaseContext context)
+        public OrderInfoesController(GameSpacedatabaseContext dbContext)
         {
-            _context = context;
-        }
+			_dbContext = dbContext;
+		}
 
         // GET: OnlineStore/OrderInfoes
         public async Task<IActionResult> Index()
         {
-            return View(await _context.OrderInfos.ToListAsync());
+            return View(await _dbContext.OrderInfos.ToListAsync());
         }
 
         // GET: OnlineStore/OrderInfoes/Details/5
@@ -33,7 +33,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
                 return NotFound();
             }
 
-            var orderInfo = await _context.OrderInfos
+            var orderInfo = await _dbContext.OrderInfos
                 .FirstOrDefaultAsync(m => m.OrderId == id);
             if (orderInfo == null)
             {
@@ -58,8 +58,8 @@ namespace GameSpace.Areas.OnlineStore.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(orderInfo);
-                await _context.SaveChangesAsync();
+				_dbContext.Add(orderInfo);
+                await _dbContext.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(orderInfo);
@@ -73,7 +73,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
                 return NotFound();
             }
 
-            var orderInfo = await _context.OrderInfos.FindAsync(id);
+            var orderInfo = await _dbContext.OrderInfos.FindAsync(id);
             if (orderInfo == null)
             {
                 return NotFound();
@@ -97,8 +97,8 @@ namespace GameSpace.Areas.OnlineStore.Controllers
             {
                 try
                 {
-                    _context.Update(orderInfo);
-                    await _context.SaveChangesAsync();
+					_dbContext.Update(orderInfo);
+                    await _dbContext.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -124,7 +124,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
                 return NotFound();
             }
 
-            var orderInfo = await _context.OrderInfos
+            var orderInfo = await _dbContext.OrderInfos
                 .FirstOrDefaultAsync(m => m.OrderId == id);
             if (orderInfo == null)
             {
@@ -139,19 +139,19 @@ namespace GameSpace.Areas.OnlineStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var orderInfo = await _context.OrderInfos.FindAsync(id);
+            var orderInfo = await _dbContext.OrderInfos.FindAsync(id);
             if (orderInfo != null)
             {
-                _context.OrderInfos.Remove(orderInfo);
+				_dbContext.OrderInfos.Remove(orderInfo);
             }
 
-            await _context.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool OrderInfoExists(int id)
         {
-            return _context.OrderInfos.Any(e => e.OrderId == id);
+            return _dbContext.OrderInfos.Any(e => e.OrderId == id);
         }
     }
 }
