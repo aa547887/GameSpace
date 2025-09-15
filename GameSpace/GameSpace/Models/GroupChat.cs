@@ -5,19 +5,17 @@ namespace GameSpace.Models;
 
 public partial class GroupChat
 {
-    public int GroupChatId { get; set; }
+    public int MessageId { get; set; }
 
-    public int? GroupId { get; set; }
+    public int GroupId { get; set; }
 
-    public int? SenderId { get; set; }
+    public int SenderUserId { get; set; }
 
-    public string? GroupChatContent { get; set; }
+    public string MessageText { get; set; } = null!;
 
-    public DateTime? SentAt { get; set; }
+    public DateTime SentAt { get; set; }
 
-    public bool IsSent { get; set; }
+    public virtual Group Group { get; set; } = null!;
 
-    public virtual Group? Group { get; set; }
-
-    public virtual User? Sender { get; set; }
+    public virtual User SenderUser { get; set; } = null!;
 }

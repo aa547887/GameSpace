@@ -17,11 +17,27 @@ public partial class ProductInfo
 
     public int? ShipmentQuantity { get; set; }
 
-    public string ProductCreatedBy { get; set; } = null!;
+    public int ProductCreatedBy { get; set; }
 
     public DateTime ProductCreatedAt { get; set; }
 
-    public string? ProductUpdatedBy { get; set; }
+    public int? ProductUpdatedBy { get; set; }
 
     public DateTime? ProductUpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public virtual GameProductDetail? GameProductDetail { get; set; }
+
+    public virtual OtherProductDetail? OtherProductDetail { get; set; }
+
+    public virtual ICollection<ProductCode> ProductCodes { get; set; } = new List<ProductCode>();
+
+    public virtual ManagerDatum ProductCreatedByNavigation { get; set; } = null!;
+
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+
+    public virtual ICollection<ProductInfoAuditLog> ProductInfoAuditLogs { get; set; } = new List<ProductInfoAuditLog>();
+
+    public virtual ManagerDatum? ProductUpdatedByNavigation { get; set; }
 }

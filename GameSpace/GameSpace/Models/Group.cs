@@ -7,13 +7,17 @@ public partial class Group
 {
     public int GroupId { get; set; }
 
-    public string? GroupName { get; set; }
+    public int OwnerUserId { get; set; }
 
-    public int? CreatedBy { get; set; }
+    public string GroupName { get; set; } = null!;
 
-    public DateTime? CreatedAt { get; set; }
+    public string? Description { get; set; }
 
-    public virtual User? CreatedByNavigation { get; set; }
+    public bool IsPrivate { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual ICollection<GroupBlock> GroupBlocks { get; set; } = new List<GroupBlock>();
 
@@ -21,5 +25,9 @@ public partial class Group
 
     public virtual ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
 
+    public virtual ICollection<GroupReadState> GroupReadStates { get; set; } = new List<GroupReadState>();
+
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+
+    public virtual User OwnerUser { get; set; } = null!;
 }

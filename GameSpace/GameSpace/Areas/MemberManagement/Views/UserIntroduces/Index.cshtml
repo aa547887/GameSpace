@@ -1,0 +1,99 @@
+﻿@model IEnumerable<GameSpace.Areas.MemberManagement.Models.UserIntroduceVM>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>會員資訊</h1>
+
+@* <p>
+    <a asp-action="Create">Create New</a>
+</p> *@
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(m => m.UserId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.UserNickName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.Gender)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.DateOfBirth)
+            </th>
+            @* <th>
+                @Html.DisplayNameFor(m => m.IdNumber)
+            </th> *@
+            <th>
+                @Html.DisplayNameFor(m => m.Cellphone)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.Email)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m => m.Address)
+            </th>
+            
+            @* <th>
+                @Html.DisplayNameFor(m => m.UserPicture)
+            </th> *@
+            @* <th>
+                @Html.DisplayNameFor(m => m.UserIntroduce1)
+            </th> *@
+            <th>
+                @Html.DisplayNameFor(m => m.CreateAccount)
+            </th>
+ 
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+                <td>
+                    @item.UserId
+                </td>
+            <td>
+                    @item.UserNickName
+            </td>
+            <td>
+                    @item.Gender
+            </td>
+                <td>
+                    @item.DateOfBirth
+                </td>
+            @* <td>
+                @item.IdNumber
+            </td> *@
+            <td>
+                    @item.Cellphone
+            </td>
+            <td>
+                @item.Email)
+            </td>
+            <td>
+                @item.Address
+            </td>
+
+            @* <td>
+                @item.UserPicture
+            </td> *@
+            @* <td>
+                @item.UserIntroduce1
+            </td> *@
+                <td>
+                    @item.CreateAccount
+                </td>
+            
+            @* <td>
+                <a asp-action="Edit" asp-route-id="@item.UserId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.UserId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.UserId">Delete</a>
+            </td> *@
+        </tr>
+}
+    </tbody>
+</table>
