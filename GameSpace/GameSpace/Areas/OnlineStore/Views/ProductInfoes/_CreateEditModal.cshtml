@@ -10,59 +10,83 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
+        <!-- JS/AJAX：這個 form 會被外層 JS 攔截，用 fetch 送出 -->
         <form asp-area="OnlineStore" asp-controller="ProductInfoes"
-              asp-action="@(Model.ProductId==0?"Create":"Edit")"
-              method="post" class="js-ajax-form">
+              asp-action="@(Model.ProductId==0 ? "Create" : "Edit")"
+              method="post" class="js-ajax-form" id="createEditForm">
             @Html.AntiForgeryToken()
+            @if (Model.ProductId != 0)
+            {
+                <input type="hidden" asp-for="ProductId" />
+            }
             <div class="modal-body">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="ProductId" />
+                @* <input type="hidden" asp-for="ProductId" /> *@
 
                 <div class="mb-3">
                     <label asp-for="ProductName" class="form-label"></label>
                     <input asp-for="ProductName" class="form-control" />
-                    <span asp-validation-for="ProductName" class="text-danger"></span>
+                    <span asp-validation-for="ProductName" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
                     <label asp-for="ProductType" class="form-label"></label>
-                    <input asp-for="ProductType" class="form-control" />
-                    <span asp-validation-for="ProductType" class="text-danger"></span>
+                    <select asp-for="ProductType" class="form-select">
+                        <option value="game">game（下載）</option>
+                        <option value="nogame">nogame（周邊）</option>
+                    </select>
+                    <span asp-validation-for="ProductType" class="text-danger small"></span>
                 </div>
 
-                <div class="row g-3">
+                <div class="row g-2 mb-3">
                     <div class="col-md-6">
                         <label asp-for="Price" class="form-label"></label>
                         <input asp-for="Price" class="form-control" />
-                        <span asp-validation-for="Price" class="text-danger"></span>
+                        <span asp-validation-for="Price" class="text-danger small"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="CurrencyCode" class="form-label"></label>
-                        <input asp-for="CurrencyCode" class="form-control" />
-                        <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                        <select asp-for="CurrencyCode" class="form-select">
+                            <option>TWD</option>
+                            <option>USD</option>
+                            <option>JPY</option>
+                            <option>CNY</option>
+                        </select>
+                        <span asp-validation-for="CurrencyCode" class="text-danger small"></span>
                     </div>
                 </div>
 
-                <div class="row g-3 mt-1">
-                    <div class="col-md-6">
-                        <label asp-for="ShipmentQuantity" class="form-label"></label>
-                        <input asp-for="ShipmentQuantity" class="form-control" />
-                        <span asp-validation-for="ShipmentQuantity" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" />
-                            <label asp-for="IsActive" class="form-check-label"></label>
-                        </div>
-                    </div>
+                <div class="mb-3">
+                    <label asp-for="ShipmentQuantity" class="form-label"></label>
+                    <input asp-for="ShipmentQuantity" class="form-control" />
+                    <div class="form-text">game 請填 0 或留空；nogame 必填≥0</div>
+                    <span asp-validation-for="ShipmentQuantity" class="text-danger small"></span>
+                </div>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" asp-for="IsActive" />
+                    <label class="form-check-label" asp-for="IsActive"></label>
                 </div>
             </div>
+            @* 顯示不可編輯的建立/更新資訊（純展示） *@
+            @if (Model.ProductId != 0)
+            {
+                <div class="small text-muted">
+                    建立：@Model.ProductCreatedAt?.ToString("yyyy/MM/dd HH:mm")（@Model.ProductCreatedBy）
+                    <br />
+                    更新：@Model.ProductUpdatedAt?.ToString("yyyy/MM/dd HH:mm")（@Model.ProductUpdatedBy）
+                </div>
+            }
+
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
                 <button type="submit" class="btn btn-primary">儲存</button>
             </div>
         </form>
+
+        @* 這行只在 Partial 裡面才需要（讓 unobtrusive 驗證腳本載入） *@
+        <partial name="_ValidationScriptsPartial" />
     </div>
 </div>
 
