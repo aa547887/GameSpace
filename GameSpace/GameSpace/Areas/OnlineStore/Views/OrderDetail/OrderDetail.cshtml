@@ -12,21 +12,34 @@
     string shipBadge = (Model.Status ?? "").ToUpper() switch
     {
         "DELIVERED" => "success",
-        "SHIPPED" or "PICKED" => "primary",
+        "SHIPPED" or "PICKED" => "primary", 
         "READY" or "PROCESSING" => "info",
         "CANCELLED" => "danger",
         _ => "secondary"
     };
+
+
 }
 
-<div class="container-fluid">
-    <h2 class="mb-4">訂單明細</h2>
 
+<div class="container-fluid">
+    <h2 class="mb-2 d-flex align-items-center gap-2">
+        訂單明細
+        <span class="badge bg-dark-subtle text-dark-emphasis" style="font-weight:600;">
+            #@Model.OrderCode
+        </span>
+    </h2>
+    <div class="text-muted small">
+        訂單ID：@Model.OrderId
+    </div>
+    <hr />
+    
     <div class="row g-4">
-        <!-- 左：資訊卡（在 lg 以上寬度占 4 欄） -->
-        <div class="col-12 col-lg-4">
+        <!-- 左欄：訂單資訊 / 出貨資訊 / 收件地址（lg+ 固定在左） -->
+        <div class="col-12 col-lg-5 col-xl-5 d-flex flex-column gap-4">
+
             <!-- 訂單資訊 -->
-            <div class="card shadow-sm mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header fw-semibold">訂單資訊</div>
                 <div class="card-body">
                     <dl class="row mb-0">
@@ -48,34 +61,14 @@
                 </div>
             </div>
 
-            <!-- 付款資訊 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header fw-semibold">付款資訊</div>
-                <div class="card-body">
-                    <dl class="row mb-2">
-                        <dt class="col-5 col-sm-4 text-muted">付款狀態</dt>
-                        <dd class="col-7 col-sm-8">
-                            <span class="badge bg-@payBadge">@Model.PaymentStatus</span>
-                        </dd>
-                    </dl>
-                    <dl class="row mb-0">
-                        <dt class="col-5 col-sm-4 text-muted">付款代碼</dt>
-                        <dd class="col-7 col-sm-8">@(Model.PaymentCode?.ToString() ?? "-")</dd>
-
-                        <dt class="col-5 col-sm-4 text-muted">付款時間</dt>
-                        <dd class="col-7 col-sm-8">@(Model.PaymentAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
-                    </dl>
-                </div>
-            </div>
-
             <!-- 出貨資訊 -->
-            <div class="card shadow-sm mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header fw-semibold">出貨資訊</div>
                 <div class="card-body">
                     <dl class="row mb-2">
                         <dt class="col-5 col-sm-4 text-muted">出貨狀態</dt>
                         <dd class="col-7 col-sm-8">
-                            <span class="badge bg-@shipBadge" >@Model.Status</span>
+                            <span class="badge bg-@shipBadge">@Model.Status</span>
                         </dd>
                     </dl>
                     <dl class="row mb-0">
@@ -89,8 +82,29 @@
             </div>
 
             <!-- 收件地址 -->
-            <div class="card shadow-sm">
-                <div class="card-header fw-semibold">收件地址</div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>收件地址</span>
+                <div>
+                    @if (Model.OrderStatus?.ToUpperInvariant() == "SHIPPED"
+                                        || Model.OrderStatus?.ToUpperInvariant() == "已完成"
+                                        || Model.OrderStatus?.ToUpperInvariant() == "已出貨"
+                                        || Model.OrderStatus?.ToUpperInvariant() == "已取消")
+                    {
+                        <a class="btn btn-outline-secondary btn-sm disabled" aria-disabled="true" title="已出貨後不可修改">
+                            編輯收件地址
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-primary btn-sm"
+                               asp-area="OnlineStore" asp-controller="OrderDetail" asp-action="EditAddress"
+                           asp-route-orderId="@Model.OrderId">
+                            編輯收件地址
+                        </a>
+                    }
+                </div>
+                </div>
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-5 col-sm-4 text-muted">收件人</dt>
@@ -113,11 +127,42 @@
                     </dl>
                 </div>
             </div>
+            @* 成功/資訊訊息（TempData） *@
+            @if (TempData["Success"] is string ok)
+            {
+                <div class="alert alert-success">@ok</div>
+            }
+            @if (TempData["Info"] is string info)
+            {
+                <div class="alert alert-info">@info</div>
+            }
         </div>
 
-        <!-- 右：明細表（在 lg 以上寬度占 8 欄） -->
-        <div class="col-12 col-lg-8">
+        <!-- 右欄：上 付款資訊 / 下 訂單明細（lg+ 固定在右） -->
+        <div class="col-12 col-lg-7 col-xl-7 d-flex flex-column gap-4">
+
+            <!-- 付款資訊（右欄上方小卡） -->
             <div class="card shadow-sm">
+                <div class="card-header fw-semibold">付款資訊</div>
+                <div class="card-body">
+                    <dl class="row mb-2">
+                        <dt class="col-5 col-sm-4 text-muted">付款狀態</dt>
+                        <dd class="col-7 col-sm-8">
+                            <span class="badge bg-@payBadge">@Model.PaymentStatus</span>
+                        </dd>
+                    </dl>
+                    <dl class="row mb-0">
+                        <dt class="col-5 col-sm-4 text-muted">付款代碼</dt>
+                        <dd class="col-7 col-sm-8">@(Model.PaymentCode?.ToString() ?? "-")</dd>
+
+                        <dt class="col-5 col-sm-4 text-muted">付款時間</dt>
+                        <dd class="col-7 col-sm-8">@(Model.PaymentAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- 訂單明細（右欄下方大卡，填滿右欄剩餘高度） -->
+            <div class="card shadow-sm flex-grow-1">
                 <div class="card-header fw-semibold d-flex justify-content-between">
                     <span>訂單明細</span>
                     <span class="text-muted small">共 @Model.Items?.Count() 筆</span>
@@ -133,22 +178,22 @@
                             <table class="table table-sm table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width:60%;">商品名稱</th>
-                                        <th style="width:20%;">商品代碼</th>
-                                        <th class="text-end" style="width:10%;">數量</th>
-                                        <th class="text-end" style="width:15%;">單價</th>
-                                        <th class="text-end" style="width:15%;">小計</th>
+                                        <th>商品代碼</th>
+                                        <th>商品名稱</th>
+                                        <th class="text-end">數量</th>
+                                        <th class="text-end">單價</th>
+                                        <th class="text-end">小計</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var it in Model.Items)
                                     {
                                         <tr>
+                                            <td class="text-break">@((it.ProductCode ?? "-"))</td>
                                             <td>
                                                 @it.ProductName
                                                 <div class="text-muted small">#@it.ProductId</div>
                                             </td>
-                                            <td class="text-break">@((it.ProductCode ?? "-"))</td>
                                             <td class="text-end">@it.Quantity</td>
                                             <td class="text-end">@it.UnitPrice.ToString("N2")</td>
                                             <td class="text-end">@it.Subtotal.ToString("N2")</td>
@@ -159,7 +204,7 @@
                                     <tr>
                                         <th colspan="4" class="text-end">明細合計</th>
                                         <th class="text-end">
-                                            @Model.Items.Sum(i => i.Subtotal).ToString("N2")
+                                            @( (Model.Items?.Sum(i => i.Subtotal) ?? 0m).ToString("N2") )
                                         </th>
                                     </tr>
                                 </tfoot>
@@ -170,4 +215,5 @@
             </div>
         </div>
     </div>
+
 </div>

@@ -7,6 +7,8 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 		//訂單基本資料OrderBasicInfo
 		public long OrderCode { get; set; }
 
+		public int OrderId { get; set; }
+
 		public int UserId { get; set; }
 
 		public decimal OrderTotal { get; set; }

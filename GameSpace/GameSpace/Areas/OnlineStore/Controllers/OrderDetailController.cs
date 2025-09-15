@@ -2,6 +2,7 @@
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
 using static GameSpace.Areas.OnlineStore.ViewModels.OrderDetailViewModels;
 
 namespace GameSpace.Areas.OnlineStore.Controllers
@@ -16,6 +17,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		{
 			_dbContext = dbContext;
 		}
+		#region 取得訂單明細
 
 		// GET: /OnlineStore/Orders/Detail/123
 		[HttpGet]
@@ -28,6 +30,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				.Select(o => new OrderDetailViewModels
 				{
 					// ====== 一行一行來，左邊=ViewModel 欄位，右邊=資料來源 ======
+					OrderId = o.OrderId,
 					OrderCode = o.OrderCode,     // 來源：OrderInfo.OrderCode（o 的屬性）
 					UserId = o.UserId,        // 來源：OrderInfo.UserId
 					OrderTotal = o.OrderTotal,    // 來源：OrderInfo.OrderTotal
@@ -146,5 +149,188 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 
 			return View("OrderDetail", vm); // ⑦ 把 ViewModel 丟給你現成的 OrderDetail.cshtml
 		}
+		#endregion
+
+		#region 搜尋明細
+		[HttpGet]
+		public IActionResult Search(string? q, string scope = "all")
+		{
+			if (string.IsNullOrWhiteSpace(q))
+			{
+				ViewBag.Q = "";
+				return View(new List<OrderInfo>()); // 先回傳空清單
+			}
+
+			// 只示範：當數字 → 當 order_id / order_code 查
+			// 之後再教你擴充模糊查
+			IQueryable<OrderInfo> query = _dbContext.OrderInfos.AsNoTracking();
+			switch (scope)
+			{
+				case "order_id":
+					if (int.TryParse(q, out var id))
+						query = query.Where(o => o.OrderId == id);
+					else
+					    query = query.Where(o => false);
+						break;
+				case "order_code":
+					if (long.TryParse(q, out var code))
+						query = query.Where(o => o.OrderCode == code);
+					else
+						query = query.Where(o => false);
+					break;
+				default: // "all"：先嘗試 code，再嘗試 id（誰符合就出現誰）
+					bool hasCode = long.TryParse(q, out var codeAll);
+					bool hasId = int.TryParse(q, out var idAll);
+
+					if (hasCode || hasId)
+					{
+						query = query.Where(o =>
+							(hasCode && o.OrderCode == codeAll) ||
+							(hasId && o.OrderId == idAll));
+					}
+					else
+					{
+						query = query.Where(o => false);
+					}
+					break;
+			}
+
+			var results = query
+				.OrderByDescending(o => o.OrderDate)
+				.Take(50) // 先限 50 筆
+				.ToList();
+
+			ViewBag.Q = q;
+			return View(results);
+		}
+		#endregion
+
+		#region 地址修改
+
+		// GET: /OnlineStore/Orders/EditAddress/123
+		[HttpGet]
+		public async Task<IActionResult> EditAddress(int orderId)
+		{
+			// 讀訂單狀態
+			var order = await _dbContext.OrderInfos
+				.AsNoTracking()
+				.Where(o => o.OrderId == orderId)
+				.Select(o => new { o.OrderId, o.OrderStatus })
+				.FirstOrDefaultAsync();
+
+			if (order == null) return NotFound();
+
+			// 出貨後直接導回 Detail，並顯示不可編輯
+			if (await IsLockedForAddressChangeAsync(orderId))
+			{
+				TempData["Info"] = "已出貨後不可修改收件地址。";
+				return RedirectToAction(nameof(Detail), new { id = orderId });
+			}
+
+			// 讀地址（可能 1:1 已存在；若不存在就給空白）
+			var addr = await _dbContext.OrderAddresses
+				.AsNoTracking()
+				.FirstOrDefaultAsync(a => a.OrderId == orderId);
+
+			var vm = new ShippingAddressEditViewModels
+			{
+				OrderId = orderId,
+				Recipient = addr?.Recipient ?? "",
+				Phone = addr?.Phone ?? "",
+				Zipcode = addr?.Zipcode ?? "",
+				Address1 = addr?.Address1 ?? "",
+				Address2 = addr?.Address2,
+				City = addr?.City ?? "",
+				Country = addr?.Country ?? "台灣"
+			};
+
+			return View(vm); // 導到編輯頁（非 modal，整頁）
+		}
+
+		// POST: /OnlineStore/Orders/EditAddress/123
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EditAddress(ShippingAddressEditViewModels vm)
+		{
+			var orderId = vm.OrderId;
+
+			var order = await _dbContext.OrderInfos
+				.Where(o => o.OrderId == orderId)
+				.Select(o => new { o.OrderId, o.OrderStatus })
+				.FirstOrDefaultAsync();
+
+			if (order == null) return NotFound();
+
+			// 後端再次檢查狀態
+			if (await IsLockedForAddressChangeAsync(orderId))
+			{
+				TempData["Info"] = "已出貨後不可修改收件地址。";
+				return RedirectToAction(nameof(Detail), new { id = orderId });
+			}
+
+			if (!ModelState.IsValid) return View(vm);
+
+			var addr = await _dbContext.OrderAddresses
+				.FirstOrDefaultAsync(a => a.OrderId == orderId);
+
+			if (addr == null)
+			{
+				// 沒有就建立（你的表是 1:1，PK=order_id）
+				addr = new OrderAddress
+				{
+					OrderId = orderId,
+					Recipient = vm.Recipient,
+					Phone = vm.Phone,
+					Zipcode = vm.Zipcode,
+					Address1 = vm.Address1,
+					Address2 = vm.Address2,
+					City = vm.City,
+					Country = vm.Country
+				};
+				_dbContext.OrderAddresses.Add(addr);
+			}
+			else
+			{
+				// 有就更新
+				addr.Recipient = vm.Recipient;
+				addr.Phone = vm.Phone;
+				addr.Zipcode = vm.Zipcode;
+				addr.Address1 = vm.Address1;
+				addr.Address2 = vm.Address2;
+				addr.City = vm.City;
+				addr.Country = vm.Country;
+			}
+
+			await _dbContext.SaveChangesAsync();
+
+			TempData["Success"] = "收件地址已更新。";
+			return RedirectToAction(nameof(Detail), new {orderId });
+		}
+		private async Task<bool> IsLockedForAddressChangeAsync(int orderId)
+		{
+			// 1) 狀態字串（中英文都擋）
+			var status = await _dbContext.OrderInfos
+				.Where(o => o.OrderId == orderId)
+				.Select(o => o.OrderStatus)
+				.FirstOrDefaultAsync() ?? "";
+
+			var blockedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				"SHIPPED","DELIVERED","RETURNED","CANCELLED",
+				"已出貨","已送達","已退貨","已取消"
+			};
+			if (blockedStatuses.Contains(status)) return true;
+
+			// 2) 只要已有實際出貨紀錄也視為鎖定
+			var hasShipment = await _dbContext.Shipments
+				.AnyAsync(s => s.OrderId == orderId && s.ShippedAt != null);
+			return hasShipment;
+		}
+
+
+		#endregion
+
 	}
+
 }
+
