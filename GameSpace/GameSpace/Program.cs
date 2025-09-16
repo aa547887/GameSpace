@@ -73,7 +73,7 @@ namespace GameSpace
 			// 用別名註冊，避免撞名
 			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
 			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
-			builder.Services.AddScoped<IManagerPermissionServiceAlias, ManagerPermissionServiceAlias>();
+			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
 
 
 			// ===== CORS（可選：只有跨網域前端時才會啟用）=====
@@ -227,13 +227,13 @@ namespace GameSpace
 			app.MapRazorPages();
 
 			// ===== SignalR Hub 端點（指定傳輸種類，避免環境限制導致無法連線）=====
-			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>
-			{
-				opts.Transports =
-					HttpTransportType.WebSockets |
-					HttpTransportType.ServerSentEvents |
-					HttpTransportType.LongPolling;
-			});
+			//app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>
+			//{
+			//	opts.Transports =
+			//		HttpTransportType.WebSockets |
+			//		HttpTransportType.ServerSentEvents |
+			//		HttpTransportType.LongPolling;
+			//});
 
 			await app.RunAsync();
 		}
