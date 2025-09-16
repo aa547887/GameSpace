@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using GameSpace.Data;
 using GameSpace.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.social_hub.Services
 {
@@ -17,66 +16,106 @@ namespace GameSpace.Areas.social_hub.Services
 			_db = db;
 		}
 
+		/// <summary>
+		/// 新簽章：同時支援使用者與管理員收件人。
+		/// 回傳：實際寫入的收件總數。
+		/// </summary>
 		public async Task<int> CreateAsync(
 			Notification notification,
 			IEnumerable<int> userIds,
+			IEnumerable<int> managerIds,
 			int? senderUserId,
-			int? senderManagerId
-		)
+			int? senderManagerId)
 		{
-			// 1) 寄件者二擇一（或兩者皆空＝系統）
-			if (senderManagerId.HasValue && senderManagerId.Value > 0)
-			{
-				notification.SenderManagerId = senderManagerId;
-				notification.SenderUserId = null;          // ← 改這裡（不要用 SenderId）
-			}
-			else if (senderUserId.HasValue && senderUserId.Value > 0)
-			{
-				notification.SenderUserId = senderUserId;  // ← 改這裡
-				notification.SenderManagerId = null;
-			}
-			else
-			{
-				notification.SenderUserId = null;
-				notification.SenderManagerId = null;
-			}
+			if (notification == null) throw new ArgumentNullException(nameof(notification));
 
-			// 2) 建立時間（若模型非 nullable）
-			if (notification.CreatedAt == default)
-				notification.CreatedAt = DateTime.UtcNow;
+			// 正規化內容長度（避免超過欄位長度）
+			var title = (notification.Title ?? string.Empty).Trim();
+			var message = (notification.Message ?? string.Empty).Trim();
+			if (title.Length > 255) title = title[..255];
+			if (message.Length > 255) message = message[..255];
 
-			// 3) 寫入主表
-			_db.Notifications.Add(notification);
+			// Sender 二擇一（同時有值時優先 Manager）
+			int? sMgr = senderManagerId;
+			int? sUser = senderUserId;
+			if (sMgr.HasValue && sUser.HasValue) sUser = null;
+
+			// 建立主檔
+			var n = new Notification
+			{
+				Title = title,
+				Message = message,
+				SourceId = notification.SourceId,
+				ActionId = notification.ActionId,
+				GroupId = notification.GroupId,
+				SenderUserId = sUser,
+				SenderManagerId = sMgr,
+				CreatedAt = DateTime.UtcNow
+			};
+			_db.Notifications.Add(n);
 			await _db.SaveChangesAsync(); // 取得 NotificationId
 
-			// 4) 目標名單：去重、過濾非法
-			var targets = (userIds ?? Array.Empty<int>())
-				.Distinct()
-				.Where(id => id > 0)
-				.ToList();
+			// 正規化收件人
+			var distinctUserIds = (userIds ?? Enumerable.Empty<int>()).Where(id => id > 0).Distinct().ToList();
+			var distinctManagerIds = (managerIds ?? Enumerable.Empty<int>()).Where(id => id > 0).Distinct().ToList();
 
-			if (targets.Count == 0) return 0;
-
-			// 5) 僅保留存在的使用者（避免 FK 失敗）
-			var validUserIds = await _db.Users
-				.AsNoTracking()
-				.Where(u => targets.Contains(u.UserId))
-				.Select(u => u.UserId)
-				.ToListAsync();
-
-			if (validUserIds.Count == 0) return 0;
-
-			// 6) 寫入收件人（ReadAt 預設 NULL，不要設定 IsRead）
-			var recs = validUserIds.Select(uid => new NotificationRecipient
+			if (distinctUserIds.Count > 0)
 			{
-				NotificationId = notification.NotificationId,
-				UserId = uid,
-				// ReadAt = null  // 預設就是 NULL
-			});
-			_db.NotificationRecipients.AddRange(recs);
+				distinctUserIds = await _db.Users
+					.AsNoTracking()
+					.Where(u => distinctUserIds.Contains(u.UserId))
+					.Select(u => u.UserId)
+					.ToListAsync();
+			}
 
+			if (distinctManagerIds.Count > 0)
+			{
+				distinctManagerIds = await _db.ManagerData
+					.AsNoTracking()
+					.Where(m => distinctManagerIds.Contains(m.ManagerId))
+					.Select(m => m.ManagerId)
+					.ToListAsync();
+			}
+
+			if (distinctUserIds.Count == 0 && distinctManagerIds.Count == 0)
+				return 0;
+
+			// 寫收件明細（你的模型沒有 DeliveredAt，就不要寫）
+			var recs = new List<NotificationRecipient>(distinctUserIds.Count + distinctManagerIds.Count);
+			foreach (var uid in distinctUserIds)
+			{
+				recs.Add(new NotificationRecipient
+				{
+					NotificationId = n.NotificationId,
+					UserId = uid,
+					ManagerId = null,
+					ReadAt = null
+				});
+			}
+			foreach (var mid in distinctManagerIds)
+			{
+				recs.Add(new NotificationRecipient
+				{
+					NotificationId = n.NotificationId,
+					UserId = null,
+					ManagerId = mid,
+					ReadAt = null
+				});
+			}
+
+			_db.NotificationRecipients.AddRange(recs);
 			await _db.SaveChangesAsync();
-			return validUserIds.Count;
+			return recs.Count;
 		}
+
+		/// <summary>
+		/// 舊簽章相容（只處理使用者收件）。委派到新簽章。
+		/// </summary>
+		public Task<int> CreateAsync(
+			Notification notification,
+			IEnumerable<int> userIds,
+			int? senderUserId,
+			int? senderManagerId)
+			=> CreateAsync(notification, userIds, Enumerable.Empty<int>(), senderUserId, senderManagerId);
 	}
 }

@@ -1,159 +1,87 @@
-﻿using System;
-using System.Linq;
+﻿// Areas/social_hub/Controllers/HomeController.cs
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-
-// 依你的 DbContext 實際命名空間擇一或都留著
-using GameSpace.Models; // 若 DbContext 在 Models
-using GameSpace.Data;   // 若 DbContext 在 Data
-
-using GameSpace.Areas.social_hub.Models;
+using Microsoft.AspNetCore.Authentication;      // SignInAsync / SignOutAsync
+using Microsoft.AspNetCore.Identity;           // IdentityConstants
+using Microsoft.AspNetCore.Authorization;      // AllowAnonymous
+using System.Security.Claims;                  // Claims
+using GameSpace.Infrastructure.Login;          // ILoginIdentity（顯示 WhoAmI 用）
+using GameSpace.Areas.social_hub.Filters;      // SocialHubAuthAttribute（把 Claims → Items["gs_*"]）
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
+	// 不強制登入，但每次請求仍會把外部身分映射到 Items["gs_id"]/["gs_kind"]
+	[SocialHubAuth(RequireAuthenticated = false)]
 	public class HomeController : Controller
 	{
-		private readonly GameSpacedatabaseContext? _db; // 允許為 null：沒有 DB 也能測試（數字即 ID）
-		public HomeController(GameSpacedatabaseContext? db = null)
+		private readonly ILoginIdentity _login;         // 統一讀身分（WhoAmI 顯示）
+		private const string AdminCookieScheme = "AdminCookie"; // 與 Program.cs 保持一致
+
+		public HomeController(ILoginIdentity login) => _login = login;
+
+		[HttpGet, AllowAnonymous]
+		public IActionResult Index() => RedirectToAction(nameof(WhoAmI));
+
+		// SocialHubAuth 預設導回此路徑（未登入時）
+		// 現在不提供傳統登入頁，直接導到 WhoAmI（頁面上有快速登入按鈕）
+		[HttpGet, AllowAnonymous]
+		public IActionResult Login(string? returnUrl = null) => RedirectToAction(nameof(WhoAmI));
+
+		// ======================================================
+		// 共用：簽入 AdminCookie（唯一真實來源）
+		// 只寫兩個關鍵 Claim：
+		//   1) NameIdentifier = id
+		//   2) IsManager = "true"（僅管理員時）
+		// SocialHubAuth 會用這些值映射成 Items["gs_id"]/["gs_kind"]。
+		// ======================================================
+		private async Task SignInAsAsync(string kind, int id, bool persistent)
 		{
-			_db = db;
-		}
+			// 切換身分前先登出舊的
+			await HttpContext.SignOutAsync(AdminCookieScheme);
 
-		[HttpGet]
-		public IActionResult Index() => View();
-
-		private const string GsId = "gs_id";
-		private const string GsKind = "gs_kind"; // user / manager
-
-		private CookieOptions BuildCookieOptions(bool rememberMe)
-		{
-			return new CookieOptions
+			var claims = new System.Collections.Generic.List<Claim>
 			{
-				HttpOnly = true,
-				SameSite = SameSiteMode.Lax,
-				Secure = HttpContext?.Request?.IsHttps ?? false,
-				IsEssential = true,
-				Path = "/",
-				Expires = rememberMe ? DateTimeOffset.UtcNow.AddDays(7) : null
+				new Claim(ClaimTypes.NameIdentifier, id.ToString())
 			};
-		}
+			if (string.Equals(kind, "manager", StringComparison.OrdinalIgnoreCase))
+				claims.Add(new Claim("IsManager", "true"));
 
-		private bool IsLocalUrlSafe(string? url) =>
-			!string.IsNullOrWhiteSpace(url) && Url.IsLocalUrl(url);
+			// （可選）各加一個自定義 id，方便除錯/相容
+			claims.Add(new Claim(
+				string.Equals(kind, "manager", StringComparison.OrdinalIgnoreCase) ? "mgr:id" : "usr:id",
+				id.ToString()
+			));
 
-		private IActionResult LoginSucceededRedirect(string kind, string? returnUrl)
-		{
-			if (IsLocalUrlSafe(returnUrl))
-				return Redirect(returnUrl!);
+			var identity = new ClaimsIdentity(
+				claims,
+				AdminCookieScheme,
+				ClaimTypes.Name,   // NameClaimType
+				ClaimTypes.Role    // RoleClaimType（目前未用）
+			);
 
-			// 預設導向：統一到通知中心（使用者可看到自己的通知；管理員顯示建置中）
-			return RedirectToAction("Index", "MessageCenter", new { area = "social_hub" });
-		}
+			var principal = new ClaimsPrincipal(identity);
 
-		// ======= 管理員登入 =======
-		[HttpGet]
-		public IActionResult AdminLogin(string? returnUrl = null)
-		{
-			return View(new LoginViewModel { ReturnUrl = returnUrl });
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> AdminLogin(LoginViewModel model)
-		{
-			if (!ModelState.IsValid) return View(model);
-
-			int? managerId = null;
-
-			// 1) 先嘗試 DB 驗證（若有 DbContext）
-			if (_db != null)
+			var props = new AuthenticationProperties
 			{
-				// Managers 實際表名/欄位請對應你的模型（常見：ManagerData / ManagerDatum）
-				// 假設：ManagerAccount, ManagerPassword, ManagerId
-				var mgr = await _db.ManagerData
-					.AsNoTracking()
-					.FirstOrDefaultAsync(m =>
-						m.ManagerAccount == model.Account &&
-						m.ManagerPassword == model.Password);
+				IsPersistent = persistent,
+				ExpiresUtc = persistent ? DateTimeOffset.UtcNow.AddDays(7) : DateTimeOffset.UtcNow.AddHours(4)
+			};
 
-				if (mgr != null)
-					managerId = mgr.ManagerId;
-			}
-
-			// 2) 找不到時，若帳號是純數字，直接視為 ID（測試用）
-			if (managerId is null && int.TryParse(model.Account, out var parsedMid) && parsedMid > 0)
-				managerId = parsedMid;
-
-			if (managerId is null)
-			{
-				ModelState.AddModelError(string.Empty, "帳號或密碼不正確（或請直接輸入數字 ID 測試）");
-				return View(model);
-			}
-
-			// 設 cookie
-			var opt = BuildCookieOptions(model.RememberMe);
-			Response.Cookies.Append(GsId, managerId.Value.ToString(), opt);
-			Response.Cookies.Append(GsKind, "manager", opt);
-
-			TempData["msg"] = $"管理員登入成功：#{managerId.Value}";
-			return LoginSucceededRedirect("manager", model.ReturnUrl);
+			await HttpContext.SignInAsync(AdminCookieScheme, principal, props);
 		}
 
-		// ======= 使用者登入 =======
-		[HttpGet]
-		public IActionResult UserLogin(string? returnUrl = null)
+		// ====================== 登出 ======================
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> Logout()
 		{
-			return View(new LoginViewModel { ReturnUrl = returnUrl });
-		}
+			// 登出「唯一真實來源」Cookie（AdminCookie），以及 Identity（若有）
+			await HttpContext.SignOutAsync(AdminCookieScheme);
+			await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
 
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> UserLogin(LoginViewModel model)
-		{
-			if (!ModelState.IsValid) return View(model);
-
-			int? userId = null;
-
-			// 1) 先嘗試 DB 驗證（若有 DbContext）
-			if (_db != null)
-			{
-				// Users 實際欄位請對應你的模型（常見：UserAccount, UserPassword, UserId）
-				var user = await _db.Users
-					.AsNoTracking()
-					.FirstOrDefaultAsync(u =>
-						u.UserAccount == model.Account &&
-						u.UserPassword == model.Password);
-
-				if (user != null)
-					userId = user.UserId;
-			}
-
-			// 2) 找不到時，若帳號是純數字，直接視為 ID（測試用）
-			if (userId is null && int.TryParse(model.Account, out var parsedUid) && parsedUid > 0)
-				userId = parsedUid;
-
-			if (userId is null)
-			{
-				ModelState.AddModelError(string.Empty, "帳號或密碼不正確（或請直接輸入數字 ID 測試）");
-				return View(model);
-			}
-
-			// 設 cookie
-			var opt = BuildCookieOptions(model.RememberMe);
-			Response.Cookies.Append(GsId, userId.Value.ToString(), opt);
-			Response.Cookies.Append(GsKind, "user", opt);
-
-			TempData["msg"] = $"使用者登入成功：#{userId.Value}";
-			return LoginSucceededRedirect("user", model.ReturnUrl);
-		}
-
-		// ======= 登出 =======
-		[HttpGet]
-		public IActionResult Logout()
-		{
+			// 保險：清掉舊測試用 gs_*（即便目前未再使用）
 			var baseOpt = new CookieOptions
 			{
 				Path = "/",
@@ -162,44 +90,56 @@ namespace GameSpace.Areas.social_hub.Controllers
 				HttpOnly = true,
 				IsEssential = true
 			};
-			Response.Cookies.Delete(GsId, baseOpt);
-			Response.Cookies.Delete(GsKind, baseOpt);
+			Response.Cookies.Delete("gs_id", baseOpt);
+			Response.Cookies.Delete("gs_kind", baseOpt);
 
 			TempData["msg"] = "已登出";
 			return RedirectToAction(nameof(WhoAmI));
 		}
 
-		// ======= 身分顯示 =======
-		[HttpGet]
-		public IActionResult WhoAmI()
+		// ====================== 我是誰（顯示用） ======================
+		// 主要顯示以 ILoginIdentity 讀取（外部身分優先）。
+		// 若本動作未先被 SocialHubAuth 寫入 Items，這裡會「回填」一次 Items["gs_id"]/["gs_kind"]，
+		// 讓你的檢視頁「中間變數」偵錯區塊也能看到。
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> WhoAmI()
 		{
-			var id = Request.Cookies[GsId];
-			var kind = Request.Cookies[GsKind] ?? "(未設定)";
+			var me = await _login.GetAsync();
+
+			// 回填 Items（保險用；通常由 SocialHubAuth 先寫好）
+			if (me.IsAuthenticated)
+			{
+				if (HttpContext.Items["gs_id"] is null)
+					HttpContext.Items["gs_id"] = me.EffectiveId;
+
+				if (HttpContext.Items["gs_kind"] is null)
+					HttpContext.Items["gs_kind"] =
+						string.Equals(me.Kind, "manager", StringComparison.OrdinalIgnoreCase) ? "manager" :
+						(string.Equals(me.Kind, "user", StringComparison.OrdinalIgnoreCase) ? "user" : "");
+			}
+
 			ViewData["msg"] = TempData["msg"] as string ?? "";
-			ViewData["id"] = string.IsNullOrWhiteSpace(id) ? "（未登入）" : id;
-			ViewData["kind"] = kind;
+			ViewData["kind"] = me.Kind ?? "(未設定)";
+			ViewData["id"] = me.IsAuthenticated ? me.EffectiveId.ToString() : "（未登入）";
 			return View();
 		}
 
-		// ======= （保留）快速測試登入（QueryString）=======
-		[HttpGet]
-		public IActionResult LoginUser(int uid)
+		// ====================== 快速登入（測試） ======================
+		// 依你的方針：快速登入 = 直接「重簽 AdminCookie」，不再寫 gs_* Cookie。
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> LoginUser(int uid)
 		{
 			if (uid <= 0) return BadRequest("uid 必須為正整數。");
-			var opt = BuildCookieOptions(rememberMe: false);
-			Response.Cookies.Append(GsId, uid.ToString(), opt);
-			Response.Cookies.Append(GsKind, "user", opt);
+			await SignInAsAsync("user", uid, persistent: false);
 			TempData["msg"] = $"Login OK：User #{uid}";
 			return RedirectToAction(nameof(WhoAmI));
 		}
 
-		[HttpGet]
-		public IActionResult LoginManager(int mid)
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> LoginManager(int mid)
 		{
 			if (mid <= 0) return BadRequest("mid 必須為正整數。");
-			var opt = BuildCookieOptions(rememberMe: false);
-			Response.Cookies.Append(GsId, mid.ToString(), opt);
-			Response.Cookies.Append(GsKind, "manager", opt);
+			await SignInAsAsync("manager", mid, persistent: false);
 			TempData["msg"] = $"Login OK：Manager #{mid}";
 			return RedirectToAction(nameof(WhoAmI));
 		}
