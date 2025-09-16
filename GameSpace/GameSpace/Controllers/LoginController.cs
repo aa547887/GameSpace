@@ -162,10 +162,13 @@ namespace GameSpace.Controllers
 		// POST: /Login/Logout
 		[HttpPost] // ★★ 移除路由樣板，避免與慣例路由重複造成 AmbiguousMatch
 		[ValidateAntiForgeryToken]
+		[AllowAnonymous] // 或移除任何 Authorize
 		public async Task<IActionResult> Logout()
 		{
 			// 1) 後台獨立 Cookie（你登入用的就是這個）
 			await HttpContext.SignOutAsync("AdminCookie");
+			//// 若你也有前台的 cookie，可一起登出（沒有就註解）
+			//await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			// 2) 如有使用 ASP.NET Identity，再逐一登出（存在才登出，避免例外）
 			var schemeProvider = HttpContext.RequestServices.GetRequiredService<IAuthenticationSchemeProvider>();
@@ -181,8 +184,8 @@ namespace GameSpace.Controllers
 			if (Has(IdentityConstants.TwoFactorRememberMeScheme))
 				await HttpContext.SignOutAsync(IdentityConstants.TwoFactorRememberMeScheme);
 
-			// (可選) 清 Session
-			// HttpContext.Session?.Clear();
+			//(可選)清 Session
+			 HttpContext.Session?.Clear();
 
 			return RedirectToAction("Index", "Home", new { area = "" });
 		}

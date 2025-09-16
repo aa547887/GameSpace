@@ -22,7 +22,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
+            @* <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
                 <ul class="navbar-nav">
                     <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="MemberManagement" asp-controller="Home" asp-action="Index">會員</a></li>
                     <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="Index">訊息管理</a></li>
@@ -30,7 +30,7 @@
                     <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="Forum" asp-controller="Home" asp-action="Index">論壇</a></li>
                     <li class="nav-item mx-2"><a class="nav-link text-white" asp-area="MiniGame" asp-controller="Home" asp-action="Index">小遊戲</a></li>
                 </ul>
-            </div>
+            </div> *@
         </div>
 
         <!-- 右側使用者選單 -->
@@ -92,7 +92,8 @@
 
                             <li>
                                 <form asp-area="" asp-controller="Login" asp-action="Logout" method="post" class="px-2">
-                                    <input type="hidden" name="@tokens.FormFieldName" value="@tokens.RequestToken" />
+                                    @Html.AntiForgeryToken()
+                                    @* <input type="hidden" name="@tokens.FormFieldName" value="@tokens.RequestToken" /> *@
                                     <button type="submit" class="dropdown-item text-danger">
                                         <i class="fa-solid fa-right-from-bracket me-2"></i> 登出
                                     </button>

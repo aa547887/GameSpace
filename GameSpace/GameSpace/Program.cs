@@ -2,24 +2,19 @@
 using GameSpace.Areas.social_hub.Services;
 using GameSpace.Data;
 using GameSpace.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Connections; // for HttpTransportType
-using Microsoft.AspNetCore.SignalR;           // for AddSignalR
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
-using System.Threading.Tasks; // 因為你用了 async Task Main
-
+// 權限服務的別名
+using IManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.IManagerPermissionService;
 // ---- 型別別名（避免方案裡若有重複介面/命名空間不一致，導致 DI 對不到）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
+using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
 using MuteFilterAlias = GameSpace.Areas.social_hub.Services.MuteFilter;
 using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.NotificationService;
-// ✅ 權限服務的別名
-using IManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.IManagerPermissionService;
-using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
 
 namespace GameSpace
 {
@@ -71,35 +66,9 @@ namespace GameSpace
 			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 			builder.Services.AddScoped<IManagerPermissionServiceAlias, ManagerPermissionServiceAlias>();
 
-			// ===== SignalR =====
-			builder.Services.AddSignalR(options =>
-			{
-				options.EnableDetailedErrors = true;                      // 有助偵錯
-				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 心跳
-				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 逾時
-			})
-			.AddJsonProtocol(cfg =>
-			{
-				// 保留 C# 的屬性大小寫（方便前端與後端對齊命名）
-				cfg.PayloadSerializerOptions.PropertyNamingPolicy = null;
-			});
 
-			// ===== CORS（可選：只有跨網域前端時才會啟用）=====
-			// 在 appsettings.json 內放：
-			// "Cors": { "Chat": { "Origins": [ "https://your-frontend.example.com" ] } }
-			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
-			if (corsOrigins is { Length: > 0 })
-			{
-				builder.Services.AddCors(opt =>
-				{
-					opt.AddPolicy("chat", p => p
-						.WithOrigins(corsOrigins)
-						.AllowAnyHeader()
-						.AllowAnyMethod()
-						.AllowCredentials()
-					);
-				});
-			}
+// [保留] SignalR
+builder.Services.AddSignalR();
 
 // [新增] Session（登入流程/OTP 要用）
 builder.Services.AddSession(opt =>
@@ -212,19 +181,19 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-			// 若有設定 CORS Origins，才套用該 Policy（需在 MapHub 前）
-			if (corsOrigins is { Length: > 0 })
-				app.UseCors("chat");
-
-			// Cookie SameSite 與 Secure（跨網域傳 Cookie 時需要 None+Secure）
-			app.UseCookiePolicy(new CookiePolicyOptions
-			{
-				MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-				Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
-			});
-			
-			app.UseAuthentication(); // Identity
-			app.UseAuthorization();
+app.UseSession();          // [順序確認] 要在 Auth 前
+app.UseAuthentication();   // 會同時支援 Identity 的 Cookie 與 AdminCookie
+app.Use(async (ctx, next) =>
+{
+	var admin = await ctx.AuthenticateAsync("AdminCookie");
+	if (admin.Succeeded && admin.Principal != null)
+	{
+		if (!(ctx.User?.Identity?.IsAuthenticated ?? false))
+			ctx.User = admin.Principal;
+	}
+	await next();
+});
+app.UseAuthorization();
 
 			// ===== 路由 =====
 			// 先加 area 的路由（重要）
