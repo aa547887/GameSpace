@@ -36,7 +36,7 @@ namespace GameSpace
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 				options.UseSqlServer(gameSpaceConnectionString));
 
-			// ASP.NET Core Identity
+			//// ASP.NET Core Identity
 			builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 

@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+
 //異動紀錄列
 namespace GameSpace.Areas.OnlineStore.ViewModels
 {
@@ -18,7 +20,7 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         [Display(Name = "新值")]
         public string? NewValue { get; set; }
 
-        [Display(Name = "異動人ID")]
+        [Display(Name = "異動人員ID")]
         public int? ManagerId { get; set; }
 
         [Display(Name = "異動時間")]
