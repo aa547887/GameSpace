@@ -37,7 +37,7 @@ namespace GameSpace
 				options.UseSqlServer(gameSpaceConnectionString));
 
 			//// ASP.NET Core Identity
-			builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+			builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 
 			// MVC
@@ -93,7 +93,7 @@ namespace GameSpace
 
 			app.UseRouting();
 
-			app.UseAuthentication(); // Identity
+			//app.UseAuthentication(); // Identity
 			app.UseAuthorization();
 
 			// 先加 area 的路由（重要）

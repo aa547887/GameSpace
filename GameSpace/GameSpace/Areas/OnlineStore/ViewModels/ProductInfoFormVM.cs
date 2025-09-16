@@ -1,162 +1,139 @@
-﻿// ★ 新增：IFormFile 需這個命名空間
-using GameSpace.Models;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace GameSpace.Areas.OnlineStore.ViewModels
 {
-    // ★ FIX：你的 Validate(...) 想要被 MVC 執行，類別要實作 IValidatableObject
-    // 用來承接「新增 / 編輯」表單資料
-    // 並透過 DataAnnotations + IValidatableObject 做驗證
-    public class ProductInfoFormVM : IValidatableObject
-    {
-        // =================== 基本資訊（ProductInfo） ===================
-        [Display(Name = "商品ID")]
-        public int ProductId { get; set; } // 編輯時才有值
+	/// <summary>
+	/// Create/Edit 共用的表單 VM
+	/// - 統一欄位名稱：SupplierId（單數）、Images（多檔上傳）
+	/// - 新增 ExistingImages（支援編輯時顯示舊圖＋勾選刪除）
+	/// - 將 ProductCreatedAt / UpdatedAt 設為 nullable，支援 Razor 的 ?.ToString(...)
+	/// - Weight 為 string（符合你的 DB nvarchar(50)）
+	/// </summary>
+	public class ProductInfoFormVM : IValidatableObject
+	{
+		// ========== 基本 Info ==========
+		public int ProductId { get; set; }
 
-        [Display(Name = "商品名稱")]
-        [Required(ErrorMessage = "{0}必填")]
-        [StringLength(200, ErrorMessage = "名稱長度不可超過 200 字")]
-        public string ProductName { get; set; } = "";
+		[Display(Name = "商品名稱")]
+		[Required(ErrorMessage = "請輸入商品名稱")]
+		[StringLength(200)]
+		public string ProductName { get; set; } = "";
 
-        [Display(Name = "商品類別")]
-        [Required(ErrorMessage = "{0}必填")]
-        [RegularExpression("^(game|nogame)$", ErrorMessage = "類別必須為 game 或 nogame")]
-        public string ProductType { get; set; } = "game";
+		/// <summary>game / nogame</summary>
+		[Display(Name = "種類")]
+		[Required]
+		public string ProductType { get; set; } = "game";
 
-        [Display(Name = "價格")]
-        [Range(typeof(decimal), "0", "99999999.99", ErrorMessage = "{0}必須介於{1}~{2}")]
-        public decimal Price { get; set; }
+		[Display(Name = "價格")]
+		[Range(0, 999999999, ErrorMessage = "價格不得為負數")]
+		public decimal Price { get; set; }
 
-        [Display(Name = "幣別")]
-        [Required(ErrorMessage = "{0}必選")]
-        [StringLength(10)]
-        [RegularExpression("^[A-Z]{3,10}$", ErrorMessage = "幣別需為 3~10 位大寫英文字母")]
-        public string CurrencyCode { get; set; } = "TWD";
+		[Display(Name = "幣別")]
+		[StringLength(10)]
+		public string CurrencyCode { get; set; } = "TWD";
 
-        [Display(Name = "現貨量")]
-        [Range(0, int.MaxValue, ErrorMessage = "{0}不可小於 0")]
-        public int? ShipmentQuantity { get; set; }
+		[Display(Name = "清單存量(Info)")]
+		public int? ShipmentQuantity { get; set; }
 
+		[Display(Name = "上架")]
+		public bool IsActive { get; set; } = true;
 
+		// ========== Detail 共用 ==========
+		[Display(Name = "供應商")]
+		public int? SupplierId { get; set; }     // ★ 單數：和控制器一致
 
-        [Display(Name = "是否上架")]
-        public bool IsActive { get; set; } = true;// ★ Info / Detail 同步用這個值
+		// ========== Game 專用 ==========
+		[Display(Name = "平台 Id")]
+		public int? PlatformId { get; set; }
 
+		[Display(Name = "平台名稱")]
+		[StringLength(100)]
+		public string? PlatformName { get; set; }
 
-        // ========== Detail（共用）==========
-        [Display(Name = "供應商")]
-        public int? SupplierIds { get; set; }
+		[Display(Name = "遊戲類型")]
+		[StringLength(200)]
+		public string? GameType { get; set; }
 
+		[Display(Name = "下載連結")]
+		[StringLength(500)]
+		public string? DownloadLink { get; set; }
 
-        // === Game Detail 欄位（依商品類型）===
-        // game
+		[Display(Name = "商品描述（遊戲）")]
+		public string? GameProductDescription { get; set; }
 
-        [Display(Name = "平台代碼")] public int? PlatformId { get; set; }
-        [Display(Name = "平台名稱")] public string? PlatformName { get; set; }
-        [Display(Name = "遊戲類型")] public string? GameType { get; set; }
-        [Display(Name = "下載連結")] public string? DownloadLink { get; set; }
+		// ========== Non-game 專用 ==========
+		[Display(Name = "周邊分類")]
+		public int? MerchTypeId { get; set; }
 
-        //========== Non-Game Detail ==========
-        [Display(Name = "商品種類(周邊)")] public int? MerchTypeId { get; set; }
-        [Display(Name = "數位序號")] public string? DigitalCode { get; set; }
-        [Display(Name = "尺寸")] public string? Size { get; set; }
-        [Display(Name = "顏色")] public string? Color { get; set; }
-        [Display(Name = "重量(Kg)")] public string? Weight { get; set; }
-        [Display(Name = "尺寸(長寬高)(cm)")] public string? Dimensions { get; set; }
-        [Display(Name = "材質")] public string? Material { get; set; }
-        [Display(Name = "明細庫存")][Range(0, int.MaxValue)] public int? StockQuantity { get; set; }
+		[Display(Name = "數位序號")]
+		[StringLength(100)]
+		public string? DigitalCode { get; set; }
 
+		[Display(Name = "尺寸")][StringLength(50)] public string? Size { get; set; }
+		[Display(Name = "顏色")][StringLength(50)] public string? Color { get; set; }
 
-        // ★ 這裡才會被 MVC 呼叫
-        // ========== 圖片 ==========
-        [Display(Name = "上傳圖片")]
-        public List<IFormFile>? Image { get; set; } // input name="Images" multiple
+		/// <summary>字串型別，符合 DB nvarchar(50)</summary>
+		[Display(Name = "重量")]
+		[StringLength(50)]
+		public string? Weight { get; set; }
 
-        // 已存在的圖片（編輯 / 詳細顯示用）
-        public List<ProductImageVM> ExistingImages { get; set; } = new(); // 編輯時顯示/刪除
+		[Display(Name = "尺寸(長寬高)")]
+		[StringLength(100)]
+		public string? Dimensions { get; set; }
 
+		[Display(Name = "材質")]
+		[StringLength(50)]
+		public string? Material { get; set; }
 
-        // 這些是顯示用，不給編輯
-        // =================== 系統資訊（唯讀） ===================
-        [ScaffoldColumn(false)] public int? ProductCreatedBy { get; set; }
-        [ScaffoldColumn(false)] public DateTime? ProductCreatedAt { get; set; }
-        [ScaffoldColumn(false)] public int? ProductUpdatedBy { get; set; }
-        [ScaffoldColumn(false)] public DateTime? ProductUpdatedAt { get; set; }
-        public List<string>? ExistingImageUrls { get; set; }
+		[Display(Name = "庫存(Detail)")]
+		public int? StockQuantity { get; set; }
 
-        // =================== 驗證邏輯 ===================
-        // 自訂驗證規則（會在 ModelState.IsValid 檢查時觸發）
-        public IEnumerable<ValidationResult> Validate(ValidationContext ctx)
-        {
-            // 共同規則
-            if (Price < 0)
-                yield return new ValidationResult("價格不可為負數。", new[] { nameof(Price) });
+		[Display(Name = "商品描述（周邊）")]
+		public string? OtherProductDescription { get; set; }
 
-            if (string.IsNullOrWhiteSpace(CurrencyCode))
-                yield return new ValidationResult("幣別必填。", new[] { nameof(CurrencyCode) });
+		// ========== 圖片上傳 / 舊圖 ==========
+		/// <summary>多檔上傳</summary>
+		[Display(Name = "上傳圖片")]
+		public IFormFile[]? Images { get; set; }
 
-            if (ProductType == "game")
-            {
-                if (!SupplierIds.HasValue)
-                    yield return new ValidationResult("遊戲類需選擇供應商", new[] { nameof(SupplierIds) });
+		/// <summary>編輯時顯示舊圖 + 是否刪除</summary>
+		public List<ExistingImageItem>? ExistingImages { get; set; }
 
-                if ((ShipmentQuantity ?? 0) != 0)
-                    yield return new ValidationResult("下載型商品庫存請填 0 或留空", new[] { nameof(ShipmentQuantity) });
+		public class ExistingImageItem
+		{
+			public int ImageId { get; set; }      // 對應 ProductImage.ProductimgId
+			public string Url { get; set; } = "";
+			public string? Alt { get; set; }
+			public bool Remove { get; set; }       // 是否要刪除
+		}
 
-                if (!PlatformId.HasValue && string.IsNullOrWhiteSpace(PlatformName))
-                    yield return new ValidationResult("請填平台或平台ID", new[] { nameof(PlatformId), nameof(PlatformName) });
+		// ========== 系統資訊（唯讀顯示用） ==========
+		public DateTime? ProductCreatedAt { get; set; }   // 設 nullable 讓 Razor 可用 ?.
+		public int? ProductCreatedBy { get; set; }
+		public DateTime? ProductUpdatedAt { get; set; }   // 本來就可能為 null
+		public int? ProductUpdatedBy { get; set; }
 
-                if (string.IsNullOrWhiteSpace(DownloadLink))
-                    yield return new ValidationResult("請填下載連結", new[] { nameof(DownloadLink) });
-            }
-            else if (ProductType == "nogame")
-            {
-                if (!ShipmentQuantity.HasValue)
-                    yield return new ValidationResult("非遊戲商品需填寫現貨量", new[] { nameof(ShipmentQuantity) });
-
-                if (!MerchTypeId.HasValue)
-                    yield return new ValidationResult("請選擇商品分類", new[] { nameof(MerchTypeId) });
-
-                if (!SupplierIds.HasValue)
-                    yield return new ValidationResult("非遊戲類需選擇供應商", new[] { nameof(SupplierIds) });
-            }
-            else
-            {
-                yield return new ValidationResult("商品類別必須為 game 或 nogame", new[] { nameof(ProductType) });
-            }
-        }
-
-    }
-        public class ProductImageVM
-    {
-        public int ImageId { get; set; }
-        public string Url { get; set; } = "";
-        public string? Alt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        // 編輯時刪除用（checkbox）
-        public bool Remove { get; set; }
-    }
-
-    
-    
+		// ========== 跨欄位驗證 ==========
+		public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+		{
+			if (ProductType == "game")
+			{
+				if (!SupplierId.HasValue)
+					yield return new ValidationResult("遊戲類需選擇供應商", new[] { nameof(SupplierId) });
+				// ShipmentQuantity 對 game 不是必填，允許 null
+			}
+			else if (ProductType == "nogame")
+			{
+				if (!SupplierId.HasValue)
+					yield return new ValidationResult("周邊類需選擇供應商", new[] { nameof(SupplierId) });
+				if (!MerchTypeId.HasValue)
+					yield return new ValidationResult("周邊類需選擇分類", new[] { nameof(MerchTypeId) });
+				if (!StockQuantity.HasValue || StockQuantity.Value < 0)
+					yield return new ValidationResult("周邊庫存需填 ≥ 0", new[] { nameof(StockQuantity) });
+			}
+		}
+	}
 }
-
-
-//// 額外顯示用
-//[Display(Name = "建立人")]
-//public int? ProductCreatedBy { get; set; }
-
-//[Display(Name = "建立時間")]
-//public DateTime? ProductCreatedAt { get; set; }
-
-//[Display(Name = "最後修改人")]
-//public int? ProductUpdatedBy { get; set; }
-
-//[Display(Name = "最後修改時間")]
-//public DateTime? ProductUpdatedAt { get; set; }
-
-
-

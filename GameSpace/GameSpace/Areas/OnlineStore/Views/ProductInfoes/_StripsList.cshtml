@@ -1,0 +1,62 @@
+﻿@* 匿名投影，簡單拿需要欄位 *@
+@model IEnumerable<dynamic>
+
+<div class="list-group list-group-flush">
+    @foreach (var x in Model)
+    {
+        <div class="list-group-item py-3 border rounded-3 shadow-sm mb-2">
+            <div class="d-flex align-items-center gap-3">
+                <img src="@(x.ImageUrl ?? "/img/noimage.png")"
+                     alt="@x.ProductName"
+                     class="rounded"
+                     style="width:72px;height:72px;object-fit:cover;">
+
+                <div class="flex-fill">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="mb-0">@x.ProductName</h5>
+                        @if (!string.IsNullOrEmpty((string)x.ProductCode))
+                        {
+                            <span class="badge bg-light text-dark border">@x.ProductCode</span>
+                        }
+                        <span class="badge bg-secondary">@x.ProductType</span>
+                        @if (x.IsActive)
+                        {
+                            <span class="badge bg-success">上架</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-outline-secondary text-dark border">下架</span>
+                        }
+                    </div>
+                    <div class="text-muted small mt-1">
+                        售價：@((decimal)x.Price) | 存量：@x.ShipmentQuantity |
+                        建立：@(((DateTime)x.ProductCreatedAt).ToString("yyyy/MM/dd HH:mm"))
+                        @if (x.LastChangedAt != null)
+                        {
+                            @: | 最後異動：@(((DateTime)x.LastChangedAt).ToString("yyyy/MM/dd HH:mm"))
+                        }
+                    </div>
+                </div>
+
+                <div class="text-nowrap action-icons d-flex gap-3">
+                    <a href="javascript:;" class="text-info" title="商品明細"
+                       data-modal-url="@Url.Action("DetailPanel", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-aspect-ratio fs-5"></i>
+                    </a>
+                    <a href="javascript:;" class="text-primary" title="編輯"
+                       data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                    </a>
+                    <a href="javascript:;" class="text-danger" title="下架"
+                       data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-trash fs-5"></i>
+                    </a>
+                    <a href="javascript:;" class="text-secondary" title="異動紀錄"
+                       data-modal-url="@Url.Action("AuditLog", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
