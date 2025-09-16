@@ -1,0 +1,51 @@
+﻿@model dynamic
+<div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">商品明細（Non-Game）</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <h6 class="mb-2">Basic</h6>
+            <dl class="row">
+                <dt class="col-sm-3">名稱</dt>
+                <dd class="col-sm-9">@Model.Basic.ProductName</dd>
+                <dt class="col-sm-3">類別</dt>
+                <dd class="col-sm-9">@Model.Basic.ProductType</dd>
+                <dt class="col-sm-3">價格</dt>
+                <dd class="col-sm-9">@(((decimal?)Model.Basic.Price)?.ToString("N0"))</dd>
+                <dt class="col-sm-3">狀態</dt>
+                <dd class="col-sm-9">@((bool)Model.Basic.IsActive ? "上架" : "下架")</dd>
+            </dl>
+            <h6 class="mb-2">Detail</h6>
+            <dl class="row">
+                <dt class="col-sm-3">分類</dt>
+                <dd class="col-sm-9">@Model.MerchTypeName</dd>
+                <dt class="col-sm-3">供應商</dt>
+                <dd class="col-sm-9">@Model.SupplierName</dd>
+                <dt class="col-sm-3">尺寸/顏色</dt>
+                <dd class="col-sm-9">@Model.Detail.Size / @Model.Detail.Color</dd>
+                <dt class="col-sm-3">材質/重量</dt>
+                <dd class="col-sm-9">@Model.Detail.Material / @Model.Detail.Weight</dd>
+                <dt class="col-sm-3">尺寸(mm)</dt>
+                <dd class="col-sm-9">@Model.Detail.Dimensions</dd>
+                <dt class="col-sm-3">庫存</dt>
+                <dd class="col-sm-9">@Model.Detail.StockQuantity</dd>
+                <dt class="col-sm-3">描述</dt>
+                <dd class="col-sm-9">@Model.Detail.ProductDescription</dd>
+            </dl>
+            <h6 class="mb-2">圖片</h6>
+            <div class="row g-2">
+                @foreach (var i in Model.Images)
+                {
+                    <div class="col-6 col-md-4">
+                        <img class="img-fluid rounded" src="@i.ProductimgUrl" alt="@i.ProductimgAltText" />
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+    </div>
+</div>

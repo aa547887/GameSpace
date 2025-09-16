@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductIndexRowVM>
 @{
-    // 從 ViewBag 回填（跟原本一致）
+    // 既有回填
     var keyword = (string)(ViewBag.Keyword ?? "");
     var currentType = (string?)ViewBag.Type;
     int? qtyMin = (int?)ViewBag.QtyMin;
@@ -10,7 +10,7 @@
     var createdTo = (string?)ViewBag.CreatedTo;
     var hasLog = (string?)ViewBag.HasLog;
 
-    // ▼ 新增：Detail 篩選回填（Controller 有提供）
+    // 進階 Detail 篩選（僅在「寬條／卡片」顯示；用同一批 QueryString）
     int? supplierId = (int?)ViewBag.SupplierId;
     int? platformId = (int?)ViewBag.PlatformId;
     int? merchTypeId = (int?)ViewBag.MerchTypeId;
@@ -37,7 +37,7 @@
             box-shadow: 0 6px 18px rgba(0,0,0,.06);
             overflow: hidden;
         }
-        /* 表格：格線＋斑馬紋（淡）＋圓角容器保留 */
+        /* 表格容器：格線＋圓角 */
         .table-wrap {
             border-radius: .75rem;
             overflow: hidden;
@@ -55,8 +55,7 @@
         .table-striped > tbody > tr:nth-of-type(odd) > * {
             background-color: rgba(0,0,0,.02);
         }
-
-        /* DataTables：分頁置底置中 */
+        /* DataTables 分頁置底置中 */
         .dataTables_wrapper .dataTables_paginate {
             float: none !important;
             text-align: center !important;
@@ -65,8 +64,7 @@
             .dataTables_wrapper .dataTables_paginate .pagination {
                 justify-content: center !important;
             }
-
-        /* 篩選列：緊密對齊 */
+        /* 篩選列緊密 */
         .filter-row .form-label {
             font-size: .8rem;
             color: #6c757d;
@@ -76,18 +74,20 @@
         .filter-row .form-control, .filter-row .form-select {
             height: 38px;
         }
-
-        /* 右上角功能列改到左邊 */
-        .toolbar {
-            gap: .5rem;
+        /* 連結樣式 */
+        .link-quiet {
+            color: var(--bs-primary);
+            text-decoration: none
         }
 
-        /* 小按鈕列 */
+            .link-quiet:hover {
+                text-decoration: underline
+            }
+        /* 操作列圖示 */
         .action-icons a {
             margin-left: .5rem;
-            font-size: 1.1rem;
+            font-size: 1.1rem
         }
-
         /* Toast 置中 */
         .toast-container-center {
             position: fixed;
@@ -106,22 +106,23 @@
 
         <!-- 工具列：靠左（檢視切換 + 新增） -->
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-            <div class="toolbar d-flex">
-                <button id="btnShowTable" type="button" class="btn btn-outline-secondary"><i class="bi bi-table"></i> 表格</button>
+            <div class="d-flex gap-2">
+                <button id="btnShowTable" type="button" class="btn btn-outline-secondary"><i class="bi bi-table"></i>表單</button>
                 <button id="btnShowStrips" type="button" class="btn btn-outline-secondary"><i class="bi bi-view-stacked"></i> 寬條清單</button>
-                <button id="btnShowCards" type="button" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap"></i> 卡片</button>
+                <button id="btnShowCards" type="button" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap"></i> 圖示</button>
                 <a href="javascript:;" class="btn btn-primary ms-2"
                    data-modal-url="@Url.Action("Create", "ProductInfoes", new { area = "OnlineStore" })">
                     <i class="bi bi-plus-circle-fill me-1"></i> 新增商品
                 </a>
             </div>
 
+        @*     <!-- 進階篩選開關（僅在切到寬條／卡片時自動展開） -->
             <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilters">
                 <i class="bi bi-funnel"></i> 更多篩選
             </button>
-        </div>
+        </div> *@
 
-        <!-- 篩選列（基本） -->
+        <!-- 基本篩選（表格/寬條/卡片共用） -->
         <form method="get" class="row row-cols-1 row-cols-md-3 row-cols-lg-6 g-2 filter-row align-items-end mb-2">
             <div>
                 <label class="form-label">名稱/類別 關鍵字</label>
@@ -179,7 +180,7 @@
             </div>
         </form>
 
-        <!-- 進階：Detail 篩選（可收合） -->
+        @* <!-- 進階：Detail 篩選（僅寬條／卡片用；切換這兩種時會自動展開，回到表格會自動收起） -->
         <div class="collapse" id="advFilters">
             <form method="get" class="row row-cols-1 row-cols-md-3 row-cols-lg-6 g-2 filter-row align-items-end mb-2">
                 <div>
@@ -213,10 +214,10 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Game Type</label>
+                    <label class="form-label">遊戲分類</label>
                     <input class="form-control" name="gameType" value="@gameType" />
-                </div>
-                <div>
+                </div> *@
+                @* <div>
                     <label class="form-label">尺寸</label>
                     <input class="form-control" name="size" value="@size" />
                 </div>
@@ -240,8 +241,8 @@
                 <div class="col-12 d-flex gap-2 mt-1">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 套用進階條件</button>
                     <button type="reset" id="btnClearAdv" class="btn btn-outline-secondary"><i class="bi bi-eraser"></i> 清除進階</button>
-                </div>
-            </form>
+                </div> *@
+            @* </form> *@
         </div>
 
         <!-- 表格檢視 -->
@@ -264,27 +265,32 @@
                 <tbody>
                     @foreach (var x in Model)
                     {
-                        <tr data-id="@x.ProductId">
-                            <td data-order="@x.ProductId">#@x.ProductId</td>
-                            <td data-order="@(x.ProductCodeSort?.ToString() ?? "2147483647")">@x.ProductCode</td>
-                            <td>@x.ProductName</td>
-                            <td>@x.ProductType</td>
-                            <td class="text-end">@x.Price.ToString("N0")</td>
-                            <td class="text-center">@x.ShipmentQuantity</td>
-                            <td class="text-center js-active-cell">
-                                @(x.IsActive ? (object)@"<span class=""badge bg-success"">上架</span>" : @"<span class=""badge bg-secondary"">下架</span>")
-                            </td>
-                            <td>
-                                <a href="#" class="link-quiet" data-bs-toggle="modal" data-bs-target="#createdModal"
-                                   data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")" data-manager="@x.CreatedByManagerId">
-                                    @x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
-                                </a>
-                            </td>
-                            <td>
-                                @if (x.LastLog is not null)
+                    <tr data-id="@x.ProductId">
+                        <td data-order="@x.ProductId">#@x.ProductId</td>
+                        <td data-order="@(x.ProductCodeSort?.ToString() ?? "2147483647")">@x.ProductCode</td>
+                        <td>@x.ProductName</td>
+                        <td>@x.ProductType</td>
+                        <td class="text-end">@x.Price.ToString("N0")</td>
+                        <td class="text-center">@x.ShipmentQuantity</td>
+                        <td class="text-center js-active-cell">
+                            @Html.Raw(x.IsActive ? "<span class=\"badge bg-success\">上架</span>"
+                                                        : "<span class=\"badge bg-secondary\">下架</span>")
+                        </td>
+                        <td>
+                            <a href="#" class="link-quiet"
+                               data-bs-toggle="modal" data-bs-target="#createdModal"
+                               data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+                               data-manager="@x.CreatedByManagerId">
+                                @x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
+                            </a>
+                        </td>
+                        <td>
+                            @if (x.LastLog is not null)
                                 {
-                                    <a href="#" class="link-quiet" data-bs-toggle="modal" data-bs-target="#lastLogModal"
-                                       data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")" data-manager="@x.LastLog.ManagerId">
+                                    <a href="#" class="link-quiet"
+                                       data-bs-toggle="modal" data-bs-target="#lastLogModal"
+                                       data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
+                                       data-manager="@x.LastLog.ManagerId">
                                         @x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
                                     </a>
                                 }
@@ -295,19 +301,27 @@
                                 }
                             </td>
                             <td class="text-end action-icons">
-                                <!-- 新增：直接看 DetailPanel -->
-                                <a href="javascript:;" class="text-info" title="商品明細"
+                                <!-- Info 詳細（純 ProductInfo） -->
+                                <a href="javascript:;" class="text-info" title="基本資訊"
+                                   data-modal-url="@Url.Action("Details", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                                    <i class="bi bi-card-text"></i>
+                                </a>
+                                <!-- Detail 詳細（ProductDetail + 圖片） -->
+                                <a href="javascript:;" class="text-primary" title="商品詳細"
                                    data-modal-url="@Url.Action("DetailPanel", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-aspect-ratio"></i>
                                 </a>
-                                <a href="javascript:;" class="text-primary" title="編輯"
+                                <!-- 編輯（Info + Detail 同頁） -->
+                                <a href="javascript:;" class="text-success" title="編輯"
                                    data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <a href="javascript:;" class="text-danger" title="下架（軟刪）"
+                                <!-- 下架（軟刪） -->
+                                <a href="javascript:;" class="text-danger" title="下架"
                                    data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                <!-- 異動紀錄 -->
                                 <a href="javascript:;" class="text-secondary" title="異動紀錄"
                                    data-modal-url="@Url.Action("AuditLog", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-clock-history"></i>
@@ -319,7 +333,7 @@
             </table>
         </div>
 
-        <!-- 寬條清單 / 卡片容器（預設隱藏） -->
+        <!-- 寬條清單 / 卡片容器（預設隱藏；切換時載入 Partial） -->
         <div id="stripsHost" class="d-none"></div>
         <div id="cardsHost" class="d-none"></div>
 
@@ -332,7 +346,7 @@
 <!-- 通用 Modal -->
 <div class="modal fade" id="modalHost" tabindex="-1" aria-hidden="true"></div>
 
-<!-- 兩個小 Modal -->
+<!-- 建立/最後異動 小 Modal -->
 <div class="modal fade" id="createdModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -373,7 +387,7 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         (() => {
-          // DataTables：只顯示表格與底部分頁
+          // DataTables：簡化版位（只顯示表格＋底部分頁）
           const dt = $('#productTable').DataTable({
             searching:false, ordering:true, order:[[0,'desc']],
             pageLength:10, lengthMenu:[[10,20,30,50,100,-1],[10,20,30,50,100,'全部']],
@@ -381,36 +395,34 @@
               infoEmpty:"顯示第 0 到 0 筆，共 0 筆", lengthMenu:"每頁顯示 _MENU_ 筆",
               loadingRecords:"載入中...", processing:"處理中...", search:"快速搜尋：", zeroRecords:"查無符合資料",
               paginate:{ first:"第一頁", last:"最後一頁", next:"下一頁", previous:"上一頁" } },
-            columnDefs:[ {targets:-1, orderable:false} ],
+            columnDefs:[{targets:-1, orderable:false}],
             dom: "t<'row mt-3'<'col-12'p>>"
           });
 
-          // 清除基本條件 → 送出
+          // 清除基本條件
           document.getElementById('btnClearFilters')?.addEventListener('click', e=>{
             e.preventDefault();
-            const f = e.currentTarget.closest('form'); if(!f) return;
-            f.reset(); f.submit();
+            const f=e.currentTarget.closest('form'); if(!f) return; f.reset(); f.submit();
           });
-          // 清除進階條件 → 送出
+          // 清除進階條件
           document.getElementById('btnClearAdv')?.addEventListener('click', e=>{
             e.preventDefault();
-            const f = e.currentTarget.closest('form'); if(!f) return;
-            f.reset(); f.submit();
+            const f=e.currentTarget.closest('form'); if(!f) return; f.reset(); f.submit();
           });
 
           // 小 Modal 值帶入
           document.getElementById('createdModal')?.addEventListener('show.bs.modal', e=>{
-            const a = e.relatedTarget; if(!a) return;
-            document.getElementById('createdAt').textContent = a.getAttribute('data-created') ?? '-';
-            document.getElementById('createdBy').textContent = a.getAttribute('data-manager') ?? '-';
+            const a=e.relatedTarget; if(!a) return;
+            document.getElementById('createdAt').textContent  = a.getAttribute('data-created') ?? '-';
+            document.getElementById('createdBy').textContent  = a.getAttribute('data-manager') ?? '-';
           });
           document.getElementById('lastLogModal')?.addEventListener('show.bs.modal', e=>{
-            const a = e.relatedTarget; if(!a) return;
-            document.getElementById('lastChangedAt').textContent = a.getAttribute('data-changed') ?? '-';
-            document.getElementById('lastChangedBy').textContent = a.getAttribute('data-manager') ?? '-';
+            const a=e.relatedTarget; if(!a) return;
+            document.getElementById('lastChangedAt').textContent= a.getAttribute('data-changed') ?? '-';
+            document.getElementById('lastChangedBy').textContent= a.getAttribute('data-manager') ?? '-';
           });
 
-          // 通用載入 Partial → Modal
+          // 通用載入 Partial → Modal（Create/Edit/Delete/Info 詳細/Detail 詳細/異動紀錄）
           document.addEventListener('click', async (ev)=>{
             const a = ev.target.closest('[data-modal-url]'); if(!a) return;
             ev.preventDefault();
@@ -424,30 +436,30 @@
 
           // Toast
           const showToast = (msg, ok=true)=>{
-            const el = document.getElementById('mainToast'), body = document.getElementById('mainToastBody');
+            const el=document.getElementById('mainToast'), body=document.getElementById('mainToastBody');
             body.textContent = msg || (ok ? '已完成' : '處理失敗');
             el.classList.toggle('bg-success', ok); el.classList.toggle('bg-danger', !ok);
-            new bootstrap.Toast(el, { delay: 2000 }).show();
+            new bootstrap.Toast(el, { delay:2000 }).show();
           };
 
-          // AJAX 提交（Create/Edit/Delete）
+          // AJAX（Create/Edit/Delete）
           async function submitAjaxOnce(ev){
             ev.preventDefault();
-            const form = ev.currentTarget; if(form.dataset.submitting==='1') return;
+            const form=ev.currentTarget; if(form.dataset.submitting==='1') return;
             form.dataset.submitting='1';
             try{
-              const res = await fetch(form.action, { method:'POST', body:new FormData(form), credentials:'include' });
-              const ct  = res.headers.get('content-type') || '';
-              if (ct.includes('application/json')) {
-                const json = await res.json(); showToast(json.msg || '已完成', json.ok);
+              const res=await fetch(form.action,{method:'POST',body:new FormData(form),credentials:'include'});
+              const ct = res.headers.get('content-type')||'';
+              if(ct.includes('application/json')){
+                const json=await res.json(); showToast(json.msg||'已完成', json.ok);
                 if(!json.ok) return;
-                if(json.updated){ // Edit：即時更新列
-                  const u  = json.updated; const tr = document.querySelector(`tr[data-id="${u.id}"]`);
+                if(json.updated){
+                  const u=json.updated; const tr=document.querySelector(`tr[data-id="${u.id}"]`);
                   if(tr){
-                    tr.children[2].textContent = u.name;
-                    tr.children[3].textContent = u.type;
-                    tr.children[4].textContent = u.priceN0;
-                    tr.children[5].textContent = (u.qty ?? '');
+                    tr.children[2].textContent=u.name;
+                    tr.children[3].textContent=u.type;
+                    tr.children[4].textContent=u.priceN0;
+                    tr.children[5].textContent=(u.qty ?? '');
                     tr.querySelector('.js-active-cell').innerHTML = u.active
                       ? '<span class="badge bg-success">上架</span>' : '<span class="badge bg-secondary">下架</span>';
                     tr.children[8].innerHTML =
@@ -462,40 +474,47 @@
                 }
                 // Create / Delete：最穩重整
                 setTimeout(()=>location.reload(), 800);
-              } else {
-                const html = await res.text();
-                const host = document.getElementById('modalHost'); host.innerHTML = html;
+              }else{
+                const html=await res.text();
+                const host=document.getElementById('modalHost'); host.innerHTML=html;
                 host.querySelectorAll('form.js-ajax-form').forEach(f=>f.addEventListener('submit', submitAjaxOnce));
                 if (window.jQuery && $.validator && $.validator.unobtrusive) { $.validator.unobtrusive.parse($('#modalHost')); }
               }
-            } finally { form.dataset.submitting='0'; }
+            }finally{ form.dataset.submitting='0'; }
           }
 
-          // 檢視切換（表格／寬條／卡片）— 都吃目前網址的 QueryString 以同步篩選
+          // 檢視切換（表格／寬條／卡片）；寬條/卡片時自動展開進階篩選；回表格自動收起
           const listHost  = document.getElementById('listHost');
           const stripsHost= document.getElementById('stripsHost');
           const cardsHost = document.getElementById('cardsHost');
+          const adv       = document.getElementById('advFilters');
+          const advCollapse = adv ? new bootstrap.Collapse(adv, { toggle:false }) : null;
           let stripsLoaded=false, cardsLoaded=false;
 
           async function showStrips(){
             if(!stripsLoaded){
               const url='@Url.Action("Strips", "ProductInfoes", new { area = "OnlineStore" })' + window.location.search;
-              const html = await (await fetch(url, { credentials:'include' })).text();
-              stripsHost.innerHTML = html; stripsLoaded=true;
+              const html=await (await fetch(url,{credentials:'include'})).text();
+              stripsHost.innerHTML=html; stripsLoaded=true;
             }
             listHost.classList.add('d-none'); cardsHost.classList.add('d-none'); stripsHost.classList.remove('d-none');
+            advCollapse?.show();
           }
           async function showCards(){
             if(!cardsLoaded){
               const url='@Url.Action("Cards", "ProductInfoes", new { area = "OnlineStore" })' + window.location.search;
-              const html = await (await fetch(url, { credentials:'include' })).text();
-              cardsHost.innerHTML = html; cardsLoaded=true;
+              const html=await (await fetch(url,{credentials:'include'})).text();
+              cardsHost.innerHTML=html; cardsLoaded=true;
             }
+
             listHost.classList.add('d-none'); stripsHost.classList.add('d-none'); cardsHost.classList.remove('d-none');
+            advCollapse?.show();
           }
           function showTable(){
             stripsHost.classList.add('d-none'); cardsHost.classList.add('d-none'); listHost.classList.remove('d-none');
+            advCollapse?.hide();
           }
+
           document.getElementById('btnShowStrips')?.addEventListener('click', showStrips);
           document.getElementById('btnShowCards') ?.addEventListener('click', showCards);
           document.getElementById('btnShowTable') ?.addEventListener('click', showTable);
