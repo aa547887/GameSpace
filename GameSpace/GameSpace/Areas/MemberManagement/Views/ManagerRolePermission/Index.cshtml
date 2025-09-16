@@ -2,70 +2,57 @@
 
 @{
     ViewData["Title"] = "Index";
+    // 保留側欄狀態（預設 admin）
+    var sidebar = (string)(ViewBag.Sidebar ?? Context.Request.Query["sidebar"].ToString() ?? "admin");
 }
 
 <h1>職位功能查詢表</h1>
 
 @* <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create"
+       asp-route-sidebar="@sidebar"
+       class="btn btn-sm btn-primary">Create New</a>
 </p> *@
+
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(m => m.RoleName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.AdministratorPrivilegesManagement)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.UserStatusManagement)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.ShoppingPermissionManagement)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.MessagePermissionManagement)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.PetRightsManagement)
-            </th>
-            <th>
-                @Html.DisplayNameFor(m => m.CustomerService)
-            </th>
-            <th></th>
+            <th>@Html.DisplayNameFor(m => m.RoleName)</th>
+            <th>@Html.DisplayNameFor(m => m.AdministratorPrivilegesManagement)</th>
+            <th>@Html.DisplayNameFor(m => m.UserStatusManagement)</th>
+            <th>@Html.DisplayNameFor(m => m.ShoppingPermissionManagement)</th>
+            <th>@Html.DisplayNameFor(m => m.MessagePermissionManagement)</th>
+            <th>@Html.DisplayNameFor(m => m.PetRightsManagement)</th>
+            <th>@Html.DisplayNameFor(m => m.CustomerService)</th>
+            @* <th style="width:160px;"></th> *@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @item.RoleName
-            </td>
-            <td>
-                @item.AdministratorPrivilegesManagement
-            </td>
-            <td>
-                @item.UserStatusManagement
-            </td>
-            <td>
-                @item.ShoppingPermissionManagement
-            </td>
-            <td>
-                @item.MessagePermissionManagement
-            </td>
-            <td>
-                @item.PetRightsManagement
-            </td>
-            <td>
-                @item.CustomerService
-            </td>
-            @* <td>
-                <a asp-action="Edit" asp-route-id="@item.ManagerRoleId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.ManagerRoleId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.ManagerRoleId">Delete</a>
-            </td> *@
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.RoleName</td>
+                <td>@item.AdministratorPrivilegesManagement</td>
+                <td>@item.UserStatusManagement</td>
+                <td>@item.ShoppingPermissionManagement</td>
+                <td>@item.MessagePermissionManagement</td>
+                <td>@item.PetRightsManagement</td>
+                <td>@item.CustomerService</td>
+                @* <td>
+                    <a asp-action="Details"
+                       asp-route-id="@item.ManagerRoleId"
+                       asp-route-sidebar="@sidebar"
+                       class="btn btn-sm btn-outline-secondary me-1">Details</a>
+                    <a asp-action="Edit"
+                       asp-route-id="@item.ManagerRoleId"
+                       asp-route-sidebar="@sidebar"
+                       class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                    <a asp-action="Delete"
+                       asp-route-id="@item.ManagerRoleId"
+                       asp-route-sidebar="@sidebar"
+                       class="btn btn-sm btn-outline-danger">Delete</a>
+                </td> *@
+            </tr>
+        }
     </tbody>
 </table>

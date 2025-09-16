@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Models;
 using GameSpace.Areas.MemberManagement.Models;
+using System.Data;
 
 namespace GameSpace.Areas.MemberManagement.Controllers
 {
@@ -18,27 +19,31 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		}
 
 		// GET: MemberManagement/ManagerRolePermission
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			var list = await _context.ManagerRolePermissions
 				.Select(u => new ManagerRolePermissionVM
 				{
 					ManagerRoleId = u.ManagerRoleId,
 					RoleName = u.RoleName,
-					AdministratorPrivilegesManagement = u.AdministratorPrivilegesManagement,
-					UserStatusManagement = u.UserStatusManagement,
-					ShoppingPermissionManagement = u.ShoppingPermissionManagement,
-					MessagePermissionManagement = u.MessagePermissionManagement,
-					PetRightsManagement = u.PetRightsManagement,
-					CustomerService = u.CustomerService
+					AdministratorPrivilegesManagement = u.AdministratorPrivilegesManagement ?? false,
+					UserStatusManagement = u.UserStatusManagement ?? false,
+					ShoppingPermissionManagement = u.ShoppingPermissionManagement ?? false,
+					MessagePermissionManagement = u.MessagePermissionManagement ?? false,
+					PetRightsManagement = u.PetRightsManagement ?? false,
+					CustomerService = u.CustomerService ?? false
 				}).ToListAsync();
 
 			return View(list);
 		}
 
 		// GET: MemberManagement/ManagerRolePermission/Details/5
-		public async Task<IActionResult> Details(int? id)
+		public async Task<IActionResult> Details(int? id, string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			if (id == null) return NotFound();
 
 			var entity = await _context.ManagerRolePermissions
@@ -49,30 +54,75 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 			return View(vm);
 		}
 
+		//
 		// GET: MemberManagement/ManagerRolePermission/Create
-		public IActionResult Create()
+		//
+		public IActionResult Create(string sidebar = "admin")
 		{
-			return View();
+			ViewBag.Sidebar = sidebar ?? "admin";
+			return View(new ManagerRolePermissionVM());
 		}
 
+		//
 		// POST: MemberManagement/ManagerRolePermission/Create
+		//
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(ManagerRolePermissionVM vm)
+		public async Task<IActionResult> Create(ManagerRolePermissionVM vm, string sidebar = "admin")
 		{
-			if (ModelState.IsValid)
+			ViewBag.Sidebar = sidebar ?? "admin";
+
+			// 由程式產號，避免模型驗證擋住
+			ModelState.Remove(nameof(ManagerRolePermissionVM.ManagerRoleId));
+			if (!ModelState.IsValid) return View(vm);
+
+			await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+			try
 			{
-				var entity = MapToEntity(vm);
+				// 1) 先取目前最大號（沒有就 0）
+				var nextId = (await _context.ManagerRolePermissions
+								  .Select(x => (int?)x.ManagerRoleId)
+								  .MaxAsync()) ?? 0;
+				nextId++; // 2) +1 起下一號
+
+				// 3) 若有人併發塞入同號，或資料中本來就有該號，往下找直到沒重複
+				while (await _context.ManagerRolePermissions
+									  .AnyAsync(x => x.ManagerRoleId == nextId))
+				{
+					nextId++;
+				}
+
+				var entity = new ManagerRolePermission
+				{
+					ManagerRoleId = nextId,                    // ★ 明確指定我們產出的編號
+					RoleName = vm.RoleName,
+					AdministratorPrivilegesManagement = vm.AdministratorPrivilegesManagement,
+					UserStatusManagement = vm.UserStatusManagement,
+					ShoppingPermissionManagement = vm.ShoppingPermissionManagement,
+					MessagePermissionManagement = vm.MessagePermissionManagement,
+					PetRightsManagement = vm.PetRightsManagement,
+					CustomerService = vm.CustomerService
+				};
+
 				_context.ManagerRolePermissions.Add(entity);
 				await _context.SaveChangesAsync();
-				return RedirectToAction(nameof(Index));
+				await tx.CommitAsync();
+
+				return RedirectToAction(nameof(Index), new { area = "MemberManagement", sidebar = ViewBag.Sidebar });
 			}
-			return View(vm);
+			catch (Exception ex)
+			{
+				await tx.RollbackAsync();
+				ModelState.AddModelError(string.Empty, ex.GetBaseException().Message);
+				return View(vm);
+			}
 		}
 
 		// GET: MemberManagement/ManagerRolePermission/Edit/5
-		public async Task<IActionResult> Edit(int? id)
+		public async Task<IActionResult> Edit(int? id, string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			if (id == null) return NotFound();
 
 			var entity = await _context.ManagerRolePermissions.FindAsync(id);
@@ -85,8 +135,10 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		// POST: MemberManagement/ManagerRolePermission/Edit/5
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Edit(int id, ManagerRolePermissionVM vm)
+		public async Task<IActionResult> Edit(int id, ManagerRolePermissionVM vm, string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			if (id != vm.ManagerRoleId) return NotFound();
 
 			if (ModelState.IsValid)
@@ -104,14 +156,16 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 				entity.CustomerService = vm.CustomerService;
 
 				await _context.SaveChangesAsync();
-				return RedirectToAction(nameof(Index));
+				return RedirectToAction(nameof(Index), new { area = "MemberManagement", sidebar = ViewBag.Sidebar });
 			}
 			return View(vm);
 		}
 
 		// GET: MemberManagement/ManagerRolePermission/Delete/5
-		public async Task<IActionResult> Delete(int? id)
+		public async Task<IActionResult> Delete(int? id, string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			if (id == null) return NotFound();
 
 			var entity = await _context.ManagerRolePermissions
@@ -125,15 +179,17 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		// POST: MemberManagement/ManagerRolePermission/Delete/5
 		[HttpPost, ActionName("Delete")]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> DeleteConfirmed(int id)
+		public async Task<IActionResult> DeleteConfirmed(int id, string sidebar = "admin")
 		{
+			ViewBag.Sidebar = sidebar ?? "admin";
+
 			var entity = await _context.ManagerRolePermissions.FindAsync(id);
 			if (entity != null)
 			{
 				_context.ManagerRolePermissions.Remove(entity);
 				await _context.SaveChangesAsync();
 			}
-			return RedirectToAction(nameof(Index));
+			return RedirectToAction(nameof(Index), new { area = "MemberManagement", sidebar = ViewBag.Sidebar });
 		}
 
 		private bool ManagerRolePermissionExists(int id)
@@ -142,34 +198,29 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		}
 
 		// 🔹 共用轉換方法
-		private ManagerRolePermissionVM MapToVM(ManagerRolePermission entity)
+		private ManagerRolePermissionVM MapToVM(ManagerRolePermission e) => new()
 		{
-			return new ManagerRolePermissionVM
-			{
-				ManagerRoleId = entity.ManagerRoleId,
-				RoleName = entity.RoleName,
-				AdministratorPrivilegesManagement = entity.AdministratorPrivilegesManagement,
-				UserStatusManagement = entity.UserStatusManagement,
-				ShoppingPermissionManagement = entity.ShoppingPermissionManagement,
-				MessagePermissionManagement = entity.MessagePermissionManagement,
-				PetRightsManagement = entity.PetRightsManagement,
-				CustomerService = entity.CustomerService
-			};
-		}
+			ManagerRoleId = e.ManagerRoleId,
+			RoleName = e.RoleName,
+			AdministratorPrivilegesManagement = e.AdministratorPrivilegesManagement ?? false,
+			UserStatusManagement = e.UserStatusManagement ?? false,
+			ShoppingPermissionManagement = e.ShoppingPermissionManagement ?? false,
+			MessagePermissionManagement = e.MessagePermissionManagement ?? false,
+			PetRightsManagement = e.PetRightsManagement ?? false,
+			CustomerService = e.CustomerService ?? false
+		};
 
-		private ManagerRolePermission MapToEntity(ManagerRolePermissionVM vm)
+		private ManagerRolePermission MapToEntity(ManagerRolePermissionVM vm) => new()
 		{
-			return new ManagerRolePermission
-			{
-				ManagerRoleId = vm.ManagerRoleId,
-				RoleName = vm.RoleName,
-				AdministratorPrivilegesManagement = vm.AdministratorPrivilegesManagement,
-				UserStatusManagement = vm.UserStatusManagement,
-				ShoppingPermissionManagement = vm.ShoppingPermissionManagement,
-				MessagePermissionManagement = vm.MessagePermissionManagement,
-				PetRightsManagement = vm.PetRightsManagement,
-				CustomerService = vm.CustomerService
-			};
-		}
+			// 建議 Create 時不要帶 Id；Edit 才帶
+			ManagerRoleId = vm.ManagerRoleId,
+			RoleName = vm.RoleName,
+			AdministratorPrivilegesManagement = vm.AdministratorPrivilegesManagement,
+			UserStatusManagement = vm.UserStatusManagement,
+			ShoppingPermissionManagement = vm.ShoppingPermissionManagement,
+			MessagePermissionManagement = vm.MessagePermissionManagement,
+			PetRightsManagement = vm.PetRightsManagement,
+			CustomerService = vm.CustomerService
+		};
 	}
 }

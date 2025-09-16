@@ -1,37 +1,32 @@
-﻿@{
-    // 先讀新的 gs cookie
-    var gsId = Context.Request.Cookies["gs_id"];
-    var gsKind = Context.Request.Cookies["gs_kind"]; // user / manager
-    bool hasGs = !string.IsNullOrWhiteSpace(gsId);
+﻿@using GameSpace.Infrastructure.Login
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@inject ILoginIdentity Login
 
-    bool isManagerByGs = string.Equals(gsKind, "manager", StringComparison.OrdinalIgnoreCase);
-    bool isUserByGs = string.Equals(gsKind, "user", StringComparison.OrdinalIgnoreCase);
+@{
+    // 用統一身分介面讀取狀態（外部 AdminCookie 優先）
+    var me = await Login.GetAsync();
 
-    // 相容舊 cookie（若沒設 gs）
-    bool legacyIsAdmin = (Context.Request.Cookies.TryGetValue("sh_is_admin", out var flag) && flag == "1")
-                         || Context.Request.Cookies.ContainsKey("sh_mid");
-    bool legacyIsUser = Context.Request.Cookies.ContainsKey("sh_uid");
+    var isLogin = me.IsAuthenticated;
+    var kind = me.Kind ?? "";
+    var isManager = string.Equals(kind, "manager", StringComparison.OrdinalIgnoreCase);
 
-    var isAdminLogin = hasGs ? isManagerByGs : legacyIsAdmin;
-    var isUserLogin = hasGs ? isUserByGs : legacyIsUser;
-    var isLogin = isAdminLogin || isUserLogin;
+    // 顯示名稱（我們的 AdminCookie 只放了 NameIdentifier，所以用「角色 #ID」）
+    var uname = isLogin
+        ? (isManager ? $"Manager #{me.EffectiveId}" : $"User #{me.EffectiveId}")
+        : "登入";
 
-    // 顯示名稱：優先舊的名稱 cookie，沒有就 fallback 用 ID
-    string uname;
-    if (isAdminLogin)
-        uname = Context.Request.Cookies["sh_mname"] ?? (hasGs ? $"Manager #{gsId}" : "管理員");
-    else if (isUserLogin)
-        uname = Context.Request.Cookies["sh_uname"] ?? (hasGs ? $"User #{gsId}" : "訪客");
-    else
-        uname = "登入";
-
+    // 若要 returnUrl（目前快速登入會導回 WhoAmI，可不必帶）
     var returnUrl = (Context.Request.Path + Context.Request.QueryString).ToString();
+
+    // 樣式
+    var navLinkClass = "nav-link text-white";
 }
 
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm custom-bg-dark">
     <div class="container-fluid p-0 d-flex">
 
-        <!-- 左側 GameSpace / 背景區，固定寬度 -->
+        <!-- 左側品牌 -->
         <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width:250px; height:100%;">
             <a class="navbar-brand mb-0 text-white" asp-area="" asp-controller="Home" asp-action="Index">
                 GameSpace
@@ -42,98 +37,93 @@
         <div class="collapse navbar-collapse justify-content-center" id="navbarNav1">
             <ul class="navbar-nav">
                 <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="Index">
+                    <a class="@navLinkClass" asp-area="social_hub" asp-controller="MessageCenter" asp-action="Index">
                         訊息中心
                     </a>
                 </li>
                 <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="WhoAmI">
+                    <a class="@navLinkClass" asp-area="social_hub" asp-controller="Home" asp-action="WhoAmI">
                         登入測試
-                    </a>
-                </li>
-                <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Mutes" asp-action="Index">
-                        穢語設定
-                    </a>
-                </li>
-                <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Chat" asp-action="Index">
-                        聊天測試
                     </a>
                 </li>
             </ul>
         </div>
 
         <!-- 右側使用者選單 -->
+        @{
+            var adminAuth = await Context.AuthenticateAsync("AdminCookie");
+            var adminPrincipal = adminAuth.Succeeded ? adminAuth.Principal : null;
+
+            var userHasManager = (User?.Identity?.IsAuthenticated ?? false)
+            && User.HasClaim(c => c.Type == "IsManager" && c.Value == "true");
+            var principal = userHasManager ? User : adminPrincipal;
+
+            string? adminId = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? adminName = principal?.Identity?.Name;
+
+            var adminRoles = principal?.Claims
+            .Where(c => c.Type == ClaimTypes.Role || c.Type.Equals("role", StringComparison.OrdinalIgnoreCase))
+            .Select(c => (c.Value ?? "").Trim())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct()
+            .ToList() ?? new List<string>();
+        }
+
         <div class="d-flex align-items-center me-3">
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="userDropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="d-none d-lg-inline me-2">@uname</span>
-                        <img class="img-profile rounded-circle" src="~/lib/image/undraw_profile.svg" style="width:30px; height:30px; object-fit:cover;">
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown1">
-                        @if (!isLogin)
-                        {
+            @if (principal != null)
+            {
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#"
+                           id="userDropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-none d-lg-inline me-2">@(!string.IsNullOrWhiteSpace(adminName) ? adminName : "未登入")</span>
+                            <img class="img-profile rounded-circle" src="~/lib/image/undraw_profile.svg" style="width:30px; height:30px; object-fit:cover;">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown1" style="min-width: 260px;">
+                            <li><h6 class="dropdown-header">已登入</h6></li>
                             <li>
-                                <a class="dropdown-item"
-                                   asp-area="social_hub"
-                                   asp-controller="Home"
-                                   asp-action="UserLogin"
-                                   asp-route-returnUrl="@(returnUrl)">
-                                    使用者登入
-                                </a>
+                                <span class="dropdown-item-text small text-muted">
+                                    <i class="fa-solid fa-id-badge me-1"></i> ID：@adminId
+                                </span>
                             </li>
                             <li>
-                                <a class="dropdown-item"
-                                   asp-area="social_hub"
-                                   asp-controller="Home"
-                                   asp-action="AdminLogin"
-                                   asp-route-returnUrl="@(returnUrl)">
-                                    管理員登入
-                                </a>
+                                <span class="dropdown-item-text text-muted d-flex flex-wrap align-items-center">
+                                    <i class="fa-solid fa-shield-halved"></i>&nbsp;角色：
+                                    @if (adminRoles.Count > 0)
+                                    {
+                                        foreach (var r in adminRoles)
+                                        {
+                                            <span class="badge text-black ms-1 mt-1">@r</span>
+                                        }
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-black ms-1">（無）</span>
+                                    }
+                                </span>
                             </li>
-                        }
-                        else
-                        {
-                            <li><a class="dropdown-item" href="#">測試</a></li>
-                            <li><a class="dropdown-item" href="#">設定</a></li>
+
                             <li><hr class="dropdown-divider" /></li>
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">登出</a></li>
-                        }
-                    </ul>
-                </li>
-            </ul>
+
+                            <li>
+                                <form asp-area="" asp-controller="Login" asp-action="Logout" method="post" class="px-2">
+                                    @Html.AntiForgeryToken()
+                                    @* <input type="hidden" name="@tokens.FormFieldName" value="@tokens.RequestToken" /> *@
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fa-solid fa-right-from-bracket me-2"></i> 登出
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            }
+            else
+            {
+                <a asp-area="" asp-controller="Login" asp-action="Index" class="btn btn-sm btn-outline-light">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> 後台登入
+                </a>
+            }
         </div>
-    </div>
 </nav>
-
-<!-- Logout Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="logoutModalLabel">登出確認</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                確定要登出嗎？
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-
-                <!-- 你的 Logout 是 GET，所以這裡改成 GET（或改成超連結） -->
-                <form asp-area="social_hub"
-                      asp-controller="Home"
-                      asp-action="Logout"
-                      method="get"
-                      class="d-inline">
-                    <button type="submit" class="btn btn-primary">確定登出</button>
-                </form>
-
-                @* 如果你改成 [HttpPost] Logout，就把上面改回 method="post" 並加 AntiForgery *@
-                @* @Html.AntiForgeryToken() *@
-            </div>
-        </div>
-    </div>
-</div>

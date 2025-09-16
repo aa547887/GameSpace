@@ -1,35 +1,22 @@
-﻿@* [URL] /social_hub/Chat/With?otherId={對方ID}&isManagerDm={true|false] *@
-@* [用途] 1 對 1 對話頁。左側：聯絡人清單；右側：聊天視窗（符合 chat-1to1.js 與 LINE 風格 CSS） *@
-@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.SimpleChatMessageVM>
-
+﻿@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.SimpleChatMessageVM>
 @{
     ViewData["Title"] = "對話";
-    var conversationId = (int?)ViewBag.ConversationId ?? 0;     // [說明] 對話ID（僅顯示用）
-    var otherId = (int?)ViewBag.OtherId ?? 0;            // [說明] 預設欲開啟的對象（可為 0）
-    var isManagerDm = (bool?)ViewBag.IsManagerDm ?? false;   // [說明] 是否管理員對話
+    var otherId = (int?)ViewBag.OtherId ?? 0;
     var gsId = Context.Request.Cookies["gs_id"] ?? Context.Request.Cookies["sh_uid"];
     var meIdForMeta = int.TryParse(gsId, out var mid) ? mid : 0;
 }
-
 @section Styles {
-    @* [URL] LINE 風格樣式（你的 chat-line.css） *@
-    <link href="~/lib/social_hub/chat-line.css" rel="stylesheet" />
+    <link href="~/lib/social_hub/css/chat-1to1.css" rel="stylesheet" />
     <style>
-        /* [備註] 讓右側聊天區有背景色（可選） */
-        .chat-surface {
-            background: var(--line-bg, #f5f7f9);
-        }
-        /* [容器尺寸微調] */
-        .chat-pane {
+        .chat-pane, .contact-pane {
             height: 70vh;
         }
 
         .contact-pane {
-            height: 70vh;
             overflow: auto;
             border-right: 1px solid #e9ecef;
         }
-        /* [聯絡人按鈕外觀] */
+
         #contactList .btn {
             border-radius: 0;
             padding: .5rem .75rem;
@@ -37,54 +24,53 @@
     </style>
 }
 
-@* [可選] 讓 JS 拿到身分（無法讀 HttpOnly cookie 時使用） *@
 <meta name="me-id" content="@meIdForMeta" />
 <meta name="me-name" content="User @meIdForMeta" />
 
 <div class="container my-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h3 class="mb-0">聊天中心</h3>
-        <div class="text-muted small">[ConvId: @conversationId] [預設對象: @otherId] [isManagerDm: @isManagerDm]</div>
+        <div class="small text-muted">對象ID：@otherId</div>
     </div>
-
     <div class="row">
-        @* ===== 左側：聯絡人清單（chat-1to1.js 會自動載入 /social_hub/Chat/Contacts） ===== *@
+        <!-- 左側：聯絡人 -->
         <div class="col-12 col-md-3">
             <div class="contact-pane bg-white rounded shadow-sm">
-                <div class="p-2 border-bottom"><strong>聯絡人</strong></div>
+                <div class="p-2 border-bottom d-flex justify-content-between align-items-center">
+                    <strong>聯絡人</strong>
+                    <span class="badge bg-secondary" id="unreadTotal">0</span>
+                </div>
                 <ul id="contactList" class="list-unstyled mb-0">
-                    @* [載入中提示] *@
                     <li class="px-2 py-2 text-muted">載入中…</li>
                 </ul>
                 <div class="p-2 border-top small text-muted">
-                    <a asp-action="Index" class="text-decoration-none">返回列表</a> @* [URL] /social_hub/Chat *@
+                    <a asp-action="Index" class="text-decoration-none">返回列表</a>
                 </div>
             </div>
         </div>
 
-        @* ===== 右側：對話區 ===== *@
+        <!-- 右側：對話 -->
         <div class="col-12 col-md-9">
             <div class="chat-surface rounded shadow-sm p-0 d-flex flex-column chat-pane">
-                @* 標題列（顯示目前對話對象） *@
                 <div class="p-2 border-bottom bg-white d-flex align-items-center justify-content-between">
                     <div id="peerTitle"><strong>請從左側選擇對象</strong></div>
-                    <div class="small text-muted">即時／輪詢自動切換</div>
+                    <div class="small text-muted">即時 / 輪詢備援</div>
                 </div>
 
-                @* 訊息清單（符合你的 CSS：#messages + .message 結構） *@
-                <div id="messages" class="flex-fill p-3">
-                    @* [伺服器端已有歷史訊息的情況：用 .message 結構預先渲染（可選）] *@
+                <div id="chatBox" class="flex-fill p-3">
                     @if (Model != null && Model.Any())
                     {
                         foreach (var m in Model)
                         {
-                            <div class="message @(m.IsMine ? "mine" : "other")" data-time-iso="@m.At.ToString("o")">
+                            <div class="message @(m.IsMine ? "mine" : "other")"
+                                 data-id="@m.MessageId"
+                                 data-at="@m.At.ToString("o")">
                                 <div class="content">@m.Text</div>
                                 <div class="meta">
                                     <span class="time">@m.At.ToLocalTime().ToString("HH:mm")</span>
                                     @if (m.IsMine)
                                     {
-                                        <span class="readmark @(m.IsRead ? "on" : "")">✓</span>
+                                        <span class="readmark @(m.IsRead ? "on" : "")" data-read="badge">✓</span>
                                     }
                                 </div>
                             </div>
@@ -96,14 +82,15 @@
                     }
                 </div>
 
-                @* 輸入列（符合 chat-1to1.js 的 DOM：#chatForm / #messageInput / #sendBtn） *@
                 <div class="p-2 border-top bg-white">
-                    <form id="chatForm" class="d-flex gap-2">
-                        @* [URL] Anti-Forgery（給 /social_hub/Chat/Send / MarkRead 用） *@
+                    <form id="chatSendForm" class="d-flex gap-2">
                         @Html.AntiForgeryToken()
-                        <input id="messageInput" class="form-control" placeholder="[輸入訊息]" maxlength="255" autocomplete="off" />
+                        <input type="hidden" id="otherId" name="otherId" value="@otherId" />
+                        <input id="messageInput" name="text" class="form-control"
+                               placeholder="[輸入訊息]" maxlength="255" autocomplete="off" />
                         <button id="sendBtn" class="btn btn-success" type="submit">送出</button>
                     </form>
+                    <small class="text-muted d-block mt-1">提示：畫面只顯示遮罩後文字；資料庫保留原文以利稽核。</small>
                 </div>
             </div>
         </div>
@@ -111,6 +98,360 @@
 </div>
 
 @section Scripts {
-    @* [URL] chat-1to1.js：你剛提供的那支。引用後即可自動運作。 *@
-    <script src="~/lib/social_hub/chat-1to1.js"></script>
+    <script>
+        (() => {
+          // -------------------- 基本設定 --------------------
+          const URLS = {
+            hub: "/social_hub/chatHub",
+            contacts: "/social_hub/Chat/Contacts",
+            history: "/social_hub/Chat/History",
+            send: "/social_hub/Chat/Send",
+            read: "/social_hub/Chat/MarkRead",
+            unread: "/social_hub/Chat/UnreadSummary"
+          };
+          const POLL_MS = 2500;
+          const $ = s => document.querySelector(s);
+          const hhmm = iso => { try { const d = new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});} catch { return ""; } };
+          const isNearBottom = (el, th=36) => (el.scrollTop + el.clientHeight) >= (el.scrollHeight - th);
+          const normIso = iso => { try { const d = new Date(iso); return isNaN(d.getTime()) ? null : d.toISOString(); } catch { return null; } };
+
+          const chatBox = $("#chatBox");
+          const form = $("#chatSendForm");
+          const input = $("#messageInput");
+          const sendBtn = $("#sendBtn");
+          const otherId = parseInt($("#otherId")?.value || "0", 10) || 0;
+          const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+          const peerTitle = $("#peerTitle");
+          const contactList = $("#contactList");
+          const unreadTotal = $("#unreadTotal");
+          const meId = parseInt(document.querySelector('meta[name="me-id"]')?.content || "0", 10) || 0;
+
+          // -------------------- 動態載入 SignalR（CDN） --------------------
+          async function ensureSignalR() {
+            if (window.signalR) return true;
+            const cdns = [
+              "https://cdn.jsdelivr.net/npm/%40microsoft/signalr%408.0.5/dist/browser/signalr.min.js",
+              "https://unpkg.com/%40microsoft/signalr%408.0.5/dist/browser/signalr.min.js",
+              "https://cdn.jsdelivr.net/npm/%40microsoft/signalr%407.0.14/dist/browser/signalr.min.js",
+              "https://unpkg.com/%40microsoft/signalr%407.0.14/dist/browser/signalr.min.js"
+            ];
+            for (const src of cdns) {
+              try {
+                await new Promise((res, rej) => {
+                  const s = document.createElement("script");
+                  s.src = src; s.defer = true; s.onload = res; s.onerror = rej;
+                  document.head.appendChild(s);
+                });
+                if (window.signalR) return true;
+              } catch {}
+            }
+            console.warn("[SignalR] 載入失敗，將使用輪詢模式");
+            return false;
+          }
+
+          // -------------------- 聯絡人清單 / 徽章 --------------------
+          const contactNameMap = new Map();
+          function setContactUnread(uid, count){
+            const badge = document.querySelector(`[data-unread="${uid}"]`);
+            if (!badge) return;
+            const n = Number(count) || 0;
+            if (n > 0) {
+              badge.textContent = String(n);
+              badge.classList.remove("d-none","bg-secondary");
+              badge.classList.add("bg-danger");
+            } else {
+              badge.textContent = "0";
+              badge.classList.remove("bg-danger");
+              badge.classList.add("bg-secondary","d-none");
+            }
+          }
+
+          async function loadContacts() {
+            try {
+              const r = await fetch(URLS.contacts);
+              const arr = await r.json();
+              contactList.innerHTML = "";
+              if (!Array.isArray(arr) || arr.length === 0) {
+                contactList.innerHTML = `<li class="px-2 py-2 text-muted">沒有好友</li>`;
+                return;
+              }
+              for (const c of arr) {
+                const label = c.nick ? `[${c.nick}] ${c.name}` : c.name;
+                contactNameMap.set(String(c.id), label);
+                const li = document.createElement("li");
+                li.innerHTML = `
+                  <button class="btn w-100 text-start d-flex justify-content-between align-items-center ${c.id === otherId ? "active" : ""}" data-id="${c.id}">
+                    <span>${label}</span>
+                    ${c.unread > 0
+                      ? `<span class="badge bg-danger ms-1" data-unread="${c.id}">${c.unread}</span>`
+                      : `<span data-unread="${c.id}" class="badge bg-secondary d-none">0</span>`}
+                  </button>`;
+                li.querySelector("button").addEventListener("click", () => {
+                  if (c.id === otherId) return;
+                  window.location.href = `/social_hub/Chat/With?otherId=${c.id}`;
+                });
+                contactList.appendChild(li);
+              }
+              if (otherId) {
+                const title = contactNameMap.get(String(otherId)) || `User ${otherId}`;
+                peerTitle.innerHTML = `<strong>${title}</strong>`;
+              }
+            } catch {
+              contactList.innerHTML = `<li class="px-2 py-2 text-danger">載入失敗</li>`;
+            }
+          }
+
+          // -------------------- 未讀總數（HTTP 備援） --------------------
+          async function refreshUnread() {
+            try {
+              const r = await fetch(URLS.unread);
+              if (!r.ok) return;
+              const data = await r.json();
+              if (unreadTotal) unreadTotal.textContent = data.total ?? 0;
+            } catch {}
+          }
+
+          // -------------------- 訊息泡泡 / 增量 --------------------
+          const seen = new Set();
+          let lastIso = null, lastTs = 0, pollTimer = 0, fetching = false;
+
+          (function bootstrapFromServer() {
+            chatBox.querySelectorAll(".message[data-id]").forEach(el => {
+              const id = parseInt(el.getAttribute("data-id")||"0",10)||0;
+              if (id) seen.add(id);
+            });
+            let maxT = 0;
+            chatBox.querySelectorAll(".message[data-at], .message[data-time-iso]").forEach(el => {
+              const iso = el.getAttribute("data-at") || el.getAttribute("data-time-iso") || "";
+              const t = Date.parse(iso || "");
+              if (!isNaN(t) && t > maxT) maxT = t;
+            });
+            if (maxT > 0) { lastTs = maxT; lastIso = new Date(maxT).toISOString(); }
+            if (lastIso) markRead(lastIso); // 進頁即清到當前游標
+            chatBox.scrollTop = chatBox.scrollHeight;
+          })();
+
+          function buildBubble({id, mine, text, iso, isRead}) {
+            const msg = document.createElement("div");
+            msg.className = `message ${mine ? "mine" : "other"}`;
+            if (id) msg.setAttribute("data-id", String(id));
+            if (iso) msg.setAttribute("data-at", iso);
+
+            const content = document.createElement("div");
+            content.className = "content";
+            // 直接給 textContent：瀏覽器會自動轉義，安全顯示遮罩後文字
+            content.textContent = text ?? "";
+
+            const meta = document.createElement("div");
+            meta.className = "meta";
+
+            const time = document.createElement("span");
+            time.className = "time";
+            time.textContent = hhmm(iso);
+            meta.appendChild(time);
+
+            if (mine) {
+              const read = document.createElement("span");
+              read.className = "readmark";
+              read.setAttribute("data-read","badge");
+              read.textContent = "✓";
+              meta.appendChild(document.createTextNode(" "));
+              meta.appendChild(read);
+              if (isRead) read.classList.add("on");
+            }
+
+            msg.appendChild(content);
+            msg.appendChild(meta);
+            return msg;
+          }
+
+          function appendMessage({id, mine, text, iso, isRead}) {
+            if (id) {
+              if (chatBox.querySelector(`.message[data-id="${id}"]`)) return;
+              if (seen.has(id)) return;
+              seen.add(id);
+            }
+            const wasBottom = isNearBottom(chatBox);
+            // ⬇️ 不再額外 escape，交由 textContent 處理
+            chatBox.appendChild(buildBubble({id, mine, text, iso, isRead}));
+            if (wasBottom) chatBox.scrollTop = chatBox.scrollHeight;
+
+            if (!mine && iso) { const up = normIso(iso); if (up) markRead(up); }
+            const t = Date.parse(iso || ""); if (!isNaN(t) && t > lastTs) { lastTs = t; lastIso = new Date(t).toISOString(); }
+          }
+
+          async function fetchDelta() {
+            if (!otherId || fetching) return;
+            fetching = true;
+            try {
+              const url = new URL(URLS.history, window.location.origin);
+              url.searchParams.set("otherId", String(otherId));
+              if (lastIso) url.searchParams.set("after", lastIso);
+              const r = await fetch(url, { headers: { "Accept":"application/json" } });
+              if (!r.ok) return;
+              const arr = await r.json();
+              if (!Array.isArray(arr)) return;
+              for (const m of arr) {
+                appendMessage({
+                  id: m.messageId ?? m.MessageId ?? 0,
+                  mine: (m.isMine ?? m.IsMine) === true,
+                  text: m.content ?? m.text ?? m.Content ?? m.Text ?? "",
+                  iso: m.time ?? m.at ?? m.Time ?? m.At ?? null,
+                  isRead: (m.isRead ?? m.IsRead) === true
+                });
+              }
+            } catch {} finally { fetching = false; }
+          }
+
+          // -------------------- 已讀（Header + Form 欄位雙保險） --------------------
+          async function markRead(upToIso /* 可省略 */) {
+            try {
+              const params = new URLSearchParams({ otherId: String(otherId) });
+              if (upToIso) params.set("upToIso", upToIso);
+              if (csrf) params.set("__RequestVerificationToken", csrf); // 有些站只收欄位
+
+              await fetch(URLS.read, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type":"application/x-www-form-urlencoded", "RequestVerificationToken": csrf || "" },
+                body: params
+              });
+            } catch {}
+            try { if (window.__chatConn) await window.__chatConn.invoke("NotifyRead", otherId, upToIso || null); } catch {}
+            refreshUnread();
+            setContactUnread(otherId, 0);
+          }
+
+          // -------------------- 送出（Hub ack → 失敗回退 HTTP） --------------------
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const txt = (input.value || "").trim();
+            if (!txt || !otherId) return;
+            sendBtn.disabled = true;
+
+            if (window.__chatConn && window.__chatConn.invoke) {
+              try {
+                const res = await window.__chatConn.invoke("SendMessageTo", otherId, txt);
+                if (res && res.ok === true) { input.value = ""; sendBtn.disabled = false; return; }
+                console.warn("[Hub ack 非 ok，改走 HTTP]", res);
+              } catch (err) {
+                console.warn("[Hub 送出失敗，改走 HTTP]", err);
+              }
+            }
+
+            try {
+              const fd = new FormData(form);
+              const r = await fetch(URLS.send, { method: "POST", body: fd, credentials: "same-origin" });
+              if (r.ok) {
+                const res = await r.json().catch(()=>({}));
+                // ⬇️ 以伺服器回傳的遮罩後文字為準（fallback 用）
+                const display = (res && typeof res.text === "string") ? res.text : txt;
+                appendMessage({
+                  id: res.messageId ?? 0,
+                  mine: true,
+                  text: display,
+                  iso: res.at ?? new Date().toISOString(),
+                  isRead: false
+                });
+                input.value = "";
+              } else {
+                const msg = await r.text().catch(()=> "");
+                console.error("[HTTP 送出失敗]", r.status, msg);
+                alert("送出失敗：" + (msg || r.status));
+              }
+            } catch (e2) {
+              console.error("[HTTP 送出例外]", e2);
+              alert("網路異常，請稍後再試");
+            } finally {
+              sendBtn.disabled = false;
+            }
+          });
+
+          // -------------------- 連線（SignalR → 備援輪詢） --------------------
+          async function connectHub() {
+            const ok = await ensureSignalR();
+            if (!ok) { pollTimer = window.setInterval(fetchDelta, POLL_MS); return false; }
+
+            const conn = new signalR.HubConnectionBuilder()
+              .withUrl(URLS.hub)
+              .withAutomaticReconnect()
+              .build();
+
+            window.__chatConn = conn;
+
+            conn.on("ReceiveDirect", p => {
+              if (!p) return;
+              const from = p.senderId ?? 0, to = p.receiverId ?? 0;
+              const inThis = (meId > 0)
+                ? ((from === otherId && to === meId) || (from === meId && to === otherId))
+                : (from === otherId || to === otherId);
+
+              if (!inThis) { refreshUnread(); return; }
+
+              const mine = (meId > 0) ? (from === meId) : (from !== otherId);
+              appendMessage({
+                id: p.messageId ?? 0,
+                mine,
+                text: p.content ?? "",        // ⬅️ 伺服器端已遮罩
+                iso: p.sentAtIso ?? null,
+                isRead: mine ? false : true
+              });
+            });
+
+            conn.on("UnreadUpdate", data => {
+              if (!data) return;
+              if (typeof data.total === "number" && unreadTotal) unreadTotal.textContent = String(data.total);
+              if (data.peerId != null && typeof data.unread === "number") {
+                setContactUnread(data.peerId, data.unread);
+                if (Number(data.peerId) === Number(otherId) && data.unread === 0) setContactUnread(otherId, 0);
+              }
+            });
+
+            conn.on("ReadReceipt", info => {
+              if (!info || info.fromUserId !== otherId) return;
+              const upTo = info.upToIso ? new Date(info.upToIso) : null;
+              if (!upTo) return;
+              chatBox.querySelectorAll(".message.mine").forEach(msg => {
+                const iso = msg.getAttribute("data-at") || "";
+                const t = Date.parse(iso || "");
+                if (!isNaN(t) && t <= +upTo) {
+                  const badge = msg.querySelector('[data-read="badge"], .readmark');
+                  if (badge) badge.classList.add("on");
+                }
+              });
+            });
+
+            conn.on("Error", code => {
+              const map = {
+                NOT_LOGGED_IN: "尚未登入，請先登入後再使用聊天。",
+                NO_PEER: "尚未選擇對話對象。",
+                BAD_TEXT: "訊息內容無效。"
+              };
+              if (code && map[code]) alert(map[code]);
+            });
+
+            conn.onreconnected(async () => { await fetchDelta(); refreshUnread(); });
+            conn.onclose(() => { if (!pollTimer) pollTimer = window.setInterval(fetchDelta, POLL_MS); });
+
+            try {
+              await conn.start();
+              const meName = document.querySelector('meta[name="me-name"]')?.content || "";
+              if (meName) { try { await conn.invoke("RegisterUser", meName); } catch {} }
+              await fetchDelta();
+            } catch (e) {
+              console.warn("[Hub 連線失敗，使用輪詢]", e);
+              pollTimer = window.setInterval(fetchDelta, POLL_MS);
+            }
+          }
+
+          // -------------------- 啟動 --------------------
+          loadContacts();
+          refreshUnread();
+          connectHub();
+
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible" && lastIso) markRead(lastIso);
+          });
+        })();
+    </script>
 }

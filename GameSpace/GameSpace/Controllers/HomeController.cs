@@ -15,7 +15,11 @@ namespace GameSpace.Controllers
 
         public IActionResult Index()
         {
-            return View();
+			if (User.Identity?.IsAuthenticated == true && User.HasClaim(c => c.Type == "ManagerId"))
+			{
+				return RedirectToAction("Index", "AdminDashboard"); // 你的後台首頁
+			}
+			return View();
         }
 
         public IActionResult Privacy()
