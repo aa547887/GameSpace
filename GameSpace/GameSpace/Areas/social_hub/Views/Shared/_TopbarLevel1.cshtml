@@ -1,37 +1,30 @@
-﻿@{
-    // 先讀新的 gs cookie
-    var gsId = Context.Request.Cookies["gs_id"];
-    var gsKind = Context.Request.Cookies["gs_kind"]; // user / manager
-    bool hasGs = !string.IsNullOrWhiteSpace(gsId);
+﻿@using GameSpace.Infrastructure.Login
+@inject ILoginIdentity Login
 
-    bool isManagerByGs = string.Equals(gsKind, "manager", StringComparison.OrdinalIgnoreCase);
-    bool isUserByGs = string.Equals(gsKind, "user", StringComparison.OrdinalIgnoreCase);
+@{
+    // 用統一身分介面讀取狀態（外部 AdminCookie 優先）
+    var me = await Login.GetAsync();
 
-    // 相容舊 cookie（若沒設 gs）
-    bool legacyIsAdmin = (Context.Request.Cookies.TryGetValue("sh_is_admin", out var flag) && flag == "1")
-                         || Context.Request.Cookies.ContainsKey("sh_mid");
-    bool legacyIsUser = Context.Request.Cookies.ContainsKey("sh_uid");
+    var isLogin = me.IsAuthenticated;
+    var kind = me.Kind ?? "";
+    var isManager = string.Equals(kind, "manager", StringComparison.OrdinalIgnoreCase);
 
-    var isAdminLogin = hasGs ? isManagerByGs : legacyIsAdmin;
-    var isUserLogin = hasGs ? isUserByGs : legacyIsUser;
-    var isLogin = isAdminLogin || isUserLogin;
+    // 顯示名稱（我們的 AdminCookie 只放了 NameIdentifier，所以用「角色 #ID」）
+    var uname = isLogin
+        ? (isManager ? $"Manager #{me.EffectiveId}" : $"User #{me.EffectiveId}")
+        : "登入";
 
-    // 顯示名稱：優先舊的名稱 cookie，沒有就 fallback 用 ID
-    string uname;
-    if (isAdminLogin)
-        uname = Context.Request.Cookies["sh_mname"] ?? (hasGs ? $"Manager #{gsId}" : "管理員");
-    else if (isUserLogin)
-        uname = Context.Request.Cookies["sh_uname"] ?? (hasGs ? $"User #{gsId}" : "訪客");
-    else
-        uname = "登入";
-
+    // 若要 returnUrl（目前快速登入會導回 WhoAmI，可不必帶）
     var returnUrl = (Context.Request.Path + Context.Request.QueryString).ToString();
+
+    // 樣式
+    var navLinkClass = "nav-link text-white";
 }
 
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm custom-bg-dark">
     <div class="container-fluid p-0 d-flex">
 
-        <!-- 左側 GameSpace / 背景區，固定寬度 -->
+        <!-- 左側品牌 -->
         <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width:250px; height:100%;">
             <a class="navbar-brand mb-0 text-white" asp-area="" asp-controller="Home" asp-action="Index">
                 GameSpace
@@ -42,12 +35,12 @@
         <div class="collapse navbar-collapse justify-content-center" id="navbarNav1">
             <ul class="navbar-nav">
                 <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="Index">
+                    <a class="@navLinkClass" asp-area="social_hub" asp-controller="MessageCenter" asp-action="Index">
                         訊息中心
                     </a>
                 </li>
                 <li class="nav-item mx-2">
-                    <a class="nav-link text-white" asp-area="social_hub" asp-controller="Home" asp-action="WhoAmI">
+                    <a class="@navLinkClass" asp-area="social_hub" asp-controller="Home" asp-action="WhoAmI">
                         登入測試
                     </a>
                 </li>
@@ -62,31 +55,58 @@
                         <span class="d-none d-lg-inline me-2">@uname</span>
                         <img class="img-profile rounded-circle" src="~/lib/image/undraw_profile.svg" style="width:30px; height:30px; object-fit:cover;">
                     </a>
+
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown1">
                         @if (!isLogin)
                         {
+                            <!-- 只保留快速登入（直接重簽 AdminCookie）-->
                             <li>
                                 <a class="dropdown-item"
                                    asp-area="social_hub"
                                    asp-controller="Home"
-                                   asp-action="UserLogin"
-                                   asp-route-returnUrl="@(returnUrl)">
-                                    使用者登入
+                                   asp-action="LoginUser"
+                                   asp-route-uid="10000001">
+                                    快速登入：User #10000001
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item"
                                    asp-area="social_hub"
                                    asp-controller="Home"
-                                   asp-action="AdminLogin"
-                                   asp-route-returnUrl="@(returnUrl)">
-                                    管理員登入
+                                   asp-action="LoginUser"
+                                   asp-route-uid="10000012">
+                                    快速登入：User #10000012
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item"
+                                   asp-area="social_hub"
+                                   asp-controller="Home"
+                                   asp-action="LoginManager"
+                                   asp-route-mid="30000001">
+                                    快速登入：Manager #30000001
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <a class="dropdown-item"
+                                   asp-area="social_hub"
+                                   asp-controller="Home"
+                                   asp-action="WhoAmI">
+                                    查看登入狀態
                                 </a>
                             </li>
                         }
                         else
                         {
-                            <li><a class="dropdown-item" href="#">測試</a></li>
+                            <li>
+                                <a class="dropdown-item"
+                                   asp-area="social_hub"
+                                   asp-controller="Home"
+                                   asp-action="WhoAmI">
+                                    我的狀態
+                                </a>
+                            </li>
                             <li><a class="dropdown-item" href="#">設定</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">登出</a></li>
@@ -112,7 +132,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
 
-                <!-- 你的 Logout 是 GET，所以這裡改成 GET（或改成超連結） -->
+                <!-- 你的 Logout 是 GET，所以這裡用 GET -->
                 <form asp-area="social_hub"
                       asp-controller="Home"
                       asp-action="Logout"
@@ -121,7 +141,7 @@
                     <button type="submit" class="btn btn-primary">確定登出</button>
                 </form>
 
-                @* 如果你改成 [HttpPost] Logout，就把上面改回 method="post" 並加 AntiForgery *@
+                @* 若未來改成 [HttpPost] Logout，就把上面改為 method="post" 並加 AntiForgeryToken *@
                 @* @Html.AntiForgeryToken() *@
             </div>
         </div>

@@ -7,10 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections; // for HttpTransportType
 using Microsoft.AspNetCore.SignalR;           // for AddSignalR
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
 using System.Threading.Tasks; // 因為你用了 async Task Main
+using System.Linq;            // 在 CookieEvents 內有用到 .Any()
+
+// ---- 「共用登入介面」(最小版) ----
+using GameSpace.Infrastructure.Login; // ILoginIdentity, CookieAndAdminCookieLoginIdentity
 
 // ---- 型別別名（避免方案裡若有重複介面/命名空間不一致，導致 DI 對不到）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
@@ -32,7 +35,10 @@ namespace GameSpace
 			// ===== 連線字串 =====
 			var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
 				?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-			var gameSpaceConn = builder.Configuration.GetConnectionString("GameSpace")
+			var gameSpaceConn =
+				builder.Configuration.GetConnectionString("GameSpace")
+				// ★ 可選：若你的 appsettings 有另一個 key，這行可當備援
+				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
 			// ===== DbContexts =====
@@ -62,9 +68,7 @@ namespace GameSpace
 				o.FuzzyBetweenCjkChars = true;
 				o.MaskExactLength = false;
 				o.CacheTtlSeconds = 30;
-
-				// ★ 開啟每詞自訂替代（用 Mutes.replacement）
-				o.UsePerWordReplacement = true;
+				o.UsePerWordReplacement = true; // 每詞自訂替代（用 Mutes.replacement）
 			});
 			// 用別名註冊，避免撞名
 			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
@@ -85,8 +89,6 @@ namespace GameSpace
 			});
 
 			// ===== CORS（可選：只有跨網域前端時才會啟用）=====
-			// 在 appsettings.json 內放：
-			// "Cors": { "Chat": { "Origins": [ "https://your-frontend.example.com" ] } }
 			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
 			if (corsOrigins is { Length: > 0 })
 			{
@@ -101,89 +103,83 @@ namespace GameSpace
 				});
 			}
 
-// [新增] Session（登入流程/OTP 要用）
-builder.Services.AddSession(opt =>
-{
-	opt.IdleTimeout = TimeSpan.FromMinutes(30);
-	opt.Cookie.HttpOnly = true;
-	opt.Cookie.IsEssential = true;
-});
-
-// ★★ 重要：獨立的後台 Cookie 方案，避免干擾 Identity 的 Cookie（Identity 仍用它的）
-const string AdminCookieScheme = "AdminCookie";
-
-// [新增] 後台 Cookie 驗證（給 LoginController 用）+「AJAX 401 不重導」
-builder.Services.AddAuthentication(options =>
-{
-	// 不動 Identity 的預設方案，只是額外加一個後台 Cookie 方案
-})
-.AddCookie(AdminCookieScheme, opt =>
-{
-	opt.LoginPath = "/Login";
-	opt.LogoutPath = "/Login/Logout";
-	opt.AccessDeniedPath = "/Login/Denied";
-	opt.Cookie.Name = "GameSpace.Admin";
-	opt.SlidingExpiration = true;
-	opt.ExpireTimeSpan = TimeSpan.FromHours(4);
-
-	// ★ 讓 AJAX/API 端點在未登入/無權限時回 401/403，而不是 Redirect
-	opt.Events = new CookieAuthenticationEvents
-	{
-		OnRedirectToLogin = ctx =>
-		{
-			// 針對你會用 fetch 的端點（例如 /Login/Me）直接回 401
-			if (ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase))
+			// ===== Session（登入流程/OTP 需要）=====
+			builder.Services.AddSession(opt =>
 			{
-				ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-				return Task.CompletedTask;
-			}
+				opt.IdleTimeout = TimeSpan.FromMinutes(30);
+				opt.Cookie.HttpOnly = true;
+				opt.Cookie.IsEssential = true;
+				opt.Cookie.SameSite = SameSiteMode.Lax;
+			});
 
-			// 一般 AJAX 判斷：X-Requested-With 或 Accept 要 JSON
-			var isAjax =
-				string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-				|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
+			// ===== 共用登入介面（關鍵）=====
+			builder.Services.AddHttpContextAccessor(); // ★ 必須
+			builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>(); // ★ 必須
 
-			if (isAjax)
+			// ★ 重要：獨立的後台 Cookie 方案，讓 CookieAndAdminCookieLoginIdentity 可以 AuthenticateAsync("AdminCookie")
+			const string AdminCookieScheme = "AdminCookie";
+
+			// ===== 後台 Cookie 驗證（給外部 LoginController 用）+「AJAX 401/403 不重導」=====
+			builder.Services.AddAuthentication(options =>
 			{
-				ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-				return Task.CompletedTask;
-			}
-
-			// 其餘情況維持原本導向登入頁
-			ctx.Response.Redirect(ctx.RedirectUri);
-			return Task.CompletedTask;
-		},
-		OnRedirectToAccessDenied = ctx =>
-		{
-			// 無權限時（403）也同樣處理 AJAX
-			var isAjax =
-				string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-				|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
-
-			if (isAjax)
+				// 不動 Identity 的 DefaultScheme；這裡只是額外加一個後台 Cookie 方案
+			})
+			.AddCookie(AdminCookieScheme, opt =>
 			{
-				ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-				return Task.CompletedTask;
-			}
+				opt.LoginPath = "/Login";
+				opt.LogoutPath = "/Login/Logout";
+				opt.AccessDeniedPath = "/Login/Denied";
+				opt.Cookie.Name = "GameSpace.Admin";
+				opt.SlidingExpiration = true;
+				opt.ExpireTimeSpan = TimeSpan.FromHours(4);
 
-			ctx.Response.Redirect(ctx.RedirectUri);
-			return Task.CompletedTask;
-		}
-	};
-});
+				// 讓 AJAX/API 未登入/無權限回 401/403，而不是 Redirect
+				opt.Events = new CookieAuthenticationEvents
+				{
+					OnRedirectToLogin = ctx =>
+					{
+						var isAjax =
+							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+							|| ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase);
 
-// ★ 建立授權政策（對應我們寫入的 perm:* Claims）
-builder.Services.AddAuthorization(options =>
-{
-	options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
-	options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
-	options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
-	options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
-	options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
-	options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
-});
+						if (isAjax)
+						{
+							ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+							return Task.CompletedTask;
+						}
+						ctx.Response.Redirect(ctx.RedirectUri);
+						return Task.CompletedTask;
+					},
+					OnRedirectToAccessDenied = ctx =>
+					{
+						var isAjax =
+							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
 
-var app = builder.Build();
+						if (isAjax)
+						{
+							ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+							return Task.CompletedTask;
+						}
+						ctx.Response.Redirect(ctx.RedirectUri);
+						return Task.CompletedTask;
+					}
+				};
+			});
+
+			// ===== 授權政策（對應我們寫入的 perm:* Claims）=====
+			builder.Services.AddAuthorization(options =>
+			{
+				options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
+				options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
+				options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
+				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
+				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
+				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
+			});
+
+			var app = builder.Build();
 
 			// ===== 啟動預熱（失敗不擋站）=====
 			using (var scope = app.Services.CreateScope())
@@ -207,10 +203,10 @@ var app = builder.Build();
 				app.UseHsts();
 			}
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+			app.UseHttpsRedirection();
+			app.UseStaticFiles();
 
-app.UseRouting();
+			app.UseRouting();
 
 			// 若有設定 CORS Origins，才套用該 Policy（需在 MapHub 前）
 			if (corsOrigins is { Length: > 0 })
@@ -222,8 +218,11 @@ app.UseRouting();
 				MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
 				Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
 			});
-			
-			app.UseAuthentication(); // Identity
+
+			// **Session 必須在 Authentication 前啟用**
+			app.UseSession();
+
+			app.UseAuthentication(); // Identity + AdminCookie 皆會生效
 			app.UseAuthorization();
 
 			// ===== 路由 =====
@@ -232,12 +231,12 @@ app.UseRouting();
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-app.MapControllerRoute(
-	name: "default",
-	pattern: "{controller=Home}/{action=Index}/{id?}");
+			app.MapControllerRoute(
+				name: "default",
+				pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// [保留] 若使用 Identity UI
-app.MapRazorPages();
+			// 若使用 Identity UI
+			app.MapRazorPages();
 
 			// ===== SignalR Hub 端點（指定傳輸種類，避免環境限制導致無法連線）=====
 			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>

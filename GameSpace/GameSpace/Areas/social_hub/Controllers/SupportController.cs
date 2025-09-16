@@ -1,14 +1,14 @@
-﻿// Areas/social_hub/Controllers/SupportController.cs
+﻿// 路徑：Areas/social_hub/Controllers/SupportController.cs
 using GameSpace.Areas.social_hub.Filters;
 using GameSpace.Areas.social_hub.Models.ViewModels;
 using GameSpace.Areas.social_hub.Services;
-using GameSpace.Data;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Claims; // ★ for Claims
 
 // EF 實體別名
 using Db = GameSpace.Models;
@@ -16,7 +16,9 @@ using Db = GameSpace.Models;
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
-	[CustomerServiceOnly] // 具有 customer_service 才能進入整個區域
+	// 1) 先確保「外部登入且為管理員」
+	//    RequireManagerPermissions 會驗證 AdminCookie/Claims，未通過時頁面 403、AJAX 401
+	[RequireManagerPermissions(RequireManager = true, CustomerService = true)]
 	public class SupportController : Controller
 	{
 		private readonly GameSpacedatabaseContext _db;
@@ -30,42 +32,86 @@ namespace GameSpace.Areas.social_hub.Controllers
 			_perm = perm;
 		}
 
-		// ===================== 首頁骨架 =====================
+		// =====================================================
+		// ★★ 穩健的身分解析：Items → Claims → Cookies（gs_* 相容 sh_*）
+		// =====================================================
+		private int? ResolveManagerId()
+		{
+			// 1) HttpContext.Items（若有 SocialHubAuth/Filter 先寫入）
+			if (HttpContext?.Items?["gs_kind"]?.ToString()?.Equals("manager", StringComparison.OrdinalIgnoreCase) == true)
+			{
+				if (HttpContext.Items.TryGetValue("gs_id", out var idObj) && idObj != null)
+				{
+					if (int.TryParse(idObj.ToString(), out var id) && id > 0) return id;
+				}
+			}
+			// 有些舊碼可能直接放 sh_mid
+			if (HttpContext?.Items?.TryGetValue("sh_mid", out var midObj) == true && midObj != null)
+			{
+				if (int.TryParse(midObj.ToString(), out var mid) && mid > 0) return mid;
+			}
+
+			// 2) Claims（AdminCookie 常見配置：mid / manager_id / NameIdentifier）
+			var c = User?.FindFirst("mid")
+				?? User?.FindFirst("manager_id")
+				?? User?.FindFirst(ClaimTypes.NameIdentifier);
+			if (c != null && int.TryParse(c.Value, out var cid) && cid > 0) return cid;
+
+			// 3) Cookies（gs_* 為新的最小登入、相容 sh_*）
+			string? getCookie(string key)
+				=> Request?.Cookies != null && Request.Cookies.TryGetValue(key, out var v) ? v : null;
+
+			var kind = (getCookie("gs_kind") ?? getCookie("sh_kind"))?.Trim().ToLowerInvariant();
+			var idStr = getCookie("gs_id") ?? getCookie("sh_mid") ?? getCookie("sh_uid");
+			if ((kind == "manager" || getCookie("sh_mid") != null) && int.TryParse(idStr, out var idc) && idc > 0)
+				return idc;
+
+			return null;
+		}
+
+		// =====================================================
+		// [GET] /social_hub/Support
+		// 作用：客服工作台首頁骨架（Index.cshtml）
+		// 重點：塞 ViewBag.MeManagerId 與 ViewBag.CanAssignToOthers
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
+			// 仍保留服務的權限判斷（含 CustomerService=true）
 			var gate = await _perm.GetCustomerServiceContextAsync(HttpContext);
-			ViewBag.MeManagerId = gate.ManagerId;
 
-			// 是否具「雙權限」（customer_service + UserStatusManagement）
-			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(gate.ManagerId ?? 0);
-			ViewBag.CanAssignToOthers = canAssignToOthers;
+			// ★ 用穩健解析器補齊 ManagerId（避免 gate.ManagerId 為 null）
+			var meId = ResolveManagerId();
+			ViewBag.MeManagerId = meId; // 注意：View 用的是 `as int?`，給 int? 最保險
+
+			// 是否具「雙權限」
+			ViewBag.CanAssignToOthers = meId.HasValue && await _perm.CanUseSupportAssignmentAsync(meId.Value);
 
 			return View();
 		}
 
-		// ===================== 徽章數 =====================
+		// =====================================================
+		// [GET] /social_hub/Support/GetCounts
+		// 作用：回傳徽章數（JSON）
+		// - assigned    ：未結單 & 指派給我
+		// - unassigned  ：未結單 & 尚未指派
+		// - inprogress  ：未結單 &（未指派 或 指派給別人）→ 排除「指派給我」
+		// - closed      ：已結單
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> GetCounts()
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
-			var assignedCount = await _db.SupportTickets.AsNoTracking()
-				.Where(t => t.IsClosed != true && t.AssignedManagerId == meId)
-				.CountAsync();
+			var q = _db.SupportTickets.AsNoTracking();
 
-			var unassignedCount = await _db.SupportTickets.AsNoTracking()
-				.Where(t => t.IsClosed != true && t.AssignedManagerId == null)
-				.CountAsync();
+			var assignedCount = await q.Where(t => t.IsClosed != true && t.AssignedManagerId == meId).CountAsync();
+			var unassignedCount = await q.Where(t => t.IsClosed != true && t.AssignedManagerId == null).CountAsync();
+			var closedCount = await q.Where(t => t.IsClosed == true).CountAsync();
 
-			var closedCount = await _db.SupportTickets.AsNoTracking()
-				.Where(t => t.IsClosed == true)
-				.CountAsync();
-
-			// 未完成（所有未結案）
-			var inprogressCount = await _db.SupportTickets.AsNoTracking()
-				.Where(t => t.IsClosed != true)
-				.CountAsync();
+			// ★ 修正：排除「指派給我」
+			var inprogressCount = await q.Where(t => t.IsClosed != true && (t.AssignedManagerId == null || t.AssignedManagerId != meId)).CountAsync();
 
 			return Ok(new { assigned = assignedCount, unassigned = unassignedCount, closed = closedCount, inprogress = inprogressCount });
 		}
@@ -74,19 +120,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 		private static IQueryable<Db.SupportTicket> ApplyKeyword(IQueryable<Db.SupportTicket> src, string? q)
 		{
 			if (string.IsNullOrWhiteSpace(q)) return src;
-
 			q = q.Trim();
-			if (int.TryParse(q, out var num))
-			{
-				return src.Where(t => t.TicketId == num || t.UserId == num);
-			}
-			else
-			{
-				return src.Where(t => t.Subject != null && t.Subject.Contains(q));
-			}
+			if (int.TryParse(q, out var num)) return src.Where(t => t.TicketId == num || t.UserId == num);
+			return src.Where(t => t.Subject != null && t.Subject.Contains(q));
 		}
 
-		// 原本的投影 (請移除對 LastActivityAt 的指定)
+		// 投影：以 LastMessageAt / CreatedAt 作為顯示與排序依據；未讀數以管理員視角計
 		private static IQueryable<TicketListItemVM> ProjectTicketListVM(
 			IQueryable<Db.SupportTicket> query,
 			GameSpacedatabaseContext db)
@@ -100,19 +139,14 @@ namespace GameSpace.Areas.social_hub.Controllers
 				IsClosed = t.IsClosed == true,
 				CreatedAt = t.CreatedAt,
 				LastMessageAt = t.LastMessageAt,
-				// ❌ 刪掉這行：LastActivityAt = (t.LastMessageAt ?? t.CreatedAt),
 				UnreadForMe = db.SupportTicketMessages
-					.Where(m => m.TicketId == t.TicketId
-							 && m.SenderUserId != null
-							 && m.ReadByManagerAt == null)
+					.Where(m => m.TicketId == t.TicketId && m.SenderUserId != null && m.ReadByManagerAt == null)
 					.Count()
 			});
 		}
 
-		// 原本的排序 (改用合併運算)
 		private static IQueryable<TicketListItemVM> OrderForList(IQueryable<TicketListItemVM> q)
 			=> q.OrderByDescending(x => x.LastMessageAt ?? x.CreatedAt);
-
 
 		private static async Task<PagedResult<TicketListItemVM>> ToPagedAsync(
 			IQueryable<TicketListItemVM> q, int page, int pageSize)
@@ -132,13 +166,18 @@ namespace GameSpace.Areas.social_hub.Controllers
 			};
 		}
 
-		// ===================== 清單（Partial） =====================
+		// =====================================================
+		// [GET] /social_hub/Support/ListAssigned?page=1&q=關鍵字
+		// 作用：部分檢視（指派給我）
+		// 視圖：_TicketList.cshtml（Model: PagedResult<TicketListItemVM>）
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> ListAssigned(int page = 1, string? q = null, int pageSize = 10)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
-			IQueryable<Db.SupportTicket> baseQ = _db.SupportTickets.AsNoTracking()
+			var baseQ = _db.SupportTickets.AsNoTracking()
 				.Where(t => t.IsClosed != true && t.AssignedManagerId == meId);
 
 			baseQ = ApplyKeyword(baseQ, q);
@@ -146,15 +185,29 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ordered = OrderForList(ProjectTicketListVM(baseQ, _db));
 			var paged = await ToPagedAsync(ordered, page, pageSize);
 
+			// ListAssigned
 			ViewData["action"] = nameof(ListAssigned);
+			// 固定鍵值
 			ViewBag.Query = q ?? string.Empty;
+			ViewBag.CanAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
+			// ListAssigned / ListUnassigned / ListInProgress / ListClosed 裡面，在 return PartialView 之前：
+			ViewBag.MeManagerId = meId.Value;   // ← 讓 Partial 能判斷 "isMine"
+
 			return PartialView("_TicketList", paged);
 		}
 
+		// =====================================================
+		// [GET] /social_hub/Support/ListUnassigned?page=1&q=關鍵字
+		// 作用：部分檢視（未指派）
+		// 視圖：_TicketList.cshtml
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> ListUnassigned(int page = 1, string? q = null, int pageSize = 10)
 		{
-			IQueryable<Db.SupportTicket> baseQ = _db.SupportTickets.AsNoTracking()
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
+
+			var baseQ = _db.SupportTickets.AsNoTracking()
 				.Where(t => t.IsClosed != true && t.AssignedManagerId == null);
 
 			baseQ = ApplyKeyword(baseQ, q);
@@ -162,41 +215,59 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ordered = OrderForList(ProjectTicketListVM(baseQ, _db));
 			var paged = await ToPagedAsync(ordered, page, pageSize);
 
+			// ListUnassigned
 			ViewData["action"] = nameof(ListUnassigned);
+
 			ViewBag.Query = q ?? string.Empty;
-			// 是否雙權限（列表上可顯示「指派他人」用）
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
-			ViewBag.CanAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId);
+			ViewBag.CanAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
+			// ListAssigned / ListUnassigned / ListInProgress / ListClosed 裡面，在 return PartialView 之前：
+			ViewBag.MeManagerId = meId.Value;   // ← 讓 Partial 能判斷 "isMine"
+
 			return PartialView("_TicketList", paged);
 		}
 
-		// ★ 只有雙權限可見／可用：列出所有未結案工單，方便跨人員轉單
+		// =====================================================
+		// [GET] /social_hub/Support/ListInProgress?page=1&q=關鍵字
+		// 作用：部分檢視（未完成 = 未結單且不是「指派給我」）
+		// 視圖：_TicketList.cshtml（僅雙權限頁面會顯示此分頁）
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> ListInProgress(int page = 1, string? q = null, int pageSize = 10)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
+			if (!await _perm.CanUseSupportAssignmentAsync(meId.Value)) return Forbid();
 
-			if (!await _perm.CanUseSupportAssignmentAsync(meId))
-				return Forbid();
-
-			IQueryable<Db.SupportTicket> baseQ = _db.SupportTickets.AsNoTracking()
-				.Where(t => t.IsClosed != true);
+			var baseQ = _db.SupportTickets.AsNoTracking()
+				.Where(t => t.IsClosed != true && (t.AssignedManagerId == null || t.AssignedManagerId != meId));
 
 			baseQ = ApplyKeyword(baseQ, q);
 
 			var ordered = OrderForList(ProjectTicketListVM(baseQ, _db));
 			var paged = await ToPagedAsync(ordered, page, pageSize);
 
+			// ListInProgress
 			ViewData["action"] = nameof(ListInProgress);
 			ViewBag.Query = q ?? string.Empty;
 			ViewBag.CanAssignToOthers = true;
+			// ListAssigned / ListUnassigned / ListInProgress / ListClosed 裡面，在 return PartialView 之前：
+			ViewBag.MeManagerId = meId.Value;   // ← 讓 Partial 能判斷 "isMine"
+
 			return PartialView("_TicketList", paged);
 		}
 
+		// =====================================================
+		// [GET] /social_hub/Support/ListClosed?page=1&q=關鍵字
+		// 作用：部分檢視（已結單）
+		// 視圖：_TicketList.cshtml
+		// =====================================================
 		[HttpGet]
 		public async Task<IActionResult> ListClosed(int page = 1, string? q = null, int pageSize = 10)
 		{
-			IQueryable<Db.SupportTicket> baseQ = _db.SupportTickets.AsNoTracking()
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
+
+			var baseQ = _db.SupportTickets.AsNoTracking()
 				.Where(t => t.IsClosed == true);
 
 			baseQ = ApplyKeyword(baseQ, q);
@@ -204,14 +275,20 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ordered = OrderForList(ProjectTicketListVM(baseQ, _db));
 			var paged = await ToPagedAsync(ordered, page, pageSize);
 
+
+			// ListClosed
 			ViewData["action"] = nameof(ListClosed);
 			ViewBag.Query = q ?? string.Empty;
+			ViewBag.CanAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
+			// ListAssigned / ListUnassigned / ListInProgress / ListClosed 裡面，在 return PartialView 之前：
+			ViewBag.MeManagerId = meId.Value;   // ← 讓 Partial 能判斷 "isMine"
+
 			return PartialView("_TicketList", paged);
 		}
 
 		// ===================== 詳細資料：指派紀錄（Partial + Page） =====================
 
-		// 左側卡片：只顯示「歷史」—排除目前這筆（最新），最多 9 筆、每頁 3 筆
+		// [GET] /social_hub/Support/AssignmentHistory?id={ticketId}&page=1
 		[HttpGet]
 		public async Task<IActionResult> AssignmentHistory(int id, int page = 1)
 		{
@@ -222,7 +299,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 				.AsNoTracking()
 				.Where(a => a.TicketId == id)
 				.OrderByDescending(a => a.AssignedAt).ThenByDescending(a => a.AssignmentId)
-				.Skip(1); // 排除目前這筆
+				.Skip(1); // 排除最新（目前這筆）
 
 			var totalActual = await baseQ.CountAsync();
 			var total = Math.Min(totalActual, maxRecords);
@@ -244,12 +321,11 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return PartialView("_AssignmentHistory", items);
 		}
 
-		// 完整歷史頁
+		// [GET] /social_hub/Support/AssignmentHistoryPage?id={ticketId}
 		[HttpGet]
 		public async Task<IActionResult> AssignmentHistoryPage(int id)
 		{
-			var t = await _db.SupportTickets.AsNoTracking()
-				.FirstOrDefaultAsync(x => x.TicketId == id);
+			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 
 			var list = await _db.Set<Db.SupportTicketAssignment>()
@@ -293,8 +369,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return (rec.AssignedAt, next?.AssignedAt);
 		}
 
-		private async Task<(DateTime? start, DateTime? end, Db.SupportTicketAssignment? rec)>
-			GetAssignmentBoundsAsync(int ticketId, int assignmentId)
+		private async Task<(DateTime? start, DateTime? end, Db.SupportTicketAssignment? rec)> GetAssignmentBoundsAsync(int ticketId, int assignmentId)
 		{
 			var rec = await _db.Set<Db.SupportTicketAssignment>()
 				.AsNoTracking()
@@ -313,28 +388,41 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// ===================== 工單詳情/訊息（主頁僅顯示目前指派這段） =====================
+
+		// [GET] /social_hub/Support/Ticket?id={ticketId}&page=1
 		[HttpGet]
 		public async Task<IActionResult> Ticket(int id, int page = 1)
 		{
-			var gate = await _perm.GetCustomerServiceContextAsync(HttpContext);
-			var meId = gate.ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 
-			// 未指派：禁止進入對話（必須先指派）
+			// 未指派：安全導向
 			if (t.AssignedManagerId == null)
-				return StatusCode(409, "此工單尚未指派，請先指派後再進入對話。");
+			{
+				if (await _perm.CanUseSupportAssignmentAsync(meId.Value))
+				{
+					// 主管/雙權限 → 直接帶去轉單頁
+					return RedirectToAction(nameof(Reassign), new { id, returnUrl = Url.Action(nameof(Index), new { area = "social_hub", tab = "unassigned" }) });
+				}
+
+				// 一般客服 → 回到首頁的「未指派」分頁，並提示
+				TempData["Warn"] = "此工單尚未指派，請先指派後再進入對話。";
+				return RedirectToAction(nameof(Index), new { area = "social_hub", tab = "unassigned" });
+			}
+
 
 			var isClosed = t.IsClosed == true;
-			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId);
-			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId);
+			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId.Value);
+			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
 
 			// 目前指派分段
 			var (segStart, segEnd) = await GetCurrentSegmentBoundsAsync(id, t.AssignedManagerId);
 
 			// 只有現任負責人把分段內未讀標記已讀
-			if (t.AssignedManagerId == meId && segStart != null)
+			if (t.AssignedManagerId == meId.Value && segStart != null)
 			{
 				var unreadQ = _db.SupportTicketMessages
 					.Where(m => m.TicketId == id && m.SenderUserId != null && m.ReadByManagerAt == null)
@@ -372,7 +460,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 					SentAt = m.SentAt,
 					ReadByUserAt = m.ReadByUserAt,
 					ReadByManagerAt = m.ReadByManagerAt,
-					IsMine = (m.SenderManagerId != null && m.SenderManagerId.Value == meId)
+					IsMine = (m.SenderManagerId != null && m.SenderManagerId.Value == meId.Value)
 				})
 				.ToList();
 
@@ -388,13 +476,13 @@ namespace GameSpace.Areas.social_hub.Controllers
 				AssignedManagerId = t.AssignedManagerId,
 				LastMessageAt = t.LastMessageAt,
 
-				MeManagerId = meId,
+				MeManagerId = meId.Value,
 				// 自己接單：任何客服可用（不需雙權限）
 				CanAssignToMe = !isClosed && t.AssignedManagerId == null,
 				// 轉單：現任負責人 或 管理員 或 具有雙權限者
-				CanReassign = !isClosed && (t.AssignedManagerId == meId || isAdmin || canAssignToOthers),
+				CanReassign = !isClosed && (t.AssignedManagerId == meId.Value || isAdmin || canAssignToOthers),
 				// 結單：現任負責人或管理員
-				CanClose = !isClosed && (t.AssignedManagerId == meId || isAdmin),
+				CanClose = !isClosed && (t.AssignedManagerId == meId.Value || isAdmin),
 
 				Messages = messagesAsc,
 				Page = page,
@@ -405,10 +493,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return View(vm);
 		}
 
+		// [GET] /social_hub/Support/MessageList?id={ticketId}&page=1
 		[HttpGet]
 		public async Task<IActionResult> MessageList(int id, int page = 1)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			if (page <= 0) page = 1;
 
@@ -437,7 +527,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 				SentAt = m.SentAt,
 				ReadByUserAt = m.ReadByUserAt,
 				ReadByManagerAt = m.ReadByManagerAt,
-				IsMine = (m.SenderManagerId != null && m.SenderManagerId.Value == meId)
+				IsMine = (m.SenderManagerId != null && m.SenderManagerId.Value == meId.Value)
 			}).ToList();
 
 			ViewBag.Page = page;
@@ -448,6 +538,8 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// ===================== 指派段落對話頁（依某一筆指派） =====================
+
+		// [GET] /social_hub/Support/AssignmentConversation?id={ticketId}&aid={assignmentId}&page=1
 		[HttpGet]
 		public async Task<IActionResult> AssignmentConversation(int id, int aid, int page = 1)
 		{
@@ -456,15 +548,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var (start, end, rec) = await GetAssignmentBoundsAsync(id, aid);
 			if (rec == null) return NotFound();
 
-			var t = await _db.SupportTickets.AsNoTracking()
-				.FirstOrDefaultAsync(x => x.TicketId == id);
+			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 
-			var q = _db.SupportTicketMessages.AsNoTracking()
-				.Where(m => m.TicketId == id);
+			var q = _db.SupportTicketMessages.AsNoTracking().Where(m => m.TicketId == id);
 			if (start != null) q = q.Where(m => m.SentAt >= start.Value);
 			if (end != null) q = q.Where(m => m.SentAt < end.Value);
-
 			q = q.OrderByDescending(m => m.SentAt);
 
 			if (page <= 0) page = 1;
@@ -493,14 +582,12 @@ namespace GameSpace.Areas.social_hub.Controllers
 				AssignmentId = aid,
 				UserId = t.UserId,
 				Subject = t.Subject ?? string.Empty,
-
 				FromManagerId = rec.FromManagerId,
 				ToManagerId = rec.ToManagerId,
 				AssignedByManagerId = rec.AssignedByManagerId,
 				AssignedAt = rec.AssignedAt,
 				NextAssignedAt = end,
 				Note = rec.Note,
-
 				Messages = messagesAsc,
 				Page = page,
 				PageSize = pageSize,
@@ -511,15 +598,18 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// ===================== 發送訊息（AJAX） =====================
+
+		// [POST] /social_hub/Support/SendMessage?id={ticketId}
 		[HttpPost]
 		public async Task<IActionResult> SendMessage(int id, [FromForm] string text)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 			if (t.IsClosed == true) return StatusCode(409, "此工單已結單，無法再發送訊息。");
-			if (t.AssignedManagerId != meId) return Forbid();
+			if (t.AssignedManagerId != meId.Value) return Forbid();
 
 			text = (text ?? "").Trim();
 			if (text.Length == 0) return BadRequest("訊息不可為空。");
@@ -531,7 +621,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			{
 				TicketId = id,
 				SenderUserId = null,
-				SenderManagerId = meId,
+				SenderManagerId = meId.Value,
 				MessageText = text,
 				SentAt = now,
 				ReadByUserAt = null,
@@ -545,48 +635,54 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// ===================== 指派給我（AJAX）：任何客服可自接 =====================
+
+		// [POST] /social_hub/Support/AssignToMe?id={ticketId}
 		[HttpPost]
 		public async Task<IActionResult> AssignToMe(int id)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 			if (t.IsClosed == true) return StatusCode(409, "此工單已結單，無法指派。");
 
-			if (t.AssignedManagerId == meId)
-				return Ok(new { ok = true, assignedManagerId = meId });
+			if (t.AssignedManagerId == meId.Value)
+				return Ok(new { ok = true, assignedManagerId = meId.Value });
 
 			if (t.AssignedManagerId != null)
 				return StatusCode(409, "此工單已指派給其他客服。");
 
-			t.AssignedManagerId = meId;
+			t.AssignedManagerId = meId.Value;
 
 			_db.Set<Db.SupportTicketAssignment>().Add(new Db.SupportTicketAssignment
 			{
 				TicketId = id,
 				FromManagerId = null,
-				ToManagerId = meId,
-				AssignedByManagerId = meId,
+				ToManagerId = meId.Value,
+				AssignedByManagerId = meId.Value,
 				AssignedAt = DateTime.UtcNow,
 				Note = null
 			});
 
 			await _db.SaveChangesAsync();
-			return Ok(new { ok = true, assignedManagerId = meId });
+			return Ok(new { ok = true, assignedManagerId = meId.Value });
 		}
 
 		// ===================== 結單（頁面） =====================
+
+		// [GET] /social_hub/Support/CloseForm?id={ticketId}
 		[HttpGet]
 		public async Task<IActionResult> CloseForm(int id)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 
-			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId);
-			if (t.IsClosed == true || (t.AssignedManagerId != meId && !isAdmin))
+			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId.Value);
+			if (t.IsClosed == true || (t.AssignedManagerId != meId.Value && !isAdmin))
 				return Forbid();
 
 			var vm = new CloseTicketVM
@@ -602,22 +698,24 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return View("Close", vm);
 		}
 
+		// [POST] /social_hub/Support/CloseConfirm?id={ticketId}
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CloseConfirm(int id, [FromForm] string? closeNote)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 
-			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId);
-			if (t.IsClosed == true || (t.AssignedManagerId != meId && !isAdmin))
+			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId.Value);
+			if (t.IsClosed == true || (t.AssignedManagerId != meId.Value && !isAdmin))
 				return Forbid();
 
 			t.IsClosed = true;
 			t.ClosedAt = DateTime.UtcNow;
-			t.ClosedByManagerId = meId;
+			t.ClosedByManagerId = meId.Value;
 			if (!string.IsNullOrWhiteSpace(closeNote))
 			{
 				var note = closeNote.Trim();
@@ -629,23 +727,22 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// ===================== 轉單（頁面） =====================
+
+		// [GET] /social_hub/Support/Reassign?id={ticketId}
 		[HttpGet]
-		public async Task<IActionResult> Reassign(int id)
+		public async Task<IActionResult> Reassign(int id, string? returnUrl = null)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 			if (t.IsClosed == true) return Forbid();
 
-			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId);
-			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId);
+			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId.Value);
+			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
+			if (!(t.AssignedManagerId == meId.Value || isAdmin || canAssignToOthers)) return Forbid();
 
-			// 允許：現任負責人 或 管理員 或 具有雙權限者
-			if (!(t.AssignedManagerId == meId || isAdmin || canAssignToOthers))
-				return Forbid();
-
-			// 目標候選：只要具有 customer_service 即可被指派（目標不需雙權限）
 			var candidates = await _db.Set<Db.ManagerRolePermission>()
 				.Where(rp => rp.CustomerService == true)
 				.SelectMany(rp => rp.Managers.Select(m => m.ManagerId))
@@ -661,36 +758,40 @@ namespace GameSpace.Areas.social_hub.Controllers
 				CurrentAssignedManagerId = t.AssignedManagerId,
 				CandidateManagerIds = candidates
 			};
+
+			// ★ 安全保留回跳網址（僅接受本機路徑）
+			ViewBag.ReturnUrl = Url.IsLocalUrl(returnUrl)
+				? returnUrl
+				: Url.Action(nameof(Index), new { area = "social_hub", tab = "unassigned" });
+
 			return View("Reassign", vm);
 		}
-
+		// [POST] /social_hub/Support/ReassignConfirm?id={ticketId}
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> ReassignConfirm(int id, [FromForm] int toManagerId, [FromForm] string? note)
+		public async Task<IActionResult> ReassignConfirm(int id, [FromForm] int toManagerId, [FromForm] string? note, string? returnUrl = null)
 		{
-			var meId = (await _perm.GetCustomerServiceContextAsync(HttpContext)).ManagerId ?? 0;
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
 
 			var t = await _db.SupportTickets.FirstOrDefaultAsync(x => x.TicketId == id);
 			if (t == null) return NotFound();
 			if (t.IsClosed == true) return Forbid();
 
-			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId);
-			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId);
+			var isAdmin = await _perm.HasAdministratorPrivilegesAsync(meId.Value);
+			var canAssignToOthers = await _perm.CanUseSupportAssignmentAsync(meId.Value);
+			if (!(t.AssignedManagerId == meId.Value || isAdmin || canAssignToOthers)) return Forbid();
 
-			// 允許：現任負責人 或 管理員 或 具有雙權限者
-			if (!(t.AssignedManagerId == meId || isAdmin || canAssignToOthers))
-				return Forbid();
-
-			// 同人轉派：視為無變更
 			if (t.AssignedManagerId == toManagerId)
-				return RedirectToAction(nameof(Ticket), new { id });
+				return Url.IsLocalUrl(returnUrl)
+					? Redirect(returnUrl!)
+					: RedirectToAction(nameof(Ticket), new { id });
 
-			// 目標客服存在且具「customer_service」
 			var exists = await _db.ManagerData.AsNoTracking().AnyAsync(m => m.ManagerId == toManagerId);
 			if (!exists)
 			{
 				TempData["Error"] = "目標客服不存在。";
-				return RedirectToAction(nameof(Reassign), new { id });
+				return RedirectToAction(nameof(Reassign), new { id, returnUrl });
 			}
 
 			var targetHasCS = await _db.Set<Db.ManagerRolePermission>()
@@ -701,7 +802,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (!targetHasCS)
 			{
 				TempData["Error"] = "目標客服不具客服權限。";
-				return RedirectToAction(nameof(Reassign), new { id });
+				return RedirectToAction(nameof(Reassign), new { id, returnUrl });
 			}
 
 			var fromId = t.AssignedManagerId;
@@ -712,13 +813,17 @@ namespace GameSpace.Areas.social_hub.Controllers
 				TicketId = id,
 				FromManagerId = fromId,
 				ToManagerId = toManagerId,
-				AssignedByManagerId = meId,
+				AssignedByManagerId = meId.Value,
 				AssignedAt = DateTime.UtcNow,
 				Note = string.IsNullOrWhiteSpace(note) ? null : note!.Trim().Substring(0, Math.Min(255, note!.Trim().Length))
 			});
 
 			await _db.SaveChangesAsync();
-			return RedirectToAction(nameof(Ticket), new { id });
+
+			// 成功後：若有 returnUrl 就回列表，否則進對話
+			return Url.IsLocalUrl(returnUrl)
+				? Redirect(returnUrl!)
+				: RedirectToAction(nameof(Ticket), new { id });
 		}
 	}
 }
