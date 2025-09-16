@@ -77,5 +77,6 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 
 		public List<OrderItemRowVM> Items { get; set; } = new(); // 訂單的所有明細
 
+
 	}
 }

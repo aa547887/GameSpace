@@ -1,6 +1,7 @@
 ﻿using GameSpace.Areas.OnlineStore.ViewModels;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
 using static GameSpace.Areas.OnlineStore.ViewModels.OrderDetailViewModels;
@@ -170,8 +171,8 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					if (int.TryParse(q, out var id))
 						query = query.Where(o => o.OrderId == id);
 					else
-					    query = query.Where(o => false);
-						break;
+						query = query.Where(o => false);
+					break;
 				case "order_code":
 					if (long.TryParse(q, out var code))
 						query = query.Where(o => o.OrderCode == code);
@@ -243,69 +244,108 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				City = addr?.City ?? "",
 				Country = addr?.Country ?? "台灣"
 			};
+			ViewBag.Countries = GetCountrySelectList(vm.Country ?? "台灣");
+			ViewBag.TaiwanCities = GetTaiwanCitySelectList(vm.City);
 
 			return View(vm); // 導到編輯頁（非 modal，整頁）
 		}
 
-		// POST: /OnlineStore/Orders/EditAddress/123
+		// Areas/OnlineStore/Controllers/OrderDetailController.cs
+
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditAddress(ShippingAddressEditViewModels vm)
 		{
-			var orderId = vm.OrderId;
+			// ★ 防呆：確保有拿到 VM
+			if (vm == null)
+			{
+				TempData["Error"] = "沒有收到表單資料 (vm == null)。";
+				return RedirectToAction(nameof(Detail), new { area = "OnlineStore", id = 0 });
+			}
 
+			var orderId = vm.OrderId;
+			ModelState.Remove(nameof(ShippingAddressEditViewModels.OrderStatus));
+
+			// ★ 先確認訂單存在
 			var order = await _dbContext.OrderInfos
 				.Where(o => o.OrderId == orderId)
 				.Select(o => new { o.OrderId, o.OrderStatus })
 				.FirstOrDefaultAsync();
 
-			if (order == null) return NotFound();
+			if (order == null)
+			{
+				TempData["Error"] = $"找不到訂單（OrderId={orderId}）。";
+				return RedirectToAction(nameof(Detail), new { area = "OnlineStore", id = orderId });
+			}
 
-			// 後端再次檢查狀態
+			// ★ 後端狀態鎖：若不可改，直接導回 Detail 並告知原因
 			if (await IsLockedForAddressChangeAsync(orderId))
 			{
 				TempData["Info"] = "已出貨後不可修改收件地址。";
-				return RedirectToAction(nameof(Detail), new { id = orderId });
+				return RedirectToAction(nameof(Detail), new { area = "OnlineStore", id = orderId });
 			}
 
-			if (!ModelState.IsValid) return View(vm);
+			// ★ 若模型驗證失敗，把錯誤整理進 TempData 並回到 View
+			if (!ModelState.IsValid)
+			{
+				var errs = string.Join("; ",
+					ModelState.Where(kv => kv.Value?.Errors?.Count > 0)
+							  .Select(kv => $"{kv.Key}: {string.Join(" | ", kv.Value!.Errors.Select(e => e.ErrorMessage))}"));
+				TempData["Error"] = string.IsNullOrWhiteSpace(errs) ? "ModelState 驗證失敗（未知原因）。" : $"驗證失敗：{errs}";
+				ViewBag.Countries = GetCountrySelectList(vm.Country ?? "台灣");
+				ViewBag.TaiwanCities = GetTaiwanCitySelectList(vm.City);
+				return View(vm); // 留在同頁，讓欄位錯誤顯示
+			}
 
+			// ★ 實際寫入 OrderAddresses
 			var addr = await _dbContext.OrderAddresses
 				.FirstOrDefaultAsync(a => a.OrderId == orderId);
 
 			if (addr == null)
 			{
-				// 沒有就建立（你的表是 1:1，PK=order_id）
 				addr = new OrderAddress
 				{
 					OrderId = orderId,
-					Recipient = vm.Recipient,
-					Phone = vm.Phone,
-					Zipcode = vm.Zipcode,
-					Address1 = vm.Address1,
-					Address2 = vm.Address2,
-					City = vm.City,
-					Country = vm.Country
+					Recipient = vm.Recipient?.Trim(),
+					Phone = vm.Phone?.Trim(),
+					Zipcode = vm.Zipcode?.Trim(),
+					Address1 = vm.Address1?.Trim(),
+					Address2 = vm.Address2?.Trim(),
+					City = vm.City?.Trim(),
+					Country = vm.Country?.Trim(),
+					// 如果有 CreatedAt/UpdatedAt 欄位可在此補上
 				};
 				_dbContext.OrderAddresses.Add(addr);
 			}
 			else
 			{
-				// 有就更新
-				addr.Recipient = vm.Recipient;
-				addr.Phone = vm.Phone;
-				addr.Zipcode = vm.Zipcode;
-				addr.Address1 = vm.Address1;
-				addr.Address2 = vm.Address2;
-				addr.City = vm.City;
-				addr.Country = vm.Country;
+				addr.Recipient = vm.Recipient?.Trim();
+				addr.Phone = vm.Phone?.Trim();
+				addr.Zipcode = vm.Zipcode?.Trim();
+				addr.Address1 = vm.Address1?.Trim();
+				addr.Address2 = vm.Address2?.Trim();
+				addr.City = vm.City?.Trim();
+				addr.Country = vm.Country?.Trim();
+				// addr.UpdatedAt = DateTime.UtcNow; // 若有此欄位
 			}
 
-			await _dbContext.SaveChangesAsync();
+			// ★ 一定要存！
+			var affected = await _dbContext.SaveChangesAsync();
 
-			TempData["Success"] = "收件地址已更新。";
-			return RedirectToAction(nameof(Detail), new {orderId });
+			// ★ 存檔結果提示（方便你確認到底有沒有寫進 DB）
+			if (affected > 0)
+			{
+				TempData["Success"] = $"收件地址已更新（影響筆數：{affected}）。";
+			}
+			else
+			{
+				TempData["Warn"] = "呼叫 SaveChangesAsync() 但沒有更新任何筆數（可能值相同或追蹤狀態有問題）。";
+			}
+
+			// ★ 一定導回 Detail（使用 area + id）
+			return RedirectToAction(nameof(Detail), new { area = "OnlineStore", id = orderId });
 		}
+
 		private async Task<bool> IsLockedForAddressChangeAsync(int orderId)
 		{
 			// 1) 狀態字串（中英文都擋）
@@ -327,10 +367,96 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return hasShipment;
 		}
 
+		private static IEnumerable<SelectListItem> GetCountrySelectList(string? selected = "台灣")
+		{
+			var countries = new[]
+			{
+				"台灣","日本","韓國","中國","香港","新加坡","馬來西亞",
+				"美國","加拿大","英國","德國","法國","西班牙","義大利",
+				"澳洲","紐西蘭","荷蘭","瑞典","瑞士","挪威","丹麥","芬蘭",
+				"泰國","越南","印尼","菲律賓","印度"};
+			// TODO: 需要 ISO 3166 全清單時，我可以幫你生一份 JSON 放 wwwroot/data/countries.json 再載入
+
+			return countries.Select(c => new SelectListItem { Text = c, Value = c, Selected = c == (selected ?? "台灣") });
+		}
+
+		// 台灣縣市完整清單
+		private static readonly string[] TaiwanCities = new[]
+		{
+			"臺北市","新北市","桃園市","臺中市","臺南市","高雄市",
+			"基隆市","新竹市","嘉義市",
+			"新竹縣","苗栗縣","彰化縣","南投縣","雲林縣","嘉義縣",
+			"屏東縣","宜蘭縣","花蓮縣","臺東縣",
+			"澎湖縣","金門縣","連江縣"};
+
+		private static IEnumerable<SelectListItem> GetTaiwanCitySelectList(string? selected = null)
+		{
+			return TaiwanCities.Select(c => new SelectListItem { Text = c, Value = c, Selected = c == selected });
+		}
+
+
 
 		#endregion
+		// 請將檔案最後的多餘的 "}" 移除，或確認 class/namespace 的結尾括號數量正確。
+		// 你的檔案結尾目前是：
+		//	}
+		// 應該是 class 的結尾，如果已經有 class 的結尾，請不要再加多餘的 "}"。
+		// 如果你有額外的 namespace 或 class 沒有正確關閉，也會導致 CS1513。
+		// 請檢查所有的 "{" 和 "}" 是否配對。
 
+		// 根據你提供的內容，建議如下：
+		// 如果這是檔案的最後一行，且 class 已經正確結束，則不需修改。
+		// 如果你有多餘的 "}"，請刪除它。
+		// 如果 class/namespace 沒有正確結束，請補上 "}"。
+
+		// 範例修正（假設 class 結尾）：
+
+
+
+		//	#region 作廢
+		//	[HttpPost]
+		//	[ValidateAntiForgeryToken]
+		//	public async Task<IActionResult> VoidOrder([FromBody] VoidOrderDto dto)
+		//	{
+		//		if (dto == null || dto.OrderId <= 0 || string.IsNullOrWhiteSpace(dto.Reason))
+		//			return BadRequest("參數不完整");
+
+		//		var order = await _dbContext.OrderInfos.FirstOrDefaultAsync(o => o.OrderId == dto.OrderId);
+		//		if (order == null) return NotFound("找不到訂單");
+
+		//		// 依你的商規決定是否允許作廢（示例：已出貨/已完成不能作廢）
+		//		if (order.OrderStatus is "已出貨" or "已完成" or "已作廢")
+		//			return BadRequest("目前狀態不可作廢");
+
+		//		var history = new OrderStatusHistory
+		//		{
+		//			OrderId = order.OrderId,
+		//			FromStatus = order.OrderStatus,
+		//			ToStatus = "已作廢",
+		//			ChangedBy = /* TODO: 目前登入管理員ID */ null,
+		//			ChangedAt = DateTime.UtcNow,
+		//			Note = dto.Reason
+		//		};
+
+		//		order.OrderStatus = "已作廢";
+
+		//		_dbContext.OrderStatusHistories.Add(history);
+		//		await _dbContext.SaveChangesAsync();
+		//		return Ok();
+		//	}
+		//}
+
+		//public class VoidOrderDto
+		//{
+		//	public int OrderId { get; set; }
+		//	public string Reason { get; set; } = string.Empty;
+		//}
+
+
+		////#endregion
 	}
-
 }
+
+
+
 
