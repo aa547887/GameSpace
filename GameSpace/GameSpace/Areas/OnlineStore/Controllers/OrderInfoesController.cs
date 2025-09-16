@@ -19,32 +19,107 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			_dbContext = dbContext;
 		}
 
-        // GET: OnlineStore/OrderInfoes
-        public async Task<IActionResult> Index()
-        {
-            return View(await _dbContext.OrderInfos.ToListAsync());
-        }
+		// GET: OnlineStore/OrderInfoes
+		[HttpGet]
+		public IActionResult Index()
+		{
+			return View();
+		}
 
-        // GET: OnlineStore/OrderInfoes/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+		// DataTables 伺服器端資料
+		[HttpGet]
+		public async Task<IActionResult> List()
+		{
+			// 1) DataTables 參數
+			var draw = Request.Query["draw"].FirstOrDefault();
+			int start = int.TryParse(Request.Query["start"], out var s) ? s : 0;
+			int length = int.TryParse(Request.Query["length"], out var l) ? l : 10;
+			string searchValue = Request.Query["search[value]"].FirstOrDefault() ?? string.Empty;
 
-            var orderInfo = await _dbContext.OrderInfos
-                .FirstOrDefaultAsync(m => m.OrderId == id);
-            if (orderInfo == null)
-            {
-                return NotFound();
-            }
+			int sortColIndex = int.TryParse(Request.Query["order[0][column]"], out var c) ? c : 0;
+			string sortDir = Request.Query["order[0][dir]"].FirstOrDefault() ?? "asc";
+			string sortColKey = Request.Query[$"columns[{sortColIndex}][data]"].FirstOrDefault() ?? "orderDate";
 
-            return View(orderInfo);
-        }
+			var columnMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+			{
+				["orderCode"] = nameof(OrderInfo.OrderCode),
+				["userId"] = nameof(OrderInfo.UserId),
+				["orderDate"] = nameof(OrderInfo.OrderDate),
+				["orderStatus"] = nameof(OrderInfo.OrderStatus),
+				["paymentStatus"] = nameof(OrderInfo.PaymentStatus),
+				["orderTotal"] = nameof(OrderInfo.OrderTotal),
+				["paymentAt"] = nameof(OrderInfo.PaymentAt),
+				["shippedAt"] = nameof(OrderInfo.ShippedAt),
+				["completedAt"] = nameof(OrderInfo.CompletedAt),
+			};
 
-        // GET: OnlineStore/OrderInfoes/Create
-        public IActionResult Create()
+			columnMap.TryGetValue(sortColKey, out var efSortCol);
+			efSortCol ??= nameof(OrderInfo.OrderDate);
+
+			// 2) 基礎查詢
+			var query = _dbContext.OrderInfos.AsNoTracking();
+
+			int recordsTotal = await query.CountAsync();
+
+			// 3) 搜尋（注意可能為 null 的字串欄位）
+			if (!string.IsNullOrWhiteSpace(searchValue))
+			{
+				query = query.Where(o =>
+					o.OrderCode.ToString().Contains(searchValue) ||
+					o.UserId.ToString().Contains(searchValue) ||
+					(o.OrderStatus ?? "").Contains(searchValue) ||
+					(o.PaymentStatus ?? "").Contains(searchValue)
+				);
+			}
+
+			int recordsFiltered = await query.CountAsync();
+
+			// 4) 排序
+			query = sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
+				? query.OrderByDescending(e => EF.Property<object>(e, efSortCol))
+				: query.OrderBy(e => EF.Property<object>(e, efSortCol));
+
+			// 5) 分頁 + 投影
+			var data = await query
+				.Skip(start)
+				.Take(length)
+				.Select(o => new
+				{
+					o.OrderId,
+					o.OrderCode,
+					o.UserId,
+					o.OrderDate,
+					o.OrderStatus,
+					o.PaymentStatus,
+					o.OrderTotal,
+					o.PaymentAt,
+					o.ShippedAt,
+					o.CompletedAt
+				})
+				.ToListAsync();
+
+			// 6) 回傳 DataTables 格式
+			return Json(new
+			{
+				draw,
+				recordsTotal,
+				recordsFiltered,
+				data
+			});
+		}
+
+		[HttpGet]
+		public async Task<IActionResult> Details(int? id)
+		{
+			if (id == null) return NotFound();
+			var orderInfo = await _dbContext.OrderInfos.FirstOrDefaultAsync(m => m.OrderId == id);
+			if (orderInfo == null) return NotFound();
+			return View(orderInfo);
+		}
+
+
+		// GET: OnlineStore/OrderInfoes/Create
+		public IActionResult Create()
         {
             return View();
         }

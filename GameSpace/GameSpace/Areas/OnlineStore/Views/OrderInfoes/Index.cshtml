@@ -1,83 +1,73 @@
-﻿@model IEnumerable<GameSpace.Models.OrderInfo>
-
-@{
-    ViewData["Title"] = "Index";
+﻿@{
+    ViewData["Title"] = "訂單總覽";
 }
 
-<h1>訂單總覽</h1>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.OrderCode)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UserId)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.OrderDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.OrderStatus)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PaymentStatus)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.OrderTotal)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PaymentAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ShippedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CompletedAt)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrderCode)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UserId)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrderDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrderStatus)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PaymentStatus)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrderTotal)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PaymentAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ShippedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CompletedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.OrderId">編輯</a> |
-                <a asp-controller="OrderDetail" asp-action="Detail" asp-route-id="@item.OrderId">訂單明細</a> |
-                <a asp-action="Delete" asp-route-id="@item.OrderId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<h1 class="mb-3">訂單總覽</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table id="orders" class="table table-striped table-hover w-100">
+            <thead>
+                <tr>
+                    <th>訂單代碼</th>
+                    <th>會員ID</th>
+                    <th>下單時間</th>
+                    <th>訂單狀態</th>
+                    <th>付款狀態</th>
+                    <th>金額</th>
+                    <th>付款時間</th>
+                    <th>出貨時間</th>
+                    <th>完成時間</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(function () {
+        // **** 關鍵修正：Controller 名稱是 OrderInfoes ****
+        const listUrl = '@Url.Action("List", "OrderInfoes", new { area = "OnlineStore" })';
+
+        $('#orders').DataTable({
+            processing: true,
+            serverSide: true,
+            searching: true,
+            orderMulti: false,
+            order: [[2, 'desc']], // 以下單時間預設新到舊
+            ajax: { url: listUrl, type: 'GET' },
+            columns: [
+                { data: 'orderCode' },
+                { data: 'userId' },
+                { data: 'orderDate', render: v => v ? new Date(v).toLocaleString('zh-TW') : '' },
+                { data: 'orderStatus' },
+                { data: 'paymentStatus' },
+                {
+                    data: 'orderTotal',
+                    className: 'text-end',
+                    render: v => v != null ? Number(v).toLocaleString('zh-TW', { style: 'currency', currency: 'TWD' }) : ''
+                },
+                { data: 'paymentAt',  render: v => v ? new Date(v).toLocaleString('zh-TW') : '' },
+                { data: 'shippedAt',  render: v => v ? new Date(v).toLocaleString('zh-TW') : '' },
+                { data: 'completedAt',render: v => v ? new Date(v).toLocaleString('zh-TW') : '' },
+                {
+                    data: null, orderable: false, searchable: false,
+                    render: row => `
+                        <a href="@Url.Action("Detail", "OrderDetail", new { area = "OnlineStore" })/${row.orderId}"
+                           class="btn btn-outline-primary btn-sm">
+                           <i class="bi bi-info-circle"></i> 明細
+                        </a>`
+                }
+            ],
+            language: { url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/zh-HANT.json" }
+        });
+    });
+</script>

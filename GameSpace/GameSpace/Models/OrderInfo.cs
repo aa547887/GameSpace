@@ -12,7 +12,7 @@ public partial class OrderInfo
     public int UserId { get; set; }
 
     public DateTime OrderDate { get; set; }
-
+    
     public string OrderStatus { get; set; } = null!;
 
     public string PaymentStatus { get; set; } = null!;
