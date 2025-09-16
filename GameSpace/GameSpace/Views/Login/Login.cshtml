@@ -22,8 +22,49 @@
     </div>
 
     <button type="submit" class="btn btn-primary">登入</button>
+    <button type="button" id="fillDemoBtn" class="btn btn-outline-secondary">
+        最高管理者資料填入
+    </button>
+    <button type="button" id="secondRole" class="btn btn-outline-secondary">
+        使用者與論壇管理者資料填入
+    </button>
+    <button type="button" id="shoppingRole" class="btn btn-outline-secondary">
+        商城與購物管理者資料填入
+    </button>
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+         //最高管理者資料填入
+        (function () {
+            const btn = document.getElementById('fillDemoBtn');
+            btn?.addEventListener('click', function () {
+                const acc = document.getElementById('ManagerAccount');
+                const pwd = document.getElementById('ManagerPassword');
+                if (acc) acc.value = 'zhang_zhiming_01';
+                if (pwd) pwd.value = 'AdminPass001@@';
+                acc?.focus();
+            });
+
+          // 使用者與論壇管理者資料填入
+            const secondRoleBtn = document.getElementById('secondRole');
+            secondRoleBtn?.addEventListener('click', function () {
+                const acc = document.getElementById('ManagerAccount');
+                const pwd = document.getElementById('ManagerPassword');
+                if (acc) acc.value = 'li_xiaohua_02';
+                if (pwd) pwd.value = 'SecurePass002#';
+                acc?.focus();
+            });
+                      // 使用者與論壇管理者資料填入
+            const shoppingRoleBtn = document.getElementById('shoppingRole');
+            shoppingRoleBtn?.addEventListener('click', function () {
+                const acc = document.getElementById('ManagerAccount');
+                const pwd = document.getElementById('ManagerPassword');
+                if (acc) acc.value = 'wang_meiling_03';
+                if (pwd) pwd.value = 'StrongPwd003!'; 
+                acc?.focus();
+            });
+        })();
+    </script>
 }

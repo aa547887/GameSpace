@@ -2,19 +2,19 @@
 using GameSpace.Areas.social_hub.Services;
 using GameSpace.Data;
 using GameSpace.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
-
+// 權限服務的別名
+using IManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.IManagerPermissionService;
 // ---- 型別別名（避免方案裡若有重複介面/命名空間不一致，導致 DI 對不到）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
+using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
 using MuteFilterAlias = GameSpace.Areas.social_hub.Services.MuteFilter;
 using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.NotificationService;
-// 權限服務的別名
-using IManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.IManagerPermissionService;
-using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
 
 // ---------------------- 服務註冊 ----------------------
 // [保留] 頂層語句：只需要這一個 builder，請先刪除舊的 namespace Program/Main 結構
@@ -51,6 +51,7 @@ builder.Services.Configure<MuteFilterOptions>(o =>
 builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
 builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 builder.Services.AddScoped<IManagerPermissionServiceAlias, ManagerPermissionServiceAlias>();
+
 
 // [保留] SignalR
 builder.Services.AddSignalR();
@@ -168,6 +169,16 @@ app.UseRouting();
 
 app.UseSession();          // [順序確認] 要在 Auth 前
 app.UseAuthentication();   // 會同時支援 Identity 的 Cookie 與 AdminCookie
+app.Use(async (ctx, next) =>
+{
+	var admin = await ctx.AuthenticateAsync("AdminCookie");
+	if (admin.Succeeded && admin.Principal != null)
+	{
+		if (!(ctx.User?.Identity?.IsAuthenticated ?? false))
+			ctx.User = admin.Principal;
+	}
+	await next();
+});
 app.UseAuthorization();
 
 // [保留] 先 Areas 再 default

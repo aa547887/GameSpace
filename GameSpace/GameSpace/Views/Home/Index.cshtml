@@ -1,8 +1,20 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@{
+    // 這段放在 Home/Index.cshtml 最上面
+    var adminAuth = await Context.AuthenticateAsync("AdminCookie");
+    var adminPrincipal = adminAuth?.Principal;
+
+    bool isBackoffice =
+        (adminPrincipal?.Identity?.IsAuthenticated ?? false)
+        || (User?.HasClaim(c => c.Type == "IsManager" && c.Value == "true") ?? false);
+
+    Layout = isBackoffice ? "_LayoutAdmin" : "_Layout";
+    ViewData["Title"] = "首頁";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container py-4">
+    <h1 class="mb-3">歡迎來到 GameSpace</h1>
+    <p class="text-muted">這裡可以放你的首頁內容（前台/後台共用）。</p>
 </div>
+    
