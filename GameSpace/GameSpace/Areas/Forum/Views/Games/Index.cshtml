@@ -1,0 +1,48 @@
+﻿@model IEnumerable<GameSpace.Areas.Forum.Models.Game.GameListItemVm>
+@{
+    ViewData["Title"] = "遊戲清單";
+}
+
+<h2>遊戲清單</h2>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <input type="text" name="q" value="@ViewBag.Q" class="form-control" placeholder="搜尋名稱/中文名" />
+    </div>
+    <div class="col-auto">
+        <input type="text" name="genre" value="@ViewBag.Genre" class="form-control" placeholder="類型(MOBA/FPS)" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">查詢</button>
+        <a asp-action="Create" class="btn btn-success">新增</a>
+    </div>
+</form>
+
+<table class="table table-bordered table-sm">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>名稱</th>
+            <th>中文名</th>
+            <th>類型</th>
+            <th>建立時間</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var x in Model)
+        {
+            <tr>
+                <td>@x.GameId</td>
+                <td>@x.Name</td>
+                <td>@x.NameZh</td>
+                <td>@x.Genre</td>
+                <td>@(x.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@x.GameId" class="btn btn-sm btn-warning">編輯</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
