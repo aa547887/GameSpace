@@ -1,0 +1,136 @@
+﻿@model GameSpace.Areas.Admin.Controllers.MetricsController.MetricsIndexVm
+
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "指標清單 / 排行預覽（等權重）";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["msg"] != null)
+{
+    <div class="alert alert-info">@Html.Raw(TempData["msg"])</div>
+}
+
+<!-- 篩選區（沿用你原本的） -->
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select name="sourceId" class="form-select" asp-items="ViewBag.Sources">
+            <option value="" selected="@(ViewBag.SourceId == null ? "selected" : null)">全部來源</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <input class="form-control" type="text" name="q" value="@ViewBag.Q" placeholder="代碼/說明" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">查詢</button>
+        <a asp-action="Create" class="btn btn-success">新增</a>
+    </div>
+    <div class="d-flex gap-2 mb-3">
+        <a asp-area="Forum" asp-controller="Imports" asp-action="Defs" class="btn btn-outline-secondary">
+            匯入定義（Metrics/Mapping）
+        </a>
+        <a asp-area="Forum" asp-controller="Imports" asp-action="Daily" class="btn btn-outline-secondary">
+            匯入每日數據（JSON/Excel）
+        </a>
+    </div>
+</form>
+
+<div class="row g-4">
+    <!-- A. 指標清單（沿用你原來的表） -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Metrics 清單</h5>
+
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>來源</th>
+                            <th>代碼</th>
+                            <th>單位</th>
+                            <th>說明</th>
+                            <th>啟用</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var x in Model.List)
+                        {
+                            <tr>
+                                <td>@x.MetricId</td>
+                                <td>@x.SourceName (@x.SourceId)</td>
+                                <td>@x.Code</td>
+                                <td>@x.Unit</td>
+                                <td>@x.Description</td>
+                                <td>@(x.IsActive ? "✅" : "❌")</td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@x.MetricId" class="btn btn-sm btn-warning">編輯</a>
+                                    <form asp-action="ToggleActive" asp-route-id="@x.MetricId" method="post" style="display:inline">
+                                        <button class="btn btn-sm btn-secondary">啟用/停用</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- B. 排行預覽（等權重） -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">排行榜預覽（等權重）</h5>
+
+                <!-- 日期查詢（避免巢狀 form，獨立一個 GET） -->
+                <form method="get" class="row g-2 mb-3">
+                    <input type="hidden" name="sourceId" value="@ViewBag.SourceId" />
+                    <input type="hidden" name="q" value="@ViewBag.Q" />
+                    <div class="col-auto">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" value="@Model.TargetDate.ToString("yyyy-MM-dd")" class="form-control" />
+                    </div>
+                    <div class="col-auto align-self-end">
+                        <button class="btn btn-primary">預覽</button>
+                    </div>
+                </form>
+
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr><th>#</th><th>遊戲</th><th>Index</th></tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Top10.Any())
+                        {
+                            @foreach (var r in Model.Top10)
+                            {
+                                <tr>
+                                    <td>@r.Rank</td>
+                                    <td>@r.GameName</td>
+                                    <td>@r.Score</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-muted">這一天沒有可計算的數據或沒有啟用任何指標。</td></tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- 需要快照時再打 POST Recompute（現在等權重預覽為主） -->
+                @* 
+                <form asp-action="Recompute" method="post" class="mt-2">
+                    <input type="hidden" name="date" value="@Model.TargetDate.ToString("yyyy-MM-dd")" />
+                    <button class="btn btn-warning">重算並存快照</button>
+                </form>
+                *@
+
+            </div>
+        </div>
+    </div>
+</div>
