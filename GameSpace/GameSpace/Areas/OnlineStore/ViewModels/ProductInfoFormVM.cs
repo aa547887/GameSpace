@@ -12,112 +12,122 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 	/// - 將 ProductCreatedAt / UpdatedAt 設為 nullable，支援 Razor 的 ?.ToString(...)
 	/// - Weight 為 string（符合你的 DB nvarchar(50)）
 	/// </summary>
-	public class ProductInfoFormVM : IValidatableObject
+
+
+
+	public class ProductInfoFormVM
 	{
-		// ========== 基本 Info ==========
+		// ========= 基本資料 (Info) =========
 		public int ProductId { get; set; }
 
-		[Display(Name = "商品名稱")]
-		[Required(ErrorMessage = "請輸入商品名稱")]
-		[StringLength(200)]
+		[Display(Name = "商品名稱"), Required, StringLength(200)]
 		public string ProductName { get; set; } = "";
 
 		/// <summary>game / nogame</summary>
-		[Display(Name = "種類")]
-		[Required]
+		[Display(Name = "類別"), Required, StringLength(200)]
 		public string ProductType { get; set; } = "game";
 
-		[Display(Name = "價格")]
-		[Range(0, 999999999, ErrorMessage = "價格不得為負數")]
+		[Display(Name = "售價"), Range(0, 999999999)]
 		public decimal Price { get; set; }
 
-		[Display(Name = "幣別")]
-		[StringLength(10)]
+		[Display(Name = "幣別"), StringLength(10)]
 		public string CurrencyCode { get; set; } = "TWD";
 
-		[Display(Name = "清單存量(Info)")]
+		[Display(Name = "存量(Info)")]
 		public int? ShipmentQuantity { get; set; }
 
 		[Display(Name = "上架")]
 		public bool IsActive { get; set; } = true;
 
-		// ========== Detail 共用 ==========
-		[Display(Name = "供應商")]
-		public int? SupplierId { get; set; }     // ★ 單數：和控制器一致
+		// 顯示用（非必填）
+		public string? ProductCode { get; set; }
+		public DateTime ProductCreatedAt { get; set; }
+		public int? ProductCreatedBy { get; set; }
+		public DateTime? ProductUpdatedAt { get; set; }
+		public int? ProductUpdatedBy { get; set; }
 
-		// ========== Game 專用 ==========
-		[Display(Name = "平台 Id")]
+		// ========= 共同：供應商 =========
+		[Display(Name = "供應商")]
+		public int? SupplierId { get; set; }
+
+		// ========= Game 專用欄位 =========
+		[Display(Name = "平台ID")]
 		public int? PlatformId { get; set; }
 
 		[Display(Name = "平台名稱")]
-		[StringLength(100)]
 		public string? PlatformName { get; set; }
 
-		[Display(Name = "遊戲類型")]
-		[StringLength(200)]
+		[Display(Name = "遊戲種類")]
 		public string? GameType { get; set; }
 
 		[Display(Name = "下載連結")]
-		[StringLength(500)]
 		public string? DownloadLink { get; set; }
 
-		[Display(Name = "商品描述（遊戲）")]
+		[Display(Name = "描述( Game )")]
 		public string? GameProductDescription { get; set; }
 
-		// ========== Non-game 專用 ==========
-		[Display(Name = "周邊分類")]
+		// ========= Non-Game 專用欄位 =========
+		[Display(Name = "分類")]
 		public int? MerchTypeId { get; set; }
 
-		[Display(Name = "數位序號")]
-		[StringLength(100)]
+		[Display(Name = "數位代碼")]
 		public string? DigitalCode { get; set; }
 
-		[Display(Name = "尺寸")][StringLength(50)] public string? Size { get; set; }
-		[Display(Name = "顏色")][StringLength(50)] public string? Color { get; set; }
+		[Display(Name = "尺寸")]
+		public string? Size { get; set; }
 
-		/// <summary>字串型別，符合 DB nvarchar(50)</summary>
+		[Display(Name = "顏色")]
+		public string? Color { get; set; }
+
 		[Display(Name = "重量")]
-		[StringLength(50)]
 		public string? Weight { get; set; }
 
-		[Display(Name = "尺寸(長寬高)")]
-		[StringLength(100)]
+		[Display(Name = "尺寸(mm/cm)")]
 		public string? Dimensions { get; set; }
 
 		[Display(Name = "材質")]
-		[StringLength(50)]
 		public string? Material { get; set; }
 
 		[Display(Name = "庫存(Detail)")]
 		public int? StockQuantity { get; set; }
 
-		[Display(Name = "商品描述（周邊）")]
+		[Display(Name = "描述( Non-Game )")]
 		public string? OtherProductDescription { get; set; }
 
-        // ★ 新增：用來接 ImgBB 的多筆網址
-        public IEnumerable<string>? NewImageUrls { get; set; }   // ImgBB 等外部 URL
+		// ========= 圖片（ImgBB/外部連結） =========
+		/// <summary>
+		/// ★ ImgBB / 外部 URL 多筆：前端每新增一筆就 append 一個
+		/// &lt;input type="hidden" name="NewImageUrls" value="..." /&gt;
+		/// 建議使用 List 以確保 MVC 穩定綁定。
+		/// </summary>
+		[Display(Name = "圖片(外部連結)")]
+		public List<string>? NewImageUrls { get; set; }
 
-        // ========== 圖片上傳 / 舊圖 ==========
-        /// <summary>多檔上傳</summary>
-        [Display(Name = "上傳圖片")]
+		// ========= 圖片上傳 / 舊圖 =========
+		/// <summary>（如未使用直接對 ImgBB 上傳，可保留不使用）</summary>
+		[Display(Name = "上傳圖片")]
 		public IFormFile[]? Images { get; set; }
 
-        /// <summary>編輯時顯示舊圖 + 是否刪除</summary>
-        public List<ExistingImageItem> ExistingImages { get; set; } = new();
+		/// <summary>編輯時顯示舊圖 + 是否刪除</summary>
+		public List<ExistingImageItem> ExistingImages { get; set; } = new();
 
-        public class ExistingImageItem
+		public class ExistingImageItem
 		{
-			public int ImageId { get; set; }      // 對應 ProductImage.ProductimgId
+			public int ImageId { get; set; }                 // 對應 ProductImage.ProductimgId
 			public string Url { get; set; } = "";
 			public string? Alt { get; set; }
-			public bool Remove { get; set; } = false;    // 是否要刪除
-        }
+			public bool Remove { get; set; } = false;        // 是否要刪除
+		}
 
-		// ========== 系統資訊（唯讀顯示用） ==========
-		public DateTime? ProductCreatedAt { get; set; }   // 設 nullable 讓 Razor 可用 ?.
-		public int? ProductCreatedBy { get; set; }
-		public DateTime? ProductUpdatedAt { get; set; }   // 本來就可能為 null
-		public int? ProductUpdatedBy { get; set; }
+		// ========= 便利屬性 =========
+		public bool IsCreate => ProductId == 0;
+		public bool IsGame => string.Equals(ProductType, "game", StringComparison.OrdinalIgnoreCase);
+
+		//// ========== 系統資訊（唯讀顯示用） ==========
+		//public DateTime? ProductCreatedAt { get; set; }   // 設 nullable 讓 Razor 可用 ?.
+		//public int? ProductCreatedBy { get; set; }
+		//public DateTime? ProductUpdatedAt { get; set; }   // 本來就可能為 null
+		//public int? ProductUpdatedBy { get; set; }
 
 		// ========== 跨欄位驗證 ==========
 		public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -139,4 +149,7 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 			}
 		}
 	}
+
+
+
 }

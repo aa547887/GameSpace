@@ -30,7 +30,8 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         // ------ Detail (Game) ------
         public int? PlatformId { get; set; }
         public string? PlatformName { get; set; }
-        public string? GameType { get; set; }
+		
+		public string? GameType { get; set; }
         public string? DownloadLink { get; set; }
         public string? GameDescription { get; set; }
 
@@ -55,9 +56,9 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
             public string? Alt { get; set; }
         }
 
-        // ------ Last Log (optional) ------
-        public LastLogVM? LastLogs { get; set; }
-        public class LastLogVM
+		 //------ Last Log (optional) 異動紀錄（顯示前幾筆）----
+		public List<LastLogVM> LastLogs { get; set; } = new();
+		public class LastLogVM
         {
             public long LogId { get; set; }
             public string ActionType { get; set; } = "";

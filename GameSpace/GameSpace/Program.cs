@@ -63,6 +63,12 @@ namespace GameSpace
 			// SignalR
 			builder.Services.AddSignalR();
 
+
+			//商城圖片API (使用ImgBB) (可能會用到 如果伺服器上傳限制：如需調高 Kestrel/ IIS 限制)
+			//builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 104857600); // 100 MB
+
+
+
 			var app = builder.Build();
 
 			// 啟動時預載詞庫（失敗不擋站）
