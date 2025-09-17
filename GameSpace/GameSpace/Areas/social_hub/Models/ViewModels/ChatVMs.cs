@@ -1,4 +1,7 @@
-﻿namespace GameSpace.Areas.social_hub.Models.ViewModels
+﻿using System;
+using System.Collections.Generic;
+
+namespace GameSpace.Areas.social_hub.Models.ViewModels
 {
 	public class ChatHomeVM
 	{
@@ -35,5 +38,12 @@
 		public bool IsMine { get; set; }
 		public bool IsRead { get; set; }
 		public DateTime? ReadAt { get; set; }
+	}
+
+	// ★ 新增：供 ChatController.With(...) 使用
+	public class ChatThreadVM
+	{
+		public int OtherId { get; set; }
+		public List<SimpleChatMessageVM> Messages { get; set; } = new();
 	}
 }
