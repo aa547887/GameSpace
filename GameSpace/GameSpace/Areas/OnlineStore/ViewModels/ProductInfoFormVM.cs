@@ -94,21 +94,24 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 		[Display(Name = "商品描述（周邊）")]
 		public string? OtherProductDescription { get; set; }
 
-		// ========== 圖片上傳 / 舊圖 ==========
-		/// <summary>多檔上傳</summary>
-		[Display(Name = "上傳圖片")]
+        // ★ 新增：用來接 ImgBB 的多筆網址
+        public IEnumerable<string>? NewImageUrls { get; set; }   // ImgBB 等外部 URL
+
+        // ========== 圖片上傳 / 舊圖 ==========
+        /// <summary>多檔上傳</summary>
+        [Display(Name = "上傳圖片")]
 		public IFormFile[]? Images { get; set; }
 
-		/// <summary>編輯時顯示舊圖 + 是否刪除</summary>
-		public List<ExistingImageItem>? ExistingImages { get; set; }
+        /// <summary>編輯時顯示舊圖 + 是否刪除</summary>
+        public List<ExistingImageItem> ExistingImages { get; set; } = new();
 
-		public class ExistingImageItem
+        public class ExistingImageItem
 		{
 			public int ImageId { get; set; }      // 對應 ProductImage.ProductimgId
 			public string Url { get; set; } = "";
 			public string? Alt { get; set; }
-			public bool Remove { get; set; }       // 是否要刪除
-		}
+			public bool Remove { get; set; } = false;    // 是否要刪除
+        }
 
 		// ========== 系統資訊（唯讀顯示用） ==========
 		public DateTime? ProductCreatedAt { get; set; }   // 設 nullable 讓 Razor 可用 ?.

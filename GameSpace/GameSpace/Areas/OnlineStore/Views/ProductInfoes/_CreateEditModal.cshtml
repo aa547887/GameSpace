@@ -1,219 +1,352 @@
-﻿@* Create / Edit 共用；中文標籤＋驗證；asp-action  *@ 
-@*會由呼叫端決定（我們用同一個 Partial，靠 Model.ProductId 是否為 0 決定要打哪個 action）。*@
+﻿@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
+@{
+    var isCreate = Model.ProductId == 0;
+    var title = isCreate ? "新增商品" : $"編輯商品 - #{Model.ProductId}";
+    var suppliers = (IEnumerable<dynamic>?)ViewBag.SupplierList ?? Enumerable.Empty<dynamic>();
+    var platforms = (IEnumerable<dynamic>?)ViewBag.PlatformList ?? Enumerable.Empty<dynamic>();
+    var merchTypes = (IEnumerable<dynamic>?)ViewBag.MerchTypeList ?? Enumerable.Empty<dynamic>();
 
-@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
-
-@if (ViewBag.ModelErrors != null)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var err in ViewBag.ModelErrors)
-            {
-                <li><strong>@err.Key</strong>：
-                    @foreach (var msg in err.Value)
-                    {
-                        @msg <br />
-                    }
-                </li>
-            }
-        </ul>
-    </div>
+    var sizeList = (IEnumerable<string>?)ViewBag.SizeList ?? Enumerable.Empty<string>();
+    var colorList = (IEnumerable<string>?)ViewBag.ColorList ?? Enumerable.Empty<string>();
+    var weightList = (IEnumerable<string>?)ViewBag.WeightList ?? Enumerable.Empty<string>();
+    var dimList = (IEnumerable<string>?)ViewBag.DimensionsList ?? Enumerable.Empty<string>();
+    var materialList = (IEnumerable<string>?)ViewBag.MaterialList ?? Enumerable.Empty<string>();
 }
 
-<div class="modal-dialog modal-dialog-centered modal-lg">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title">@((Model.ProductId == 0) ? "新增商品" : "編輯商品")</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-    </div>
-
-    <form asp-area="OnlineStore" asp-controller="ProductInfoes"
-          asp-action="@(Model.ProductId==0 ? "Create" : "Edit")"
-          method="post" class="js-ajax-form" id="createEditForm"
-          enctype="multipart/form-data">
-      @Html.AntiForgeryToken()
-      @if (Model.ProductId != 0)
-      { <input type="hidden" asp-for="ProductId" /> }
-
-      <div class="modal-body">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label asp-for="ProductName" class="form-label"></label>
-            <input asp-for="ProductName" class="form-control" />
-            <span asp-validation-for="ProductName" class="text-danger small"></span>
-          </div>
-          <div class="col-md-3">
-            <label asp-for="ProductType" class="form-label"></label>
-            <select asp-for="ProductType" class="form-select" id="ddlType">
-              <option value="game">game（下載）</option>
-              <option value="nogame">nogame（周邊）</option>
-            </select>
-            <span asp-validation-for="ProductType" class="text-danger small"></span>
-          </div>
-          <div class="col-md-3 form-check pt-4 ms-2">
-            <input class="form-check-input" asp-for="IsActive" />
-            <label class="form-check-label" asp-for="IsActive"></label>
-          </div>
-
-          <div class="col-md-4">
-            <label asp-for="Price" class="form-label"></label>
-            <input asp-for="Price" class="form-control" />
-            <span asp-validation-for="Price" class="text-danger small"></span>
-          </div>
-          <div class="col-md-4">
-            <label asp-for="CurrencyCode" class="form-label"></label>
-            <select asp-for="CurrencyCode" class="form-select">
-              <option>TWD</option><option>USD</option><option>JPY</option><option>CNY</option>
-            </select>
-            <span asp-validation-for="CurrencyCode" class="text-danger small"></span>
-          </div>
-          <div class="col-md-4">
-            <label asp-for="ShipmentQuantity" class="form-label"></label>
-            <input asp-for="ShipmentQuantity" class="form-control" />
-            <div class="form-text">game 請填 0 或留空；nogame 必填≥0</div>
-            <span asp-validation-for="ShipmentQuantity" class="text-danger small"></span>
-          </div>
-
-          <div class="col-12">
-            <hr class="my-2" />
-            <h6 class="mb-2">Detail</h6>
-          </div>
-
-          <!-- 共用 -->
-          <div class="col-md-4">
-            <label asp-for="SupplierId" class="form-label"></label>
-            <input asp-for="SupplierId" class="form-control" />
-            <span asp-validation-for="SupplierId" class="text-danger small"></span>
-          </div>
-
-          <!-- game 區塊 -->
-          <div id="sec-game" class="row g-3">
-            <div class="col-md-4">
-              <label asp-for="PlatformId" class="form-label"></label>
-              <input asp-for="PlatformId" class="form-control" />
-              <span asp-validation-for="PlatformId" class="text-danger small"></span>
-            </div>
-            <div class="col-md-4">
-              <label asp-for="PlatformName" class="form-label"></label>
-              <input asp-for="PlatformName" class="form-control" />
-              <span asp-validation-for="PlatformName" class="text-danger small"></span>
-            </div>
-            <div class="col-md-4">
-              <label asp-for="GameType" class="form-label"></label>
-              <input asp-for="GameType" class="form-control" />
-            </div>
-            <div class="col-12">
-              <label asp-for="DownloadLink" class="form-label"></label>
-              <input asp-for="DownloadLink" class="form-control" />
-              <span asp-validation-for="DownloadLink" class="text-danger small"></span>
-            </div>
-          </div>
-
-          <!-- nogame 區塊 -->
-          <div id="sec-nogame" class="row g-3">
-            <div class="col-md-4">
-              <label asp-for="MerchTypeId" class="form-label"></label>
-              <input asp-for="MerchTypeId" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="DigitalCode" class="form-label"></label>
-              <input asp-for="DigitalCode" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="Size" class="form-label"></label>
-              <input asp-for="Size" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="Color" class="form-label"></label>
-              <input asp-for="Color" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="Weight" class="form-label"></label>
-              <input asp-for="Weight" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="Dimensions" class="form-label"></label>
-              <input asp-for="Dimensions" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="Material" class="form-label"></label>
-              <input asp-for="Material" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label asp-for="StockQuantity" class="form-label"></label>
-              <input asp-for="StockQuantity" class="form-control" />
-              <span class="form-text">預設會帶 ShipmentQuantity</span>
-            </div>
-          </div>
-
-          <input asp-for="Images" type="file" class="form-control" multiple accept="image/*" />
-          <div class="col-12">
-            <hr class="my-2" />
-            <label class="form-label">商品圖片（可多選上傳）</label>
-            <input type="file" name="Images" class="form-control" multiple accept="image/*" />
-          </div>
-
-          @* 編輯時顯示舊圖與勾選刪除 *@
-          @if (Model.ProductId != 0 && Model.ExistingImages?.Any() == true)
-          {
-              <div class="col-12">
-                <div class="row g-2">
-                  @for (int i = 0; i < Model.ExistingImages.Count; i++)
-                  {
-                      <div class="col-md-3">
-                        <div class="card">
-                          <img src="@Model.ExistingImages[i].Url" class="card-img-top" alt="@Model.ExistingImages[i].Alt" />
-                          <div class="card-body p-2">
-                            <input type="hidden" name="ExistingImages[@i].ImageId" value="@Model.ExistingImages[i].ImageId" />
-                            <input type="hidden" name="ExistingImages[@i].Url" value="@Model.ExistingImages[i].Url" />
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" name="ExistingImages[@i].Remove" id="imgrm_@i" />
-                              <label for="imgrm_@i" class="form-check-label small">刪除此圖片</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                  }
-                </div>
-              </div>
-          }
-
-          @if (Model.ProductId != 0)
-          {
-            <div class="small text-muted">
-              建立：@Model.ProductCreatedAt?.ToString("yyyy/MM/dd HH:mm")（@Model.ProductCreatedBy）<br />
-              更新：@Model.ProductUpdatedAt?.ToString("yyyy/MM/dd HH:mm")（@Model.ProductUpdatedBy）
-            </div>
-          }
+<div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">@title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-        <button type="submit" class="btn btn-primary">儲存</button>
-      </div>
-    </form>
+        <form asp-area="OnlineStore" asp-controller="ProductInfoes" asp-action="@(isCreate ? "Create" : "Edit")"
+              method="post" enctype="multipart/form-data" class="js-ajax-form">
+            @Html.AntiForgeryToken()
+            @if (!isCreate)
+            {
+                <input type="hidden" asp-for="ProductId" />
+            }
 
-    <partial name="_ValidationScriptsPartial" />
-  </div>
+            <div class="modal-body">
+                <h6 class="mb-2">基本資訊（Info）</h6>
+                <div class="row g-3">
+                    <div class="col-lg-4">
+                        <div class="form-floating">
+                            <input asp-for="ProductName" class="form-control" />
+                            <label asp-for="ProductName">名稱</label>
+                            <span class="text-danger" asp-validation-for="ProductName"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3">
+                        <div class="form-floating">
+                            <select asp-for="ProductType" class="form-select" id="ddlType">
+                                <option value="game" selected="@(Model.ProductType == "game")">game</option>
+                                <option value="nogame" selected="@(Model.ProductType == "nogame")">nogame</option>
+                            </select>
+                            <label>類別</label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-2">
+                        <div class="form-floating">
+                            <input asp-for="Price" class="form-control" />
+                            <label asp-for="Price">價格</label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-1">
+                        <div class="form-floating">
+                            <input asp-for="CurrencyCode" class="form-control" />
+                            <label asp-for="CurrencyCode">幣別</label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-2">
+                        <div class="form-floating">
+                            <input asp-for="ShipmentQuantity" class="form-control" />
+                            <label asp-for="ShipmentQuantity">存量（Info）</label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <label class="form-label">供應商（SupplierId）</label>
+                        <div class="input-group">
+                            <select asp-for="SupplierId" class="form-select" id="ddlSupplier">
+                                <option value="">請選擇</option>
+                                @foreach (var s in suppliers)
+                                {
+                                    <option value="@s.SupplierId" selected="@(Model.SupplierId == (int?)s.SupplierId ? "selected" : null)">
+                                        @s.SupplierName
+                                    </option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="btnQuickAddSupplier">
+                                <i class="bi bi-plus-circle"></i> 新增供應商
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 d-flex align-items-center">
+                        <div class="form-check ms-lg-3 mt-3 mt-lg-0">
+                            <input class="form-check-input" asp-for="IsActive" id="chkActive">
+                            <label class="form-check-label" for="chkActive">上架</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3" />
+
+                <!-- Game 區 -->
+                <h6 class="mb-2">Game 區塊（ProductType = game 時可編輯）</h6>
+                <fieldset id="secGame" class="border rounded p-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">平台 PlatformId（必選）</label>
+                            <select asp-for="PlatformId" class="form-select" id="ddlPlatform">
+                                <option value="">— 必選 —</option>
+                                @foreach (var p in platforms)
+                                {
+                                    <option value="@p.PlatformId" data-name="@p.PlatformName"
+                                            selected="@(Model.PlatformId == (int?)p.PlatformId ? "selected" : null)">
+                                        @p.PlatformId
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="PlatformName" class="form-control" id="txtPlatformName" />
+                                <label asp-for="PlatformName">平台名稱 PlatformName</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="GameType" class="form-control" />
+                                <label asp-for="GameType">遊戲類型 GameType</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="DownloadLink" class="form-control" />
+                                <label asp-for="DownloadLink">下載連結</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea asp-for="GameProductDescription" class="form-control" style="height:100px"></textarea>
+                                <label asp-for="GameProductDescription">說明（Game）</label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <hr class="my-3" />
+
+                <!-- Non-Game 區 -->
+                <h6 class="mb-2">Non-Game 區塊（ProductType = nogame 時可編輯）</h6>
+                <fieldset id="secOther" class="border rounded p-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <select asp-for="MerchTypeId" class="form-select">
+                                    <option value="">請選擇</option>
+                                    @foreach (var m in merchTypes)
+                                    {
+                                        <option value="@m.MerchTypeId" selected="@(Model.MerchTypeId == (int?)m.MerchTypeId ? "selected" : null)">
+                                            @m.MerchTypeName
+                                        </option>
+                                    }
+                                </select>
+                                <label>周邊分類 MerchTypeId</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="DigitalCode" class="form-control" />
+                                <label asp-for="DigitalCode">數位代碼</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="Size" class="form-control" list="sizeList" />
+                                <label asp-for="Size">尺寸</label>
+                                <datalist id="sizeList">
+                                    @foreach (var s in sizeList)
+                                    {
+                                        <option value="@s"></option>
+                                    }
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="Color" class="form-control" list="colorList" />
+                                <label asp-for="Color">顏色</label>
+                                <datalist id="colorList">
+                                    @foreach (var c in colorList)
+                                    {
+                                        <option value="@c"></option>
+                                    }
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="Weight" class="form-control" list="weightList" />
+                                <label asp-for="Weight">重量</label>
+                                <datalist id="weightList">
+                                    @foreach (var w in weightList)
+                                    {
+                                        <option value="@w"></option>
+                                    }
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="Dimensions" class="form-control" list="dimList" />
+                                <label asp-for="Dimensions">尺寸（mm/cm）</label>
+                                <datalist id="dimList">
+                                    @foreach (var d in dimList)
+                                    {
+                                        <option value="@d"></option>
+                                    }
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="Material" class="form-control" list="materialList" />
+                                <label asp-for="Material">材質</label>
+                                <datalist id="materialList">
+                                    @foreach (var m in materialList)
+                                    {
+                                        <option value="@m"></option>
+                                    }
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input asp-for="StockQuantity" class="form-control" />
+                                <label asp-for="StockQuantity">庫存（Detail）</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea asp-for="OtherProductDescription" class="form-control" style="height:100px"></textarea>
+                                <label asp-for="OtherProductDescription">說明（Non-Game）</label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <hr class="my-3" />
+
+                <!-- 圖片（ImgBB 多張：僅填網址） -->
+                <h6 class="mb-2">圖片（填 ImgBB 連結，可多張）</h6>
+                <div id="imgUrlList" class="vstack gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text">URL</span>
+                        <input name="NewImageUrls" class="form-control" placeholder="https://i.imgbb.com/..." />
+                        <button type="button" class="btn btn-outline-secondary btnAddUrl"><i class="bi bi-plus-circle"></i></button>
+                    </div>
+                </div>
+
+                @if (Model.ExistingImages != null && Model.ExistingImages.Count > 0)
+                {
+                    <div class="mt-3">
+                        <div class="small text-muted mb-1">現有圖片（勾選刪除）</div>
+                        <div class="row g-2">
+                            @for (int i = 0; i < Model.ExistingImages.Count; i++)
+                            {
+                                <div class="col-6 col-md-4 d-flex align-items-center gap-2">
+                                    <input type="hidden" name="ExistingImages[@i].ImageId" value="@Model.ExistingImages[i].ImageId" />
+                                    <input class="form-check-input mt-0" type="checkbox" name="ExistingImages[@i].Remove" />
+                                    <img src="@Model.ExistingImages[i].Url" class="rounded border" style="width:56px;height:56px;object-fit:cover">
+                                    <a href="@Model.ExistingImages[i].Url" target="_blank" class="small text-truncate">@Model.ExistingImages[i].Url</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">儲存</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-@section Scripts{
 <script>
-(function(){
-  const ddl = document.getElementById('ddlType');
-  const g = document.getElementById('sec-game');
-  const n = document.getElementById('sec-nogame');
-  function toggle(){
-    const t = ddl.value;
-    g.style.display = (t === 'game') ? '' : 'none';
-    n.style.display = (t === 'nogame') ? '' : 'none';
-  }
-  ddl?.addEventListener('change', toggle);
-  toggle();
-})();
-</script>
-}
+    (() => {
+      const modal = document.currentScript.closest('.modal-content');
+      const form  = modal.querySelector('form');
 
+      // 類別切換：灰階禁用
+      const ddlType = form.querySelector('#ddlType');
+      const fsGame  = form.querySelector('#secGame');
+      const fsOther = form.querySelector('#secOther');
+      function toggleSections(){
+        const isGame = ddlType.value === 'game';
+        fsGame.disabled  = !isGame; fsGame.style.opacity  = fsGame.disabled  ? .6 : 1;
+        fsOther.disabled =  isGame; fsOther.style.opacity = fsOther.disabled ? .6 : 1;
+      }
+      ddlType.addEventListener('change', toggleSections);
+      toggleSections();
+
+      // 平台選擇 → 自動帶入名稱
+      const ddlPlatform = form.querySelector('#ddlPlatform');
+      const txtPlatformName = form.querySelector('#txtPlatformName');
+      ddlPlatform?.addEventListener('change', () => {
+        const opt = ddlPlatform.selectedOptions[0];
+        if(!opt) return;
+        const name = opt.getAttribute('data-name') || '';
+        if(!txtPlatformName.value) txtPlatformName.value = name;
+      });
+
+      // 快速新增供應商
+      form.querySelector('#btnQuickAddSupplier')?.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const name = prompt('輸入供應商名稱：'); if(!name) return;
+        const fd = new FormData();
+        fd.append('name', name.trim());
+        fd.append('__RequestVerificationToken', form.querySelector('[name="__RequestVerificationToken"]').value);
+        const res = await fetch('@Url.Action("QuickCreateSupplier", "ProductInfoes", new { area = "OnlineStore" })', {
+          method:'POST', credentials:'include', body: fd
+        });
+        const json = await res.json();
+        if(json.ok){
+          const sel = form.querySelector('#ddlSupplier');
+          const opt = document.createElement('option');
+          opt.value = json.id; opt.textContent = json.name;
+          sel.appendChild(opt); sel.value = String(json.id);
+        }else{
+          alert(json.msg || '新增供應商失敗');
+        }
+      });
+
+      // ImgBB 連結：動態新增列
+      const list = form.querySelector('#imgUrlList');
+      list.addEventListener('click', e=>{
+        const btn = e.target.closest('.btnAddUrl'); if(!btn) return;
+        const row = document.createElement('div');
+        row.className = 'input-group mt-2';
+        row.innerHTML = `
+          <span class="input-group-text">URL</span>
+          <input name="NewImageUrls" class="form-control" placeholder="https://i.imgbb.com/...">
+          <button type="button" class="btn btn-outline-danger btnDelUrl"><i class="bi bi-dash-circle"></i></button>`;
+        list.appendChild(row);
+      });
+      list.addEventListener('click', e=>{
+        const btn = e.target.closest('.btnDelUrl'); if(!btn) return;
+        btn.closest('.input-group')?.remove();
+      });
+    })();
+</script>

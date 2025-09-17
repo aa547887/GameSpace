@@ -1,0 +1,32 @@
+﻿@model IEnumerable<dynamic>
+<div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">全部圖片 - #@ViewBag.ProductId</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            @if (Model.Any())
+            {
+                <div class="row g-2">
+                    @foreach (var i in Model)
+                    {
+                        <div class="col-6 col-md-4">
+                            <a href="@i.ProductimgUrl" target="_blank" class="d-block">
+                                <img class="img-fluid rounded border" src="@i.ProductimgUrl" alt="@i.ProductimgAltText" />
+                            </a>
+                            <div class="small text-muted mt-1">@(((DateTime?)i.ProductimgUpdatedAt)?.ToString("yyyy/MM/dd HH:mm"))</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-muted">尚無圖片</div>
+            }
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">關閉</button>
+        </div>
+    </div>
+</div>

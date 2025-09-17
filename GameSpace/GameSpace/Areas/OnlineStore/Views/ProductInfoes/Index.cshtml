@@ -1,25 +1,16 @@
 ﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.ProductIndexRowVM>
 @{
-    // 既有回填
     var keyword = (string)(ViewBag.Keyword ?? "");
     var currentType = (string?)ViewBag.Type;
-    int? qtyMin = (int?)ViewBag.QtyMin;
-    int? qtyMax = (int?)ViewBag.QtyMax;
     var status = (string)(ViewBag.Status ?? "active");
     var createdFrom = (string?)ViewBag.CreatedFrom;
     var createdTo = (string?)ViewBag.CreatedTo;
     var hasLog = (string?)ViewBag.HasLog;
 
-    // 進階 Detail 篩選（僅在「寬條／卡片」顯示；用同一批 QueryString）
     int? supplierId = (int?)ViewBag.SupplierId;
     int? platformId = (int?)ViewBag.PlatformId;
     int? merchTypeId = (int?)ViewBag.MerchTypeId;
     string gameType = (string)(ViewBag.GameType ?? "");
-    string size = (string)(ViewBag.Size ?? "");
-    string color = (string)(ViewBag.Color ?? "");
-    string material = (string)(ViewBag.Material ?? "");
-    int? dqtyMin = (int?)ViewBag.DQtyMin;
-    int? dqtyMax = (int?)ViewBag.DQtyMax;
 
     var suppliers = (IEnumerable<dynamic>?)ViewBag.SupplierList ?? Enumerable.Empty<dynamic>();
     var merchTypes = (IEnumerable<dynamic>?)ViewBag.MerchTypeList ?? Enumerable.Empty<dynamic>();
@@ -30,51 +21,51 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
-        /* 外框卡片：陰影＋圓角 */
         .page-card {
             border: 0;
             border-radius: 1rem;
             box-shadow: 0 6px 18px rgba(0,0,0,.06);
-            overflow: hidden;
+            overflow: hidden
         }
-        /* 表格容器：格線＋圓角 */
+
         .table-wrap {
             border-radius: .75rem;
             overflow: hidden;
-            border: 1px solid #e9ecef;
+            border: 1px solid #e9ecef
         }
 
         .table {
-            margin-bottom: 0;
+            margin-bottom: 0
         }
 
             .table thead th {
                 background: #f8fafc;
+                vertical-align: middle
             }
 
         .table-striped > tbody > tr:nth-of-type(odd) > * {
-            background-color: rgba(0,0,0,.02);
+            background-color: rgba(0,0,0,.02)
         }
-        /* DataTables 分頁置底置中 */
+
         .dataTables_wrapper .dataTables_paginate {
             float: none !important;
-            text-align: center !important;
+            text-align: center !important
         }
 
             .dataTables_wrapper .dataTables_paginate .pagination {
-                justify-content: center !important;
+                justify-content: center !important
             }
-        /* 篩選列緊密 */
+
         .filter-row .form-label {
             font-size: .8rem;
             color: #6c757d;
-            margin-bottom: .25rem;
+            margin-bottom: .25rem
         }
 
         .filter-row .form-control, .filter-row .form-select {
-            height: 38px;
+            height: 38px
         }
-        /* 連結樣式 */
+
         .link-quiet {
             color: var(--bs-primary);
             text-decoration: none
@@ -83,18 +74,18 @@
             .link-quiet:hover {
                 text-decoration: underline
             }
-        /* 操作列圖示 */
+
         .action-icons a {
             margin-left: .5rem;
             font-size: 1.1rem
         }
-        /* Toast 置中 */
+
         .toast-container-center {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1080;
+            z-index: 1080
         }
     </style>
 }
@@ -104,25 +95,22 @@
 <div class="card page-card mb-4">
     <div class="card-body">
 
-        <!-- 工具列：靠左（檢視切換 + 新增） -->
+        <!-- 檢視切換 -->
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
             <div class="d-flex gap-2">
-                <button id="btnShowTable" type="button" class="btn btn-outline-secondary"><i class="bi bi-table"></i>表單</button>
-                <button id="btnShowStrips" type="button" class="btn btn-outline-secondary"><i class="bi bi-view-stacked"></i> 寬條清單</button>
-                <button id="btnShowCards" type="button" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap"></i> 圖示</button>
-                <a href="javascript:;" class="btn btn-primary ms-2"
+                <button id="btnShowTable" type="button" class="btn btn-outline-secondary"><i class="bi bi-table"></i> 表單</button>
+                <button id="btnShowStrips" type="button" class="btn btn-outline-secondary"><i class="bi bi-view-stacked"></i> 寬版</button>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary"
+                   href="javascript:;"
                    data-modal-url="@Url.Action("Create", "ProductInfoes", new { area = "OnlineStore" })">
-                    <i class="bi bi-plus-circle-fill me-1"></i> 新增商品
+                    <i class="bi bi-plus-circle me-1"></i> 新增商品
                 </a>
             </div>
+        </div>
 
-        @*     <!-- 進階篩選開關（僅在切到寬條／卡片時自動展開） -->
-            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilters">
-                <i class="bi bi-funnel"></i> 更多篩選
-            </button>
-        </div> *@
-
-        <!-- 基本篩選（表格/寬條/卡片共用） -->
+        <!-- 基本篩選（表單/寬版共用） -->
         <form method="get" class="row row-cols-1 row-cols-md-3 row-cols-lg-6 g-2 filter-row align-items-end mb-2">
             <div>
                 <label class="form-label">名稱/類別 關鍵字</label>
@@ -147,15 +135,6 @@
                 </select>
             </div>
             <div>
-                <label class="form-label">存量（Info）</label>
-                <div class="input-group">
-                    <span class="input-group-text">最小</span>
-                    <input type="number" class="form-control" name="qtyMin" value="@(qtyMin?.ToString() ?? "")" />
-                    <span class="input-group-text">~</span>
-                    <input type="number" class="form-control" name="qtyMax" value="@(qtyMax?.ToString() ?? "")" />
-                </div>
-            </div>
-            <div>
                 <label class="form-label">建立日期</label>
                 <div class="input-group">
                     <input type="date" class="form-control" name="createdFrom" value="@createdFrom" />
@@ -171,8 +150,19 @@
                     <option value="no" selected="@(hasLog == "no" ? "selected" : null)">無異動</option>
                 </select>
             </div>
+            <div>
+                <label class="form-label">顯示筆數</label>
+                <select id="pageLenSelect" class="form-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="-1">全部</option>
+                </select>
+            </div>
 
-            <div class="col-12 d-flex gap-2 mt-1">
+            <div class="col-12 d-flex gap-2 mt-1 ">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 套用條件</button>
                 <button type="reset" id="btnClearFilters" class="btn btn-outline-secondary">
                     <i class="bi bi-eraser"></i> 清除條件
@@ -180,9 +170,13 @@
             </div>
         </form>
 
-        @* <!-- 進階：Detail 篩選（僅寬條／卡片用；切換這兩種時會自動展開，回到表格會自動收起） -->
+        <!-- 寬版進階（只在寬版展開） -->
         <div class="collapse" id="advFilters">
             <form method="get" class="row row-cols-1 row-cols-md-3 row-cols-lg-6 g-2 filter-row align-items-end mb-2">
+                <input type="hidden" name="keyword" value="@keyword" />
+                <input type="hidden" name="type" value="@currentType" />
+                <input type="hidden" name="status" value="@status" />
+
                 <div>
                     <label class="form-label">供應商</label>
                     <select class="form-select" name="supplierId">
@@ -204,7 +198,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">周邊分類（nogame）</label>
+                    <label class="form-label">分類（nogame）</label>
                     <select class="form-select" name="merchTypeId">
                         <option value="">全部</option>
                         @foreach (var m in merchTypes)
@@ -214,35 +208,15 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">遊戲分類</label>
-                    <input class="form-control" name="gameType" value="@gameType" />
-                </div> *@
-                @* <div>
-                    <label class="form-label">尺寸</label>
-                    <input class="form-control" name="size" value="@size" />
+                    <label class="form-label">遊戲種類（game）</label>
+                    <input class="form-control" name="gameType" value="@gameType" placeholder="例：RPG / ACT">
                 </div>
-                <div>
-                    <label class="form-label">顏色</label>
-                    <input class="form-control" name="color" value="@color" />
-                </div>
-                <div>
-                    <label class="form-label">材質</label>
-                    <input class="form-control" name="material" value="@material" />
-                </div>
-                <div>
-                    <label class="form-label">存量（Detail）</label>
-                    <div class="input-group">
-                        <span class="input-group-text">最小</span>
-                        <input type="number" class="form-control" name="dqtyMin" value="@(dqtyMin?.ToString() ?? "")" />
-                        <span class="input-group-text">~</span>
-                        <input type="number" class="form-control" name="dqtyMax" value="@(dqtyMax?.ToString() ?? "")" />
-                    </div>
-                </div>
+
                 <div class="col-12 d-flex gap-2 mt-1">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 套用進階條件</button>
-                    <button type="reset" id="btnClearAdv" class="btn btn-outline-secondary"><i class="bi bi-eraser"></i> 清除進階</button>
-                </div> *@
-            @* </form> *@
+                    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-funnel"></i> 套用進階</button>
+                    <a class="btn btn-outline-secondary" href="@Url.Action("Index", "ProductInfoes", new { area = "OnlineStore" })"><i class="bi bi-x-circle"></i> 清除進階</a>
+                </div>
+            </form>
         </div>
 
         <!-- 表格檢視 -->
@@ -250,78 +224,65 @@
             <table id="productTable" class="table table-striped table-hover table-bordered align-middle">
                 <thead>
                     <tr>
-                        <th style="width:90px;">商品ID</th>
-                        <th style="width:140px;">商品代碼</th>
+                        <th style="width:80px;">商品ID</th>
+                        <th style="width:120px;">商品代碼</th>
                         <th>名稱</th>
+                        <th style="width:70px;" class="text-center">詳細</th>
                         <th>類別</th>
                         <th class="text-end">價格</th>
                         <th class="text-center">存量</th>
                         <th class="text-center">狀態</th>
                         <th>建立時間</th>
                         <th>最後異動</th>
-                        <th class="text-end">操作</th>
+                        <th style="width:160px;" class="text-end">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var x in Model)
                     {
-                    <tr data-id="@x.ProductId">
-                        <td data-order="@x.ProductId">#@x.ProductId</td>
-                        <td data-order="@(x.ProductCodeSort?.ToString() ?? "2147483647")">@x.ProductCode</td>
-                        <td>@x.ProductName</td>
-                        <td>@x.ProductType</td>
-                        <td class="text-end">@x.Price.ToString("N0")</td>
-                        <td class="text-center">@x.ShipmentQuantity</td>
-                        <td class="text-center js-active-cell">
-                            @Html.Raw(x.IsActive ? "<span class=\"badge bg-success\">上架</span>"
-                                                        : "<span class=\"badge bg-secondary\">下架</span>")
-                        </td>
-                        <td>
-                            <a href="#" class="link-quiet"
-                               data-bs-toggle="modal" data-bs-target="#createdModal"
-                               data-created="@x.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss")"
-                               data-manager="@x.CreatedByManagerId">
-                                @x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")
-                            </a>
-                        </td>
-                        <td>
-                            @if (x.LastLog is not null)
+                        <tr data-id="@x.ProductId">
+                            <td data-order="@x.ProductId">#@x.ProductId</td>
+                            <td data-order="@(x.ProductCodeSort?.ToString() ?? "2147483647")">@x.ProductCode</td>
+                            <td>@x.ProductName</td>
+                            <td class="text-center">
+                                <a href="javascript:;" title="Info + Detail"
+                                   data-modal-url="@Url.Action("DetailModal", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                                    <i class="bi bi-info-circle"></i>
+                                </a>
+                            </td>
+                            <td>@x.ProductType</td>
+                            <td class="text-end">@x.Price.ToString("N0")</td>
+                            <td class="text-center">@x.ShipmentQuantity</td>
+                            <td class="text-center">
+                                @Html.Raw(x.IsActive ? "<span class=\"badge bg-success\">上架</span>" : "<span class=\"badge bg-secondary\">下架</span>")
+                            </td>
+                            <td>@x.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm")</td>
+                            <td>
+                                @if (x.LastLog is not null)
                                 {
-                                    <a href="#" class="link-quiet"
-                                       data-bs-toggle="modal" data-bs-target="#lastLogModal"
-                                       data-changed="@x.LastLog.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss")"
-                                       data-manager="@x.LastLog.ManagerId">
+                                    <a href="javascript:;" class="link-quiet"
+                                       data-modal-url="@Url.Action("AuditLog", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                         @x.LastLog.ChangedAt.ToString("yyyy/MM/dd tt hh:mm")
                                     </a>
                                 }
                                 else
                                 {
-
                                     <span class="text-muted small">—</span>
                                 }
                             </td>
                             <td class="text-end action-icons">
-                                <!-- Info 詳細（純 ProductInfo） -->
-                                <a href="javascript:;" class="text-info" title="基本資訊"
-                                   data-modal-url="@Url.Action("Details", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
-                                    <i class="bi bi-card-text"></i>
-                                </a>
-                                <!-- Detail 詳細（ProductDetail + 圖片） -->
-                                <a href="javascript:;" class="text-primary" title="商品詳細"
-                                   data-modal-url="@Url.Action("DetailPanel", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
+                                <a href="javascript:;" class="text-info" title="詳細"
+                                   data-modal-url="@Url.Action("DetailModal", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-aspect-ratio"></i>
                                 </a>
-                                <!-- 編輯（Info + Detail 同頁） -->
                                 <a href="javascript:;" class="text-success" title="編輯"
                                    data-modal-url="@Url.Action("Edit", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <!-- 下架（軟刪） -->
                                 <a href="javascript:;" class="text-danger" title="下架"
                                    data-modal-url="@Url.Action("Delete", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-trash"></i>
                                 </a>
-                                <!-- 異動紀錄 -->
                                 <a href="javascript:;" class="text-secondary" title="異動紀錄"
                                    data-modal-url="@Url.Action("AuditLog", "ProductInfoes", new { area = "OnlineStore", id = x.ProductId })">
                                     <i class="bi bi-clock-history"></i>
@@ -333,9 +294,8 @@
             </table>
         </div>
 
-        <!-- 寬條清單 / 卡片容器（預設隱藏；切換時載入 Partial） -->
+        <!-- 寬版容器 -->
         <div id="stripsHost" class="d-none"></div>
-        <div id="cardsHost" class="d-none"></div>
 
     </div>
 </div>
@@ -343,32 +303,8 @@
 <!-- Anti-Forgery Token（AJAX 用） -->
 <form id="__af" method="post">@Html.AntiForgeryToken()</form>
 
-<!-- 通用 Modal -->
+<!-- 通用 Modal Host -->
 <div class="modal fade" id="modalHost" tabindex="-1" aria-hidden="true"></div>
-
-<!-- 建立/最後異動 小 Modal -->
-<div class="modal fade" id="createdModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">建立資訊</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <p><strong>建立時間：</strong><span id="createdAt"></span></p>
-                <p><strong>建立人：</strong><span id="createdBy"></span></p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="lastLogModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">最後異動資訊</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <p><strong>最後異動時間：</strong><span id="lastChangedAt"></span></p>
-                <p><strong>異動人：</strong><span id="lastChangedBy"></span></p>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Toast -->
 <div class="toast-container-center">
@@ -387,42 +323,71 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         (() => {
-          // DataTables：簡化版位（只顯示表格＋底部分頁）
+          // 自訂：讀取 URL 參數
+          const getParam=(k)=>new URL(location.href).searchParams.get(k);
+
+          // DataTables（隱藏原生 length，下方僅顯示分頁）
+          const initLen = parseInt(getParam('len') ?? localStorage.getItem('product.len') ?? '10', 10);
           const dt = $('#productTable').DataTable({
             searching:false, ordering:true, order:[[0,'desc']],
-            pageLength:10, lengthMenu:[[10,20,30,50,100,-1],[10,20,30,50,100,'全部']],
+            pageLength: isNaN(initLen)?10:initLen,
+            lengthMenu:[[10,20,30,50,100,-1],[10,20,30,50,100,'全部']],
             language:{ emptyTable:"沒有資料", info:"第 _PAGE_ 頁，共 _PAGES_ 頁（共 _TOTAL_ 筆）",
               infoEmpty:"顯示第 0 到 0 筆，共 0 筆", lengthMenu:"每頁顯示 _MENU_ 筆",
-              loadingRecords:"載入中...", processing:"處理中...", search:"快速搜尋：", zeroRecords:"查無符合資料",
+              loadingRecords:"載入中...", processing:"處理中...", zeroRecords:"查無符合資料",
               paginate:{ first:"第一頁", last:"最後一頁", next:"下一頁", previous:"上一頁" } },
-            columnDefs:[{targets:-1, orderable:false}],
-            dom: "t<'row mt-3'<'col-12'p>>"
+            dom:"t<'row mt-3'<'col-12'p>>",
+            columnDefs:[{targets:[3,10], orderable:false}]
           });
+
+          // 顯示筆數下拉（自訂）
+          const pageLenSel = document.getElementById('pageLenSelect');
+          if(pageLenSel){
+            pageLenSel.value = String(dt.page.len());
+            pageLenSel.addEventListener('change', e=>{
+              const v = parseInt(e.target.value,10);
+              dt.page.len(v).draw(false);
+              localStorage.setItem('product.len', String(v));
+              const url = new URL(location.href); url.searchParams.set('len', String(v)); history.replaceState(null,'',url);
+            });
+          }
 
           // 清除基本條件
           document.getElementById('btnClearFilters')?.addEventListener('click', e=>{
             e.preventDefault();
             const f=e.currentTarget.closest('form'); if(!f) return; f.reset(); f.submit();
           });
-          // 清除進階條件
-          document.getElementById('btnClearAdv')?.addEventListener('click', e=>{
-            e.preventDefault();
-            const f=e.currentTarget.closest('form'); if(!f) return; f.reset(); f.submit();
-          });
 
-          // 小 Modal 值帶入
-          document.getElementById('createdModal')?.addEventListener('show.bs.modal', e=>{
-            const a=e.relatedTarget; if(!a) return;
-            document.getElementById('createdAt').textContent  = a.getAttribute('data-created') ?? '-';
-            document.getElementById('createdBy').textContent  = a.getAttribute('data-manager') ?? '-';
-          });
-          document.getElementById('lastLogModal')?.addEventListener('show.bs.modal', e=>{
-            const a=e.relatedTarget; if(!a) return;
-            document.getElementById('lastChangedAt').textContent= a.getAttribute('data-changed') ?? '-';
-            document.getElementById('lastChangedBy').textContent= a.getAttribute('data-manager') ?? '-';
-          });
+          // Toast
+          const showToast=(msg, ok=true)=>{
+            const el=document.getElementById('mainToast'), body=document.getElementById('mainToastBody');
+            body.textContent=msg || (ok?'已完成':'處理失敗');
+            el.classList.toggle('bg-success', ok); el.classList.toggle('bg-danger', !ok);
+            new bootstrap.Toast(el,{delay:2000}).show();
+          };
 
-          // 通用載入 Partial → Modal（Create/Edit/Delete/Info 詳細/Detail 詳細/異動紀錄）
+          // 寬版載入/切換 + 自動展開進階
+          const listHost=document.getElementById('listHost');
+          const stripsHost=document.getElementById('stripsHost');
+          const adv=document.getElementById('advFilters');
+          const advCollapse = adv ? new bootstrap.Collapse(adv, { toggle:false }) : null;
+          let stripsLoaded=false;
+
+          async function showStrips(){
+            if(!stripsLoaded){
+              const url='@Url.Action("Strips", "ProductInfoes", new { area = "OnlineStore" })' + window.location.search;
+              const html=await (await fetch(url,{credentials:'include'})).text();
+              stripsHost.innerHTML=html; stripsLoaded=true;
+            }
+            listHost.classList.add('d-none'); stripsHost.classList.remove('d-none'); advCollapse?.show();
+          }
+          function showTable(){
+            stripsHost.classList.add('d-none'); listHost.classList.remove('d-none'); advCollapse?.hide();
+          }
+          document.getElementById('btnShowStrips')?.addEventListener('click', showStrips);
+          document.getElementById('btnShowTable') ?.addEventListener('click', showTable);
+
+          // 通用：點擊 data-modal-url → 載入 Partial 到通用 Modal
           document.addEventListener('click', async (ev)=>{
             const a = ev.target.closest('[data-modal-url]'); if(!a) return;
             ev.preventDefault();
@@ -431,18 +396,11 @@
             const host = document.getElementById('modalHost'); host.innerHTML = html;
             if (window.jQuery && $.validator && $.validator.unobtrusive) { $.validator.unobtrusive.parse($('#modalHost')); }
             new bootstrap.Modal(host).show();
+            // Modal 內 Ajax 表單自動綁 submit
             host.querySelectorAll('form.js-ajax-form').forEach(f=>f.addEventListener('submit', submitAjaxOnce));
           });
 
-          // Toast
-          const showToast = (msg, ok=true)=>{
-            const el=document.getElementById('mainToast'), body=document.getElementById('mainToastBody');
-            body.textContent = msg || (ok ? '已完成' : '處理失敗');
-            el.classList.toggle('bg-success', ok); el.classList.toggle('bg-danger', !ok);
-            new bootstrap.Toast(el, { delay:2000 }).show();
-          };
-
-          // AJAX（Create/Edit/Delete）
+          // Ajax（Create/Edit/Delete）
           async function submitAjaxOnce(ev){
             ev.preventDefault();
             const form=ev.currentTarget; if(form.dataset.submitting==='1') return;
@@ -453,71 +411,16 @@
               if(ct.includes('application/json')){
                 const json=await res.json(); showToast(json.msg||'已完成', json.ok);
                 if(!json.ok) return;
-                if(json.updated){
-                  const u=json.updated; const tr=document.querySelector(`tr[data-id="${u.id}"]`);
-                  if(tr){
-                    tr.children[2].textContent=u.name;
-                    tr.children[3].textContent=u.type;
-                    tr.children[4].textContent=u.priceN0;
-                    tr.children[5].textContent=(u.qty ?? '');
-                    tr.querySelector('.js-active-cell').innerHTML = u.active
-                      ? '<span class="badge bg-success">上架</span>' : '<span class="badge bg-secondary">下架</span>';
-                    tr.children[8].innerHTML =
-                      `<a href="#" class="link-quiet" data-bs-toggle="modal" data-bs-target="#lastLogModal"
-                          data-changed="${u.lastChangedRaw}" data-manager="${u.lastManagerId}">
-                          ${u.lastChangedText}
-                       </a>`;
-                    dt.row(tr).invalidate().draw(false);
-                  }
-                  bootstrap.Modal.getInstance(document.getElementById('modalHost'))?.hide();
-                  return;
-                }
-                // Create / Delete：最穩重整
-                setTimeout(()=>location.reload(), 800);
+                // 新增/刪除：為簡單起見直接重整（最穩）
+                setTimeout(()=>location.reload(), 600);
               }else{
-                const html=await res.text();
-                const host=document.getElementById('modalHost'); host.innerHTML=html;
-                host.querySelectorAll('form.js-ajax-form').forEach(f=>f.addEventListener('submit', submitAjaxOnce));
+                // 回傳部份驗證錯誤的 HTML -> 重綁
+                const host=document.getElementById('modalHost'); host.innerHTML=await res.text();
                 if (window.jQuery && $.validator && $.validator.unobtrusive) { $.validator.unobtrusive.parse($('#modalHost')); }
+                host.querySelectorAll('form.js-ajax-form').forEach(f=>f.addEventListener('submit', submitAjaxOnce));
               }
             }finally{ form.dataset.submitting='0'; }
           }
-
-          // 檢視切換（表格／寬條／卡片）；寬條/卡片時自動展開進階篩選；回表格自動收起
-          const listHost  = document.getElementById('listHost');
-          const stripsHost= document.getElementById('stripsHost');
-          const cardsHost = document.getElementById('cardsHost');
-          const adv       = document.getElementById('advFilters');
-          const advCollapse = adv ? new bootstrap.Collapse(adv, { toggle:false }) : null;
-          let stripsLoaded=false, cardsLoaded=false;
-
-          async function showStrips(){
-            if(!stripsLoaded){
-              const url='@Url.Action("Strips", "ProductInfoes", new { area = "OnlineStore" })' + window.location.search;
-              const html=await (await fetch(url,{credentials:'include'})).text();
-              stripsHost.innerHTML=html; stripsLoaded=true;
-            }
-            listHost.classList.add('d-none'); cardsHost.classList.add('d-none'); stripsHost.classList.remove('d-none');
-            advCollapse?.show();
-          }
-          async function showCards(){
-            if(!cardsLoaded){
-              const url='@Url.Action("Cards", "ProductInfoes", new { area = "OnlineStore" })' + window.location.search;
-              const html=await (await fetch(url,{credentials:'include'})).text();
-              cardsHost.innerHTML=html; cardsLoaded=true;
-            }
-
-            listHost.classList.add('d-none'); stripsHost.classList.add('d-none'); cardsHost.classList.remove('d-none');
-            advCollapse?.show();
-          }
-          function showTable(){
-            stripsHost.classList.add('d-none'); cardsHost.classList.add('d-none'); listHost.classList.remove('d-none');
-            advCollapse?.hide();
-          }
-
-          document.getElementById('btnShowStrips')?.addEventListener('click', showStrips);
-          document.getElementById('btnShowCards') ?.addEventListener('click', showCards);
-          document.getElementById('btnShowTable') ?.addEventListener('click', showTable);
         })();
     </script>
 }
