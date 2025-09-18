@@ -1,58 +1,73 @@
-﻿@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
-
+﻿
+@model GameSpace.Areas.OnlineStore.ViewModels.ProductInfoFormVM
 @{
     var suppliers = (IEnumerable<dynamic>)(ViewBag.SupplierList ?? Enumerable.Empty<dynamic>());
     var platforms = (IEnumerable<dynamic>)(ViewBag.PlatformList ?? Enumerable.Empty<dynamic>());
-    var gameTypes = (IEnumerable<string>)(ViewBag.GameTypeList ?? Enumerable.Empty<string>());
     var merchTypes = (IEnumerable<dynamic>)(ViewBag.MerchTypeList ?? Enumerable.Empty<dynamic>());
+    var gameTypes = (IEnumerable<string>)(ViewBag.GameTypeList ?? Enumerable.Empty<string>());
+    var currencies = (IEnumerable<string>)(ViewBag.CurrencyList ?? new[] { "TWD", "USD" });
+
+    var sizeList = (IEnumerable<string>)(ViewBag.SizeList ?? Enumerable.Empty<string>());
+    var colorList = (IEnumerable<string>)(ViewBag.ColorList ?? Enumerable.Empty<string>());
+    var weightList = (IEnumerable<string>)(ViewBag.WeightList ?? Enumerable.Empty<string>());
+    var dimensionsList = (IEnumerable<string>)(ViewBag.DimensionsList ?? Enumerable.Empty<string>());
+    var materialList = (IEnumerable<string>)(ViewBag.MaterialList ?? Enumerable.Empty<string>());
+
+    var isEdit = (string)(ViewBag.Mode ?? "create") == "edit";
+    bool hasType = !string.IsNullOrWhiteSpace(Model.ProductType);
 }
+
+@if (ViewBag.ModelErrors != null)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var err in ViewBag.ModelErrors)
+            {
+                <li><strong>@err.Key</strong>:
+                    @foreach (var msg in err.Errors)
+                    {
+                        @msg <br />
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
 @section Styles {
     <style>
-        .modal-content {
-            /* 提升寬度與明亮感 */
-            max-width: 900px;
-            margin: auto;
-            background-color: #ffffff;
+        fieldset[disabled] {
+            pointer-events: none;
+            opacity: .6;
         }
 
-        .form-label.required {
-            /* 標註 (必填) 的樣式 */
-            font-weight: bold;
-        }
-
-        .form-text-help {
-            font-size: 0.85rem;
-            color: #6c757d;
-        }
-
-        .error-message {
-            color: #dc3545;
-            font-size: 0.9rem;
-        }
-
-        .success-message {
-            color: #28a745;
-            background-color: #d4edda;
-            padding: .75rem 1rem;
-            border: 1px solid #c3e6cb;
+        .thumb {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border: 1px solid #dee2e6;
             border-radius: .25rem;
-            margin-bottom: 1rem;
+        }
+
+        .snapshot-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            font-size: 0.9rem;
         }
     </style>
 }
-@{
-    bool isEdit = (ViewBag.Mode as string == "edit");
-}
-<div class="modal-dialog modal-fullscreen-sm-down modal-xl">
+
+<div class="modal-dialog modal-xxl">
     <div class="modal-content shadow-lg">
         <div class="modal-header bg-light">
             <h5 class="modal-title">@((isEdit ? "編輯商品" : "新增商品"))</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
-        <form id="productForm" class="needs-validation" method="post"
+        <form class="js-ajax-form" method="post"
               action="@Url.Action(isEdit? "Edit":"Create","ProductInfoes", new { area="OnlineStore" })"
-              enctype="multipart/form-data" novalidate>
+              enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             @if (isEdit)
             {
@@ -61,198 +76,142 @@
 
             <div class="modal-body">
 
-                @* 成功訊息範例 *@
-                @if (ViewBag.SuccessMessage != null)
-                {
-                    <div class="success-message">
-                        <i class="bi bi-check-circle-fill"></i> @ViewBag.SuccessMessage
+                <!-- 商品名稱 + 上架狀態 -->
+                <div class="row g-2 mb-3 align-items-center">
+                    <div class="col-md-8">
+                        <label class="form-label">商品名稱 *</label>
+                        @Html.TextBoxFor(m => m.ProductName, new { @class = "form-control" })
                     </div>
-                }
+                    <div class="col-md-4">
+                        <label class="form-label">上架狀態</label>
+                        <select name="IsActive" class="form-select">
+                            <option value="true" selected="@(Model.IsActive)">上架</option>
+                            <option value="false" selected="@(!Model.IsActive)">不上架</option>
+                        </select>
+                    </div>
+                </div>
 
-                @* 錯誤訊息集合 *@
-                @if (ViewBag.ModelErrors != null && ViewBag.ModelErrors.Count > 0)
-                {
-                    <div class="error-message mb-3">
-                        <ul class="mb-0">
-                            @foreach (var err in ViewBag.ModelErrors)
+                <!-- 基本資訊 -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">供應商 *</label>
+                        <select name="SupplierId" class="form-select" required>
+                            <option value="">請選擇</option>
+                            @foreach (var s in suppliers)
                             {
-                                <li>@err.Key: @string.Join(", ", err.Errors)</li>
+                                <option value="@s.SupplierId" selected="@(Model.SupplierId == (int?)s.SupplierId)">
+                                    @s.SupplierName
+                                </option>
                             }
-                        </ul>
+                        </select>
                     </div>
-                }
-
-                <!-- 商品名稱 -->
-                <div class="mb-3">
-                    <label class="form-label required">商品名稱 (必填)</label>
-                    @Html.TextBoxFor(m => m.ProductName, new { @class = "form-control", required = "required" })
-                    <div class="invalid-feedback">請填寫商品名稱。</div>
-                </div>
-
-                <!-- 上架狀態 switch -->
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="switchIsActive"
-                           name="IsActive" @(Model.IsActive || !isEdit ? "checked" : "")>
-                    <label class="form-check-label" for="switchIsActive">上架</label>
-                </div>
-
-                <!-- 供應商 -->
-                <div class="mb-3">
-                    <label class="form-label required">供應商 (必填)</label>
-                    <select name="SupplierId" class="form-select" required>
-                        <option value="">請選擇供應商</option>
-                        @foreach (var s in suppliers)
-                        {
-                            <!option value="@s.SupplierId" @(Model.SupplierId == (int?)s.SupplierId ? "selected" : "")>@s.SupplierName</!option>
-                        }
-                    </select>
-                    <div class="invalid-feedback">請選擇供應商。</div>
-                </div>
-
-                <!-- 價格 + 說明提示 -->
-                <div class="mb-3">
-                    <label class="form-label required">價格 (可為 0) (必填)</label>
-                    @Html.TextBoxFor(m => m.Price, new { @class = "form-control", type = "number", min = "0", step = "0.01", required = "required" })
-                    <div class="form-text-help">價格可以為 0，如果是免費或試玩。</div>
-                    <div class="invalid-feedback">請輸入有效價格 (大於等於 0)。</div>
-                </div>
-
-                <!-- 數量 + 說明提示 -->
-                <div class="mb-3">
-                    <label class="form-label required">數量 (可為 0) (必填)</label>
-                    @Html.TextBoxFor(m => m.ShipmentQuantity, new { @class = "form-control", type = "number", min = "0", required = "required" })
-                    <div class="form-text-help">數量可以為 0，如果尚未補貨或預售中。</div>
-                    <div class="invalid-feedback">請輸入有效數量 (大於等於 0)。</div>
+                    <div class="col-md-2">
+                        <label class="form-label">幣別</label>
+                        <select name="CurrencyCode" class="form-select">
+                            @foreach (var c in currencies)
+                            {
+                                <option value="@c" selected="@(Model.CurrencyCode == c)">@c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">價格</label>
+                        @Html.TextBoxFor(m => m.Price, new { @class = "form-control", type = "number", min = "0" })
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">數量</label>
+                        @Html.TextBoxFor(m => m.ShipmentQuantity, new { @class = "form-control", type = "number", min = "0" })
+                    </div>
                 </div>
 
                 <!-- 類別 -->
                 <div class="mb-3">
-                    <label class="form-label required">類別 (必填)</label>
-                    <select id="productType" name="ProductType" class="form-select" required>
-                        <option value="">請選擇類別</option>
-                        <!option value="game" @(Model.ProductType == "game" ? "selected" : "")>game</!option>
-                        <!option value="nogame" @(Model.ProductType == "nogame" ? "selected" : "")>notgame</!option>
+                    <label class="form-label">類別 *</label>
+                    <select id="productType" name="ProductType" class="form-select">
+                        <option value="">請先選擇類別</option>
+                        <option value="game" selected="@(Model.ProductType == "game")">game</option>
+                        <option value="nogame" selected="@(Model.ProductType == "nogame")">notgame</option>
                     </select>
-                    <div class="invalid-feedback">請選擇類別。</div>
                 </div>
 
-                <!-- Game Detail 區 + 新增 download_link -->
+                <!-- Game Detail -->
                 <fieldset id="fsGame" class="border rounded p-3 mb-3">
                     <legend class="float-none w-auto px-2 small">Game Detail</legend>
-
                     <div class="mb-3">
-                        <label class="form-label required">遊戲描述 (必填)</label>
-                        @Html.TextAreaFor(m => m.GameProductDescription, new { @class = "form-control", rows = 3, required = "required" })
-                        <div class="invalid-feedback">請填寫遊戲描述。</div>
+                        <label class="form-label">遊戲描述</label>
+                        @Html.TextAreaFor(m => m.GameProductDescription, new { @class = "form-control" })
                     </div>
-
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label required">平台 (必填)</label>
-                            <select id="platformId" name="PlatformId" class="form-select" required>
+                            <label class="form-label">平台</label>
+                            <select id="platformId" name="PlatformId" class="form-select">
                                 <option value="">請選擇平台</option>
                                 @foreach (var p in platforms)
                                 {
-                                    <!option value="@p.PlatformId" @(Model.PlatformId == (int?)p.PlatformId ? "selected" : "")>@p.PlatformName</!option>
+                                    <option value="@p.PlatformId" selected="@(Model.PlatformId == (int?)p.PlatformId)">
+                                        @p.PlatformName
+                                    </option>
                                 }
                             </select>
-                            <div class="invalid-feedback">請選擇平台。</div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label required">遊戲類型 (必填)</label>
-                            <input name="GameType" class="form-control" value="@Model.GameType" list="gameTypeList" required />
+                            <label class="form-label">遊戲類型</label>
+                            <input name="GameType" class="form-control" value="@Model.GameType" list="gameTypeList" />
                             <datalist id="gameTypeList">
                                 @foreach (var gt in gameTypes)
                                 {
                                     <option value="@gt"></option>
                                 }
                             </datalist>
-                            <div class="invalid-feedback">請填寫遊戲類型。</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">下載連結</label>
-                            @Html.TextBoxFor(m => m.DownloadLink, new { @class = "form-control", type = "url", placeholder = "http://..." })
-                            <div class="form-text-help">若有提供可下載版本，請填入 URL。</div>
-                            <div class="invalid-feedback">請填寫有效網址（例如 http:// 或 https://）。</div>
                         </div>
                     </div>
-
                 </fieldset>
 
-                <!-- NotGame Detail + 新增 merch_type_id, digital_code, dimensions, stock_quantity -->
+                <!-- NotGame Detail -->
                 <fieldset id="fsOther" class="border rounded p-3 mb-3">
                     <legend class="float-none w-auto px-2 small">NotGame Detail</legend>
-
                     <div class="mb-3">
-                        <label class="form-label required">描述 (必填)</label>
-                        @Html.TextAreaFor(m => m.OtherProductDescription, new { @class = "form-control", rows = 3, required = "required" })
-                        <div class="invalid-feedback">請填寫描述。</div>
+                        <label class="form-label">描述</label>
+                        @Html.TextAreaFor(m => m.OtherProductDescription, new { @class = "form-control" })
                     </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label required">分類 (必填)</label>
-                            <select name="MerchTypeId" class="form-select" required>
-                                <option value="">請選擇分類</option>
-                                @foreach (var mt in merchTypes)
-                                {
-                                    <!option value="@mt.MerchTypeId" @(Model.MerchTypeId == (int?)mt.MerchTypeId ? "selected" : "")>@mt.MerchTypeName</!option>
-                                }
-                            </select>
-                            <div class="invalid-feedback">請選擇分類。</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">數位代碼</label>
-                            @Html.TextBoxFor(m => m.DigitalCode, new { @class = "form-control", maxlength = "100", placeholder = "如果沒有可留空" })
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">尺寸 (必填)</label>
-                            @Html.TextBoxFor(m => m.Size, new { @class = "form-control", required = "required" })
-                            <div class="invalid-feedback">請填寫尺寸。</div>
-                        </div>
+                    <div class="row g-3">
+                        <div class="col-md-3"><label>尺寸</label> @Html.TextBoxFor(m => m.Size, new { @class = "form-control" })</div>
+                        <div class="col-md-3"><label>顏色</label> @Html.TextBoxFor(m => m.Color, new { @class = "form-control" })</div>
+                        <div class="col-md-3"><label>重量</label> @Html.TextBoxFor(m => m.Weight, new { @class = "form-control" })</div>
+                        <div class="col-md-3"><label>材質</label> @Html.TextBoxFor(m => m.Material, new { @class = "form-control" })</div>
                     </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label required">顏色 (必填)</label>
-                            @Html.TextBoxFor(m => m.Color, new { @class = "form-control", required = "required" })
-                            <div class="invalid-feedback">請填寫顏色。</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">重量 (必填)</label>
-                            @Html.TextBoxFor(m => m.Weight, new { @class = "form-control", required = "required" })
-                            <div class="invalid-feedback">請填寫重量。</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">尺寸(mm/cm) (必填)</label>
-                            @Html.TextBoxFor(m => m.Dimensions, new { @class = "form-control", required = "required" })
-                            <div class="invalid-feedback">請填寫尺寸(mm/cm)。</div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label required">材質 (必填)</label>
-                            @Html.TextBoxFor(m => m.Material, new { @class = "form-control", required = "required" })
-                            <div class="invalid-feedback">請填寫材質。</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">庫存數量 (必填)</label>
-                            @Html.TextBoxFor(m => m.StockQuantity, new { @class = "form-control", type = "number", min = "0", required = "required" })
-                            <div class="invalid-feedback">請填寫庫存數量。</div>
-                        </div>
-                    </div>
-
                 </fieldset>
 
-                <!-- 圖片上傳欄 -->
-                <div class="mb-3">
-                    <label class="form-label required">商品圖片 (必填)</label>
-                    <input type="file" name="Image" class="form-control" accept="image/*" required />
-                    <div class="invalid-feedback">請上傳圖片。</div>
+                <!-- 圖片 -->
+                <div class="border rounded p-3 mb-3">
+                    <h6>商品圖片</h6>
+                    <input type="file" name="Image" class="form-control" accept="image/*" />
+                    @if (isEdit && !string.IsNullOrEmpty(Model.ProductImageUrl))
+                    {
+                        <div class="mt-2">
+                            <img class="thumb" src="@Model.ProductImageUrl" alt="商品圖片" />
+                        </div>
+                    }
                 </div>
 
-            </div> <!-- /.modal-body -->
+                <!-- 歷史紀錄 -->
+                @if (isEdit)
+                {
+                    @* <div class="border rounded p-3 mb-3">
+                        <h6>歷史紀錄</h6>
+                        <div style="max-height:200px; overflow-y:auto;">
+                            @foreach (var log in Model.LastLogs ?? new List<dynamic>())
+                            {
+                                <div><strong>@log.ChangedAt.ToString("yyyy/MM/dd HH:mm")</strong> - @log.ActionType : @log.NewValue</div>
+                            }
+                        </div>
+                    </div> *@
+                    <div class="text-muted small">
+                        創立時間: @Model.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm")<br />
+                        最後異動時間: @(Model.ProductUpdatedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")
+                    </div>
+                }
+            </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">關閉</button>
@@ -262,60 +221,31 @@
     </div>
 </div>
 
+
 @section Scripts {
     <script>
         (function(){
-          const form = document.getElementById('productForm');
           const typeSel = document.getElementById('productType');
           const fsGame  = document.getElementById('fsGame');
           const fsOther = document.getElementById('fsOther');
 
           function applyType(v){
+            if(!v){ fsGame.disabled = true; fsOther.disabled = true; return; }
             const isGame = (v === 'game');
             fsGame.disabled  = !isGame;
             fsOther.disabled =  isGame;
-
-            const gameFields = fsGame.querySelectorAll('input, select, textarea');
-            gameFields.forEach(el => {
-              if(isGame){
-                el.setAttribute('required','required');
-              } else {
-                el.removeAttribute('required');
-              }
-            });
-
-            const otherFields = fsOther.querySelectorAll('input, select, textarea');
-            otherFields.forEach(el => {
-              if(!isGame){
-                el.setAttribute('required','required');
-              } else {
-                el.removeAttribute('required');
-              }
-            });
           }
-
-          // 預設狀態（Create 時預設上架 + switch 打勾）
-          if (!typeSel.value) {
-            // 預設讓 Game 或 NotGame 都可選，但 detail 區塊關閉
-          }
-
           applyType(typeSel.value);
+          typeSel.addEventListener('change', (e)=> applyType(e.target.value));
 
-          typeSel.addEventListener('change', function(e){
-            applyType(e.target.value);
-          });
-
-          form.addEventListener('submit', function(event){
-            if(!form.checkValidity()){
-              event.preventDefault();
-              event.stopPropagation();
-              form.classList.add('was-validated');
-              // 可愛錯誤提示
-              // 這裡可以改成 toast 或 custom modal 提示
-              alert('😿 表單有錯誤！請檢查紅色提示欄位');
-            }
-          });
-
+          const platformSel  = document.getElementById('platformId');
+          const platformName = document.querySelector('input[name="PlatformName"]');
+          function fillPlatformName(){
+            const opt = platformSel?.selectedOptions?.[0];
+            platformName.value = opt ? (opt.textContent||'').trim() : '';
+          }
+          platformSel?.addEventListener('change', fillPlatformName);
+          fillPlatformName();
         })();
     </script>
 }
