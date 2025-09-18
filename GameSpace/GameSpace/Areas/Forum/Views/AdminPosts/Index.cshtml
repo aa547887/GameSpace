@@ -1,0 +1,43 @@
+﻿@model IEnumerable<GameSpace.Areas.Forum.Models.AdminPostListItemVm>
+
+@{
+    ViewData["Title"] = "管理員文章列表";
+}
+
+<h2>管理員文章列表</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">新增文章</a>
+</p>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>標題</th>
+            <th>狀態</th>
+            <th>置頂</th>
+            <th>建立時間</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Title</td>
+                <td>@item.Status</td>
+                <td>@(item.Pinned ? "✅" : "❌")</td>
+                <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.AdminPostId" class="btn btn-sm btn-warning">編輯</a>
+                    <form asp-action="Publish" asp-route-id="@item.AdminPostId" method="post" style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-success">發布</button>
+                    </form>
+                    <form asp-action="Hide" asp-route-id="@item.AdminPostId" method="post" style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-secondary">隱藏</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

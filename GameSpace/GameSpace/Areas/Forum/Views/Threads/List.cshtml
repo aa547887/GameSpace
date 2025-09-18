@@ -1,0 +1,157 @@
+﻿@model GameSpace.Areas.Forum.Models.ThreadsListVm
+@{
+    ViewData["Title"] = "主題列表";
+    int totalPages = (int)Math.Ceiling((double)Model.Total / Model.Size);
+}
+
+<h2>@ViewData["Title"] (forum_id = @Model.ForumId)</h2>
+
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="forumId" value="@Model.ForumId" />
+    <div class="col-auto">
+        <input class="form-control" name="q" value="@Model.Q" placeholder="搜尋標題關鍵字">
+    </div>
+    <div class="col-auto">
+        <select class="form-select" name="status">
+            <option value="ALL"
+                    selected="@(Model.Status == "ALL" ? "selected" : null)">全部</option>
+            <option value="normal"
+                    selected="@(Model.Status == "normal" ? "selected" : null)">normal</option>
+            <option value="hidden"
+                    selected="@(Model.Status == "hidden" ? "selected" : null)">hidden</option>
+            <option value="archived"
+                    selected="@(Model.Status == "archived" ? "selected" : null)">archived</option>
+        </select>
+
+    </div>
+    <div class="col-auto">
+        <select class="form-select" name="size">
+            <option value="10" selected="@(Model.Size == 10 ? "selected" : null)">10/頁</option>
+            <option value="20" selected="@(Model.Size == 20 ? "selected" : null)">20/頁</option>
+            <option value="50" selected="@(Model.Size == 50 ? "selected" : null)">50/頁</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" type="submit">查詢</button>
+    </div>
+    <div class="col-auto">
+        <a class="btn btn-outline-secondary"
+           asp-area="Forum" asp-controller="Threads" asp-action="Index">← 回論壇清單</a>
+    </div>
+</form>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th style="width:100px">ID</th>
+            <th>標題</th>
+            <th style="width:120px">狀態</th>
+            <th style="width:100px">回覆</th>
+            <th style="width:100px">讚</th>
+            <th style="width:100px">收藏</th>
+            <th style="width:200px">建立</th>
+            <th style="width:200px">更新</th>
+            <th style="width:260px">操作</th>
+          
+           
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var x in Model.Items)
+    {
+        var badge = x.Status switch {
+            "normal" => "badge bg-success",
+            "hidden" => "badge bg-warning text-dark",
+            "archived" => "badge bg-secondary",
+            _ => "badge bg-light text-dark"
+        };
+        <tr>
+            <td>@x.ThreadId</td>
+            <td>@x.Title</td>
+            <td><span class="@badge">@x.Status</span></td>
+            <td>@x.ReplyCount</td>
+            <td>@x.LikeCount</td>
+            <td>@x.BookmarkCount</td>   <!-- 新增 -->
+            <td>@(x.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</td>
+            <td>@(x.UpdatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</td>
+            <td class="text-nowrap">
+                <a class="btn btn-sm btn-info me-1"
+                   asp-area="Forum" asp-controller="Threads" asp-action="Posts"
+                   asp-route-threadId="@x.ThreadId">查看回覆</a>
+
+                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                      method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@x.ThreadId" />
+                    <input type="hidden" name="status" value="hidden" />
+                    <input type="hidden" name="forumId" value="@x.ForumId" />
+                    <button type="submit" class="btn btn-sm btn-warning me-1"
+                            @(x.Status=="hidden"?"disabled":null)>隱藏</button>
+                </form>
+
+                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                      method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@x.ThreadId" />
+                    <input type="hidden" name="status" value="archived" />
+                    <input type="hidden" name="forumId" value="@x.ForumId" />
+                    <button type="submit" class="btn btn-sm btn-secondary me-1"
+                            @(x.Status=="archived"?"disabled":null)>封存</button>
+                </form>
+
+                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                      method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@x.ThreadId" />
+                    <input type="hidden" name="status" value="normal" />
+                    <input type="hidden" name="forumId" value="@x.ForumId" />
+                    <button type="submit" class="btn btn-sm btn-success"
+                            @(x.Status=="normal"?"disabled":null)>恢復</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@{
+    if (totalPages > 1)
+    {
+        <nav>
+            <ul class="pagination">
+                <li class="page-item @(Model.Page<=1?"disabled":null)">
+                    <a class="page-link"
+                       asp-area="Forum" asp-controller="Threads" asp-action="List"
+                       asp-route-forumId="@Model.ForumId"
+                       asp-route-q="@Model.Q"
+                       asp-route-status="@Model.Status"
+                       asp-route-page="@(Model.Page-1)"
+                       asp-route-size="@Model.Size">上一頁</a>
+                </li>
+
+                @for (int p = Math.Max(1, Model.Page-2); p <= Math.Min(totalPages, Model.Page+2); p++)
+                {
+                    <li class="page-item @(p==Model.Page?"active":null)">
+                        <a class="page-link"
+                           asp-area="Forum" asp-controller="Threads" asp-action="List"
+                           asp-route-forumId="@Model.ForumId"
+                           asp-route-q="@Model.Q"
+                           asp-route-status="@Model.Status"
+                           asp-route-page="@p"
+                           asp-route-size="@Model.Size">@p</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.Page>=totalPages?"disabled":null)">
+                    <a class="page-link"
+                       asp-area="Forum" asp-controller="Threads" asp-action="List"
+                       asp-route-forumId="@Model.ForumId"
+                       asp-route-q="@Model.Q"
+                       asp-route-status="@Model.Status"
+                       asp-route-page="@(Model.Page+1)"
+                       asp-route-size="@Model.Size">下一頁</a>
+                </li>
+            </ul>
+        </nav>
+    }
+}
