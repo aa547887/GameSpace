@@ -2,22 +2,24 @@
 using GameSpace.Areas.social_hub.Services;
 using GameSpace.Data;
 using GameSpace.Models;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections; // for HttpTransportType
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;           // for AddSignalR
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+
 using System;
-using System.Threading.Tasks; // 因為你用了 async Task Main
-using System.Linq;            // 在 CookieEvents 內有用到 .Any()
+using System.Linq;            // CookieEvents 內有用到 .Any()
+using System.Threading.Tasks; // async Main
 
-// ---- 「共用登入介面」(最小版) ----
-using GameSpace.Infrastructure.Login; // ILoginIdentity, CookieAndAdminCookieLoginIdentity
+// ---- 社群 Hub / 過濾器 / 共用登入 ----
+using GameSpace.Areas.social_hub.Hubs;
+using GameSpace.Infrastructure.Login;
 
-// ---- 型別別名（避免方案裡若有重複介面/命名空間不一致，導致 DI 對不到）----
+// ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
 using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Services.ManagerPermissionService;
@@ -28,55 +30,57 @@ namespace GameSpace
 {
 	public class Program
 	{
-		public static async Task Main(string[] args) // ⬅ async Main（用於啟動預熱）
+		public static async Task Main(string[] args)
 		{
 			var builder = WebApplication.CreateBuilder(args);
 
-			// ===== 連線字串 =====
+			// ========== 1) 組態與連線字串（排序：先讀設定，再建 DbContext） ==========
 			var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
 				?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
-				// ★ 可選：若你的 appsettings 有另一個 key，這行可當備援
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-			// ===== DbContexts =====
+			// ========== 2) DbContexts（排序：先 Identity，再業務 DB） ==========
 			builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
 
 			// 開發期資料庫錯誤頁
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			// ===== Identity =====
+			// ========== 3) Identity（排序：先註冊 Identity，再註冊 MVC/Razor） ==========
 			builder.Services
 				.AddDefaultIdentity<IdentityUser>(opt => opt.SignIn.RequireConfirmedAccount = true)
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 
-			// ===== MVC / Razor =====
+			// ========== 4) MVC / Razor ==========
 			builder.Services.AddControllersWithViews();
 			builder.Services.AddRazorPages();
 
-			// ===== social_hub 相關服務註冊 =====
+			// ========== 5) SignalR（★必須：讓 IHubContext<ChatHub> 可注入） ==========
+			builder.Services.AddSignalR();
+
+			// ========== 6) social_hub 相關服務（MuteFilter/通知/權限） ==========
 			builder.Services.AddMemoryCache();
 
 			// 穢語過濾選項（MuteFilter 透過 IOptions 取得）
 			builder.Services.Configure<GameSpace.Areas.social_hub.Services.MuteFilterOptions>(o =>
 			{
-				o.MaskStyle = GameSpace.Areas.social_hub.Services.MaskStyle.Asterisks; // replacement 空時用
+				o.MaskStyle = GameSpace.Areas.social_hub.Services.MaskStyle.Asterisks;
 				o.FixedLabel = "【封鎖】";
 				o.FuzzyBetweenCjkChars = true;
 				o.MaskExactLength = false;
 				o.CacheTtlSeconds = 30;
 				o.UsePerWordReplacement = true; // 每詞自訂替代（用 Mutes.replacement）
 			});
-			// 用別名註冊，避免撞名
+
+			// 以別名註冊，避免撞名
 			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
 			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
 
-
-			// ===== CORS（可選：只有跨網域前端時才會啟用）=====
+			// ========== 7) CORS（如需跨網域前端；排序：UseRouting 之後、MapHub 之前） ==========
 			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
 			if (corsOrigins is { Length: > 0 })
 			{
@@ -86,12 +90,11 @@ namespace GameSpace
 						.WithOrigins(corsOrigins)
 						.AllowAnyHeader()
 						.AllowAnyMethod()
-						.AllowCredentials()
-					);
+						.AllowCredentials());
 				});
 			}
 
-			// ===== Session（登入流程/OTP 需要）=====
+			// ========== 8) Session（排序：在 Authentication 之前啟用） ==========
 			builder.Services.AddSession(opt =>
 			{
 				opt.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -100,18 +103,15 @@ namespace GameSpace
 				opt.Cookie.SameSite = SameSiteMode.Lax;
 			});
 
-			// ===== 共用登入介面（關鍵）=====
-			builder.Services.AddHttpContextAccessor(); // ★ 必須
-			builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>(); // ★ 必須
+			// ========== 9) 共用登入介面（★最小登入，供 Controller/Hub 讀取目前身分） ==========
+			builder.Services.AddHttpContextAccessor();
+			builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>();
 
-			// ★ 重要：獨立的後台 Cookie 方案，讓 CookieAndAdminCookieLoginIdentity 可以 AuthenticateAsync("AdminCookie")
+			// ========== 10) 後台 Cookie 方案（AdminCookie） ==========
 			const string AdminCookieScheme = "AdminCookie";
 
-			// ===== 後台 Cookie 驗證（給外部 LoginController 用）+「AJAX 401/403 不重導」=====
-			builder.Services.AddAuthentication(options =>
-			{
-				// 不動 Identity 的 DefaultScheme；這裡只是額外加一個後台 Cookie 方案
-			})
+			// 後台 Cookie 驗證 + AJAX 401/403 不重導
+			builder.Services.AddAuthentication(options => { /* 不更動 Identity 既有 DefaultScheme */ })
 			.AddCookie(AdminCookieScheme, opt =>
 			{
 				opt.LoginPath = "/Login";
@@ -121,7 +121,6 @@ namespace GameSpace
 				opt.SlidingExpiration = true;
 				opt.ExpireTimeSpan = TimeSpan.FromHours(4);
 
-				// 讓 AJAX/API 未登入/無權限回 401/403，而不是 Redirect
 				opt.Events = new CookieAuthenticationEvents
 				{
 					OnRedirectToLogin = ctx =>
@@ -156,7 +155,7 @@ namespace GameSpace
 				};
 			});
 
-			// ===== 授權政策（對應我們寫入的 perm:* Claims）=====
+			// ========== 11) 授權政策（與 Claims 對應） ==========
 			builder.Services.AddAuthorization(options =>
 			{
 				options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
@@ -169,7 +168,7 @@ namespace GameSpace
 
 			var app = builder.Build();
 
-			// ===== 啟動預熱（失敗不擋站）=====
+			// ========== 12) 啟動預熱（可選；失敗不擋站） ==========
 			using (var scope = app.Services.CreateScope())
 			{
 				try
@@ -180,7 +179,7 @@ namespace GameSpace
 				catch { /* ignore */ }
 			}
 
-			// ===== Middleware 管線 =====
+			// ========== 13) Middleware 管線（排序很重要） ==========
 			if (app.Environment.IsDevelopment())
 			{
 				app.UseMigrationsEndPoint();
@@ -194,27 +193,26 @@ namespace GameSpace
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
 
-			app.UseRouting();
+			app.UseRouting(); // ★ 路由要先啟用，後續 CORS/認證/授權/Hub 才能正確掛上
 
-			// 若有設定 CORS Origins，才套用該 Policy（需在 MapHub 前）
+			// CORS（若有設定）——★排序：MapHub 之前
 			if (corsOrigins is { Length: > 0 })
 				app.UseCors("chat");
 
-			// Cookie SameSite 與 Secure（跨網域傳 Cookie 時需要 None+Secure）
+			// Cookie SameSite 與 Secure（跨網域傳 Cookie 時需要 None+Secure；本地開發可 Lax）
 			app.UseCookiePolicy(new CookiePolicyOptions
 			{
 				MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
 				Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
 			});
 
-			// **Session 必須在 Authentication 前啟用**
+			// ★ Session 一定要在 Authentication 之前
 			app.UseSession();
 
-			app.UseAuthentication(); // Identity + AdminCookie 皆會生效
+			app.UseAuthentication(); // Identity + AdminCookie
 			app.UseAuthorization();
 
-			// ===== 路由 =====
-			// 先加 area 的路由（重要）
+			// ========== 14) 路由（先 Area，再預設 MVC，再 RazorPages） ==========
 			app.MapControllerRoute(
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
@@ -223,18 +221,19 @@ namespace GameSpace
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}");
 
-			// 若使用 Identity UI
 			app.MapRazorPages();
 
-			// ===== SignalR Hub 端點（指定傳輸種類，避免環境限制導致無法連線）=====
-			//app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>
-			//{
-			//	opts.Transports =
-			//		HttpTransportType.WebSockets |
-			//		HttpTransportType.ServerSentEvents |
-			//		HttpTransportType.LongPolling;
-			//});
+			// ========== 15) SignalR Hub 端點（★必要：否則前端連不到、也無法注入 IHubContext） ==========
+			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>
+			{
+				// 支援多種傳輸，避免環境限制（如無 WS）
+				opts.Transports =
+					HttpTransportType.WebSockets |
+					HttpTransportType.ServerSentEvents |
+					HttpTransportType.LongPolling;
+			});
 
+			// ========== 16) 啟動 ==========
 			await app.RunAsync();
 		}
 	}
