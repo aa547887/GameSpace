@@ -35,7 +35,7 @@ namespace GameSpace.Areas.Forum.Controllers
                 .OrderBy(m => m.MetricId)
                 .Select(m => new { m.MetricId, m.Code, m.Description, IsActive = (m.IsActive ?? true) })
                 .ToListAsync();
-
+                
             // 3) 回填查詢條件到 View
             ViewBag.GameId = gameId;
             ViewBag.From = from?.ToString("yyyy-MM-dd");
@@ -44,7 +44,7 @@ namespace GameSpace.Areas.Forum.Controllers
 
             // 4) 有條件才查
             if (gameId.HasValue && from.HasValue && to.HasValue)
-            {
+                {
                 // 傳入使用者勾的 metricIds；沒勾的話，內部會 fallback 用啟用中的全部
                 var rows = await QueryDailyIndexAsync(gameId.Value, from.Value, to.Value, metricIds);
                 return View(rows);
@@ -179,8 +179,8 @@ namespace GameSpace.Areas.Forum.Controllers
             List<int> usingMetricIds = (metricIds != null && metricIds.Length > 0)
                 ? metricIds.Distinct().ToList()
                 : await _db.Metrics.Where(m => (m.IsActive ?? true))
-                                   .Select(m => m.MetricId)
-                                   .ToListAsync();
+                .Select(m => m.MetricId)
+                .ToListAsync();
             if (usingMetricIds.Count == 0) return new List<DailyIndexVm>();
 
             var usingMetricIdSet = new HashSet<int>(usingMetricIds);
@@ -200,6 +200,7 @@ namespace GameSpace.Areas.Forum.Controllers
                 .ToListAsync();
 
             var result = new List<DailyIndexVm>();
+            if (activeMetricIds.Count == 0) return result;
 
             foreach (var d in dates)
             {
@@ -217,7 +218,7 @@ namespace GameSpace.Areas.Forum.Controllers
                 // 各指標最大值（避免除 0，max=0 時當 1）
                 var maxByMetric = rows
                     .GroupBy(r => r.MetricId)
-                    .ToDictionary(g => g.Key, g => g.Max(x => x.Value == 0 ? 1 : x.Value));
+                                      .ToDictionary(g => g.Key, g => g.Max(x => x.Value == 0 ? 1 : x.Value));
 
                 // 本遊戲的當日各指標值
                 var mine = rows.Where(r => r.GameId == gameId).ToList();
@@ -258,5 +259,6 @@ namespace GameSpace.Areas.Forum.Controllers
             public string GameName { get; set; } = "";
             public decimal IndexValue { get; set; }
         }
+      
     }
 }

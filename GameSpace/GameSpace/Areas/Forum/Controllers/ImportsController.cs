@@ -143,9 +143,9 @@ namespace GameSpace.Areas.Forum.Controllers
                     {
                         if (!string.Equals(map.ExternalKey, key, StringComparison.Ordinal))
                         {
-                            map.ExternalKey = key;
-                            updated++;
-                        }
+                        map.ExternalKey = key;
+                        updated++;
+                    }
                         else
                         {
                             skipped++;

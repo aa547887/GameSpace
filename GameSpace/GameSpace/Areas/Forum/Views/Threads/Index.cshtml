@@ -67,19 +67,19 @@
         }
         else
         {
-            @foreach (var f in Model)
-            {
-                <tr>
-                    <td>@f.ForumId</td>
-                    <td>@f.Name</td>
+        @foreach (var f in Model)
+        {
+            <tr>
+                <td>@f.ForumId</td>
+                <td>@f.Name</td>
                     <td>@(f.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
-                    <td>
-                        <a class="btn btn-sm btn-primary"
+                <td>
+                    <a class="btn btn-sm btn-primary"
                            asp-area="Forum" asp-controller="Threads" asp-action="List"
                            asp-route-forumId="@f.ForumId">進入</a>
-                    </td>
-                </tr>
-            }
+                </td>
+            </tr>
+        }
         }
     </tbody>
 </table>

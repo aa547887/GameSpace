@@ -100,19 +100,20 @@
         }
         else
         {
-            @foreach (var x in Model)
-            {
-                <tr>
-                    <td>@x.GameId</td>
-                    <td>@x.Name</td>
-                    <td>@x.NameZh</td>
-                    <td>@x.Genre</td>
-                    <td>@(x.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@x.GameId" class="btn btn-sm btn-warning">編輯</a>
-                    </td>
-                </tr>
-            }
+        @foreach (var x in Model)
+        {
+            <tr>
+                <td>@x.GameId</td>
+                <td>@x.Name</td>
+                <td>@x.NameZh</td>
+                <td>@x.Genre</td>
+                <td>@(x.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@x.GameId" class="btn btn-sm btn-warning">編輯</a>
+                </td>
+            </tr>
+        }
         }
     </tbody>
 </table>
+

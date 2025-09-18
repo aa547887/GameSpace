@@ -20,7 +20,7 @@
                     int gid = (int)g.GameId;
                     string name = string.IsNullOrWhiteSpace((string)g.NameZh) ? (string)g.Name : (string)g.NameZh;
                     <option value="@gid" selected="@(ViewBag.GameId == gid ? "selected" : null)">@name</option>
-                }
+            }
             }
         </select>
     </div>
@@ -127,6 +127,7 @@
 }
 else
 {
+    <!-- 如果還沒查過，顯示提示文字 -->
     <p class="text-muted">請先選擇條件查詢。</p>
 }
 

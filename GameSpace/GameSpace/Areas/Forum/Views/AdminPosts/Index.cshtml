@@ -31,20 +31,20 @@
         </tr>
     </thead>
     <tbody>
-    @foreach (var item in Model)
-    {
+        @foreach (var item in Model)
+        {
         var badge = item.Status switch {
             "published" => "bg-success",
             "hidden"    => "bg-secondary",
             _           => "bg-warning text-dark"
         };
-        <tr>
+            <tr>
             <td class="fw-medium">@item.Title</td>
             <td>
                 <span class="badge @badge text-uppercase">@item.Status</span>
             </td>
-            <td>@(item.Pinned ? "✅" : "❌")</td>
-            <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@(item.Pinned ? "✅" : "❌")</td>
+                <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
             <td class="d-flex flex-wrap gap-2">
                 <button type="button"
                         class="btn btn-outline-info btn-sm"
@@ -62,14 +62,14 @@
                       method="post" class="d-inline">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn btn-success btn-sm">發布</button>
-                </form>
+                    </form>
 
                 <form asp-action="Hide"
                       asp-route-id="@item.AdminPostId"
                       method="post" class="d-inline">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn btn-secondary btn-sm">隱藏</button>
-                </form>
+                    </form>
 
                 <form asp-action="TogglePin"
                       asp-route-id="@item.AdminPostId"
@@ -87,9 +87,9 @@
                         data-title="@item.Title">
                     刪除
                 </button>
-            </td>
-        </tr>
-    }
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
 

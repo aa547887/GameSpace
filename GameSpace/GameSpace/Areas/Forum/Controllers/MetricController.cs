@@ -19,6 +19,7 @@ namespace GameSpace.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int? sourceId, string? q, DateOnly? date)
         {
+            // 目標日期（預設今天 UTC 的日）
             var target = date ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
             // 上半部清單
@@ -70,7 +71,7 @@ namespace GameSpace.Areas.Admin.Controllers
         {
             // input type="date" 送來的是 yyyy-MM-dd（本地），取 Date 部分即可
             var target = DateOnly.FromDateTime((date ?? DateTime.UtcNow).Date);
-            
+
             var top10 = await BuildLeaderboardAsync(target, sourceId, q);
             var ranks = top10.Select(x => x.Rank).ToArray();
             var labelsDisplay = top10.Select(x => x.DisplayName).ToArray(); // 中文優先
@@ -192,6 +193,7 @@ namespace GameSpace.Areas.Admin.Controllers
 
         private async Task ValidateMetric(MetricEditVm vm)
         {
+            // (source_id, code) 唯一
             var dup = await _db.Metrics
                 .AnyAsync(x => x.SourceId == vm.SourceId && x.Code == vm.Code && x.MetricId != vm.MetricId);
             if (dup) ModelState.AddModelError("", "同一來源下的代碼必須唯一。");
@@ -205,6 +207,7 @@ namespace GameSpace.Areas.Admin.Controllers
             public List<LeaderboardRowVm> Top10 { get; set; } = new();
         }
 
+        // ➋ 新增 VM：排行榜每列
         public class LeaderboardRowVm
         {
             public int Rank { get; set; }
@@ -292,16 +295,18 @@ namespace GameSpace.Areas.Admin.Controllers
                 var display = string.IsNullOrWhiteSpace(zh) ? en : zh;
 
                 return new LeaderboardRowVm
-                {
-                    Rank = i + 1,
+            {
+                Rank = i + 1,
                     GameId = x.GameId,
                     GameName = en,          // 英文
                     DisplayName = display,  // 中文優先
-                    Score = Math.Round(x.Score, 4)
+                Score = Math.Round(x.Score, 4)
                 };
             }).ToList();
-
-
         }
+
+
+
     }
+}
 }
