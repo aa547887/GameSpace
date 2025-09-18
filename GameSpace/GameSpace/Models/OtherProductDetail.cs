@@ -5,9 +5,7 @@ namespace GameSpace.Models;
 
 public partial class OtherProductDetail
 {
-	internal string ProductName;
-
-	public int ProductId { get; set; }
+    public int ProductId { get; set; }
 
     public string? ProductDescription { get; set; }
 

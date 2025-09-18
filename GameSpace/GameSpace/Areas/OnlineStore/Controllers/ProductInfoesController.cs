@@ -243,7 +243,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			var platMap = gameMeta.ToDictionary(x => x.ProductId, x => x.PlatformName);
 			var gameTypeMap = gameMeta.ToDictionary(x => x.ProductId, x => x.GameType);
 
-			// 周邊分類名稱（只針對 nogame）
+			// 周邊分類名稱（只針對 notgame）
 			var otherMeta = await (from d in _context.OtherProductDetails.AsNoTracking()
 								   join m in _context.MerchTypes.AsNoTracking()
 									 on d.MerchTypeId equals m.MerchTypeId
@@ -471,15 +471,16 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return vm;
 		}
 
-		// -------- 小工具：正規化類別 --------
-		private static string NormalizeType(string? t)
+		// 小工具：將 productType 正規化
+		private static string NormalizeType(string? type)
 		{
-			t = (t ?? "").Trim().ToLower();
-			if (t == "notgame") t = "nogame";   // 全案統一
-			return t;
+			if (string.IsNullOrWhiteSpace(type)) return "";
+			type = type.Trim().ToLowerInvariant();
+			if (type == "nogame") return "notgame";
+			return (type == "game" || type == "notgame") ? type : "";
 		}
 		private static bool IsGameType(string? t) => NormalizeType(t) == "game";
-		private static bool IsOtherType(string? t) => NormalizeType(t) == "nogame";
+		private static bool IsOtherType(string? t) => NormalizeType(t) == "notgame";
 
 		// 把不屬於該類型的欄位清空（避免跨區欄位被送進來）
 		private void GateFieldsByType(ProductInfoFormVM vm)
@@ -511,9 +512,6 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		public async Task<IActionResult> Create()
 		{
 
-
-
-
             await FillDropdownsAsync();
 			ViewBag.Mode = "create";
 			// 預設未選類別 → 兩區都上鎖
@@ -532,30 +530,49 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ProductInfoFormVM vm)
-        {
-            var type = NormalizeType(vm.ProductType); // "game" / "nogame" / ""
-            ViewBag.Mode = "create";
-            ViewBag.EnableGame = type == "game";
-            ViewBag.EnableOther = type == "nogame";
-            await FillDropdownsAsync();
+		public async Task<IActionResult> Create(ProductInfoFormVM vm)
+		{
+			var type = NormalizeType(vm.ProductType); // "game" / "notgame" / ""
+			ViewBag.Mode = "create";
+			ViewBag.EnableGame = type == "game";
+			ViewBag.EnableOther = type == "notgame";
+			await FillDropdownsAsync();
 
-            // 把錯誤收集起來
-            var allErrors = ModelState
-                .Where(ms => ms.Value.Errors.Any())
-                .Select(ms => new
-                {
-                    Key = ms.Key,
-                    Errors = ms.Value.Errors.Select(e => e.ErrorMessage).ToList()
-                });
+			// --- 條件式驗證（初中級寫法，易懂、直觀） ---
+			if (string.IsNullOrWhiteSpace(type))
+				ModelState.AddModelError(nameof(vm.ProductType), "請先選擇類別");
 
-            // 丟進 ViewBag（讓 Razor 頁面也能看到）
-            ViewBag.ModelErrors = allErrors;
+			if (type == "game")
+			{
+				if (string.IsNullOrWhiteSpace(vm.PlatformName) && vm.PlatformId == null)
+					ModelState.AddModelError(nameof(vm.PlatformName), "平台為必填");
+				if (string.IsNullOrWhiteSpace(vm.GameType))
+					ModelState.AddModelError(nameof(vm.GameType), "遊戲類型為必填");
+			}
+			else if (type == "notgame")
+			{
+				if (!vm.MerchTypeId.HasValue)
+					ModelState.AddModelError(nameof(vm.MerchTypeId), "商品種類為必選");
+				if (!vm.StockQuantity.HasValue)
+					ModelState.AddModelError(nameof(vm.StockQuantity), "庫存數量為必填");
+				else if (vm.StockQuantity.Value < 0)
+					ModelState.AddModelError(nameof(vm.StockQuantity), "庫存數量不可小於 0");
+			}
 
-            if (!ModelState.IsValid)
-                return PartialView("_CreateEditModal", vm);
+			// 收集錯誤給 View
+			var allErrors = ModelState
+				.Where(ms => ms.Value.Errors.Any())
+				.Select(ms => new
+				{
+					Key = ms.Key,
+					Errors = ms.Value.Errors.Select(e => e.ErrorMessage).ToList()
+				}).ToList();
+			ViewBag.ModelErrors = allErrors;
 
-            try
+			if (!ModelState.IsValid)
+				return PartialView("_CreateEditModal", vm);
+
+			try
             {
                 // === 1) 先建 Info ===
                 var entity = new ProductInfo();
@@ -582,7 +599,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
                         IsActive = vm.IsActive
                     });
                 }
-                else if (type == "nogame")
+                else if (type == "notgame")
                 {
                     _context.OtherProductDetails.Add(new OtherProductDetail
                     {
@@ -679,11 +696,11 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		public async Task<IActionResult> Edit(ProductInfoFormVM vm)
 		{
 			// 先決定類別與灰階旗標（回填畫面要用）
-			var type = NormalizeType(vm.ProductType); // "game" / "nogame" / ""
+			var type = NormalizeType(vm.ProductType); // "game" / "notgame" / ""
 			vm.ProductType = type;                    // 標準化回 VM，避免 ApplyFromVM 帶入不一致
 			ViewBag.Mode = "edit";
 			ViewBag.EnableGame = type == "game";
-			ViewBag.EnableOther = type == "nogame";
+			ViewBag.EnableOther = type == "notgame";
 
 			await FillDropdownsAsync(); // 若需回傳部分檢核頁面
 
@@ -705,14 +722,14 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				if (string.IsNullOrWhiteSpace(vm.PlatformName))
 					vm.PlatformName = await LookupPlatformNameById(vm.PlatformId.Value);
 			}
-			else if (type == "nogame")
+			else if (type == "notgame")
 			{
 				if (!vm.MerchTypeId.HasValue)
 					return Json(new { ok = false, msg = "非遊戲類需選擇周邊分類。" });
 			}
 			else
 			{
-				return Json(new { ok = false, msg = "請先選擇類別（game / nogame）。" });
+				return Json(new { ok = false, msg = "請先選擇類別（game / notgame）。" });
 			}
 
 			// 變更前快照（log 用）
@@ -752,7 +769,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 						IsActive = vm.IsActive
 					});
 				}
-				else // nogame
+				else // notgame
 				{
 					_context.OtherProductDetails.Add(new OtherProductDetail
 					{
@@ -786,7 +803,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					d.ProductDescription = vm.GameProductDescription;
 					d.IsActive = vm.IsActive;
 				}
-				else // nogame
+				else // notgame
 				{
 					var d = await _context.OtherProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
 					if (d == null) { d = new OtherProductDetail { ProductId = p.ProductId }; _context.OtherProductDetails.Add(d); }
@@ -983,39 +1000,47 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return Json(new { ok = true, items = data });
 		}
 		private async Task<string> GenerateProductCodeAsync(string? productType)
-		{
-			var isGame = string.Equals(productType, "game", StringComparison.OrdinalIgnoreCase);
-			var isNoGame = string.Equals(productType, "nogame", StringComparison.OrdinalIgnoreCase) || string.Equals(productType, "notgame", StringComparison.OrdinalIgnoreCase);
-			var prefix = isGame ? "GM" : (isNoGame ? "OT" : "XX");
+{
+    var isGame   = string.Equals(productType, "game",   StringComparison.OrdinalIgnoreCase);
+    var isNotGame =  string.Equals(productType, "notgame", StringComparison.OrdinalIgnoreCase);
 
-			// 取出所有相同前綴的代碼（2字母 + 10碼數字）
-			var all = await _context.ProductCodes.AsNoTracking()
-				.Where(c => c.ProductCode1.StartsWith(prefix))
-				.Select(c => c.ProductCode1)
-				.ToListAsync();
+    var prefix = isGame ? "GM" : (isNotGame ? "OT" : "XX");
 
-			long maxN = 0;
-			foreach (var s in all)
-			{
-				var tail = s.Length >= 12 ? s.Substring(2) : "";
-				if (long.TryParse(tail, out var n) && n > maxN) maxN = n;
-			}
+    // 直接用字串倒序抓最大碼：GMxxxxxxxxxx / OTxxxxxxxxxx
+    // 因為尾碼固定長度 D10，所以字串排序 == 數值排序
+    var last = await _context.ProductCodes
+        .AsNoTracking()
+        .Where(c => c.ProductCode1 != null && c.ProductCode1.StartsWith(prefix))
+        .OrderByDescending(c => c.ProductCode1)   // 例如 GM0000000123 會排在 GM0000000010 前面
+        .Select(c => c.ProductCode1)
+        .FirstOrDefaultAsync();
 
-			// 嘗試避開併發：最多重試 3 次
-			for (int i = 0; i < 3; i++)
-			{
-				var next = maxN + 1;
-				var code = prefix + next.ToString("D10");
+    long next = 1;
+    if (!string.IsNullOrEmpty(last) && last.Length >= 12)
+    {
+        var tail = last.Substring(2); // 取後 10 碼
+        if (long.TryParse(tail, out var n))
+            next = n + 1;
+    }
 
-				var exists = await _context.ProductCodes.AsNoTracking().AnyAsync(x => x.ProductCode1 == code);
-				if (!exists) return code;
+    // 併發保險：最多重試 5 次，每次+1
+    for (int i = 0; i < 5; i++)
+    {
+        var candidate = prefix + next.ToString("D10"); // 固定長度 10 碼
+        var exists = await _context.ProductCodes
+            .AsNoTracking()
+            .AnyAsync(x => x.ProductCode1 == candidate);
 
-				maxN = next; // 碰撞就+1再試
-			}
+        if (!exists)
+            return candidate;
 
-			// 萬一還是撞，退回時間戳記保底（極不易發生）
-			return prefix + DateTime.UtcNow.Ticks.ToString().PadLeft(10, '0').Substring(0, 10);
-		}
+        next++;
+    }
+
+    // 極端 fallback（基本用不到）
+    return prefix + DateTime.UtcNow.Ticks.ToString().PadLeft(10, '0').Substring(0, 10);
+}
+
 
 
 		// ============================================================
@@ -1071,7 +1096,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		private void ApplyFromVM(ProductInfo e, ProductInfoFormVM vm)
 		{
 			e.ProductName = vm.ProductName.Trim();
-			e.ProductType = vm.ProductType;   // "game"/"nogame"
+			e.ProductType = vm.ProductType;   // "game"/"notgame"
 			e.Price = vm.Price;
 			e.CurrencyCode = vm.CurrencyCode;
 			e.ShipmentQuantity = vm.ShipmentQuantity;
@@ -1219,30 +1244,30 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return PartialView("_ImagesModal", imgs);
 		}
 
-		// =============== 快速新增供應商（Create/Edit 內 + 按鈕） ===============
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> QuickCreateSupplier(string name)
-		{
-			if (string.IsNullOrWhiteSpace(name))
-				return Json(new { ok = false, msg = "請輸入供應商名稱。" });
+		//// =============== 快速新增供應商（Create/Edit 內 + 按鈕） ===============
+		//[HttpPost]
+		//[ValidateAntiForgeryToken]
+		//public async Task<IActionResult> QuickCreateSupplier(string name)
+		//{
+		//	if (string.IsNullOrWhiteSpace(name))
+		//		return Json(new { ok = false, msg = "請輸入供應商名稱。" });
 
-			name = name.Trim();
+		//	name = name.Trim();
 
-			var existed = await _context.Suppliers
-				.AsNoTracking()
-				.Where(s => s.SupplierName == name)
-				.Select(s => new { s.SupplierId, s.SupplierName })
-				.FirstOrDefaultAsync();
+		//	var existed = await _context.Suppliers
+		//		.AsNoTracking()
+		//		.Where(s => s.SupplierName == name)
+		//		.Select(s => new { s.SupplierId, s.SupplierName })
+		//		.FirstOrDefaultAsync();
 
-			if (existed != null)
-				return Json(new { ok = true, id = existed.SupplierId, name = existed.SupplierName, existed = true });
+		//	if (existed != null)
+		//		return Json(new { ok = true, id = existed.SupplierId, name = existed.SupplierName, existed = true });
 
-			var entity = new Supplier { SupplierName = name };
-			_context.Suppliers.Add(entity);
-			await _context.SaveChangesAsync();
+		//	var entity = new Supplier { SupplierName = name };
+		//	_context.Suppliers.Add(entity);
+		//	await _context.SaveChangesAsync();
 
-			return Json(new { ok = true, id = entity.SupplierId, name = entity.SupplierName });
-		}
+		//	return Json(new { ok = true, id = entity.SupplierId, name = entity.SupplierName });
+		//}
 	}
 }
