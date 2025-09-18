@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Areas.Forum.Models.Posts;
 
 // EF 實體 / DbContext
 using GameSpace.Models;
@@ -34,7 +33,7 @@ namespace GameSpace.Areas.Forum.Controllers
             // 排序（id / name / created）
             bool desc = dir.Equals("desc", StringComparison.OrdinalIgnoreCase);
             query = sort switch
-        {
+            {
                 "id" => desc ? query.OrderByDescending(f => f.ForumId)
                              : query.OrderBy(f => f.ForumId),
 
@@ -87,10 +86,8 @@ namespace GameSpace.Areas.Forum.Controllers
                     Status = t.Status,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
-                    // 聚合：回覆數、讚數（量小先用 Count；之後可優化成 GroupBy）
                     ReplyCount = _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId && p.Status == "normal"),
                     LikeCount = _db.Reactions.Count(r => r.TargetType == "thread" && r.TargetId == t.ThreadId && r.Kind == "like"),
-                          // 收藏數（bookmarks: target_type='thread'）
                     BookmarkCount = _db.Bookmarks.Count(b => b.TargetType == "thread" && b.TargetId == t.ThreadId)
                 })
                 .ToListAsync();
@@ -123,9 +120,9 @@ namespace GameSpace.Areas.Forum.Controllers
 
             if (t.Status != status)
             {
-            t.Status = status;
-            t.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
+                t.Status = status;
+                t.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(List), new { forumId = forumId ?? t.ForumId });
@@ -159,9 +156,7 @@ namespace GameSpace.Areas.Forum.Controllers
                     Status = p.Status,
                     CreatedAt = p.CreatedAt,
                     UpdatedAt = p.UpdatedAt,
-                    // 讚數（reactions: target_type='post' & kind='like'）
                     LikeCount = _db.Reactions.Count(r => r.TargetType == "post" && r.TargetId == p.Id && r.Kind == "like"),
-                    // 收藏數（bookmarks: target_type='post'）
                     BookmarkCount = _db.Bookmarks.Count(b => b.TargetType == "post" && b.TargetId == p.Id)
                 })
                 .ToListAsync();
@@ -186,9 +181,9 @@ namespace GameSpace.Areas.Forum.Controllers
 
             if (p.Status != status)
             {
-            p.Status = status;
-            p.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
+                p.Status = status;
+                p.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Posts), new { threadId });

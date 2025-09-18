@@ -46,7 +46,6 @@
             <option value="hidden" selected="@(Model.Status == "hidden")">hidden</option>
             <option value="archived" selected="@(Model.Status == "archived")">archived</option>
         </select>
-
     </div>
     <div class="col-auto">
         <select class="form-select" name="size">
@@ -57,8 +56,6 @@
     </div>
     <div class="col-auto d-flex gap-2">
         <button class="btn btn-primary" type="submit">查詢</button>
-    </div>
-    <div class="col-auto">
         <a class="btn btn-outline-secondary"
            asp-area="Forum" asp-controller="Threads" asp-action="Index">← 回論壇清單</a>
     </div>
@@ -68,35 +65,35 @@
     <div class="card-body p-0">
         <table class="table table-sm table-striped table-hover align-middle mb-0">
             <thead class="table-light">
-        <tr>
+                <tr>
                     <th style="width:90px" class="mono">ID</th>
-            <th>標題</th>
-            <th style="width:120px">狀態</th>
+                    <th>標題</th>
+                    <th style="width:120px">狀態</th>
                     <th style="width:90px" class="text-center">回覆</th>
                     <th style="width:90px" class="text-center">讚</th>
                     <th style="width:90px" class="text-center">收藏</th>
                     <th style="width:170px" class="mono">建立</th>
                     <th style="width:170px" class="mono">更新</th>
                     <th style="width:280px">操作</th>
-        </tr>
-    </thead>
-    <tbody>
+                </tr>
+            </thead>
+            <tbody>
                 @if (!(Model.Items?.Any() ?? false))
                 {
                     <tr><td colspan="9" class="text-center text-muted py-5">沒有資料</td></tr>
                 }
                 else
                 {
-    @foreach (var x in Model.Items)
-    {
+                    @foreach (var x in Model.Items)
+                    {
                         var (badge, label) = x.Status switch
                         {
                             "normal" => ("badge bg-success badge-pill", "正常"),
                             "hidden" => ("badge bg-warning text-dark badge-pill", "隱藏"),
                             "archived" => ("badge bg-secondary badge-pill", "封存"),
                             _ => ("badge bg-light text-dark badge-pill", x.Status ?? "-")
-        };
-        <tr>
+                        };
+                        <tr>
                             <td class="mono">@x.ThreadId</td>
                             <td><div class="line-clamp-2 text-break">@x.Title</div></td>
                             <td><span class="@badge">@label</span></td>
@@ -108,44 +105,44 @@
                             <td>
                                 <div class="action-bar">
                                     <a class="btn btn-sm btn-info"
-                   asp-area="Forum" asp-controller="Threads" asp-action="Posts"
-                   asp-route-threadId="@x.ThreadId">查看回覆</a>
+                                       asp-area="Forum" asp-controller="Threads" asp-action="Posts"
+                                       asp-route-threadId="@x.ThreadId">查看回覆</a>
 
-                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                                    <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
                                           method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@x.ThreadId" />
-                    <input type="hidden" name="status" value="hidden" />
-                    <input type="hidden" name="forumId" value="@x.ForumId" />
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@x.ThreadId" />
+                                        <input type="hidden" name="status" value="hidden" />
+                                        <input type="hidden" name="forumId" value="@x.ForumId" />
                                         <button type="submit" class="btn btn-sm btn-warning"
                                                 @(x.Status == "hidden" ? "disabled" : null)>
                                             隱藏
                                         </button>
-                </form>
+                                    </form>
 
-                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                                    <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
                                           method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@x.ThreadId" />
-                    <input type="hidden" name="status" value="archived" />
-                    <input type="hidden" name="forumId" value="@x.ForumId" />
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@x.ThreadId" />
+                                        <input type="hidden" name="status" value="archived" />
+                                        <input type="hidden" name="forumId" value="@x.ForumId" />
                                         <button type="submit" class="btn btn-sm btn-secondary"
                                                 @(x.Status == "archived" ? "disabled" : null)>
                                             封存
                                         </button>
-                </form>
+                                    </form>
 
-                <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
+                                    <form asp-area="Forum" asp-controller="Threads" asp-action="ChangeStatus"
                                           method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@x.ThreadId" />
-                    <input type="hidden" name="status" value="normal" />
-                    <input type="hidden" name="forumId" value="@x.ForumId" />
-                    <button type="submit" class="btn btn-sm btn-success"
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@x.ThreadId" />
+                                        <input type="hidden" name="status" value="normal" />
+                                        <input type="hidden" name="forumId" value="@x.ForumId" />
+                                        <button type="submit" class="btn btn-sm btn-success"
                                                 @(x.Status == "normal" ? "disabled" : null)>
                                             恢復
                                         </button>
-                </form>
+                                    </form>
 
                                     <!-- 刪除：彈出確認 -->
                                     <button type="button" class="btn btn-sm btn-danger"
@@ -154,55 +151,55 @@
                                         刪除
                                     </button>
                                 </div>
-            </td>
-        </tr>
-    }
+                            </td>
+                        </tr>
+                    }
                 }
-    </tbody>
-</table>
+            </tbody>
+        </table>
     </div>
 </div>
 
 @* 分頁 *@
 @if (totalPages > 1)
-    {
+{
     <nav class="mt-3">
-            <ul class="pagination">
+        <ul class="pagination">
             <li class="page-item @(Model.Page <= 1 ? "disabled" : null)">
-                    <a class="page-link"
-                       asp-area="Forum" asp-controller="Threads" asp-action="List"
-                       asp-route-forumId="@Model.ForumId"
-                       asp-route-q="@Model.Q"
-                       asp-route-status="@Model.Status"
+                <a class="page-link"
+                   asp-area="Forum" asp-controller="Threads" asp-action="List"
+                   asp-route-forumId="@Model.ForumId"
+                   asp-route-q="@Model.Q"
+                   asp-route-status="@Model.Status"
                    asp-route-page="@(Model.Page - 1)"
-                       asp-route-size="@Model.Size">上一頁</a>
-                </li>
+                   asp-route-size="@Model.Size">上一頁</a>
+            </li>
 
             @for (int p = Math.Max(1, Model.Page - 2); p <= Math.Min(totalPages, Model.Page + 2); p++)
-                {
+            {
                 <li class="page-item @(p == Model.Page ? "active" : null)">
-                        <a class="page-link"
-                           asp-area="Forum" asp-controller="Threads" asp-action="List"
-                           asp-route-forumId="@Model.ForumId"
-                           asp-route-q="@Model.Q"
-                           asp-route-status="@Model.Status"
-                           asp-route-page="@p"
-                           asp-route-size="@Model.Size">@p</a>
-                    </li>
-                }
-
-            <li class="page-item @(Model.Page >= totalPages ? "disabled" : null)">
                     <a class="page-link"
                        asp-area="Forum" asp-controller="Threads" asp-action="List"
                        asp-route-forumId="@Model.ForumId"
                        asp-route-q="@Model.Q"
                        asp-route-status="@Model.Status"
-                   asp-route-page="@(Model.Page + 1)"
-                       asp-route-size="@Model.Size">下一頁</a>
+                       asp-route-page="@p"
+                       asp-route-size="@Model.Size">@p</a>
                 </li>
-            </ul>
-        </nav>
-    }
+            }
+
+            <li class="page-item @(Model.Page >= totalPages ? "disabled" : null)">
+                <a class="page-link"
+                   asp-area="Forum" asp-controller="Threads" asp-action="List"
+                   asp-route-forumId="@Model.ForumId"
+                   asp-route-q="@Model.Q"
+                   asp-route-status="@Model.Status"
+                   asp-route-page="@(Model.Page + 1)"
+                   asp-route-size="@Model.Size">下一頁</a>
+            </li>
+        </ul>
+    </nav>
+}
 
 @* 刪除確認 Modal（送到 ChangeStatus，status=deleted） *@
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">

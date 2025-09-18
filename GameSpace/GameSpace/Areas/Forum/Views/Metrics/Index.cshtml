@@ -71,12 +71,12 @@
                                 <td>@(x.IsActive ? "✅" : "❌")</td>
                                <td class="text-nowrap">
   <div class="d-inline-flex align-items-center gap-2">
-                                    <a asp-action="Edit" asp-route-id="@x.MetricId" class="btn btn-sm btn-warning">編輯</a>
+    <a asp-action="Edit" asp-route-id="@x.MetricId" class="btn btn-sm btn-warning">編輯</a>
     <form asp-action="ToggleActive" asp-route-id="@x.MetricId" method="post" class="m-0 p-0 d-inline">
-                                        <button class="btn btn-sm btn-secondary">啟用/停用</button>
-                                    </form>
+      <button class="btn btn-sm btn-secondary">啟用/停用</button>
+    </form>
   </div>
-                                </td>
+</td>
                             </tr>
                         }
                     </tbody>
