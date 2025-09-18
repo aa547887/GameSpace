@@ -208,9 +208,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Coupon>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Coupon");
+            entity.HasKey(e => e.CouponId);
+            entity.ToTable("Coupon");
 
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.CouponId }, "Coupon_index_26");
 
@@ -230,13 +229,17 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Coupon__UserID__689D8392");
+
+            // 添加 Coupon 和 CouponType 之間的關係
+            entity.HasOne(d => d.CouponType).WithMany()
+                .HasForeignKey(d => d.CouponTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<CouponType>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("CouponType");
+            entity.HasKey(e => e.CouponTypeId);
+            entity.ToTable("CouponType");
 
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -2169,4 +2172,5 @@ public partial class GameSpacedatabaseContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+
 
