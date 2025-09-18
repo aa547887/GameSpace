@@ -428,7 +428,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<List<GameSpace.Models.Pet>> GetPetsAsync()
+        public async Task<List<GameSpace.Models.Pet>> GetPetsAsync(PetQueryModel query)
         {
             return await GetAllPetsAsync();
         }
@@ -479,8 +479,22 @@ namespace GameSpace.Areas.MiniGame.Services
                 .FirstOrDefaultAsync(p => p.PetId == petId);
         }
 
-        public async Task<bool> UpdatePetDetailsAsync(GameSpace.Models.Pet pet)
+        public async Task<bool> UpdatePetDetailsAsync(int petId, PetUpdateModel model)
         {
+            var pet = await _context.Pets.FindAsync(petId);
+            if (pet == null) return false;
+            
+            pet.PetName = model.PetName;
+            pet.Color = model.Color;
+            pet.Background = model.Background;
+            pet.Experience = model.Experience;
+            pet.Level = model.Level;
+            pet.Hunger = model.Hunger;
+            pet.Happiness = model.Happiness;
+            pet.Health = model.Health;
+            pet.Energy = model.Energy;
+            pet.Cleanliness = model.Cleanliness;
+            
             _context.Pets.Update(pet);
             return await _context.SaveChangesAsync() > 0;
         }
@@ -526,7 +540,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<List<GameSpace.Models.MiniGame>> GetGameRecordsAsync()
+        public async Task<List<GameSpace.Models.MiniGame>> GetGameRecordsAsync(GameQueryModel query)
         {
             return await _context.MiniGames
                 .Include(g => g.User)
@@ -724,3 +738,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

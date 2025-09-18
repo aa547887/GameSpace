@@ -33,7 +33,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 .ThenInclude(r => r.ManagerRolePermissions)
                 .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
-            return manager?.ManagerRole?.ManagerRolePermissions ?? new List<ManagerRolePermission>();
+            return manager?.ManagerRole?.ManagerRolePermissions?.ToList() ?? new List<ManagerRolePermission>();
         }
 
         public async Task<ManagerDatum?> GetManagerDatumAsync(int managerId)

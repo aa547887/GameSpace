@@ -46,18 +46,18 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<GameSpace.Models.Pet?> GetUserPetAsync(int userId);
         Task<List<GameSpace.Models.Pet>> GetAllPetsAsync();
         Task<bool> UpdatePetAsync(int userId, string petName, string color, string background, int experience, int level, int hunger, int happiness, int health, int energy, int cleanliness);
-        Task<List<GameSpace.Models.Pet>> GetPetsAsync();
+        Task<List<GameSpace.Models.Pet>> GetPetsAsync(PetQueryModel query);
         Task<PetSummary> GetPetSummaryAsync();
         Task<PetRuleReadModel> GetPetRuleAsync();
         Task<GameSpace.Models.Pet?> GetPetDetailAsync(int petId);
-        Task<bool> UpdatePetDetailsAsync(GameSpace.Models.Pet pet);
+        Task<bool> UpdatePetDetailsAsync(int petId, PetUpdateModel model);
         Task<List<PetSkinColorChangeLog>> GetPetSkinColorChangeLogsAsync(int petId);
         Task<List<PetBackgroundColorChangeLog>> GetPetBackgroundColorChangeLogsAsync(int petId);
 
         // 小遊戲系統
         Task<List<GameSpace.Models.MiniGame>> GetUserGameRecordsAsync(int userId);
         Task<bool> AddGameRecordAsync(int userId, DateTime startTime, DateTime? endTime, string result, int pointsReward, int expReward, int couponReward);
-        Task<List<GameSpace.Models.MiniGame>> GetGameRecordsAsync();
+        Task<List<GameSpace.Models.MiniGame>> GetGameRecordsAsync(GameQueryModel query);
         Task<GameSummary> GetGameSummaryAsync();
         Task<GameRuleReadModel> GetGameRuleAsync();
         Task<GameSpace.Models.MiniGame?> GetGameDetailAsync(int gameId);

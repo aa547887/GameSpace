@@ -147,6 +147,10 @@ namespace GameSpace.Areas.MiniGame.Models
         public string Description { get; set; } = string.Empty;
         public DateTime TransactionDate { get; set; }
         public string UserName { get; set; } = string.Empty;
+        public int PointsChange { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public string Notes { get; set; } = string.Empty;
     }
 
     public class AdminWalletIndexViewModel
@@ -177,6 +181,10 @@ namespace GameSpace.Areas.MiniGame.Models
         public decimal Amount { get; set; } = 0;
         public int ExpiryDays { get; set; } = 30;
         public string Reason { get; set; } = string.Empty;
+        public List<Coupon> UserCoupons { get; set; } = new List<Coupon>();
+        public string CouponName { get; set; } = string.Empty;
+        public string DiscountType { get; set; } = string.Empty;
+        public decimal DiscountValue { get; set; }
     }
 
     public class AdminAdjustEVouchersViewModel
@@ -216,6 +224,9 @@ namespace GameSpace.Areas.MiniGame.Models
         public string UserName { get; set; } = string.Empty;
         public int UserPoint { get; set; }
         public DateTime LastUpdated { get; set; }
+        public int CurrentPoints { get; set; }
+        public int TotalEarnedPoints { get; set; }
+        public int TotalSpentPoints { get; set; }
     }
 
     public class UserCouponReadModel
@@ -311,6 +322,7 @@ namespace GameSpace.Areas.MiniGame.Models
 
     public class PetQueryModel
     {
+        public int PetId { get; set; }
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
         public int PageNumber { get; set; } = 1;
@@ -406,6 +418,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
         public int CurrentPage { get; set; } = 1;
+        public int TotalPages { get; set; }
     }
 
     public class AdminQueryHistoryViewModel

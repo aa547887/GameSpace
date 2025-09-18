@@ -91,7 +91,7 @@
                                                 }
                                             </td>
                                             <td>@coupon.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td>@coupon.ExpiryDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@(coupon.ExpiryDate?.ToString("yyyy-MM-dd HH:mm") ?? "無期限")</td>
                                             <td>
                                                 <a asp-action="AdjustCoupons" asp-route-userId="@coupon.UserId" 
                                                    class="btn btn-sm btn-warning">

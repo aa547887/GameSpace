@@ -31,4 +31,7 @@ public partial class Evoucher
     public DateTime ExpiryDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public int Id { get; set; }
+    
+    // 新增的屬性
+    public string UserName { get; set; } = string.Empty;
 }

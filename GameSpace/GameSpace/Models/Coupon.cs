@@ -28,4 +28,13 @@ public partial class Coupon
     public virtual CouponType CouponType { get; set; } = null!;
 
     public DateTime CreatedDate { get; set; }
+    
+    // 新增的屬性
+    public string UserName { get; set; } = string.Empty;
+    public string CouponName { get; set; } = string.Empty;
+    public string DiscountType { get; set; } = string.Empty;
+    public decimal DiscountValue { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+        public DateTime CreatedAt { get; set; }
+    public int Id { get; set; }
 }

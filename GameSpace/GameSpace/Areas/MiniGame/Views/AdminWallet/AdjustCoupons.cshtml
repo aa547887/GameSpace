@@ -73,7 +73,7 @@
                                                 }
                                             </td>
                                             <td>@coupon.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td>@coupon.ExpiryDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@(coupon.ExpiryDate?.ToString("yyyy-MM-dd HH:mm") ?? "無期限")</td>
                                             <td>
                                                 @if (!coupon.IsUsed && coupon.ExpiryDate > DateTime.Now)
                                                 {
