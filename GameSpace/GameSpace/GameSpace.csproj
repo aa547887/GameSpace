@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="TEST\**" />
+    <Content Remove="TEST\**" />
+    <EmbeddedResource Remove="TEST\**" />
+    <None Remove="TEST\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
@@ -26,7 +33,6 @@
     <Folder Include="Areas\OnlineStore\Data\" />
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
-    <Folder Include="TEST\" />
     <Folder Include="wwwroot\lib\image\" />
     <Folder Include="wwwroot\NewFolder\" />
   </ItemGroup>
