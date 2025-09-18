@@ -1,17 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using GameSpace.Areas.social_hub.Hubs;
-using GameSpace.Areas.social_hub.Models.ViewModels;
-using GameSpace.Data;
-using GameSpace.Models;
+using System.Collections.Generic;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-// ⬇️ 顯示端遮罩服務（用別名，與 Program/ChatHub 一致）
+using GameSpace.Data;
+using GameSpace.Models;
+
+using GameSpace.Areas.social_hub.Hubs;
+using GameSpace.Areas.social_hub.Models.ViewModels;
+using GameSpace.Infrastructure.Login;
+
+// 顯示端遮罩服務（只影響送到前端的內容）
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 
 namespace GameSpace.Areas.social_hub.Controllers
@@ -21,465 +25,542 @@ namespace GameSpace.Areas.social_hub.Controllers
 	{
 		private readonly GameSpacedatabaseContext _db;
 		private readonly IHubContext<ChatHub> _hub;
-		private readonly IMuteFilterAlias _mute; // ⬅️ 新增
+		private readonly IMuteFilterAlias _mute;
+		private readonly ILoginIdentity _login;
 
-		public ChatController(GameSpacedatabaseContext db, IHubContext<ChatHub> hub, IMuteFilterAlias mute)
+		public ChatController(
+			GameSpacedatabaseContext db,
+			IHubContext<ChatHub> hub,
+			IMuteFilterAlias mute,
+			ILoginIdentity login)
 		{
 			_db = db;
 			_hub = hub;
-			_mute = mute; // ⬅️ 新增
+			_mute = mute;
+			_login = login;
 		}
 
-		private (int meId, bool isManager) GetIdentity()
+		private async Task<(int meId, bool isManager)> GetIdentityAsync()
 		{
-			var idStr = Request.Cookies["gs_id"] ?? Request.Cookies["sh_uid"] ?? "0";
-			int.TryParse(idStr, out var id);
-			var kind = (Request.Cookies["gs_kind"] ?? "user").ToLowerInvariant();
-			return (id, kind == "manager");
+			var r = await _login.GetAsync();
+			return (r.EffectiveId, r.Kind == "manager");
 		}
 
 		private static bool AmIParty1(int meId, DmConversation c) => meId == c.Party1Id;
 		private static string UserGroup(int userId) => $"U_{userId}";
 
-		// ================ 入口頁：最近對話 + 聯絡人 ================
+		// ========= Index：會話清單 =========
 		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, isManager) = await GetIdentityAsync();
 			if (meId <= 0) return RedirectToAction(nameof(NotLoggedIn));
 
-			// 最近對話（最後訊息時間 desc）
-			var myConvs = await _db.DmConversations
+			var convs = await _db.DmConversations
 				.AsNoTracking()
-				.Where(c => !c.IsManagerDm && (c.Party1Id == meId || c.Party2Id == meId))
+				.Where(c =>
+					(c.Party1Id == meId || c.Party2Id == meId) &&
+					(isManager || !c.IsManagerDm))
 				.Select(c => new
 				{
 					c.ConversationId,
+					c.IsManagerDm,
 					OtherId = (c.Party1Id == meId ? c.Party2Id : c.Party1Id),
 					c.LastMessageAt,
 					LastText = _db.DmMessages
 						.Where(m => m.ConversationId == c.ConversationId)
 						.OrderByDescending(m => m.EditedAt)
 						.Select(m => m.MessageText)
-						.FirstOrDefault(),
-					Unread = _db.DmMessages.Count(m =>
-						m.ConversationId == c.ConversationId &&
-						!m.IsRead &&
-						m.SenderIsParty1 != (meId == c.Party1Id))
+						.FirstOrDefault()
 				})
 				.OrderByDescending(x => x.LastMessageAt)
 				.ToListAsync();
 
-			// 聯絡人（好友=Relation ACCEPTED）
-			var acceptedId = await _db.RelationStatuses
-				.AsNoTracking()
-				.Where(s => s.StatusCode == "ACCEPTED")
-				.Select(s => s.StatusId)
-				.FirstOrDefaultAsync();
+			var convIds = convs.Select(x => x.ConversationId).ToList();
 
-			var contacts = new List<ContactItemVM>();
-			if (acceptedId != 0)
+			var unreadList = await (
+				from m in _db.DmMessages
+				join c in _db.DmConversations on m.ConversationId equals c.ConversationId
+				where convIds.Contains(m.ConversationId)
+					&& !m.IsRead
+					&& (isManager || !c.IsManagerDm)
+					&& (
+						(c.Party1Id == meId && !m.SenderIsParty1) ||
+						(c.Party2Id == meId && m.SenderIsParty1)
+					)
+				group m by m.ConversationId into g
+				select new { ConversationId = g.Key, Count = g.Count() }
+			).ToListAsync();
+			var unreadDict = unreadList.ToDictionary(x => x.ConversationId, x => x.Count);
+
+			var conversations = convs.Select(x => new ConversationListItemVM
 			{
-				var friends = await (
-					from r in _db.Relations.AsNoTracking()
-					where r.StatusId == acceptedId && (r.UserIdSmall == meId || r.UserIdLarge == meId)
-					let fid = (r.UserIdSmall == meId ? r.UserIdLarge : r.UserIdSmall)
-					join u in _db.Users.AsNoTracking() on fid equals u.UserId
-					from conv in _db.DmConversations.AsNoTracking()
-						.Where(c => !c.IsManagerDm &&
-							((c.Party1Id == meId && c.Party2Id == fid) ||
-							 (c.Party1Id == fid && c.Party2Id == meId)))
-						.DefaultIfEmpty()
-					select new
-					{
-						fid,
-						u.UserName,
-						r.FriendNickname,
-						ConvId = (int?)conv.ConversationId,
-						ConvParty1Id = (int?)conv.Party1Id,
-						LastAt = (DateTime?)conv.LastMessageAt
-					}
-				).ToListAsync();
+				ConversationId = x.ConversationId,
+				OtherId = x.OtherId,
+				LastMessageAt = x.LastMessageAt,
+				LastPreview = _mute.Apply(x.LastText ?? string.Empty),
+				UnreadCount = unreadDict.TryGetValue(x.ConversationId, out var v) ? v : 0
+			}).ToList();
 
-				foreach (var f in friends)
-				{
-					int unread = 0;
-					if (f.ConvId.HasValue && f.ConvParty1Id.HasValue)
-					{
-						var iAmP1 = (f.ConvParty1Id.Value == meId);
-						unread = await _db.DmMessages
-							.AsNoTracking()
-							.Where(m => m.ConversationId == f.ConvId.Value && !m.IsRead && m.SenderIsParty1 != iAmP1)
-							.CountAsync();
-					}
+			var totalUnread = await CountTotalUnreadAsync(meId, isManager);
+			ViewBag.TotalUnread = totalUnread;
 
-					contacts.Add(new ContactItemVM
-					{
-						Id = f.fid,
-						Name = f.UserName ?? $"User {f.fid}",
-						Nick = f.FriendNickname,
-						Unread = unread,
-						LastAt = f.LastAt
-					});
-				}
-
-				contacts = contacts
-					.OrderByDescending(x => x.LastAt ?? DateTime.MinValue)
-					.ThenBy(x => x.Id)
-					.ToList();
-			}
-
-			var vm = new ChatHomeVM
+			return View(new ChatHomeVM
 			{
 				MeId = meId,
-				Conversations = myConvs.Select(x => new ConversationListItemVM
-				{
-					ConversationId = x.ConversationId,
-					OtherId = x.OtherId,
-					LastMessageAt = x.LastMessageAt,
-					// ⬇️ 入口頁預覽只顯示遮罩後的文字
-					LastPreview = _mute.Apply(x.LastText ?? string.Empty),
-					UnreadCount = x.Unread
-				}).ToList(),
-				Contacts = contacts
-			};
-
-			return View("Index", vm);
+				Conversations = conversations,
+				Contacts = new List<ContactItemVM>()
+			});
 		}
 
-		public IActionResult NotLoggedIn() => View();
-
-		// ================ 聯絡人（給左欄） ================
-		[HttpGet]
-		public async Task<IActionResult> Contacts()
-		{
-			var (meId, _) = GetIdentity();
-			if (meId <= 0) return Unauthorized();
-
-			var acceptedId = await _db.RelationStatuses
-				.AsNoTracking()
-				.Where(s => s.StatusCode == "ACCEPTED")
-				.Select(s => s.StatusId)
-				.FirstOrDefaultAsync();
-
-			if (acceptedId == 0) return Json(Array.Empty<ContactItemVM>());
-
-			var friends = await (
-				from r in _db.Relations.AsNoTracking()
-				where r.StatusId == acceptedId && (r.UserIdSmall == meId || r.UserIdLarge == meId)
-				let fid = (r.UserIdSmall == meId ? r.UserIdLarge : r.UserIdSmall)
-				join u in _db.Users.AsNoTracking() on fid equals u.UserId
-				from conv in _db.DmConversations.AsNoTracking()
-					.Where(c => !c.IsManagerDm &&
-						((c.Party1Id == meId && c.Party2Id == fid) ||
-						 (c.Party1Id == fid && c.Party2Id == meId)))
-					.DefaultIfEmpty()
-				select new
-				{
-					fid,
-					u.UserName,
-					r.FriendNickname,
-					ConvId = (int?)conv.ConversationId,
-					ConvParty1Id = (int?)conv.Party1Id,
-					LastAt = (DateTime?)conv.LastMessageAt
-				}
-			).ToListAsync();
-
-			var result = new List<ContactItemVM>(friends.Count);
-			foreach (var f in friends)
-			{
-				int unread = 0;
-				if (f.ConvId.HasValue && f.ConvParty1Id.HasValue)
-				{
-					var iAmP1 = (f.ConvParty1Id.Value == meId);
-					unread = await _db.DmMessages
-						.AsNoTracking()
-						.Where(m => m.ConversationId == f.ConvId.Value && !m.IsRead && m.SenderIsParty1 != iAmP1)
-						.CountAsync();
-				}
-
-				result.Add(new ContactItemVM
-				{
-					Id = f.fid,
-					Name = f.UserName ?? $"User {f.fid}",
-					Nick = f.FriendNickname,
-					Unread = unread,
-					LastAt = f.LastAt
-				});
-			}
-
-			return Json(result
-				.OrderByDescending(x => x.LastAt ?? DateTime.MinValue)
-				.ThenBy(x => x.Id));
-		}
-
-		// ================ 對話頁（伺服器端強制已讀 + 撈訊息） ================
+		// ========= With：只顯示既有會話；找不到就顯示空（不建立） =========
 		[HttpGet]
 		public async Task<IActionResult> With(int otherId)
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, _) = await GetIdentityAsync();
 			if (meId <= 0) return RedirectToAction(nameof(NotLoggedIn));
-			if (otherId <= 0) return RedirectToAction(nameof(Index));
+			if (otherId <= 0 || otherId == meId) return BadRequest("bad peer");
 
-			var conv = await GetOrCreateConversationAsync(meId, otherId);
+			var conv = await FindConversationAsync(meId, otherId);
+			ViewBag.MeId = meId; // 前端 meta 使用
 
-			// ★ 伺服器端強制已讀（不用等前端）
-			var (changed, bound) = await MarkConversationReadAsync(meId, otherId, upTo: null);
-			if (changed > 0)
+			if (conv == null)
 			{
-				await PushUnreadUpdate(meId, otherId);
-				await _hub.Clients.Group(UserGroup(otherId))
-					.SendAsync("ReadReceipt", new { fromUserId = meId, upToIso = (bound ?? DateTime.UtcNow).ToString("o") });
+				return View(new ChatThreadVM
+				{
+					OtherId = otherId,
+					Messages = new List<SimpleChatMessageVM>()
+				});
 			}
 
+			// 清未讀（只清「對方傳來的未讀」）
 			var iAmP1 = AmIParty1(meId, conv);
+			var unread = await _db.DmMessages
+				.Where(m => m.ConversationId == conv.ConversationId && !m.IsRead && m.SenderIsParty1 != iAmP1)
+				.ToListAsync();
 
-			var msgs = await _db.DmMessages
+			if (unread.Count > 0)
+			{
+				foreach (var m in unread) m.IsRead = true;
+				await _db.SaveChangesAsync();
+
+				var upToIso = unread.Max(m => m.EditedAt).ToUniversalTime().ToString("o");
+				await _hub.Clients.Group(UserGroup(otherId))
+					.SendAsync("ReadReceipt", new { fromUserId = meId, upToIso });
+			}
+
+			// 歷史訊息（最近 50 → 正序顯示），★ At 明確標成 UTC
+			var history = await _db.DmMessages
 				.AsNoTracking()
 				.Where(m => m.ConversationId == conv.ConversationId)
+				.OrderByDescending(m => m.EditedAt).Take(50)
 				.OrderBy(m => m.EditedAt)
 				.Select(m => new SimpleChatMessageVM
 				{
 					MessageId = m.MessageId,
 					SenderId = m.SenderIsParty1 ? conv.Party1Id : conv.Party2Id,
 					ReceiverId = m.SenderIsParty1 ? conv.Party2Id : conv.Party1Id,
-					Text = m.MessageText!, // 先取原文，下面統一遮罩
-					At = m.EditedAt,
+					Text = m.MessageText ?? string.Empty,
+					At = DateTime.SpecifyKind(m.EditedAt, DateTimeKind.Utc), // ★ 這行是關鍵
 					IsMine = (m.SenderIsParty1 == iAmP1),
 					IsRead = m.IsRead,
-					ReadAt = m.ReadAt
+					ReadAt = null
 				})
 				.ToListAsync();
 
-			// ⬇️ 顯示前逐筆遮罩（不改 DB）
-			foreach (var m in msgs)
-				m.Text = _mute.Apply(m.Text ?? string.Empty);
+			history.ForEach(m => m.Text = _mute.Apply(m.Text));
 
-			ViewBag.ConversationId = conv.ConversationId;
-			ViewBag.OtherId = otherId;
-			return View("With", msgs);
+			return View(new ChatThreadVM
+			{
+				OtherId = otherId,
+				Messages = history
+			});
 		}
 
-		// ================ 歷史 / 增量 ================
+		// ========= History：最近 50 筆；★ At 明確標成 UTC =========
 		[HttpGet]
-		public async Task<IActionResult> History(int otherId, DateTime? after = null)
+		public async Task<IActionResult> History(int otherId, string? beforeIso = null, int take = 50)
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, _) = await GetIdentityAsync();
 			if (meId <= 0) return Unauthorized();
-			if (otherId <= 0) return BadRequest("otherId required");
+			if (otherId <= 0 || otherId == meId) return BadRequest("bad peer");
 
-			var conv = await GetOrCreateConversationAsync(meId, otherId);
+			var conv = await FindConversationAsync(meId, otherId);
+			if (conv == null) return Ok(Array.Empty<SimpleChatMessageVM>());
+
 			var iAmP1 = AmIParty1(meId, conv);
 
-			var q = _db.DmMessages.AsNoTracking()
-				.Where(m => m.ConversationId == conv.ConversationId);
-			if (after is DateTime cut) q = q.Where(m => m.EditedAt > cut);
+			DateTime? before = null;
+			if (!string.IsNullOrWhiteSpace(beforeIso) &&
+				DateTime.TryParse(beforeIso, null, DateTimeStyles.RoundtripKind, out var parsed))
+			{
+				before = parsed;
+			}
 
-			var items = await q.OrderBy(m => m.EditedAt)
+			var query = _db.DmMessages.AsNoTracking()
+				.Where(m => m.ConversationId == conv.ConversationId);
+			if (before.HasValue) query = query.Where(m => m.EditedAt < before.Value);
+
+			var list = await query
+				.OrderByDescending(m => m.EditedAt)
+				.Take(Math.Clamp(take, 10, 200))
+				.OrderBy(m => m.EditedAt)
 				.Select(m => new SimpleChatMessageVM
 				{
 					MessageId = m.MessageId,
 					SenderId = m.SenderIsParty1 ? conv.Party1Id : conv.Party2Id,
 					ReceiverId = m.SenderIsParty1 ? conv.Party2Id : conv.Party1Id,
-					Text = m.MessageText!, // 先取原文
-					At = m.EditedAt,
+					Text = m.MessageText ?? string.Empty,
+					At = DateTime.SpecifyKind(m.EditedAt, DateTimeKind.Utc), // ★ 關鍵
 					IsMine = (m.SenderIsParty1 == iAmP1),
 					IsRead = m.IsRead,
-					ReadAt = m.ReadAt
+					ReadAt = null
 				})
 				.ToListAsync();
 
-			// ⬇️ 回傳前遮罩
-			foreach (var it in items)
-				it.Text = _mute.Apply(it.Text ?? string.Empty);
-
-			return Json(items);
+			list.ForEach(it => it.Text = _mute.Apply(it.Text));
+			return Ok(list);
 		}
 
-		// ================ 送訊息（HTTP 後備） ================
+		// ========= Send（HTTP 後備）— 只有這裡會建立對話；回傳 UTC ISO =========
 		[HttpPost]
-		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Send(int otherId, string text)
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, isManager) = await GetIdentityAsync();
 			if (meId <= 0) return Unauthorized();
-			if (otherId <= 0) return BadRequest("otherId required");
+			if (otherId <= 0 || otherId == meId) return BadRequest("bad peer");
 			if (string.IsNullOrWhiteSpace(text)) return BadRequest("empty");
 
 			text = text.Trim();
 			if (text.Length > 255) text = text[..255];
 
-			var conv = await GetOrCreateConversationAsync(meId, otherId);
+			var conv = await FindConversationAsync(meId, otherId)
+				?? await GetOrCreateConversationAsync(meId, otherId, preferManagerDm: isManager);
+
 			var iAmP1 = AmIParty1(meId, conv);
 
 			var now = DateTime.UtcNow;
+			conv.LastMessageAt = now;
+
 			var msg = new DmMessage
 			{
 				ConversationId = conv.ConversationId,
 				SenderIsParty1 = iAmP1,
-				MessageText = text, // ✅ DB 存原文
+				MessageText = text,   // DB 永遠存原文
 				IsRead = false,
 				EditedAt = now
 			};
 
 			_db.DmMessages.Add(msg);
-			await _db.SaveChangesAsync(); // Trigger 會更新 last_message_at
+			await _db.SaveChangesAsync(); // 這時 msg.MessageId 有值
 
-			// ✅ HTTP 回傳給前端的內容用遮罩後文字
-			var display = _mute.Apply(msg.MessageText ?? string.Empty);
-			return Ok(new { messageId = msg.MessageId, at = msg.EditedAt, mine = true, text = display });
+			// 廣播用遮罩後文字
+			var display = _mute.Apply(text);
+			var payload = new
+			{
+				messageId = msg.MessageId,
+				senderId = meId,
+				receiverId = otherId,
+				content = display,
+				sentAtIso = msg.EditedAt.ToString("o") // UTC ISO
+			};
+
+			await _hub.Clients.Group(UserGroup(meId)).SendAsync("ReceiveDirect", payload);
+			await _hub.Clients.Group(UserGroup(otherId)).SendAsync("ReceiveDirect", payload);
+
+			await BroadcastUnreadAsync(otherId, meId);
+
+			// ★ 回傳同時帶 at 與 atIso（都為 UTC ISO），前端怎麼取都 OK
+			var atIso = msg.EditedAt.ToUniversalTime().ToString("o");
+			return Ok(new { ok = true, messageId = msg.MessageId, at = atIso, atIso, text = display });
 		}
 
-		// ================ 標記已讀（HTTP API，配合前端 / 視窗回前景） ================
+		// ========= 前景時手動讀回執（只推播，不動資料） =========
 		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> MarkRead(int otherId, string? upToIso = null)
+		public async Task<IActionResult> MarkRead(int otherId, string? upToIso)
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, _) = await GetIdentityAsync();
 			if (meId <= 0) return Unauthorized();
-			if (otherId <= 0) return BadRequest("otherId required");
 
-			DateTime? upTo = null;
 			if (!string.IsNullOrWhiteSpace(upToIso) &&
-				DateTime.TryParse(upToIso, null, DateTimeStyles.RoundtripKind, out var t))
+				DateTime.TryParse(upToIso, null, DateTimeStyles.RoundtripKind, out _))
 			{
-				upTo = t;
+				await _hub.Clients.Group(UserGroup(otherId))
+					.SendAsync("ReadReceipt", new { fromUserId = meId, upToIso });
+			}
+			else
+			{
+				await _hub.Clients.Group(UserGroup(otherId))
+					.SendAsync("ReadReceipt", new { fromUserId = meId, upToIso = (string?)null });
 			}
 
-			var (changed, bound) = await MarkConversationReadAsync(meId, otherId, upTo);
-			if (changed == 0)
-			{
-				await PushUnreadUpdate(meId, otherId);
-				return Ok(new { changed = 0 });
-			}
-
-			await PushUnreadUpdate(meId, otherId);
-			await _hub.Clients.Group(UserGroup(otherId))
-				.SendAsync("ReadReceipt", new { fromUserId = meId, upToIso = (bound ?? DateTime.UtcNow).ToString("o") });
-
-			return Ok(new { changed });
+			var (total, peerUnread) = await ComputeUnreadAsync(meId, otherId);
+			return Ok(new { total, peerId = otherId, unread = peerUnread });
 		}
 
-		// ================ 未讀摘要（左上角總數） ================
+		// ========= 未讀摘要 =========
 		[HttpGet]
-		public async Task<IActionResult> UnreadSummary()
+		public async Task<IActionResult> UnreadSummary(int? peerId)
 		{
-			var (meId, _) = GetIdentity();
+			var (meId, _) = await GetIdentityAsync();
 			if (meId <= 0) return Unauthorized();
 
-			var myConvs = await _db.DmConversations
-				.AsNoTracking()
-				.Where(c => !c.IsManagerDm && (c.Party1Id == meId || c.Party2Id == meId))
-				.Select(c => new { c.ConversationId, IAmP1 = (c.Party1Id == meId) })
-				.ToListAsync();
-
-			if (myConvs.Count == 0) return Json(new { total = 0, items = Array.Empty<object>() });
-
-			var items = new List<object>(myConvs.Count);
-			int total = 0;
-
-			foreach (var meta in myConvs)
-			{
-				var count = await _db.DmMessages
-					.AsNoTracking()
-					.Where(m => m.ConversationId == meta.ConversationId && !m.IsRead && m.SenderIsParty1 != meta.IAmP1)
-					.CountAsync();
-
-				total += count;
-				items.Add(new { conversationId = meta.ConversationId, unread = count });
-			}
-
-			return Json(new { total, items });
+			var (total, peerUnread) = await ComputeUnreadAsync(meId, peerId ?? 0);
+			return Ok(new { total, peerId = peerId ?? 0, unread = peerUnread });
 		}
 
-		// ===== internal =====
-		private async Task<DmConversation> GetOrCreateConversationAsync(int meId, int otherId)
+		// ========= 聯絡人（使用者：好友；管理員：所有管理員） =========
+		[HttpGet]
+		public async Task<IActionResult> Contacts()
 		{
-			var existing = await _db.DmConversations
-				.FirstOrDefaultAsync(c => !c.IsManagerDm &&
-					((c.Party1Id == meId && c.Party2Id == otherId) ||
-					 (c.Party1Id == otherId && c.Party2Id == meId)));
-			if (existing != null) return existing;
+			var (meId, isManager) = await GetIdentityAsync();
+			if (meId <= 0) return Unauthorized();
 
-			var p1 = Math.Min(meId, otherId);
-			var p2 = Math.Max(meId, otherId);
+			if (isManager)
+			{
+				var managers = await _db.ManagerData
+					.AsNoTracking()
+					.Where(m => m.ManagerId != meId)
+					.Select(m => new { m.ManagerId, m.ManagerName })
+					.ToListAsync();
 
+				var peerIds = managers.Select(x => x.ManagerId).ToList();
+
+				var convs = await _db.DmConversations
+					.AsNoTracking()
+					.Where(c => c.IsManagerDm &&
+						((c.Party1Id == meId && peerIds.Contains(c.Party2Id)) ||
+						 (c.Party2Id == meId && peerIds.Contains(c.Party1Id))))
+					.Select(c => new { c.ConversationId, OtherId = (c.Party1Id == meId ? c.Party2Id : c.Party1Id), c.LastMessageAt })
+					.ToListAsync();
+
+				var convIds = convs.Select(c => c.ConversationId).ToList();
+
+				var unreadDict = convIds.Count == 0
+					? new Dictionary<int, int>()
+					: (await (
+						from m in _db.DmMessages
+						join c in _db.DmConversations on m.ConversationId equals c.ConversationId
+						where convIds.Contains(m.ConversationId)
+							&& !m.IsRead
+							&& c.IsManagerDm
+							&& (
+								(c.Party1Id == meId && !m.SenderIsParty1) ||
+								(c.Party2Id == meId && m.SenderIsParty1)
+							)
+						group m by m.ConversationId into g
+						select new { ConversationId = g.Key, Count = g.Count() }
+					).ToListAsync()).ToDictionary(x => x.ConversationId, x => x.Count);
+
+				var list = managers
+					.Select(m =>
+					{
+						var conv = convs.FirstOrDefault(c => c.OtherId == m.ManagerId);
+						var lastAt = conv?.LastMessageAt;
+						var unread = (conv != null && unreadDict.TryGetValue(conv.ConversationId, out var v)) ? v : 0;
+						return new ContactItemVM
+						{
+							Id = m.ManagerId,
+							Name = string.IsNullOrWhiteSpace(m.ManagerName) ? $"Manager {m.ManagerId}" : m.ManagerName,
+							Nick = null,
+							Unread = unread,
+							LastAt = lastAt
+						};
+					})
+					.OrderByDescending(x => x.LastAt)
+					.ToList();
+
+				return Json(list);
+			}
+			else
+			{
+				var acceptedId = await _db.RelationStatuses
+					.AsNoTracking()
+					.Where(s => s.StatusCode == "ACCEPTED")
+					.Select(s => (int?)s.StatusId)
+					.FirstOrDefaultAsync();
+
+				if (acceptedId is null)
+					return Json(new List<ContactItemVM>());
+
+				var friendPairs = await _db.Relations
+					.AsNoTracking()
+					.Where(r => r.StatusId == acceptedId &&
+								(r.UserIdSmall == meId || r.UserIdLarge == meId))
+					.Select(r => new
+					{
+						FriendId = (r.UserIdSmall == meId ? r.UserIdLarge : r.UserIdSmall),
+						r.FriendNickname
+					})
+					.ToListAsync();
+
+				if (friendPairs.Count == 0)
+					return Json(new List<ContactItemVM>());
+
+				var friendIds = friendPairs.Select(x => x.FriendId).Distinct().ToList();
+
+				var friendNames = await _db.Users
+					.AsNoTracking()
+					.Where(u => friendIds.Contains(u.UserId))
+					.Select(u => new { u.UserId, u.UserName })
+					.ToListAsync();
+				var nameDict = friendNames.ToDictionary(x => x.UserId, x => x.UserName);
+
+				var convs = await _db.DmConversations
+					.AsNoTracking()
+					.Where(c => !c.IsManagerDm &&
+						((c.Party1Id == meId && friendIds.Contains(c.Party2Id)) ||
+						 (c.Party2Id == meId && friendIds.Contains(c.Party1Id))))
+					.Select(c => new { c.ConversationId, OtherId = (c.Party1Id == meId ? c.Party2Id : c.Party1Id), c.LastMessageAt })
+					.ToListAsync();
+
+				var convIds = convs.Select(c => c.ConversationId).ToList();
+
+				var unreadDict = convIds.Count == 0
+					? new Dictionary<int, int>()
+					: (await (
+						from m in _db.DmMessages
+						join c in _db.DmConversations on m.ConversationId equals c.ConversationId
+						where convIds.Contains(m.ConversationId)
+							&& !m.IsRead
+							&& !c.IsManagerDm
+							&& (
+								(c.Party1Id == meId && !m.SenderIsParty1) ||
+								(c.Party2Id == meId && m.SenderIsParty1)
+							)
+						group m by m.ConversationId into g
+						select new { ConversationId = g.Key, Count = g.Count() }
+					).ToListAsync()).ToDictionary(x => x.ConversationId, x => x.Count);
+
+				var nickDict = friendPairs.GroupBy(x => x.FriendId)
+					.ToDictionary(g => g.Key, g => g.Select(z => z.FriendNickname).FirstOrDefault(fn => !string.IsNullOrWhiteSpace(fn)));
+
+				var list = friendIds
+					.Select(fid =>
+					{
+						var conv = convs.FirstOrDefault(c => c.OtherId == fid);
+						var lastAt = conv?.LastMessageAt;
+						var unread = (conv != null && unreadDict.TryGetValue(conv.ConversationId, out var v)) ? v : 0;
+						return new ContactItemVM
+						{
+							Id = fid,
+							Name = nameDict.TryGetValue(fid, out var nm) && !string.IsNullOrWhiteSpace(nm) ? nm : $"User {fid}",
+							Nick = nickDict.TryGetValue(fid, out var nk) ? nk : null,
+							Unread = unread,
+							LastAt = lastAt
+						};
+					})
+					.OrderByDescending(x => x.LastAt)
+					.ToList();
+
+				return Json(list);
+			}
+		}
+
+		[HttpGet]
+		public IActionResult NotLoggedIn() => View();
+
+		// ====================== 私有：共用查詢/計算 ======================
+
+		private async Task<DmConversation?> FindConversationAsync(int a, int b)
+		{
+			return await _db.DmConversations
+				.FirstOrDefaultAsync(c =>
+					((c.Party1Id == a && c.Party2Id == b) || (c.Party1Id == b && c.Party2Id == a)) &&
+					c.IsManagerDm)
+				?? await _db.DmConversations
+				.FirstOrDefaultAsync(c =>
+					!c.IsManagerDm &&
+					((c.Party1Id == a && c.Party2Id == b) || (c.Party1Id == b && c.Party2Id == a)));
+		}
+
+		private async Task<bool> ShouldBeManagerDmAsync(int a, int b, bool meIsManager)
+		{
+			if (!meIsManager) return false;
+			var otherIsManager = await _db.DmConversations
+				.AsNoTracking()
+				.AnyAsync(c => c.IsManagerDm && (c.Party1Id == b || c.Party2Id == b));
+			return otherIsManager;
+		}
+
+		private async Task<DmConversation> GetOrCreateConversationAsync(int a, int b, bool preferManagerDm)
+		{
+			var found = await FindConversationAsync(a, b);
+			if (found != null) return found;
+
+			var isMgrDm = preferManagerDm && await ShouldBeManagerDmAsync(a, b, true);
+
+			var p1 = Math.Min(a, b);
+			var p2 = Math.Max(a, b);
+
+			var now = DateTime.UtcNow;
 			var conv = new DmConversation
 			{
-				IsManagerDm = false,
+				IsManagerDm = isMgrDm,
 				Party1Id = p1,
 				Party2Id = p2,
-				CreatedAt = DateTime.UtcNow
+				CreatedAt = now,
+				LastMessageAt = now  // ★ 避免 NOT NULL 與排序問題
 			};
+
 			_db.DmConversations.Add(conv);
 			try
 			{
 				await _db.SaveChangesAsync();
 				return conv;
 			}
-			catch
+			catch (DbUpdateException)
 			{
-				return await _db.DmConversations.FirstAsync(c => !c.IsManagerDm && c.Party1Id == p1 && c.Party2Id == p2);
+				var again = await FindConversationAsync(a, b);
+				if (again != null) return again;
+				throw;
 			}
 		}
 
-		/// <summary>將「對方→我」的未讀改已讀（同時維護 IsRead/ReadAt），回傳 (changed, upToBound)</summary>
-		private async Task<(int changed, DateTime? upTo)> MarkConversationReadAsync(int meId, int otherId, DateTime? upTo = null)
+		private async Task<(int total, int peerUnread)> ComputeUnreadAsync(int userId, int peerId)
 		{
-			var conv = await GetOrCreateConversationAsync(meId, otherId);
-			var iAmP1 = (meId == conv.Party1Id);
+			var targetIsManager = await _db.DmConversations
+				.AsNoTracking()
+				.AnyAsync(c => c.IsManagerDm && (c.Party1Id == userId || c.Party2Id == userId));
 
-			var q = _db.DmMessages
-				.Where(m => m.ConversationId == conv.ConversationId
-							&& !m.IsRead
-							&& m.SenderIsParty1 != iAmP1);
+			var total = await _db.DmMessages
+				.Where(m => !m.IsRead &&
+					(targetIsManager || !m.Conversation.IsManagerDm) &&
+					(
+						(m.Conversation.Party1Id == userId && !m.SenderIsParty1) ||
+						(m.Conversation.Party2Id == userId && m.SenderIsParty1)
+					))
+				.CountAsync();
 
-			if (upTo.HasValue) q = q.Where(m => m.EditedAt <= upTo.Value);
-
-			var list = await q.ToListAsync();
-			if (list.Count == 0) return (0, upTo);
-
-			var now = DateTime.UtcNow;
-			foreach (var m in list)
-			{
-				m.IsRead = true;
-				m.ReadAt = now; // 觸發器也會保險補齊
-			}
-			await _db.SaveChangesAsync();
-
-			var bound = upTo ?? list.Max(x => x.EditedAt);
-			return (list.Count, bound);
-		}
-
-		private async Task PushUnreadUpdate(int meId, int otherId)
-		{
-			// 針對此會話的未讀
-			var conv = await _db.DmConversations
-				.FirstOrDefaultAsync(c => !c.IsManagerDm &&
-					((c.Party1Id == meId && c.Party2Id == otherId) ||
-					 (c.Party1Id == otherId && c.Party2Id == meId)));
-
+			var conv = await FindConversationAsync(userId, peerId);
 			var peerUnread = 0;
 			if (conv != null)
 			{
-				var iAmP1 = (conv.Party1Id == meId);
+				var iAmP1 = (conv.Party1Id == userId);
 				peerUnread = await _db.DmMessages
 					.Where(m => m.ConversationId == conv.ConversationId && !m.IsRead && m.SenderIsParty1 != iAmP1)
 					.CountAsync();
 			}
+			return (total, peerUnread);
+		}
 
-			// 總未讀
-			var total = await _db.DmMessages
+		private async Task BroadcastUnreadAsync(int userId, int peerId)
+		{
+			var (total, peerUnread) = await ComputeUnreadAsync(userId, peerId);
+			await _hub.Clients.Group(UserGroup(userId))
+				.SendAsync("UnreadUpdate", new { total, peerId, unread = peerUnread });
+		}
+
+		private async Task<int> CountTotalUnreadAsync(int meId, bool isManager)
+		{
+			return await _db.DmMessages
 				.Where(m => !m.IsRead &&
-					!m.Conversation.IsManagerDm &&
+					(isManager || !m.Conversation.IsManagerDm) &&
 					(
 						(m.Conversation.Party1Id == meId && !m.SenderIsParty1) ||
 						(m.Conversation.Party2Id == meId && m.SenderIsParty1)
 					))
 				.CountAsync();
-
-			await _hub.Clients.Group(UserGroup(meId))
-				.SendAsync("UnreadUpdate", new { total, peerId = otherId, unread = peerUnread });
 		}
 	}
 }

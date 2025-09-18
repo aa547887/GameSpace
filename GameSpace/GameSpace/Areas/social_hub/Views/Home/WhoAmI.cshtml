@@ -34,28 +34,29 @@
 </div>
 
 <div class="d-flex flex-wrap gap-2 mb-4">
+    <!-- 改用 QuickLogin -->
     <a class="btn btn-outline-primary"
-       href="@Url.Action("LoginUser", "Home", new { area = "social_hub", uid = 10000012 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "user", id = 10000012 })">
         假登入 User（#10000012）
     </a>
     <a class="btn btn-outline-primary"
-       href="@Url.Action("LoginUser", "Home", new { area = "social_hub", uid = 10000001 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "user", id = 10000001 })">
         假登入 User（#10000001）
     </a>
     <a class="btn btn-outline-primary"
-       href="@Url.Action("LoginUser", "Home", new { area = "social_hub", uid = 10000002 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "user", id = 10000002 })">
         假登入 User（#10000002）
     </a>
     <a class="btn btn-outline-secondary"
-       href="@Url.Action("LoginManager", "Home", new { area = "social_hub", mid = 30000001 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "manager", id = 30000001 })">
         假登入 Manager（#30000001）
     </a>
     <a class="btn btn-outline-secondary"
-       href="@Url.Action("LoginManager", "Home", new { area = "social_hub", mid = 30000099 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "manager", id = 30000099 })">
         假登入 Manager（#30000099）
     </a>
     <a class="btn btn-outline-secondary"
-       href="@Url.Action("LoginManager", "Home", new { area = "social_hub", mid = 30000100 })">
+       href="@Url.Action("QuickLogin", "Home", new { area = "social_hub", kind = "manager", id = 30000100 })">
         假登入 Manager（#30000100）
     </a>
     <a class="btn btn-outline-danger"
@@ -104,7 +105,7 @@
                 <p class="mb-1"><strong>Items["gs_id"]：</strong> @itemsId</p>
                 <p class="mb-1"><strong>Items["gs_kind"]：</strong> @itemsKind</p>
                 <p class="text-muted mb-0">
-                    備註：若此處顯示為「(無)」，代表本動作未套用 <code>[SocialHubAuth]</code>，<br />
+                    備註：若此處顯示為「(無)」，代表本動作未套用 <code>[SocialHubAuth]</code>，
                     或該過濾器尚未執行；不影響上方以 <code>ILoginIdentity</code> 顯示的主狀態。
                 </p>
             </div>

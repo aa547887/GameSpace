@@ -1,13 +1,27 @@
-﻿@model IEnumerable<GameSpace.Areas.social_hub.Models.ViewModels.SimpleChatMessageVM>
+﻿@using GameSpace.Areas.social_hub.Models.ViewModels
+@model ChatThreadVM
 @{
     ViewData["Title"] = "對話";
-    var otherId = (int?)ViewBag.OtherId ?? 0;
-    var gsId = Context.Request.Cookies["gs_id"] ?? Context.Request.Cookies["sh_uid"];
-    var meIdForMeta = int.TryParse(gsId, out var mid) ? mid : 0;
+
+    // ★ 由控制器提供的對象 Id（ChatThreadVM.OtherId）
+    var otherId = Model?.OtherId ?? 0;
+
+    // ★ me-id 來源：
+    //    1) 建議控制器透過 ViewBag.MeId 帶進來（ILoginIdentity 讀當前身分）
+    //    2) 若未提供，退回你現有的測試 cookie（gs_id/sh_uid），僅作前端判斷之用
+    var meIdFromBag = (int?)ViewBag.MeId ?? 0;
+    var meIdFromCookie = 0;
+    {
+        var gsId = Context.Request.Cookies["gs_id"] ?? Context.Request.Cookies["sh_uid"];
+        meIdFromCookie = int.TryParse(gsId, out var tmp) ? tmp : 0;
+    }
+    var meIdForMeta = meIdFromBag > 0 ? meIdFromBag : meIdFromCookie;
 }
+
 @section Styles {
     <link href="~/lib/social_hub/css/chat-1to1.css" rel="stylesheet" />
     <style>
+        /* 版面高度：視窗 70% */
         .chat-pane, .contact-pane {
             height: 70vh;
         }
@@ -21,9 +35,57 @@
             border-radius: 0;
             padding: .5rem .75rem;
         }
+
+        .chat-surface {
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: .5rem;
+        }
+
+            .message .content {
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .message.mine {
+                text-align: right;
+            }
+
+                .message.mine .content {
+                    background: #0d6efd;
+                    color: #fff;
+                    display: inline-block;
+                    padding: .5rem .75rem;
+                    border-radius: .5rem;
+                }
+
+            .message.other .content {
+                background: #fff;
+                border: 1px solid #e9ecef;
+                display: inline-block;
+                padding: .5rem .75rem;
+                border-radius: .5rem;
+            }
+
+            .message .meta {
+                font-size: .75rem;
+                color: #6c757d;
+                margin-top: .125rem;
+            }
+
+        .readmark {
+            opacity: .35;
+        }
+
+            .readmark.on {
+                opacity: 1;
+            }
     </style>
 }
 
+<!-- 供前端使用的簡易標頭（不含敏感資訊） -->
 <meta name="me-id" content="@meIdForMeta" />
 <meta name="me-name" content="User @meIdForMeta" />
 
@@ -53,19 +115,20 @@
         <div class="col-12 col-md-9">
             <div class="chat-surface rounded shadow-sm p-0 d-flex flex-column chat-pane">
                 <div class="p-2 border-bottom bg-white d-flex align-items-center justify-content-between">
-                    <div id="peerTitle"><strong>請從左側選擇對象</strong></div>
+                    <div id="peerTitle"><strong>與 #@otherId 的對話</strong></div>
                     <div class="small text-muted">即時 / 輪詢備援</div>
                 </div>
 
+                <!-- ★ 控制器已「倒序取 50 → 正序顯示」，這裡直接照 Model.Messages 的順序渲染（由舊到新） -->
                 <div id="chatBox" class="flex-fill p-3">
-                    @if (Model != null && Model.Any())
+                    @if (Model?.Messages != null && Model.Messages.Any())
                     {
-                        foreach (var m in Model)
+                        foreach (var m in Model.Messages)
                         {
                             <div class="message @(m.IsMine ? "mine" : "other")"
                                  data-id="@m.MessageId"
                                  data-at="@m.At.ToString("o")">
-                                <div class="content">@m.Text</div>
+                                <div class="content">@m.Text</div> <!-- 伺服器已做遮罩；Razor自動HTML編碼 -->
                                 <div class="meta">
                                     <span class="time">@m.At.ToLocalTime().ToString("HH:mm")</span>
                                     @if (m.IsMine)
@@ -78,7 +141,7 @@
                     }
                     else
                     {
-                        <div class="text-muted small">（尚無訊息，選擇對象後開始對話）</div>
+                        <div class="text-muted small">（尚無訊息）</div>
                     }
                 </div>
 
@@ -90,7 +153,10 @@
                                placeholder="[輸入訊息]" maxlength="255" autocomplete="off" />
                         <button id="sendBtn" class="btn btn-success" type="submit">送出</button>
                     </form>
-                    <small class="text-muted d-block mt-1">提示：畫面只顯示遮罩後文字；資料庫保留原文以利稽核。</small>
+                    <small class="text-muted d-block mt-1">
+                        提示：畫面只顯示遮罩後文字；資料庫保留原文以利稽核。
+                        排序為「由舊到新」，來源為控制器：先以 EditedAt 倒序取 50 筆，再正序回傳。
+                    </small>
                 </div>
             </div>
         </div>
@@ -100,20 +166,34 @@
 @section Scripts {
     <script>
         (() => {
-          // -------------------- 基本設定 --------------------
+          // -------------------- 路由設定（用 Razor 產生，避免路徑錯誤） --------------------
           const URLS = {
-            hub: "/social_hub/chatHub",
-            contacts: "/social_hub/Chat/Contacts",
-            history: "/social_hub/Chat/History",
-            send: "/social_hub/Chat/Send",
-            read: "/social_hub/Chat/MarkRead",
-            unread: "/social_hub/Chat/UnreadSummary"
+            hub: "@Url.Content("~/social_hub/chatHub")",
+            contacts: "@Url.Action("Contacts", "Chat", new { area = "social_hub" })",
+            history: "@Url.Action("History", "Chat", new { area = "social_hub" })",
+            send: "@Url.Action("Send", "Chat", new { area = "social_hub" })",
+            read: "@Url.Action("MarkRead", "Chat", new { area = "social_hub" })",
+            unread: "@Url.Action("UnreadSummary", "Chat", new { area = "social_hub" })"
           };
+
+          // -------------------- 常用工具（時間解析：容錯 + 一律本地顯示） --------------------
           const POLL_MS = 2500;
           const $ = s => document.querySelector(s);
-          const hhmm = iso => { try { const d = new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});} catch { return ""; } };
+
+          // ✅ 安全解析 ISO：截到 3 位毫秒；缺時區則補 Z（當作 UTC）；Safari 友善
+          const parseIsoSafe = (iso) => {
+            if (!iso) return null;
+            let s = String(iso).replace(/(\.\d{3})\d+/, "$1");
+            if (!/[zZ]$/.test(s) && !/[+\-]\d{2}:\d{2}$/.test(s)) s += "Z";
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+          };
+          const hhmm = (iso) => {
+            const d = parseIsoSafe(iso);
+            return d ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+          };
           const isNearBottom = (el, th=36) => (el.scrollTop + el.clientHeight) >= (el.scrollHeight - th);
-          const normIso = iso => { try { const d = new Date(iso); return isNaN(d.getTime()) ? null : d.toISOString(); } catch { return null; } };
+          const normIso = iso => { const d = parseIsoSafe(iso); return d ? d.toISOString() : null; };
 
           const chatBox = $("#chatBox");
           const form = $("#chatSendForm");
@@ -126,7 +206,7 @@
           const unreadTotal = $("#unreadTotal");
           const meId = parseInt(document.querySelector('meta[name="me-id"]')?.content || "0", 10) || 0;
 
-          // -------------------- 動態載入 SignalR（CDN） --------------------
+          // -------------------- 動態載入 SignalR（CDN，失敗就走輪詢） --------------------
           async function ensureSignalR() {
             if (window.signalR) return true;
             const cdns = [
@@ -176,7 +256,7 @@
                 return;
               }
               for (const c of arr) {
-                const label = c.nick ? `[${c.nick}] ${c.name}` : c.name;
+                const label = c.nick ? `[${c.nick}] ${c.name}` : (c.name ?? `User ${c.id}`);
                 contactNameMap.set(String(c.id), label);
                 const li = document.createElement("li");
                 li.innerHTML = `
@@ -188,7 +268,7 @@
                   </button>`;
                 li.querySelector("button").addEventListener("click", () => {
                   if (c.id === otherId) return;
-                  window.location.href = `/social_hub/Chat/With?otherId=${c.id}`;
+                  window.location.href = "@Url.Action("With", "Chat", new { area = "social_hub" })?otherId=" + c.id;
                 });
                 contactList.appendChild(li);
               }
@@ -213,20 +293,26 @@
 
           // -------------------- 訊息泡泡 / 增量 --------------------
           const seen = new Set();
-          let lastIso = null, lastTs = 0, pollTimer = 0, fetching = false;
+          let lastIso = null, pollTimer = 0, fetching = false;
 
+          // ✅ 啟動時：從現有 DOM 建立 seen/lastIso，並把畫面所有時間統一重算為本地
           (function bootstrapFromServer() {
             chatBox.querySelectorAll(".message[data-id]").forEach(el => {
               const id = parseInt(el.getAttribute("data-id")||"0",10)||0;
               if (id) seen.add(id);
             });
             let maxT = 0;
-            chatBox.querySelectorAll(".message[data-at], .message[data-time-iso]").forEach(el => {
-              const iso = el.getAttribute("data-at") || el.getAttribute("data-time-iso") || "";
-              const t = Date.parse(iso || "");
-              if (!isNaN(t) && t > maxT) maxT = t;
+            chatBox.querySelectorAll(".message[data-at]").forEach(el => {
+              const iso = el.getAttribute("data-at") || "";
+              const d = parseIsoSafe(iso);
+              if (d) {
+                if (d.getTime() > maxT) maxT = d.getTime();
+                // 重新計算顯示（避免伺服器渲染與推播時間格式不一致）
+                const t = el.querySelector(".time");
+                if (t) t.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              }
             });
-            if (maxT > 0) { lastTs = maxT; lastIso = new Date(maxT).toISOString(); }
+            if (maxT > 0) { lastIso = new Date(maxT).toISOString(); }
             if (lastIso) markRead(lastIso); // 進頁即清到當前游標
             chatBox.scrollTop = chatBox.scrollHeight;
           })();
@@ -239,15 +325,14 @@
 
             const content = document.createElement("div");
             content.className = "content";
-            // 直接給 textContent：瀏覽器會自動轉義，安全顯示遮罩後文字
-            content.textContent = text ?? "";
+            content.textContent = text ?? ""; // 安全顯示遮罩後文字
 
             const meta = document.createElement("div");
             meta.className = "meta";
 
             const time = document.createElement("span");
             time.className = "time";
-            time.textContent = hhmm(iso);
+            time.textContent = hhmm(iso); // 本地時間顯示
             meta.appendChild(time);
 
             if (mine) {
@@ -272,21 +357,29 @@
               seen.add(id);
             }
             const wasBottom = isNearBottom(chatBox);
-            // ⬇️ 不再額外 escape，交由 textContent 處理
             chatBox.appendChild(buildBubble({id, mine, text, iso, isRead}));
             if (wasBottom) chatBox.scrollTop = chatBox.scrollHeight;
 
-            if (!mine && iso) { const up = normIso(iso); if (up) markRead(up); }
-            const t = Date.parse(iso || ""); if (!isNaN(t) && t > lastTs) { lastTs = t; lastIso = new Date(t).toISOString(); }
+            // 非我方訊息立即回報已讀
+            if (!mine && iso) {
+              const up = normIso(iso);
+              if (up) markRead(up);
+            }
+            // 更新 lastIso
+            if (iso) {
+              const d = parseIsoSafe(iso);
+              const cur = lastIso ? parseIsoSafe(lastIso) : null;
+              if (d && (!cur || d.getTime() > cur.getTime())) lastIso = d.toISOString();
+            }
           }
 
+          // 輪詢備援：直接取最近 50 → 用 seen 去重
           async function fetchDelta() {
             if (!otherId || fetching) return;
             fetching = true;
             try {
               const url = new URL(URLS.history, window.location.origin);
               url.searchParams.set("otherId", String(otherId));
-              if (lastIso) url.searchParams.set("after", lastIso);
               const r = await fetch(url, { headers: { "Accept":"application/json" } });
               if (!r.ok) return;
               const arr = await r.json();
@@ -308,7 +401,7 @@
             try {
               const params = new URLSearchParams({ otherId: String(otherId) });
               if (upToIso) params.set("upToIso", upToIso);
-              if (csrf) params.set("__RequestVerificationToken", csrf); // 有些站只收欄位
+              if (csrf) params.set("__RequestVerificationToken", csrf);
 
               await fetch(URLS.read, {
                 method: "POST",
@@ -329,6 +422,7 @@
             if (!txt || !otherId) return;
             sendBtn.disabled = true;
 
+            // 先走 Hub
             if (window.__chatConn && window.__chatConn.invoke) {
               try {
                 const res = await window.__chatConn.invoke("SendMessageTo", otherId, txt);
@@ -339,12 +433,12 @@
               }
             }
 
+            // HTTP 回退
             try {
               const fd = new FormData(form);
               const r = await fetch(URLS.send, { method: "POST", body: fd, credentials: "same-origin" });
               if (r.ok) {
                 const res = await r.json().catch(()=>({}));
-                // ⬇️ 以伺服器回傳的遮罩後文字為準（fallback 用）
                 const display = (res && typeof res.text === "string") ? res.text : txt;
                 appendMessage({
                   id: res.messageId ?? 0,
@@ -382,6 +476,7 @@
             conn.on("ReceiveDirect", p => {
               if (!p) return;
               const from = p.senderId ?? 0, to = p.receiverId ?? 0;
+
               const inThis = (meId > 0)
                 ? ((from === otherId && to === meId) || (from === meId && to === otherId))
                 : (from === otherId || to === otherId);
@@ -392,7 +487,7 @@
               appendMessage({
                 id: p.messageId ?? 0,
                 mine,
-                text: p.content ?? "",        // ⬅️ 伺服器端已遮罩
+                text: p.content ?? "",        // 伺服器已遮罩
                 iso: p.sentAtIso ?? null,
                 isRead: mine ? false : true
               });
@@ -409,25 +504,16 @@
 
             conn.on("ReadReceipt", info => {
               if (!info || info.fromUserId !== otherId) return;
-              const upTo = info.upToIso ? new Date(info.upToIso) : null;
+              const upTo = parseIsoSafe(info.upToIso); // ✅ 用安全解析
               if (!upTo) return;
               chatBox.querySelectorAll(".message.mine").forEach(msg => {
                 const iso = msg.getAttribute("data-at") || "";
-                const t = Date.parse(iso || "");
-                if (!isNaN(t) && t <= +upTo) {
+                const d = parseIsoSafe(iso);
+                if (d && d.getTime() <= upTo.getTime()) {
                   const badge = msg.querySelector('[data-read="badge"], .readmark');
                   if (badge) badge.classList.add("on");
                 }
               });
-            });
-
-            conn.on("Error", code => {
-              const map = {
-                NOT_LOGGED_IN: "尚未登入，請先登入後再使用聊天。",
-                NO_PEER: "尚未選擇對話對象。",
-                BAD_TEXT: "訊息內容無效。"
-              };
-              if (code && map[code]) alert(map[code]);
             });
 
             conn.onreconnected(async () => { await fetchDelta(); refreshUnread(); });
@@ -449,6 +535,7 @@
           refreshUnread();
           connectHub();
 
+          // 視窗回前景時，同步已讀到目前游標
           document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible" && lastIso) markRead(lastIso);
           });

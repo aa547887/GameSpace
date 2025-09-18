@@ -1,26 +1,32 @@
-﻿using System;
+﻿// Areas/social_hub/Controllers/MessageCenterController.cs
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 
-using GameSpace.Models; // DbContext 與模型
+using GameSpace.Models;
 using GameSpace.Areas.social_hub.Services;
 using GameSpace.Areas.social_hub.Models.ViewModels;
-using GameSpace.Infrastructure.Login; // ILoginIdentity
-using GameSpace.Areas.social_hub.Filters; // RequireManagerPermissions
+using GameSpace.Infrastructure.Login;
+using GameSpace.Areas.social_hub.Filters;
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
+	[SocialHubAuth(RequireAuthenticated = false)]
 	public class MessageCenterController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
 		private readonly INotificationService _notificationService;
 		private readonly ILoginIdentity _login;
+
+		private const string AdminCookieScheme = "AdminCookie";
 
 		public MessageCenterController(
 			GameSpacedatabaseContext context,
@@ -32,9 +38,44 @@ namespace GameSpace.Areas.social_hub.Controllers
 			_login = login;
 		}
 
-		// ===== 身分：優先 ILoginIdentity，失敗回退 cookie（gs_* / sh_*）=====
+		// 身分來源優先序：Items → AdminCookie → HttpContext.User → ILoginIdentity → 舊 cookies
 		private async Task<(bool isUser, bool isManager, int? userId, int? managerId)> GetIdentityAsync()
 		{
+			// Items（SocialHubAuth 放入）
+			if (HttpContext?.Items != null)
+			{
+				var kindObj = HttpContext.Items["gs_kind"] as string;
+				var idObj = HttpContext.Items["gs_id"];
+				if (idObj is int idFromItems && idFromItems > 0 && !string.IsNullOrWhiteSpace(kindObj))
+				{
+					if (string.Equals(kindObj, "user", StringComparison.OrdinalIgnoreCase))
+						return (true, false, idFromItems, null);
+					if (string.Equals(kindObj, "manager", StringComparison.OrdinalIgnoreCase))
+						return (false, true, null, idFromItems);
+				}
+			}
+
+			// AdminCookie
+			var auth = await HttpContext.AuthenticateAsync(AdminCookieScheme);
+			if (auth.Succeeded && auth.Principal?.Identity?.IsAuthenticated == true)
+			{
+				var idStr = auth.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+				var isMgr = auth.Principal.HasClaim(c => c.Type == "IsManager" && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+				if (int.TryParse(idStr, out var idVal) && idVal > 0)
+					return isMgr ? (false, true, null, idVal) : (true, false, idVal, null);
+			}
+
+			// HttpContext.User
+			var u = HttpContext?.User;
+			if (u?.Identity?.IsAuthenticated == true)
+			{
+				var idStr = u.FindFirstValue(ClaimTypes.NameIdentifier);
+				var isMgr = u.HasClaim(c => c.Type == "IsManager" && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+				if (int.TryParse(idStr, out var idVal2) && idVal2 > 0)
+					return isMgr ? (false, true, null, idVal2) : (true, false, idVal2, null);
+			}
+
+			// ILoginIdentity
 			var me = await _login.GetAsync();
 			if (me.IsAuthenticated)
 			{
@@ -44,23 +85,25 @@ namespace GameSpace.Areas.social_hub.Controllers
 					return (false, true, null, mid);
 			}
 
-			string? idStr = null, kind = null;
-			if (Request.Cookies.TryGetValue("gs_id", out var gsid)) idStr = gsid;
-			if (Request.Cookies.TryGetValue("gs_kind", out var gskind)) kind = gskind;
-			if (string.IsNullOrWhiteSpace(idStr))
+			// 舊 cookies
+			string? idCookie = null, kindCookie = null;
+			if (Request.Cookies.TryGetValue("gs_id", out var gsid)) idCookie = gsid;
+			if (Request.Cookies.TryGetValue("gs_kind", out var gskind)) kindCookie = gskind;
+			if (string.IsNullOrWhiteSpace(idCookie))
 			{
-				if (Request.Cookies.TryGetValue("sh_mid", out var mid)) { idStr = mid; kind = "manager"; }
-				else if (Request.Cookies.TryGetValue("sh_uid", out var uid)) { idStr = uid; kind = "user"; }
+				if (Request.Cookies.TryGetValue("sh_uid", out var su)) { idCookie = su; kindCookie = "user"; }
+				else if (Request.Cookies.TryGetValue("sh_mid", out var sm)) { idCookie = sm; kindCookie = "manager"; }
 			}
-			if (int.TryParse(idStr, out var idVal))
+			if (int.TryParse(idCookie, out var idVal3) && idVal3 > 0)
 			{
-				if (string.Equals(kind, "user", StringComparison.OrdinalIgnoreCase)) return (true, false, idVal, null);
-				if (string.Equals(kind, "manager", StringComparison.OrdinalIgnoreCase)) return (false, true, null, idVal);
+				if (string.Equals(kindCookie, "user", StringComparison.OrdinalIgnoreCase)) return (true, false, idVal3, null);
+				if (string.Equals(kindCookie, "manager", StringComparison.OrdinalIgnoreCase)) return (false, true, null, idVal3);
 			}
+
 			return (false, false, null, null);
 		}
 
-		// ====== 收件匣（看自己收到的通知）======
+		// 收件匣
 		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
@@ -72,7 +115,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 				join n in _context.Notifications on r.NotificationId equals n.NotificationId
 				join s in _context.NotificationSources on n.SourceId equals s.SourceId
 				join a in _context.NotificationActions on n.ActionId equals a.ActionId
-				// 寄件者（可能為空）
 				join su0 in _context.Users on n.SenderUserId equals su0.UserId into suj
 				from su in suj.DefaultIfEmpty()
 				join sm0 in _context.ManagerData on n.SenderManagerId equals sm0.ManagerId into smj
@@ -94,13 +136,13 @@ namespace GameSpace.Areas.social_hub.Controllers
 				};
 
 			var list = await q.AsNoTracking().ToListAsync();
-			return View(list); // Views/MessageCenter/Index.cshtml
+			return View(list);
 		}
 
-		// ====== 已讀 ======
+		// 標記已讀
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> MarkRead(int id) // id = RecipientId
+		public async Task<IActionResult> MarkRead(int id)
 		{
 			var (isUser, isManager, userId, managerId) = await GetIdentityAsync();
 			if (!(isUser || isManager)) return Unauthorized();
@@ -119,7 +161,22 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-		// ====== 建立頁：共用下拉 ======
+		// 建立頁（GET）
+		[HttpGet]
+		public async Task<IActionResult> Create()
+		{
+			await FillCreateDropdownsAsync();
+
+			var (isUser, isManager, userId, managerId) = await GetIdentityAsync();
+			ViewBag.SenderBanner = isUser ? $"使用者 #{userId}"
+							   : isManager ? $"管理員 #{managerId}"
+							   : "未登入";
+			ViewBag.IsManager = isManager;
+
+			return View(new Notification());
+		}
+
+		// 建立頁：下拉
 		private async Task FillCreateDropdownsAsync(int? sourceId = null, int? actionId = null, int? groupId = null, string? recipientMode = null)
 		{
 			ViewBag.Sources = new SelectList(
@@ -138,7 +195,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 				"UserId", "Name"
 			);
 
-			// Managers（僅用 ManagerName）
 			var managersRaw = await _context.ManagerData
 				.AsNoTracking()
 				.OrderBy(m => m.ManagerId)
@@ -148,9 +204,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var managerItems = managersRaw.Select(m => new
 			{
 				m.ManagerId,
-				Name = string.IsNullOrWhiteSpace(m.ManagerName)
-					? $"管理員 #{m.ManagerId}"
-					: m.ManagerName
+				Name = string.IsNullOrWhiteSpace(m.ManagerName) ? $"管理員 #{m.ManagerId}" : m.ManagerName
 			}).ToList();
 
 			ViewBag.Managers = new SelectList(managerItems, "ManagerId", "Name");
@@ -162,22 +216,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			ViewBag.RecipientMode = recipientMode ?? "specific";
 		}
 
-		// ====== 建立（GET）======
-		[HttpGet]
-		public async Task<IActionResult> Create()
-		{
-			await FillCreateDropdownsAsync();
-
-			var (isUser, isManager, userId, managerId) = await GetIdentityAsync();
-			ViewBag.SenderBanner = isUser ? $"使用者 #{userId}"
-							 : isManager ? $"管理員 #{managerId}"
-							 : "未登入";
-			ViewBag.IsManager = isManager; // 讓 View 決定是否顯示「管理員收件」區塊
-
-			return View(new Notification()); // Views/MessageCenter/Create.cshtml
-		}
-
-		// ====== 建立（POST）：指定 / 全體使用者 / 群組 +（可選）管理員收件 ======
+		// 建立（POST）
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(
@@ -188,7 +227,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (!ModelState.IsValid)
 			{
 				await FillCreateDropdownsAsync(input.SourceId, input.ActionId, input.GroupId, recipientMode);
-
 				var (iu, im, uid, mid) = await GetIdentityAsync();
 				ViewBag.SenderBanner = iu ? $"使用者 #{uid}" : im ? $"管理員 #{mid}" : "未登入";
 				ViewBag.IsManager = im;
@@ -201,7 +239,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			int? senderUserId = isUser ? userId : null;
 			int? senderManagerId = isManager ? managerId : null;
 
-			// —— 使用者收件 —— //
+			// 使用者收件
 			IEnumerable<int> userRecipients = Enumerable.Empty<int>();
 			recipientMode = (recipientMode ?? "specific").Trim().ToLowerInvariant();
 
@@ -255,6 +293,11 @@ namespace GameSpace.Areas.social_hub.Controllers
 					}
 					break;
 
+				case "none_users":
+					// 不寄使用者，改由管理員收件區控制
+					userRecipients = Enumerable.Empty<int>();
+					break;
+
 				default:
 					ViewBag.AllErrors = "不支援的使用者收件模式。";
 					await FillCreateDropdownsAsync(input.SourceId, input.ActionId, input.GroupId, recipientMode);
@@ -263,33 +306,51 @@ namespace GameSpace.Areas.social_hub.Controllers
 					return View(input);
 			}
 
-			// —— 管理員收件（可選）—— //
+			// 管理員收件（可留空）
 			IEnumerable<int> managerRecipients = Enumerable.Empty<int>();
 			var mgrMode = (Request.Form["mgrRecipientMode"].ToString() ?? "none").Trim().ToLowerInvariant();
 			switch (mgrMode)
 			{
+				case "mgr_single":
+					{
+						var singleRaw = Request.Form["managerRecipientSingleId"].ToString();
+						if (int.TryParse(singleRaw, out var singleId) && singleId > 0)
+							managerRecipients = new[] { singleId };
+						break;
+					}
 				case "mgr_specific":
-					managerRecipients = (Request.Form["managerRecipientIds"]
-						.Select(v => int.TryParse(v, out var x) ? x : 0))
-						.Where(x => x > 0)
-						.Distinct()
-						.ToList();
-					break;
-
+					{
+						managerRecipients = (Request.Form["managerRecipientIds"]
+							.Select(v => int.TryParse(v, out var x) ? x : 0))
+							.Where(x => x > 0)
+							.Distinct()
+							.ToList();
+						break;
+					}
 				case "all_managers":
-					managerRecipients = await _context.ManagerData
-						.AsNoTracking()
-						.Select(m => m.ManagerId)
-						.ToListAsync();
-					break;
-
+					{
+						managerRecipients = await _context.ManagerData
+							.AsNoTracking()
+							.Select(m => m.ManagerId)
+							.ToListAsync();
+						break;
+					}
 				case "none":
 				default:
 					managerRecipients = Enumerable.Empty<int>();
 					break;
 			}
 
-			// —— 建立並寄出（同時給使用者 + 管理員）—— //
+			// 至少要有一邊有收件人
+			if (!userRecipients.Any() && !managerRecipients.Any())
+			{
+				ViewBag.AllErrors = "請至少選擇一位收件人（使用者或管理員）。";
+				await FillCreateDropdownsAsync(input.SourceId, input.ActionId, input.GroupId, recipientMode);
+				ViewBag.SenderBanner = isUser ? $"使用者 #{userId}" : $"管理員 #{managerId}";
+				ViewBag.IsManager = isManager;
+				return View(input);
+			}
+
 			var added = await _notificationService.CreateAsync(
 				input,
 				userRecipients,
@@ -302,9 +363,9 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-		// ====== 通知明細（同時檢查擁有權並自動標記已讀）======
+		// 明細（自動已讀）
 		[HttpGet]
-		public async Task<IActionResult> Detail(int id) // id = RecipientId
+		public async Task<IActionResult> Detail(int id)
 		{
 			var (isUser, isManager, userId, managerId) = await GetIdentityAsync();
 			if (!(isUser || isManager)) return Unauthorized();
@@ -361,7 +422,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 				Links = null
 			};
 
-			// 自動已讀
 			if (!vm.IsRead)
 			{
 				var rec = await _context.NotificationRecipients.FirstOrDefaultAsync(r => r.RecipientId == id);
@@ -380,7 +440,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return View(vm);
 		}
 
-		// ====== 管理端：通知主檔清單 ======
+		// 管理端：通知清單
 		[HttpGet]
 		[RequireManagerPermissions(Admin = true)]
 		public async Task<IActionResult> Admin()
@@ -390,10 +450,10 @@ namespace GameSpace.Areas.social_hub.Controllers
 				.OrderByDescending(n => n.CreatedAt)
 				.ToListAsync();
 
-			return View("Admin", list); // 建議建立 Views/MessageCenter/Admin.cshtml
+			return View("Admin", list);
 		}
 
-		// ====== 管理端：依角色群發（發給管理員收件人）======
+		// 管理端：依角色群發（管理員收件）
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireManagerPermissions(Admin = true)]
@@ -405,7 +465,6 @@ namespace GameSpace.Areas.social_hub.Controllers
 			int? senderUserId = isUser ? userId : null;
 			int? senderManagerId = isManager ? managerId : null;
 
-			// 從 ManagerData 展開角色（專案沒有 DbSet<ManagerRole>，使用導覽屬性）
 			var managerIds = await _context.ManagerData
 				.AsNoTracking()
 				.Where(m => m.ManagerRoles.Any(rp => rp.ManagerRoleId == roleId))
@@ -425,7 +484,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return RedirectToAction(nameof(Admin));
 		}
 
-		// （選用）偵錯：看目前抓到的身分
+		// 偵錯：目前身分
 		[HttpGet]
 		public async Task<IActionResult> WhoAmI()
 		{

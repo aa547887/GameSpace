@@ -8,12 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="wwwroot\css\cat-ears.css" />
-    <Content Remove="wwwroot\js\cat-ears.js" />
-    <Content Remove="wwwroot\picture\5377.jpg" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.19" />
@@ -25,7 +20,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\Forum\Data\" />
-    <Folder Include="Areas\Forum\Models\" />
     <Folder Include="Areas\MemberManagement\Data\" />
     <Folder Include="Areas\MiniGame\Data\" />
     <Folder Include="Areas\MiniGame\Models\" />
