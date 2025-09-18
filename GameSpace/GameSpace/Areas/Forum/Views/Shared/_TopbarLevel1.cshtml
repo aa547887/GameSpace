@@ -1,13 +1,36 @@
 ﻿@using Microsoft.AspNetCore.Authentication
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+@{
+    Layout = null;                       // 重要：避免 partial 套用 _Layout
+    var tokens = Xsrf.GetAndStoreTokens(Context); // 產生並設置防偽 cookie
+
+    // 以後台方案嘗試取登入者（你專案一直用 "AdminCookie"）
+    var auth = await Context.AuthenticateAsync("AdminCookie");
+    var p = auth?.Principal ?? User;
+
+    // 預設（未登入）導到前台首頁
+    var brandArea = "";
+    var brandController = "Home";
+    var brandAction = "Index";
+
+    // 若已登入（或你想限定管理員則加上 IsManager 判斷）
+    if (p?.Identity?.IsAuthenticated == true /* &&
+        p.HasClaim(c => c.Type == "IsManager" && c.Value == "true") */)
+    {
+        brandController = "Login";
+        brandAction = "Success";   // ← 改成登入成功畫面
+        brandArea = "";            // Success 在最外層
+    }
+}
+
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm custom-bg-dark">
     <div class="container-fluid p-0 d-flex">
 
         <!-- 左側 GameSpace / 背景區，固定寬度 -->
         <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width:250px; height:100%;">
-            <a class="navbar-brand mb-0 text-white" asp-area="" asp-controller="Home" asp-action="Index">
-                GameSpace
-            </a>
+            <a class="navbar-brand mb-0 text-white" href="@Url.Action(brandAction, brandController, new { area = brandArea })"> GamiPort</a>
         </div>
 
         <!-- 中間導航 -->

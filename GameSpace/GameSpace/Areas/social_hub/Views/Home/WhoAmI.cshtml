@@ -1,5 +1,7 @@
 ﻿@{
-    ViewData["Title"] = "測試登入狀態（統一身分）";
+
+    ViewData["Title"] = "GamiPort";
+
     var msg = (string?)ViewData["msg"] ?? "";
     var id = (string?)ViewData["id"] ?? "（未登入）";   // 由 HomeController.WhoAmI() 以 ILoginIdentity 填入
     var kind = (string?)ViewData["kind"] ?? "(未設定)";
@@ -10,7 +12,7 @@
                                   : (string.Equals(kind, "user", StringComparison.OrdinalIgnoreCase) ? "bg-primary" : "bg-secondary");
 }
 
-<h2 class="mb-3">@ViewData["Title"]</h2>
+<h2 class="mb-3">測試登入狀態（統一身分）</h2>
 
 @if (!string.IsNullOrEmpty(msg))
 {

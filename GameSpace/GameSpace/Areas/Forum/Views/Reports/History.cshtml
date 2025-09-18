@@ -60,7 +60,7 @@
 @if (Model != null && Model.Any())
 {
     <div class="mb-2 d-flex flex-wrap gap-2">
-        <!-- CSV -->
+       @*  <!-- CSV -->
         <form method="get" target="_blank" asp-area="Forum" asp-controller="Reports" asp-action="ExportCsv" class="d-inline">
             <input type="hidden" name="gameId" value="@ViewBag.GameId" />
             <input type="hidden" name="from" value="@ViewBag.From" />
@@ -70,7 +70,7 @@
                 <input type="hidden" name="metricIds" value="@mid" />
             }
             <button type="submit" class="btn btn-outline-secondary">匯出 CSV</button>
-        </form>
+        </form> *@
 
         <!-- Excel（純資料） -->
         <form method="get" target="_blank" asp-area="Forum" asp-controller="Reports" asp-action="ExportExcel" class="d-inline">
