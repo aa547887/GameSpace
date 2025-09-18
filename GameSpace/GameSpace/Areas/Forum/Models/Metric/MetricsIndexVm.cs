@@ -12,6 +12,7 @@
         public int Rank { get; set; }
         public int GameId { get; set; }
         public string GameName { get; set; } = "";
+        public string DisplayName { get; set; } = "";
         public double Score { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using GameSpace.Areas.Forum.Models;
-//using GameSpace.Areas.Forum.Models
-using GameSpace.Models; // ← 這裡有 Scaffold 出來的 Post 實體（對應 posts 表）
+using GameSpace.Areas.Forum.Models.Admin;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +17,6 @@ namespace GameSpace.Areas.Forum.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // 不動 DB：直接用既有的 Post 實體查，再投影到 ListItem VM
             var list = await _db.Posts
                 .AsNoTracking()
                 .OrderByDescending(p => p.Pinned)
@@ -25,7 +24,7 @@ namespace GameSpace.Areas.Forum.Controllers
                 .ThenByDescending(p => p.CreatedAt)
                 .Select(p => new AdminPostListItemVm
                 {
-                    AdminPostId = p.PostId,     // ← 關鍵：映射成你 View 期望的名字
+                    AdminPostId = p.PostId,
                     Title = p.Title,
                     Status = p.Status ?? "draft",
                     Pinned = p.Pinned ?? false,
@@ -58,11 +57,11 @@ namespace GameSpace.Areas.Forum.Controllers
                 UpdatedAt = DateTime.UtcNow,
                 Type = vm.Type ?? "insight",
                 GameId = vm.GameId
-                // CreatedBy / PublishedAt 視你的登入狀態再填
             };
 
             _db.Posts.Add(entity);
             await _db.SaveChangesAsync();
+            TempData["ok"] = "已建立草稿。";
             return RedirectToAction(nameof(Index));
         }
 
@@ -104,29 +103,32 @@ namespace GameSpace.Areas.Forum.Controllers
             p.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+            TempData["ok"] = "已儲存變更。";
             return RedirectToAction(nameof(Index));
         }
 
-        // ===== 發布（Index 上的按鈕）=====
+        // ===== 發布（Index 按鈕）=====
         [HttpPost]
+        [ValidateAntiForgeryToken] // ← 關鍵：配合 View 的 AntiForgeryToken
         public async Task<IActionResult> Publish(int id)
         {
             var p = await _db.Posts.FirstOrDefaultAsync(x => x.PostId == id);
             if (p == null) return NotFound();
 
-            if ((p.Status ?? "draft") == "draft")
+            if ((p.Status ?? "draft") != "published")
             {
                 p.Status = "published";
                 p.PublishedAt = DateTime.UtcNow;
                 p.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
+                TempData["ok"] = "已發布。";
             }
-            // 你的 Index.cshtml 是 form post → 走 redirect 才會回列表
             return RedirectToAction(nameof(Index));
         }
 
-        // ===== 隱藏（Index 上的按鈕）=====
+        // ===== 隱藏（Index 按鈕）=====
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Hide(int id)
         {
             var p = await _db.Posts.FirstOrDefaultAsync(x => x.PostId == id);
@@ -135,22 +137,97 @@ namespace GameSpace.Areas.Forum.Controllers
             p.Status = "hidden";
             p.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
-
+            TempData["ok"] = "已隱藏。";
             return RedirectToAction(nameof(Index));
         }
 
-        // ===== 切換置頂（如果你之後加按鈕）=====
+        // ===== 切換置頂（可選）=====
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> TogglePin(int id)
         {
             var p = await _db.Posts.FirstOrDefaultAsync(x => x.PostId == id);
             if (p == null) return NotFound();
 
-            p.Pinned = !p.Pinned;
+            p.Pinned = !(p.Pinned ?? false);
             p.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
-
+            TempData["ok"] = (p.Pinned == true) ? "已置頂。" : "已取消置頂。";
             return RedirectToAction(nameof(Index));
         }
+
+        // ===== 刪除（Index → 確認 Modal → POST）=====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var p = await _db.Posts.FirstOrDefaultAsync(x => x.PostId == id);
+            if (p == null) return NotFound();
+
+            _db.Posts.Remove(p);
+            await _db.SaveChangesAsync();
+            TempData["ok"] = "已刪除。";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ===== 詳細內容（給彈窗載入 Partial）=====
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var p = await _db.Posts.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.PostId == id);
+                if (p == null) return NotFound();
+
+                var vm = new AdminPostDetailsVm
+                {
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Tldr = p.Tldr,
+                    BodyMd = p.BodyMd,
+                    Status = p.Status ?? "draft",
+                    Pinned = p.Pinned ?? false,
+                    CreatedAt = p.CreatedAt,
+                    PublishedAt = p.PublishedAt,
+                    UpdatedAt = p.UpdatedAt
+                };
+
+                return PartialView("_PostDetailsPartial", vm);
+            }
+            catch (Exception ex)
+            {
+                return Content("Details 錯誤: " + ex.Message);
+            }
+        }
+
+        //[HttpGet]
+        //public async Task<IActionResult> Details(int id)
+        //{
+        //    var p = await _db.Posts
+        //        .AsNoTracking()
+        //        .FirstOrDefaultAsync(x => x.PostId == id);
+        //    if (p == null) return NotFound();
+
+        //    var vm = new AdminPostDetailsVm
+        //    {
+        //        PostId = p.PostId,
+        //        Title = p.Title ?? "",
+        //        Tldr = p.Tldr,
+        //        BodyMd = p.BodyMd,
+        //        Status = p.Status ?? "draft",
+        //        Pinned = (p.Pinned ?? false),
+        //        CreatedAt = p.CreatedAt,        // 注意大小寫
+        //        PublishedAt = p.PublishedAt,
+        //        UpdatedAt = p.UpdatedAt
+        //    };
+
+        //    // 回傳 Partial 給 Modal 用
+        //    return PartialView(
+        //        "~/Areas/Forum/Views/AdminPosts/_PostDetailsPartial.cshtml",
+        //        vm
+        //    );
+        //}
+
     }
 }

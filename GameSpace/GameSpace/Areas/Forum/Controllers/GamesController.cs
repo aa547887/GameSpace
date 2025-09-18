@@ -4,6 +4,7 @@ using GameSpace.Areas.Forum.Models.Game;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ForumEntity = GameSpace.Models.Forum;   // 把資料表實體 Forum 取別名
 
 namespace GameSpace.Areas.Admin.Controllers
 {
@@ -16,7 +17,7 @@ namespace GameSpace.Areas.Admin.Controllers
         public GamesController(GameSpacedatabaseContext db) => _db = db;
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? q, string? genre)
+        public async Task<IActionResult> Index(string? q, string? genre, string sort = "created", string dir = "desc")
         {
             var query = _db.Games.AsNoTracking();
 
@@ -26,22 +27,33 @@ namespace GameSpace.Areas.Admin.Controllers
             if (!string.IsNullOrWhiteSpace(genre))
                 query = query.Where(g => g.Genre == genre);
 
-            var list = await query
-                .OrderBy(g => g.Name)
-                .Select(g => new GameListItemVm
-                {
-                    GameId = g.GameId,
-                    Name = g.Name,
-                    NameZh = g.NameZh,
-                    Genre = g.Genre,
-                    CreatedAt = g.CreatedAt
-                })
-                .ToListAsync();
+            bool desc = dir.Equals("desc", StringComparison.OrdinalIgnoreCase);
+            query = sort switch
+            {
+                "id" => desc ? query.OrderByDescending(g => g.GameId) : query.OrderBy(g => g.GameId),
+                "name" => desc ? query.OrderByDescending(g => g.Name).ThenBy(g => g.GameId)
+                                  : query.OrderBy(g => g.Name).ThenBy(g => g.GameId),
+                "namezh" => desc ? query.OrderByDescending(g => EF.Functions.Collate(g.NameZh ?? g.Name, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId)
+                                  : query.OrderBy(g => EF.Functions.Collate(g.NameZh ?? g.Name, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId),
+                _ /*created*/ => desc ? query.OrderByDescending(g => g.CreatedAt).ThenBy(g => g.GameId)
+                                      : query.OrderBy(g => g.CreatedAt).ThenBy(g => g.GameId)
+            };
 
-            ViewBag.Q = q;
-            ViewBag.Genre = genre;
+            ViewBag.Q = q; ViewBag.Genre = genre; ViewBag.Sort = sort; ViewBag.Dir = dir;
+
+            var list = await query.Select(g => new GameListItemVm
+            {
+                GameId = g.GameId,
+                Name = g.Name,
+                NameZh = g.NameZh,
+                Genre = g.Genre,
+                CreatedAt = g.CreatedAt
+            }).ToListAsync();
+
             return View(list);
         }
+
+
 
         [HttpGet]
         public IActionResult Create() => View(new GameEditVm());
@@ -51,15 +63,35 @@ namespace GameSpace.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var e = new Game
+            await using var tx = await _db.Database.BeginTransactionAsync();
+
+            // 1. 新增遊戲
+            var game = new Game
             {
                 Name = vm.Name,
                 NameZh = vm.NameZh,
                 Genre = vm.Genre,
                 CreatedAt = DateTime.UtcNow
             };
-            _db.Games.Add(e);
-            await _db.SaveChangesAsync();
+            _db.Games.Add(game);
+            await _db.SaveChangesAsync(); // ★ 這裡拿到 game.GameId
+
+            // 2. 檢查 forums 是否已存在（防重複）
+            var hasForum = await _db.Forums.AnyAsync(f => f.GameId == game.GameId);
+            if (!hasForum)
+            {
+                var forum = new ForumEntity
+                {
+                    GameId = game.GameId,
+                    Name = (vm.NameZh ?? vm.Name) + " 討論區",
+                    Description = $"針對 {vm.NameZh ?? vm.Name} 的交流與討論",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.Forums.Add(forum);
+                await _db.SaveChangesAsync();
+            }
+
+            await tx.CommitAsync();
             return RedirectToAction(nameof(Index));
         }
 

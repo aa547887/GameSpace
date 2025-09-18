@@ -39,7 +39,7 @@ namespace GameSpace.Areas.Admin.Controllers
                     SourceId = x.s.SourceId,
                     SourceName = x.s.Name,
                     ExternalKey = x.m.ExternalKey,
-                   // CreatedAt = x.m.CreatedAt 
+                    CreatedAt = x.m.CreatedAt
                 })
                 .ToListAsync();
 

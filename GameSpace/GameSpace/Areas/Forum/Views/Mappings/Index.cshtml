@@ -1,10 +1,10 @@
 ﻿@using GameSpace.Areas.Forum.Models.Mapping
 @model IEnumerable<MappingRowVm>
 @{
-    ViewData["Title"] = "外部對應清單";
+    ViewData["Title"] = "外部對應清單(Mappings對應表)";
 }
 
-<h2>外部對應清單</h2>
+<h2>外部對應清單(Mappings對應表)</h2>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
@@ -36,7 +36,7 @@
 <table class="table table-bordered table-sm">
     <thead>
         <tr>
-            <th>ID</th>
+           @*  <th>ID</th> *@
             <th>遊戲</th>
             <th>來源</th>
             <th>External Key</th>
@@ -48,9 +48,9 @@
         @foreach (var x in Model)
         {
             <tr>
-                <td>@x.Id</td>
-                <td>@x.GameName (@x.GameId)</td>
-                <td>@x.SourceName (@x.SourceId)</td>
+                @* <td>@x.Id</td> *@
+                <td>@x.GameName </td>
+                <td>@x.SourceName </td>
                 <td>@x.ExternalKey</td>
                 <td>@(x.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
                 <td><a asp-action="Edit" asp-route-id="@x.Id" class="btn btn-sm btn-warning">編輯</a></td>

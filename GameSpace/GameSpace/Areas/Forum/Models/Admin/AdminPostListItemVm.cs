@@ -1,4 +1,4 @@
-﻿namespace GameSpace.Areas.Forum.Models
+﻿namespace GameSpace.Areas.Forum.Models.Admin
 {
     public class AdminPostListItemVm
     {
