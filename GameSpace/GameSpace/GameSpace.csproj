@@ -28,6 +28,7 @@
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="TEST\" />
     <Folder Include="wwwroot\lib\image\" />
+    <Folder Include="wwwroot\NewFolder\" />
   </ItemGroup>
 
 </Project>

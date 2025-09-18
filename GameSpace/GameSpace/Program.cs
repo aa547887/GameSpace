@@ -166,7 +166,21 @@ namespace GameSpace
 				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
 			});
 
-			var app = builder.Build();
+            //// 商品串API()ImgBB 新增：註冊 IHttpClientFactory（解決 ImgBB 上傳的 HttpClient 依賴注入問題）
+            //builder.Services.AddHttpClient();
+            //// 綁定設定檔到 ImgBbOptions（簡版）
+            //// ✅（建議版）含啟動時驗證 ApiKey 是否存在
+            //builder.Services.AddOptions<ImgBbOptions>()
+            //    .Bind(builder.Configuration.GetSection("ImgBB"))
+            //    .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey), "ImgBB:ApiKey 未設定")
+            //    .ValidateOnStart();
+            //builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBB"));
+            ////商城圖片API (使用ImgBB) (可能會用到 如果伺服器上傳限制：如需調高 Kestrel/ IIS 限制)
+            ////builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 104857600); // 100 MB
+
+
+
+            var app = builder.Build();
 
 			// ========== 12) 啟動預熱（可選；失敗不擋站） ==========
 			using (var scope = app.Services.CreateScope())
@@ -223,7 +237,7 @@ namespace GameSpace
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}");
 
-			app.MapRazorPages();
+            app.MapRazorPages();
 
 			// ========== 15) SignalR Hub 端點（★必要：否則前端連不到、也無法注入 IHubContext） ==========
 			app.MapHub<GameSpace.Areas.social_hub.Hubs.ChatHub>("/social_hub/chatHub", opts =>

@@ -3,20 +3,19 @@
 <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title">確認下架 (軟刪)</h5>
+            <h5 class="modal-title">下架確認</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <form asp-area="OnlineStore" asp-controller="ProductInfoes" asp-action="DeleteConfirmed" method="post" class="js-ajax-form">
+        <form method="post" class="js-ajax-form" action="@Url.Action("DeleteConfirmed","ProductInfoes", new { area="OnlineStore" })">
             @Html.AntiForgeryToken()
             <div class="modal-body">
-                DeleteConfirmed([FromForm(Name="productId")] int id)
                 <input type="hidden" name="productId" value="@Model.ProductId" />
-                <p>確定要將 <strong>@Model.ProductName</strong>設為<strong>下架</strong>（is_active = 0）嗎？</p>
-                <p class="text-muted small mb-0">（此操作不會刪除資料，日後可再改回上架。）</p>
+                <p>確定要將 <strong>@Model.ProductName</strong>（#@Model.ProductId）下架嗎？</p>
+                <p class="text-muted small">此為軟刪除：Info 與 Detail 的 <code>is_active</code> 會一併改為 0。</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="submit" class="btn btn-danger">下架</button>
+                <button type="submit" class="btn btn-danger">確認下架</button>
             </div>
         </form>
     </div>

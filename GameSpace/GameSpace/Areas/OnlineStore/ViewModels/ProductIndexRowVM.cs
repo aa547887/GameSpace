@@ -1,34 +1,34 @@
-﻿using System.ComponentModel.DataAnnotations;
-//表格載入
+﻿// =========================
+// ProductIndexRowVM（表單清單列）
+// - 給 Index 表單版用的輕量資料
+// - ProductCodeSort：DataTables 用的數值排序碼（從商品代碼中擷取數字）
+// =========================
+using System;
+
 namespace GameSpace.Areas.OnlineStore.ViewModels
 {
-	public class ProductIndexRowVM
-	{
-		public int ProductId { get; set; }
-		public string ProductName { get; set; } = "";
+    public class ProductIndexRowVM
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public string ProductType { get; set; } = ""; // "game" / "notgame"
+        public decimal Price { get; set; }
+        public string CurrencyCode { get; set; } = "TWD";
+        public int? ShipmentQuantity { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime ProductCreatedAt { get; set; }
+        public int? CreatedByManagerId { get; set; }
 
-        public string? ProductCode { get; set; }      // ★ 新增：顯示用
-        public int? ProductCodeSort { get; set; }  // ★ 新增：數字排序用（GM/OT 之後的數字）
+        public string? ProductCode { get; set; }
+        public int? ProductCodeSort { get; set; } // 由 Controller 幫忙計算
 
-        public string ProductType { get; set; } = "";
-		public decimal Price { get; set; }
-		public string CurrencyCode { get; set; } = "TWD";
-		public int? ShipmentQuantity { get; set; }
-		public bool IsActive { get; set; } // true=上架, false=下架
-		public DateTime ProductCreatedAt { get; set; }
-		public int? CreatedByManagerId { get; set; }
+        public LastLogDto? LastLog { get; set; }
+    }
 
-		public DateTime? ProductUpdatedAt { get; set; }
-
-		public int? UpdatedByManagerId { get; set; }
-
-		public LastLogDto? LastLog { get; set; }
-	}
-
-	public class LastLogDto // 最後異動
-	{
-		public long LogId { get; set; }
-		public int? ManagerId { get; set; }
-		public DateTime ChangedAt { get; set; } //異動時間
-	}
+    public class LastLogDto
+    {
+        public long LogId { get; set; }
+        public int? ManagerId { get; set; }
+        public DateTime ChangedAt { get; set; }
+    }
 }

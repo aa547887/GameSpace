@@ -9,7 +9,7 @@ public partial class ProductImage
 
     public int ProductId { get; set; }
 
-    public string ProductimgUrl { get; set; } = null!;
+    public string? ProductimgUrl { get; set; } = null!;
 
     public string? ProductimgAltText { get; set; }
 
