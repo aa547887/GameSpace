@@ -1,50 +1,35 @@
-﻿// =========================
-// ProductInfoesController（乾淨但保留註解筆記）
-// 特色：
-// - Info + Detail（Game/Other）寫入與切換
-// - Info.is_active 與 Detail.is_active 連動
-// - 圖片新增（ImgBB URL）/刪除 + AuditLog
-// - Index 篩選/排序 + ProductCode / ProductCodeSort
-// - Strips（寬條清單資料，支援篩選＋分頁）
-// - DetailModal / DetailPanel 共用 VM
-// =========================
-
-using GameSpace.Areas.OnlineStore.ViewModels;
+﻿using GameSpace.Areas.OnlineStore.ViewModels;
 using GameSpace.Models;
+using Microsoft.AspNetCore.Hosting; // IWebHostEnvironment
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
+using Microsoft.Extensions.Hosting;
 using System.IO;
-using System.Linq;
-// using 區塊若還沒有這幾個，請補上
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
-
+using System.Text.RegularExpressions;
+// 其他 using 依原檔保留
 
 namespace GameSpace.Areas.OnlineStore.Controllers
 {
-	[Area("OnlineStore")]
-	public class ProductInfoesController : Controller
-	{
-		private readonly GameSpacedatabaseContext _context;
-		private readonly IConfiguration _config;
-		private readonly IHttpClientFactory _http;
-		public ProductInfoesController(GameSpacedatabaseContext context, IConfiguration config, IHttpClientFactory http)
-		{
-			_context = context;
-			_config = config;
-			_http = http;
-		}
+    [Area("OnlineStore")]
+    public class ProductInfoesController : Controller
+    {
+        private readonly GameSpacedatabaseContext _context;
+        private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _hostEnvironment; // ★ 新增：拿 webroot 實體路徑
 
-		// ============================================================
-		// Index（清單＋篩選）→ 表格模式 (Info only)
-		// ============================================================
-		[HttpGet]
+
+        public ProductInfoesController(GameSpacedatabaseContext context, IConfiguration config, IWebHostEnvironment hostEnvironment)
+        {
+            _context = context;
+            _config = config;
+            _hostEnvironment = hostEnvironment;
+        }
+        // ============================================================
+        // Index（清單＋篩選）→ 表格模式 (Info only)
+        // ============================================================
+        [HttpGet]
 		public async Task<IActionResult> Index(
 			string? keyword, string? type,
 			int? qtyMin, int? qtyMax,
@@ -55,7 +40,6 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		{
 			var q = _context.ProductInfos.AsNoTracking().AsQueryable();
 
-			// 關鍵字 / 類別
 			// 關鍵字 / 類別
 			if (!string.IsNullOrWhiteSpace(keyword))
 				q = q.Where(p => p.ProductName.Contains(keyword) || p.ProductType.Contains(keyword));
@@ -83,8 +67,8 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			else if (hasLog == "no")
 				q = q.Where(p => !_context.ProductInfoAuditLogs.Any(a => a.ProductId == p.ProductId));
 
-			// 投影成表格用 VM
-			var rows = await q
+            // 投影成表格用 VM (ProductIndexRowVM)
+            var rows = await q
 				.OrderByDescending(p => p.ProductId)
 				.Select(p => new ProductIndexRowVM
 				{
@@ -134,7 +118,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		}
 
 		// ============================================================
-		// Strips（寬條清單，支援完整篩選＋每頁筆數）→ 以商品代碼數字排序
+		// Strips（寬條清單，支援完整篩選＋每頁筆數）→ 以商品代碼數字排序 
 		// ============================================================
 		// 寬條清單（穩定版：避免無法翻譯的巢狀 Select）
 		[HttpGet]
@@ -321,11 +305,79 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return PartialView("_StripsList", pageList);
 		}
 
+        // 儲存目錄（相對於 wwwroot）
+        private const string ProductImagesRelFolder = "/images/products";
 
-		// ============================================================
-		// Detail（Modal / Panel）— 共用 Builder
-		// ============================================================
-		[HttpGet]
+        // 目錄（實體路徑）
+        private string ProductImagesAbsFolder =>
+            Path.Combine(_hostEnvironment.WebRootPath, "images", "products");
+
+        // 允許的副檔名（可依需求增減）
+        private static readonly HashSet<string> _allowedExts = new(StringComparer.OrdinalIgnoreCase)
+{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+        // 產生安全檔名（避免原始檔名注入/碰撞）
+        private static string MakeSafeFileName(string? prefer, string ext)
+        {
+            var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var guid = Guid.NewGuid().ToString("N");
+            var baseName = string.IsNullOrWhiteSpace(prefer)
+                ? "img"
+                : Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-"); // 簡單 slug
+            baseName = baseName.Trim('-');
+            if (baseName.Length > 40) baseName = baseName.Substring(0, 40);
+            return $"{baseName}_{stamp}_{guid}{ext}";
+        }
+
+        // 實際存檔：回傳【相對路徑】清單（/images/products/xxx.ext）
+        private async Task<List<string>> SaveUploadedFilesAsync(IEnumerable<IFormFile> files, string? preferNameForSlug)
+        {
+            Directory.CreateDirectory(ProductImagesAbsFolder);
+            var relPaths = new List<string>();
+
+            foreach (var f in files)
+            {
+                if (f == null || f.Length == 0) continue;
+
+                var ext = Path.GetExtension(f.FileName);
+                if (string.IsNullOrWhiteSpace(ext) || !_allowedExts.Contains(ext))
+                    continue; // 直接忽略不合規檔案
+
+                var fname = MakeSafeFileName(preferNameForSlug, ext);
+                var abs = Path.Combine(ProductImagesAbsFolder, fname);
+                using (var fs = System.IO.File.Create(abs))
+                {
+                    await f.CopyToAsync(fs);
+                }
+                relPaths.Add($"{ProductImagesRelFolder}/{fname}".Replace('\\', '/'));
+            }
+            return relPaths;
+        }
+
+        // 刪除實體檔（只有在無其他紀錄引用同一路徑時才刪）
+        private async Task TryDeletePhysicalFileIfNoReferenceAsync(string relPath)
+        {
+            if (string.IsNullOrWhiteSpace(relPath)) return;
+
+            var stillRef = await _context.ProductImages
+                .AsNoTracking()
+                .AnyAsync(x => x.ProductimgUrl == relPath);
+            if (stillRef) return; // 還有人用就不刪
+
+            // 限制只能刪 wwwroot/images/products 下的檔
+            if (!relPath.StartsWith(ProductImagesRelFolder, StringComparison.OrdinalIgnoreCase)) return;
+
+            var abs = Path.Combine(_hostEnvironment.WebRootPath, relPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(abs))
+            {
+                try { System.IO.File.Delete(abs); } catch { /* ignore */ }
+            }
+        }
+
+        // ============================================================
+        // Detail（Modal / Panel）— 共用 Builder
+        // ============================================================
+        [HttpGet]
 		public async Task<IActionResult> DetailModal(int id)
 		{
 			var vm = await BuildDetailVM(id);
@@ -458,7 +510,11 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Create()
 		{
-			await FillDropdownsAsync();
+
+
+
+
+            await FillDropdownsAsync();
 			ViewBag.Mode = "create";
 			// 預設未選類別 → 兩區都上鎖
 			ViewBag.EnableGame = false;
@@ -474,166 +530,140 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		}
 
 
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(ProductInfoFormVM vm)
-		{
-			// 標準化類別，先決定前端區塊的啟用/灰階狀態（回填時要用）
-			var type = NormalizeType(vm.ProductType); // "game" / "nogame" / ""
-			ViewBag.Mode = "create";
-			ViewBag.EnableGame = type == "game";
-			ViewBag.EnableOther = type == "nogame";
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ProductInfoFormVM vm)
+        {
+            var type = NormalizeType(vm.ProductType); // "game" / "nogame" / ""
+            ViewBag.Mode = "create";
+            ViewBag.EnableGame = type == "game";
+            ViewBag.EnableOther = type == "nogame";
+            await FillDropdownsAsync();
 
-			// 下拉等資料（若回傳部分檢核錯誤畫面需要）
-			await FillDropdownsAsync();
+            // 把錯誤收集起來
+            var allErrors = ModelState
+                .Where(ms => ms.Value.Errors.Any())
+                .Select(ms => new
+                {
+                    Key = ms.Key,
+                    Errors = ms.Value.Errors.Select(e => e.ErrorMessage).ToList()
+                });
 
-			if (!ModelState.IsValid)
-				return PartialView("_CreateEditModal", vm);
+            // 丟進 ViewBag（讓 Razor 頁面也能看到）
+            ViewBag.ModelErrors = allErrors;
 
-			try
-			{
-				if (!vm.SupplierId.HasValue)
-					return Json(new { ok = false, msg = "請選擇供應商。" });
+            if (!ModelState.IsValid)
+                return PartialView("_CreateEditModal", vm);
 
-				if (string.IsNullOrEmpty(type))
-					return Json(new { ok = false, msg = "請先選擇類別（game / nogame）。" });
+            try
+            {
+                // === 1) 先建 Info ===
+                var entity = new ProductInfo();
+                ApplyFromVM(entity, vm);
+                entity.ProductType = type;
+                entity.ProductCreatedBy = GetCurrentManagerId();
+                entity.ProductCreatedAt = DateTime.Now;
 
-				bool isGame = type == "game";
-				bool isNoGame = type == "nogame";
+                _context.ProductInfos.Add(entity);
+                await _context.SaveChangesAsync(); // 取 ProductId
 
-				// 類別特有必填
-				if (isGame)
-				{
-					if (!vm.PlatformId.HasValue)
-						return Json(new { ok = false, msg = "請選擇平台（PlatformId）。" });
+                // === 2) 建 Detail ===
+                if (type == "game")
+                {
+                    _context.GameProductDetails.Add(new GameProductDetail
+                    {
+                        ProductId = entity.ProductId,
+                        SupplierId = vm.SupplierId!.Value,
+                        PlatformId = vm.PlatformId,
+                        PlatformName = vm.PlatformName,
+                        GameType = vm.GameType,
+                        DownloadLink = vm.DownloadLink,
+                        ProductDescription = vm.GameProductDescription,
+                        IsActive = vm.IsActive
+                    });
+                }
+                else if (type == "nogame")
+                {
+                    _context.OtherProductDetails.Add(new OtherProductDetail
+                    {
+                        ProductId = entity.ProductId,
+                        SupplierId = vm.SupplierId!.Value,
+                        MerchTypeId = vm.MerchTypeId,
+                        DigitalCode = vm.DigitalCode,
+                        Size = vm.Size,
+                        Color = vm.Color,
+                        Weight = vm.Weight,
+                        Dimensions = vm.Dimensions,
+                        Material = vm.Material,
+                        StockQuantity = vm.StockQuantity ?? 0,
+                        ProductDescription = vm.OtherProductDescription,
+                        IsActive = vm.IsActive
+                    });
+                }
 
-					if (string.IsNullOrWhiteSpace(vm.PlatformName))
-						vm.PlatformName = await LookupPlatformNameById(vm.PlatformId.Value);
-				}
-				else if (isNoGame)
-				{
-					if (!vm.MerchTypeId.HasValue)
-						return Json(new { ok = false, msg = "非遊戲類需選擇周邊分類。" });
-				}
-				else
-				{
-					return Json(new { ok = false, msg = "不支援的類別。" });
-				}
+                // === 3) 產生 ProductCode ===
+                var code = await GenerateProductCodeAsync(type);
+                _context.ProductCodes.Add(new ProductCode
+                {
+                    ProductId = entity.ProductId,
+                    ProductCode1 = code
+                });
 
-				// === 1) 先建 Info 拿 ProductId ===
-				var entity = new ProductInfo();
-				ApplyFromVM(entity, vm);               // 會帶入 ProductName/ProductType/Price/Currency/ShipmentQuantity/IsActive
-				entity.ProductType = type;             // 再次保險標準化
-				entity.ProductCreatedBy = GetCurrentManagerId();
-				entity.ProductCreatedAt = DateTime.Now;
+                // === 4) 單張圖片處理 (wwwroot/images/products/) ===
+                if (vm.Image != null && vm.Image.Length > 0)
+                {
+                    var wwwRootPath = _hostEnvironment.WebRootPath;
+                    var folderPath = Path.Combine(wwwRootPath, "images", "products");
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
 
-				_context.ProductInfos.Add(entity);
-				await _context.SaveChangesAsync();     // 取得自動遞增的 ProductId
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(vm.Image.FileName);
+                    var filePath = Path.Combine(folderPath, fileName);
 
-				// === 2) 建 Detail ===
-				if (isGame)
-				{
-					_context.GameProductDetails.Add(new GameProductDetail
-					{
-						ProductId = entity.ProductId,
-						SupplierId = vm.SupplierId!.Value,
-						PlatformId = vm.PlatformId,
-						PlatformName = vm.PlatformName,
-						GameType = vm.GameType,
-						DownloadLink = vm.DownloadLink,
-						ProductDescription = vm.GameProductDescription,
-						IsActive = vm.IsActive
-					});
-				}
-				else
-				{
-					_context.OtherProductDetails.Add(new OtherProductDetail
-					{
-						ProductId = entity.ProductId,
-						SupplierId = vm.SupplierId!.Value,
-						MerchTypeId = vm.MerchTypeId,
-						DigitalCode = vm.DigitalCode,
-						Size = vm.Size,
-						Color = vm.Color,
-						Weight = vm.Weight,
-						Dimensions = vm.Dimensions,
-						Material = vm.Material,
-						StockQuantity = vm.StockQuantity ?? 0,
-						ProductDescription = vm.OtherProductDescription,
-						IsActive = vm.IsActive
-					});
-				}
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await vm.Image.CopyToAsync(stream);
+                    }
 
-				// === 3) 產生 ProductCode（GM/OT + 10 碼流水） ===
-				var code = await GenerateProductCodeAsync(type);
-				_context.ProductCodes.Add(new ProductCode
-				{
-					ProductId = entity.ProductId,
-					ProductCode1 = code
-				});
+                    _context.ProductImages.Add(new ProductImage
+                    {
+                        ProductId = entity.ProductId,
+                        ProductimgUrl = "/images/products/" + fileName,
+                        ProductimgAltText = entity.ProductName,
+                        ProductimgUpdatedAt = DateTime.Now
+                    });
+                }
 
-				// === 4) 圖片：先吃前端 NewImageUrls；若有本地檔案也幫忙傳 ImgBB 後寫入 ===
-				var urls = new List<string>();
-				if (vm.NewImageUrls != null)
-					urls.AddRange(vm.NewImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)));
+                // === 5) 寫入 Audit Log ===
+                _context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+                {
+                    ProductId = entity.ProductId,
+                    ActionType = "CREATE",
+                    FieldName = "(all)",
+                    OldValue = null,
+                    NewValue = $"Name={entity.ProductName}, Price={entity.Price}, Type={entity.ProductType}, Code={code}",
+                    ManagerId = entity.ProductCreatedBy,
+                    ChangedAt = DateTime.Now
+                });
 
-				if (vm.Images is { Length: > 0 })
-				{
-					foreach (var f in vm.Images)
-					{
-						var url = await UploadFileToImgBBAsync(f); // 你現有的實作：回傳外部 URL
-						if (!string.IsNullOrWhiteSpace(url)) urls.Add(url);
-					}
-				}
+                // === 6) 存檔 ===
+                await _context.SaveChangesAsync();
 
-				await SaveNewImageUrlsAsync(entity.ProductId, entity.ProductName, entity.ProductCreatedBy, urls);
-
-				// === 5) 寫入 Audit Log ===
-				_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-				{
-					ProductId = entity.ProductId,
-					ActionType = "CREATE",
-					FieldName = "(all)",
-					OldValue = null,
-					NewValue = $"Name={entity.ProductName}, Price={entity.Price}, Type={entity.ProductType}, Code={code}",
-					ManagerId = entity.ProductCreatedBy,
-					ChangedAt = DateTime.Now
-				});
-
-				// === 6) 一起存檔 ===
-				await _context.SaveChangesAsync();
-
-				return Json(new
-				{
-					ok = true,
-					msg = $"「{entity.ProductName}」已新增！",
-					created = new
-					{
-						id = entity.ProductId,
-						name = entity.ProductName,
-						type = entity.ProductType,
-						priceN0 = entity.Price.ToString("N0"),
-						qty = entity.ShipmentQuantity,
-						active = entity.IsActive,
-						code,
-						createdText = entity.ProductCreatedAt.ToString("yyyy/MM/dd tt hh:mm"),
-						createdRaw = entity.ProductCreatedAt.ToString("yyyy/MM/dd HH:mm:ss"),
-						createdByManager = entity.ProductCreatedBy
-					}
-				});
-			}
-			catch (Exception ex)
-			{
-				return Json(new { ok = false, msg = $"新增失敗：{ex.Message}" });
-			}
-		}
+                return Json(new { ok = true, msg = $"「{entity.ProductName}」已新增！" });
+            }
+            catch (SqlException ex)
+            {
+                return Json(new { ok = false, msg = $"新增失敗：{ex.Message}" });
+            }
+        }
 
 
 
-		// ============================================================
-		// Edit（Modal）
-		// ============================================================
-		[HttpGet]
+
+        // ============================================================
+        // Edit（Modal）
+        // ============================================================
+        [HttpGet]
 		public async Task<IActionResult> Edit(int id)
 		{
 			var p = await _context.ProductInfos.FindAsync(id);
@@ -774,49 +804,38 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				}
 			}
 
-			// 刪除舊圖（勾選 Remove 的）
-			if (vm.ExistingImages is { Count: > 0 })
-			{
-				var idsToRemove = vm.ExistingImages.Where(x => x.Remove).Select(x => x.ImageId).ToList();
-				if (idsToRemove.Count > 0)
-				{
-					var imgs = await _context.ProductImages
-						.Where(i => i.ProductId == p.ProductId && idsToRemove.Contains(i.ProductimgId))
-						.ToListAsync();
+			//// 刪除舊圖（勾選 Remove 的）
+			//if (vm.ExistingImages is { Count: > 0 })
+			//{
+			//	var idsToRemove = vm.ExistingImages.Where(x => x.Remove).Select(x => x.ImageId).ToList();
+			//	if (idsToRemove.Count > 0)
+			//	{
+			//		var imgs = await _context.ProductImages
+			//			.Where(i => i.ProductId == p.ProductId && idsToRemove.Contains(i.ProductimgId))
+			//			.ToListAsync();
 
-					foreach (var img in imgs)
-					{
-						_context.ProductImages.Remove(img);
-						_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-						{
-							ProductId = p.ProductId,
-							ActionType = "UPDATE",
-							FieldName = "image:remove",
-							OldValue = img.ProductimgUrl,
-							NewValue = null,
-							ManagerId = p.ProductUpdatedBy,
-							ChangedAt = DateTime.Now
-						});
-					}
-				}
-			}
+			//		foreach (var img in imgs)
+			//		{
+			//			_context.ProductImages.Remove(img);
+			//			_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+			//			{
+			//				ProductId = p.ProductId,
+			//				ActionType = "UPDATE",
+			//				FieldName = "image:remove",
+			//				OldValue = img.ProductimgUrl,
+			//				NewValue = null,
+			//				ManagerId = p.ProductUpdatedBy,
+			//				ChangedAt = DateTime.Now
+			//			});
+			//		}
+			//	}
+			//}
 
 			// 新圖：
 			// 1) 前端傳來的外部連結（NewImageUrls）
-			// 2) 若也有本地檔案，直接上傳 ImgBB 後把回傳 url 一起寫入
-			var urls = new List<string>();
-			if (vm.NewImageUrls != null)
-				urls.AddRange(vm.NewImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)));
-
-			if (vm.Images is { Length: > 0 })
-			{
-				foreach (var f in vm.Images)
-				{
-					var url = await UploadFileToImgBBAsync(f); // 你現有的上傳，回傳外部 URL
-					if (!string.IsNullOrWhiteSpace(url)) urls.Add(url);
-				}
-			}
-			await SaveNewImageUrlsAsync(p.ProductId, p.ProductName, p.ProductUpdatedBy, urls);
+			// 2) 若也有本地檔案，直接上傳
+			// IIamge
+			
 
 			// 若此商品尚未有 ProductCode，補一筆（不重發新代碼）
 			var hasCode = await _context.ProductCodes.AsNoTracking().AnyAsync(c => c.ProductId == p.ProductId);
@@ -999,128 +1018,6 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		}
 
 
-		//    ImgBB 檔案上傳：前端 <input type="file"> 選檔後，Ajax 丟到這隻
-		//    伺服器把檔案 POST 到 ImgBB，拿回正式 URL 再回傳前端。
-		//    需要在 appsettings.json 放 ApiKey：
-		//    "ImgBB": { "ApiKey": "你的KEY" }
-		// 前端 AJAX 單張上傳用（可選）
-		// 權限：需在環境變數或 appsettings 加入 IMGBB_API_KEY
-		//
-		//(A) 私有共用：上傳到 ImgBB，回傳 URL
-		
-		private async Task<string?> UploadFileToImgBBAsync(IFormFile file)
-		{
-			if (file == null || file.Length == 0) return null;
-
-			var apiKey = _config["ImgBB:ApiKey"];
-			if (string.IsNullOrWhiteSpace(apiKey))
-				throw new InvalidOperationException("ImgBB ApiKey 未設定（appsettings.json 的 ImgBB:ApiKey）。");
-
-			using var ms = new MemoryStream();
-			await file.CopyToAsync(ms);
-			var base64 = Convert.ToBase64String(ms.ToArray());
-
-			var client = _http.CreateClient();
-			var url = $"https://api.imgbb.com/1/upload?key={apiKey}";
-
-			using var form = new MultipartFormDataContent();
-			form.Add(new StringContent(base64), "image"); // ImgBB 要的是 base64
-
-			var resp = await client.PostAsync(url, form);
-			var json = await resp.Content.ReadAsStringAsync();
-
-			if (!resp.IsSuccessStatusCode) return null;
-
-			using var doc = System.Text.Json.JsonDocument.Parse(json);
-			// data.url 是正式圖、data.display_url 也可
-			var root = doc.RootElement;
-			if (root.TryGetProperty("data", out var data) && data.TryGetProperty("url", out var urlEl))
-				return urlEl.GetString();
-
-			return null;
-		}
-
-		//(B) AJAX 專用：單張檔案 → 先丟 ImgBB → 回傳 JSON（你的 _CreateEditModal 正在呼叫的）
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> UploadToImgBB(IFormFile file)
-		{
-			if (file == null || file.Length == 0)
-				return Json(new { ok = false, msg = "未選擇檔案。" });
-
-			try
-			{
-				var url = await UploadFileToImgBBAsync(file);
-				if (string.IsNullOrWhiteSpace(url))
-					return Json(new { ok = false, msg = "ImgBB 上傳失敗。" });
-
-				return Json(new { ok = true, url });
-			}
-			catch (Exception ex)
-			{
-				return Json(new { ok = false, msg = $"上傳例外：{ex.Message}" });
-			}
-		}
-
-		//(C) 非 AJAX 版本：上傳並立即落 DB（若你要用傳統表單一次送）
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> UploadProductImage(int productId, IFormFile imageFile)
-		{
-			if (imageFile == null || imageFile.Length == 0)
-			{
-				TempData["msg"] = "請選擇圖片檔案。";
-				return RedirectToAction("Edit", new { id = productId });
-			}
-
-			try
-			{
-				var url = await UploadFileToImgBBAsync(imageFile);
-				if (string.IsNullOrWhiteSpace(url))
-				{
-					TempData["msg"] = "ImgBB 上傳失敗。";
-					return RedirectToAction("Edit", new { id = productId });
-				}
-
-				// 寫入 ProductImages
-				var p = await _context.ProductInfos.FindAsync(productId);
-				if (p == null) return NotFound();
-
-				_context.ProductImages.Add(new ProductImage
-				{
-					ProductId = productId,
-					ProductimgUrl = url,
-					ProductimgAltText = imageFile.FileName,
-					ProductimgUpdatedAt = DateTime.Now
-				});
-
-				// 寫入 AuditLog（選配）
-				_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-				{
-					ProductId = productId,
-					ActionType = "UPDATE",
-					FieldName = "image:add(url)",
-					OldValue = null,
-					NewValue = url,
-					ManagerId = GetCurrentManagerId(),
-					ChangedAt = DateTime.Now
-				});
-
-				await _context.SaveChangesAsync();
-
-				TempData["msg"] = "圖片已上傳並寫入。";
-				return RedirectToAction("Edit", new { id = productId });
-			}
-			catch (Exception ex)
-			{
-				TempData["msg"] = $"上傳例外：{ex.Message}";
-				return RedirectToAction("Edit", new { id = productId });
-			}
-		}
-
-
-
-
 		// ============================================================
 		// ToggleActive（Info/Detail 連動）
 		// ============================================================
@@ -1196,16 +1093,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				ProductCreatedBy = e.ProductCreatedBy,
 				ProductUpdatedAt = e.ProductUpdatedAt,
 				ProductUpdatedBy = e.ProductUpdatedBy,
-				ExistingImages = _context.ProductImages
-					.Where(i => i.ProductId == e.ProductId)
-					.OrderBy(i => i.ProductimgId)
-					.Select(i => new ProductInfoFormVM.ExistingImageItem
-					{
-						ImageId = i.ProductimgId,
-						Url = i.ProductimgUrl,
-						Alt = i.ProductimgAltText
-					})
-					.ToList()
+			
 			};
 
 			if (e.ProductType == "game")
@@ -1252,40 +1140,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				.FirstOrDefaultAsync();
 		}
 
-		// ImgBB 連結直接寫入 ProductImages
-		private async Task SaveNewImageUrlsAsync(int productId, string productName, int? managerId, IEnumerable<string>? urls)
-		{
-			if (urls == null) return;
-			var list = urls.Where(u => !string.IsNullOrWhiteSpace(u))
-						   .Select(u => u.Trim())
-						   .Distinct()
-						   .ToList();
-			if (list.Count == 0) return;
-
-			foreach (var url in list)
-			{
-				_context.ProductImages.Add(new ProductImage
-				{
-					ProductId = productId,
-					ProductimgUrl = url,
-					ProductimgAltText = productName,
-					ProductimgUpdatedAt = DateTime.Now
-				});
-
-				_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-				{
-					ProductId = productId,
-					ActionType = "UPDATE",
-					FieldName = "image:add(url)",
-					OldValue = null,
-					NewValue = url,
-					ManagerId = managerId,
-					ChangedAt = DateTime.Now
-				});
-
-				await Task.Yield();
-			}
-		}
+		
 
 		// Create/Edit 用下拉/參考清單
 		// 單一版本：請保留這個，刪除你檔案中其它重複命名的 FillDropdownsAsync()
@@ -1332,6 +1187,8 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				.GroupBy(x => x.Dimensions).OrderByDescending(g => g.Count())
 				.Select(g => g.Key).Take(20).ToListAsync();
 
+			
+			
 			ViewBag.MaterialList = await _context.OtherProductDetails.AsNoTracking()
 				.Where(x => x.Material != null && x.Material != "")
 				.GroupBy(x => x.Material).OrderByDescending(g => g.Count())

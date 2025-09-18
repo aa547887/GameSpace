@@ -1,17 +1,11 @@
-﻿// =========================
-using System;
-using System.Collections.Generic;
-
-namespace GameSpace.Areas.OnlineStore.ViewModels
+﻿namespace GameSpace.Areas.OnlineStore.ViewModels
 {
     public class ProductDetailModalVM
     {
-        // ------ Info ------
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
-        public string ProductType { get; set; } = "game"; // "game" / "nogame"
+        public string ProductType { get; set; } = "game"; // or notgame
         public bool IsActive { get; set; }
-
         public decimal Price { get; set; }
         public string CurrencyCode { get; set; } = "TWD";
         public int? ShipmentQuantity { get; set; }
@@ -23,19 +17,16 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 
         public string? ProductCode { get; set; }
 
-        // ------ Detail (Common) ------
+        // Game
         public int? SupplierId { get; set; }
         public string? SupplierName { get; set; }
-
-        // ------ Detail (Game) ------
         public int? PlatformId { get; set; }
         public string? PlatformName { get; set; }
-		
-		public string? GameType { get; set; }
+        public string? GameType { get; set; }
         public string? DownloadLink { get; set; }
         public string? GameDescription { get; set; }
 
-        // ------ Detail (NonGame) ------
+        // Not-Game
         public int? MerchTypeId { get; set; }
         public string? MerchTypeName { get; set; }
         public string? DigitalCode { get; set; }
@@ -47,18 +38,16 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         public int? StockQuantity { get; set; }
         public string? OtherDescription { get; set; }
 
-        // ------ Images ------
         public List<ImageVM> Images { get; set; } = new();
         public class ImageVM
         {
             public int Id { get; set; }
-            public string Url { get; set; } = "";
+            public string Url { get; set; } = ""; // Controller 用 Url.Action("Image", ...) 補上
             public string? Alt { get; set; }
         }
 
-		 //------ Last Log (optional) 異動紀錄（顯示前幾筆）----
-		public List<LastLogVM> LastLogs { get; set; } = new();
-		public class LastLogVM
+        public List<LastLogVM>? LastLogs { get; set; }
+        public class LastLogVM
         {
             public long LogId { get; set; }
             public string ActionType { get; set; } = "";

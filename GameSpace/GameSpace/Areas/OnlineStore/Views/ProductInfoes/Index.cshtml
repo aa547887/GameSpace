@@ -17,6 +17,23 @@
     var platforms = (IEnumerable<dynamic>?)ViewBag.PlatformList ?? Enumerable.Empty<dynamic>();
 }
 
+@if (ViewBag.ModelErrors != null)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var err in ViewBag.ModelErrors)
+            {
+                <li><strong>@err.Key</strong>:
+                    @foreach (var msg in err.Errors)
+                    {
+                        @msg <br />
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
 @section Styles {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
@@ -163,7 +180,7 @@
             </div>
 
             <div class="col-12 d-flex gap-2 mt-1 ">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 套用條件</button>
+                <button type="submit" class="btn btn-primary" ><i class="bi bi-search"></i> 套用條件</button>
                 <button type="reset" id="btnClearFilters" class="btn btn-outline-secondary">
                     <i class="bi bi-eraser"></i> 清除條件
                 </button>
@@ -198,7 +215,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">分類（nogame）</label>
+                    <label class="form-label">分類（notgame）</label>
                     <select class="form-select" name="merchTypeId">
                         <option value="">全部</option>
                         @foreach (var m in merchTypes)

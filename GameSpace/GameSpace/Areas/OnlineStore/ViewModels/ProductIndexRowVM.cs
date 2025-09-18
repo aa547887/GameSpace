@@ -11,7 +11,7 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
-        public string ProductType { get; set; } = ""; // "game" / "nogame"
+        public string ProductType { get; set; } = ""; // "game" / "notgame"
         public decimal Price { get; set; }
         public string CurrencyCode { get; set; } = "TWD";
         public int? ShipmentQuantity { get; set; }
