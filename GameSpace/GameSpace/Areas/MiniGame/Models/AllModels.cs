@@ -6,6 +6,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
 
@@ -93,16 +94,6 @@ namespace GameSpace.Areas.MiniGame.Models
         public int WinExp { get; set; }
     }
 
-    public class PaginatedResult<T>
-    {
-        public List<T> Items { get; set; } = new List<T>();
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-        public int TotalCount { get; set; }
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-        public bool HasPreviousPage => Page > 1;
-        public bool HasNextPage => Page < TotalPages;
-    }
 
     public class PetSummary
     {
@@ -160,12 +151,14 @@ namespace GameSpace.Areas.MiniGame.Models
 
     public class AdminWalletIndexViewModel
     {
-        public PagedResult<UserPointsReadModel> Wallets { get; set; } = new PagedResult<UserPointsReadModel>();
+        public PaginatedResult<UserWallet> Wallets { get; set; } = new PaginatedResult<UserWallet>();
         public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; }
         public WalletSummary WalletSummary { get; set; } = new WalletSummary();
     }
@@ -178,6 +171,12 @@ namespace GameSpace.Areas.MiniGame.Models
         public int UserId { get; set; }
         public int CouponTypeId { get; set; }
         public int Quantity { get; set; } = 1;
+        public List<Evoucher> UserEVouchers { get; set; } = new List<Evoucher>();
+        public string UserName { get; set; } = string.Empty;
+        public string EVoucherName { get; set; } = string.Empty;
+        public decimal Amount { get; set; } = 0;
+        public int ExpiryDays { get; set; } = 30;
+        public string Reason { get; set; } = string.Empty;
     }
 
     public class AdminAdjustEVouchersViewModel
@@ -188,6 +187,12 @@ namespace GameSpace.Areas.MiniGame.Models
         public int UserId { get; set; }
         public int EVoucherTypeId { get; set; }
         public int Quantity { get; set; } = 1;
+        public List<Evoucher> UserEVouchers { get; set; } = new List<Evoucher>();
+        public string UserName { get; set; } = string.Empty;
+        public string EVoucherName { get; set; } = string.Empty;
+        public decimal Amount { get; set; } = 0;
+        public int ExpiryDays { get; set; } = 30;
+        public string Reason { get; set; } = string.Empty;
     }
 
     public class AdminSignInIndexViewModel
@@ -196,22 +201,13 @@ namespace GameSpace.Areas.MiniGame.Models
         public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; }
         public WalletSummary WalletSummary { get; set; } = new WalletSummary();
         public SidebarViewModel Sidebar { get; set; } = new SidebarViewModel();
-    }
-
-    public class AdminSignInRulesViewModel
-    {
-        public SignInRuleReadModel Rule { get; set; } = new SignInRuleReadModel();
-    }
-
-    public class AdminSignInUserHistoryViewModel
-    {
-        public List<UserSignInStat> UserSignInHistory { get; set; } = new List<UserSignInStat>();
-        public GameSpace.Models.User User { get; set; } = new GameSpace.Models.User();
     }
 
     public class UserPointsReadModel
@@ -282,6 +278,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public int Page { get; set; }
         public int PageSize { get; set; }
         public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
         public bool HasPreviousPage => Page > 1;
         public bool HasNextPage => Page < TotalPages;
@@ -298,6 +295,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
 
@@ -315,6 +313,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
 
@@ -322,6 +321,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
 
@@ -344,6 +344,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
 
@@ -355,7 +356,6 @@ namespace GameSpace.Areas.MiniGame.Models
         public int TotalGames { get; set; }
         public int TotalSignIns { get; set; }
     }
-}
 
     // 錢包管理相關ViewModel
     public class AdminAdjustPointsViewModel
@@ -365,6 +365,22 @@ namespace GameSpace.Areas.MiniGame.Models
         public int Points { get; set; }
         public string Reason { get; set; } = string.Empty;
         public int CurrentPoints { get; set; }
+        public UserWallet UserWallet { get; set; } = new UserWallet();
+        public string AdjustmentType { get; set; } = string.Empty;
+    }
+
+    public class AdminQueryPointsViewModel
+    {
+        public PaginatedResult<UserPointsReadModel> Wallets { get; set; } = new PaginatedResult<UserPointsReadModel>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int TotalPages { get; set; }
+        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
     }
 
     public class AdminQueryCouponsViewModel
@@ -373,10 +389,11 @@ namespace GameSpace.Areas.MiniGame.Models
         public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; }
-        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
     }
 
     public class AdminQueryEVouchersViewModel
@@ -385,10 +402,10 @@ namespace GameSpace.Areas.MiniGame.Models
         public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
         public string SearchTerm { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
-        public int TotalPages { get; set; }
-        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
+        public int CurrentPage { get; set; } = 1;
     }
 
     public class AdminQueryHistoryViewModel
@@ -396,10 +413,15 @@ namespace GameSpace.Areas.MiniGame.Models
         public PaginatedResult<WalletTransaction> Transactions { get; set; } = new PaginatedResult<WalletTransaction>();
         public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
         public string SearchTerm { get; set; } = string.Empty;
+        public string TransactionType { get; set; } = string.Empty;
         public int Page { get; set; } = 1;
+        public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
+        public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; }
-        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
     }
 }
+
+
+

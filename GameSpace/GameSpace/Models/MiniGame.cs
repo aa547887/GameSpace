@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace GameSpace.Models;
@@ -46,4 +46,12 @@ public partial class MiniGame
     public bool Aborted { get; set; }
 
     public virtual User User { get; set; } = null!;
+
+    public int PointsReward { get; set; }
+
+    public int ExpReward { get; set; }
+
+    public int CouponReward { get; set; }
+
+    public int GameId { get; set; }
 }

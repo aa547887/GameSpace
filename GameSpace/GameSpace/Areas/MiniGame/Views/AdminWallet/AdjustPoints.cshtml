@@ -1,0 +1,104 @@
+@model GameSpace.Areas.MiniGame.Models.AdminAdjustPointsViewModel
+@{
+    ViewData["Title"] = "調整會員點數";
+    Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-edit mr-2"></i>調整會員點數
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (Model != null && Model.UserWallet != null)
+                    {
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">用戶信息</h5>
+                                        <p><strong>用戶ID:</strong> @Model.UserWallet.UserId</p>
+                                        <p><strong>用戶名:</strong> @Model.UserWallet.UserName</p>
+                                        <p><strong>當前點數:</strong> 
+                                            <span class="badge bg-success fs-6">@Model.UserWallet.CurrentPoints.ToString("N0")</span>
+                                        </p>
+                                        <p><strong>總獲得點數:</strong> @Model.UserWallet.TotalEarnedPoints.ToString("N0")</p>
+                                        <p><strong>總消費點數:</strong> @Model.UserWallet.TotalSpentPoints.ToString("N0")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form asp-action="AdjustPoints" method="post">
+                            <input type="hidden" asp-for="UserId" />
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label asp-for="AdjustmentType" class="form-label">調整類型</label>
+                                        <select asp-for="AdjustmentType" class="form-control" id="adjustmentType">
+                                            <option value="Add">增加點數</option>
+                                            <option value="Subtract">減少點數</option>
+                                        </select>
+                                        <span asp-validation-for="AdjustmentType" class="text-danger"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label asp-for="Points" class="form-label">點數</label>
+                                        <input asp-for="Points" class="form-control" type="number" min="1" step="1" />
+                                        <span asp-validation-for="Points" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="Reason" class="form-label">調整原因</label>
+                                <textarea asp-for="Reason" class="form-control" rows="3" placeholder="請輸入調整原因..."></textarea>
+                                <span asp-validation-for="Reason" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-1"></i>確認調整
+                                </button>
+                                <a asp-action="QueryPoints" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left mr-1"></i>返回查詢
+                                </a>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            未找到指定的用戶錢包信息
+                        </div>
+                        <div class="text-center">
+                            <a asp-action="QueryPoints" class="btn btn-primary">
+                                <i class="fas fa-arrow-left mr-1"></i>返回查詢
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('adjustmentType').addEventListener('change', function() {
+            const pointsInput = document.querySelector('input[name="Points"]');
+            if (this.value === 'Subtract') {
+                pointsInput.max = @(Model?.UserWallet?.CurrentPoints ?? 0);
+            } else {
+                pointsInput.removeAttribute('max');
+            }
+        });
+    </script>
+}

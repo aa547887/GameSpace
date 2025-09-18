@@ -6,6 +6,6 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         Task<bool> HasPermissionAsync(int managerId, string permission);
         Task<List<ManagerRolePermission>> GetManagerPermissionsAsync(int managerId);
-        Task<ManagerData?> GetManagerDataAsync(int managerId);
+        Task<ManagerDatum?> GetManagerDatumAsync(int managerId);
     }
 }

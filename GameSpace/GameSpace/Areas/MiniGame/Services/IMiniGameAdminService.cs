@@ -35,10 +35,10 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<List<UserSignInStat>> GetUserSignInRecordsAsync(int userId);
         Task<bool> AddSignInRecordAsync(int userId, DateTime signInDate);
         Task<bool> RemoveSignInRecordAsync(int signInId);
-        Task<List<UserSignInStat>> GetSignInStatsAsync();
+        Task<List<UserSignInStat>> GetSignInStatsAsync(SignInQueryModel query);
         Task<SignInRuleReadModel> GetSignInRuleAsync();
         Task<bool> AddUserSignInRecordAsync(int userId, DateTime signInDate);
-        Task<bool> RemoveUserSignInRecordAsync(int signInId);
+        Task<bool> RemoveUserSignInRecordAsync(int userId, DateTime signInDate);
         Task<GameSpace.Models.User?> GetUserByIdAsync(int userId);
         Task<List<UserSignInStat>> GetUserSignInHistoryAsync(int userId);
 

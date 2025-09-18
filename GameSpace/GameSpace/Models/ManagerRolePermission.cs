@@ -8,6 +8,7 @@ public partial class ManagerRolePermission
     public int ManagerRoleId { get; set; }
 
     public string RoleName { get; set; } = null!;
+    public string PermissionName { get; set; } = string.Empty;
 
     public bool? AdministratorPrivilegesManagement { get; set; }
 

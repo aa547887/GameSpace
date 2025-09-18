@@ -36,7 +36,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return manager?.ManagerRole?.ManagerRolePermissions ?? new List<ManagerRolePermission>();
         }
 
-        public async Task<ManagerData?> GetManagerDataAsync(int managerId)
+        public async Task<ManagerDatum?> GetManagerDatumAsync(int managerId)
         {
             return await _context.ManagerData
                 .Include(m => m.ManagerRole)

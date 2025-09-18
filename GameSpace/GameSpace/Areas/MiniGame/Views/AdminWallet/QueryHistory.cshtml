@@ -1,0 +1,149 @@
+@model GameSpace.Areas.MiniGame.Models.AdminQueryHistoryViewModel
+@{
+    ViewData["Title"] = "查詢會員收支明細";
+    Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-history mr-2"></i>查詢會員收支明細
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="QueryHistory" method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="SearchTerm" class="form-label">搜索條件</label>
+                                    <input asp-for="SearchTerm" class="form-control" placeholder="輸入用戶名或ID" />
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label asp-for="TransactionType" class="form-label">交易類型</label>
+                                    <select asp-for="TransactionType" class="form-control">
+                                        <option value="">全部</option>
+                                        <option value="Earn">獲得</option>
+                                        <option value="Spend">消費</option>
+                                        <option value="Adjust">調整</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search mr-1"></i>搜索
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label class="form-label">&nbsp;</label>
+                                    <a asp-action="QueryHistory" class="btn btn-secondary btn-block">
+                                        <i class="fas fa-refresh mr-1"></i>重置
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    @if (Model != null && Model.Transactions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>用戶ID</th>
+                                        <th>用戶名</th>
+                                        <th>交易類型</th>
+                                        <th>點數變化</th>
+                                        <th>交易原因</th>
+                                        <th>交易時間</th>
+                                        <th>備註</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in Model.Transactions)
+                                    {
+                                        <tr>
+                                            <td>@transaction.UserId</td>
+                                            <td>@transaction.UserName</td>
+                                            <td>
+                                                @if (transaction.TransactionType == "Earn")
+                                                {
+                                                    <span class="badge bg-success">獲得</span>
+                                                }
+                                                else if (transaction.TransactionType == "Spend")
+                                                {
+                                                    <span class="badge bg-danger">消費</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">調整</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (transaction.PointsChange > 0)
+                                                {
+                                                    <span class="text-success">+@transaction.PointsChange.ToString("N0")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger">@transaction.PointsChange.ToString("N0")</span>
+                                                }
+                                            </td>
+                                            <td>@transaction.Reason</td>
+                                            <td>@transaction.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@transaction.Notes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (Model.TotalPages > 1)
+                        {
+                            <nav aria-label="分頁導航">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" asp-action="QueryHistory" asp-route-page="@(Model.CurrentPage - 1)" asp-route-searchTerm="@Model.SearchTerm" asp-route-transactionType="@Model.TransactionType">上一頁</a>
+                                    </li>
+                                    
+                                    @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                                    {
+                                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                            <a class="page-link" asp-action="QueryHistory" asp-route-page="@i" asp-route-searchTerm="@Model.SearchTerm" asp-route-transactionType="@Model.TransactionType">@i</a>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" asp-action="QueryHistory" asp-route-page="@(Model.CurrentPage + 1)" asp-route-searchTerm="@Model.SearchTerm" asp-route-transactionType="@Model.TransactionType">下一頁</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    }
+                    else if (Model != null && (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.TransactionType)))
+                    {
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            未找到符合條件的交易記錄
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-history fa-3x mb-3"></i>
+                            <p>請輸入搜索條件來查詢會員收支明細</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

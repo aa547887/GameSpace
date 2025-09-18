@@ -23,13 +23,13 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<DmMessage> DmMessages { get; set; }
 
-    public virtual DbSet<Evoucher> Evouchers { get; set; }
+    public virtual DbSet<Evoucher> EVouchers { get; set; }
 
     public virtual DbSet<EvoucherRedeemLog> EvoucherRedeemLogs { get; set; }
 
     public virtual DbSet<EvoucherToken> EvoucherTokens { get; set; }
 
-    public virtual DbSet<EvoucherType> EvoucherTypes { get; set; }
+    public virtual DbSet<EvoucherType> EVoucherTypes { get; set; }
 
     public virtual DbSet<Forum> Forums { get; set; }
 
@@ -162,6 +162,10 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<UserWallet> UserWallets { get; set; }
 
     public virtual DbSet<WalletHistory> WalletHistories { get; set; }
+
+    public virtual DbSet<PetRule> PetRules { get; set; }
+
+    public virtual DbSet<GameRule> GameRules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

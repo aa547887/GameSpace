@@ -20,7 +20,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
 
         // GET: MiniGame/AdminEVoucher
-        public async Task<IActionResult> Index(EVoucherQueryModel query)
+        public async Task<IActionResult> Index(CouponQueryModel query)
         {
             if (query.PageNumber <= 0) query.PageNumber = 1;
             if (query.PageNumber <= 0) query.PageNumber = 10;
@@ -161,8 +161,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
     // ViewModels
     public class AdminEVoucherIndexViewModel
     {
-        public PagedResult<UserEVoucherReadModel> UserEVouchers { get; set; } = new();
-        public EVoucherQueryModel Query { get; set; } = new();
+        public PaginatedResult<GameSpace.Models.Evoucher> UserEVouchers { get; set; } = new();
+        public CouponQueryModel Query { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }
 

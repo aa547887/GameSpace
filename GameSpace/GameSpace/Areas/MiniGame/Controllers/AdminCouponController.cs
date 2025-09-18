@@ -161,7 +161,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
     // ViewModels
     public class AdminCouponIndexViewModel
     {
-        public PagedResult<UserCouponReadModel> UserCoupons { get; set; } = new();
+        public PaginatedResult<GameSpace.Models.Coupon> UserCoupons { get; set; } = new();
         public CouponQueryModel Query { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }

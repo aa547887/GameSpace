@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace GameSpace.Models;
@@ -20,4 +20,15 @@ public partial class Evoucher
     public DateTime? UsedTime { get; set; }
 
     public virtual User User { get; set; } = null!;
+
+    public virtual EvoucherType EVoucherType { get; set; } = null!;
+
+    public int EVoucherTypeId { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+    public string EVoucherName { get; set; } = string.Empty;
+    public decimal Amount { get; set; } = 0;
+    public DateTime ExpiryDate { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int Id { get; set; }
 }

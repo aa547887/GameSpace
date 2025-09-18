@@ -316,7 +316,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return false;
         }
 
-        public async Task<List<UserSignInStat>> GetSignInStatsAsync()
+        public async Task<List<UserSignInStat>> GetSignInStatsAsync(SignInQueryModel query)
         {
             return await _context.UserSignInStats
                 .Include(s => s.User)
@@ -329,7 +329,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.SignInRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                return new SignInRuleReadModel
+                return new GameSpace.Areas.MiniGame.Models.SignInRuleReadModel
                 {
                     RuleName = "Daily Sign-in Rule",
                     DailyPoints = 10,
@@ -338,7 +338,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 };
             }
 
-            return new SignInRuleReadModel
+            return new GameSpace.Areas.MiniGame.Models.SignInRuleReadModel
             {
                 RuleName = rule.RuleName,
                 DailyPoints = rule.DailyPoints,
@@ -352,9 +352,16 @@ namespace GameSpace.Areas.MiniGame.Services
             return await AddSignInRecordAsync(userId, signInDate);
         }
 
-        public async Task<bool> RemoveUserSignInRecordAsync(int signInId)
+        public async Task<bool> RemoveUserSignInRecordAsync(int userId, DateTime signInDate)
         {
-            return await RemoveSignInRecordAsync(signInId);
+            var signIn = await _context.UserSignInStats
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.SignInDate.Date == signInDate.Date);
+            if (signIn != null)
+            {
+                _context.UserSignInStats.Remove(signIn);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
         }
 
         public async Task<GameSpace.Models.User?> GetUserByIdAsync(int userId)
@@ -445,7 +452,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.PetRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                return new PetRuleReadModel
+                return new GameSpace.Areas.MiniGame.Models.PetRuleReadModel
                 {
                     RuleName = "Pet System Rule",
                     LevelUpExp = 100,
@@ -455,7 +462,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 };
             }
 
-            return new PetRuleReadModel
+            return new GameSpace.Areas.MiniGame.Models.PetRuleReadModel
             {
                 RuleName = rule.RuleName,
                 LevelUpExp = rule.LevelUpExp,
@@ -546,7 +553,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.GameRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                return new GameRuleReadModel
+                return new GameSpace.Areas.MiniGame.Models.GameRuleReadModel
                 {
                     RuleName = "Game System Rule",
                     DailyLimit = 3,
@@ -557,7 +564,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 };
             }
 
-            return new GameRuleReadModel
+            return new GameSpace.Areas.MiniGame.Models.GameRuleReadModel
             {
                 RuleName = rule.RuleName,
                 DailyLimit = rule.DailyLimit,
@@ -596,12 +603,12 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<PaginatedResult<WalletTransaction>> QueryWalletTransactionsAsync(CouponQueryModel query)
         {
             var queryable = _context.Set<WalletTransaction>()
-                .Include(t => t.User)
+                
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(query.SearchTerm))
             {
-                queryable = queryable.Where(t => t.User.UserName.Contains(query.SearchTerm));
+                queryable = queryable.Where(t => t.UserName.Contains(query.SearchTerm));
             }
 
             var totalCount = await queryable.CountAsync();
@@ -630,7 +637,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.SignInRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                rule = new SignInRule
+                rule = new GameSpace.Models.SignInRule
                 {
                     RuleName = model.RuleName,
                     DailyPoints = model.DailyPoints,
@@ -660,7 +667,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.PetRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                rule = new PetRule
+                rule = new GameSpace.Models.PetRule
                 {
                     RuleName = model.RuleName,
                     LevelUpExp = model.LevelUpExp,
@@ -692,7 +699,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var rule = await _context.GameRules.FirstOrDefaultAsync();
             if (rule == null)
             {
-                rule = new GameRule
+                rule = new GameSpace.Models.GameRule
                 {
                     RuleName = model.RuleName,
                     DailyLimit = model.DailyLimit,

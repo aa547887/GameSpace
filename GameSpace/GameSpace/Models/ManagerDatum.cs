@@ -54,4 +54,6 @@ public partial class ManagerDatum
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
+
+    public virtual ManagerRole ManagerRole { get; set; } = null!;
 }

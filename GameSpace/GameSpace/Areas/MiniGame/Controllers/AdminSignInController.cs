@@ -23,7 +23,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminSignInIndexViewModel
             {
                 SignInStats = await _adminService.GetSignInStatsAsync(new SignInQueryModel()),
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }
@@ -33,7 +33,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminSignInRulesViewModel
             {
                 SignInRule = await _adminService.GetSignInRuleAsync(),
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }
@@ -64,7 +64,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 UserId = userId,
                 UserName = _adminService.GetUserByIdAsync(userId).Result?.UserName ?? "",
                 SignInHistory = await _adminService.GetUserSignInHistoryAsync(userId),
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }

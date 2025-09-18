@@ -13,4 +13,10 @@ public partial class SignInRule
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; }
+
+    public int DailyPoints { get; set; }
+
+    public int WeeklyBonus { get; set; }
+
+    public int MonthlyBonus { get; set; }
 }

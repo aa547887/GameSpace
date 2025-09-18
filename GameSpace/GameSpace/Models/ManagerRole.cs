@@ -11,4 +11,6 @@ public partial class ManagerRole
 
     public virtual ManagerDatum Manager { get; set; } = null!;
     public virtual ManagerRolePermission ManagerRolePermission { get; set; } = null!;
+
+    public virtual ICollection<ManagerRolePermission> ManagerRolePermissions { get; set; } = new List<ManagerRolePermission>();
 }

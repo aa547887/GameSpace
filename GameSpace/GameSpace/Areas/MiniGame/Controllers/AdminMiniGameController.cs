@@ -25,7 +25,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 GameRecords = await _adminService.GetGameRecordsAsync(query),
                 GameSummary = await _adminService.GetGameSummaryAsync(),
                 Query = query,
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }
@@ -35,7 +35,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminMiniGameRulesViewModel
             {
                 GameRule = await _adminService.GetGameRuleAsync(),
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }
@@ -64,7 +64,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminMiniGameDetailsViewModel
             {
                 Game = await _adminService.GetGameDetailAsync(gameId),
-                Sidebar = "admin"
+                Sidebar = new SidebarViewModel()
             };
             return View(model);
         }

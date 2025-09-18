@@ -124,6 +124,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public long TotalPoints { get; set; }
         public int TotalCoupons { get; set; }
         public int TotalEVouchers { get; set; }
+        public double AveragePoints { get; set; }
     }
 
     public class PetSkinColorChangeLog
@@ -166,6 +167,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
         public int TotalPages { get; set; }
+        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
     }
 
     public class AdminAdjustCouponsViewModel
@@ -197,6 +199,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public int PageSize { get; set; } = 10;
         public int TotalCount { get; set; }
         public int TotalPages { get; set; }
+        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
         public SidebarViewModel Sidebar { get; set; } = new SidebarViewModel();
     }
 
@@ -351,5 +354,53 @@ namespace GameSpace.Areas.MiniGame.Models
         public int TotalPoints { get; set; }
         public int TotalGames { get; set; }
         public int TotalSignIns { get; set; }
+    }
+}
+
+    // 錢包管理相關ViewModel
+    public class AdminAdjustPointsViewModel
+    {
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public int UserId { get; set; }
+        public int Points { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public int CurrentPoints { get; set; }
+    }
+
+    public class AdminQueryCouponsViewModel
+    {
+        public PaginatedResult<GameSpace.Models.Coupon> Coupons { get; set; } = new PaginatedResult<GameSpace.Models.Coupon>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
+    }
+
+    public class AdminQueryEVouchersViewModel
+    {
+        public PaginatedResult<Evoucher> EVouchers { get; set; } = new PaginatedResult<Evoucher>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public WalletSummary WalletSummary { get; set; } = new WalletSummary();
+    }
+
+    public class AdminQueryHistoryViewModel
+    public class AdminQueryHistoryViewModel
+    {
+        public PaginatedResult<WalletTransaction> Transactions { get; set; } = new PaginatedResult<WalletTransaction>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public string TransactionType { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
     }
 }

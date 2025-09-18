@@ -16,20 +16,20 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _adminService = adminService;
         }
 
-        public async Task<IActionResult> Index(CouponQueryModel query)
+        public async Task<IActionResult> Index(SignInQueryModel query)
         {
             var signInStats = await _adminService.GetSignInStatsAsync(query);
             var users = await _adminService.GetUsersAsync();
 
             var viewModel = new AdminSignInIndexViewModel
             {
-                SignInStats = signInStats.Items,
+                SignInStats = signInStats,
                 Users = users,
                 SearchTerm = query.SearchTerm,
-                Page = signInStats.Page,
-                PageSize = signInStats.PageSize,
-                TotalCount = signInStats.TotalCount,
-                TotalPages = signInStats.TotalPages
+                Page = 1,
+                PageSize = 10,
+                TotalCount = signInStats.Count,
+                TotalPages = 1
             };
 
             return View(viewModel);

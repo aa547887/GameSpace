@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace GameSpace.Models;
@@ -44,4 +44,12 @@ public partial class Pet
     public DateTime PointsGainedTimeLevelUp { get; set; }
 
     public virtual User User { get; set; } = null!;
+
+    public string Color { get; set; } = null!;
+
+    public string Background { get; set; } = null!;
+
+    public int Happiness { get; set; }
+
+    public int Energy { get; set; }
 }

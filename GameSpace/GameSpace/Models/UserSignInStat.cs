@@ -29,4 +29,6 @@ public partial class UserSignInStat
     public DateTime? LastSignInDate { get; set; }
 
     public virtual User User { get; set; } = null!;
+
+    public DateTime SignInDate { get; set; }
 }

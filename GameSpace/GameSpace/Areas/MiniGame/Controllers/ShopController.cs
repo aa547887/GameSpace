@@ -33,7 +33,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
 
-            var eVouchers = await _context.Evouchers
+            var eVouchers = await _context.EVouchers
                 .Where(e => e.UserId == userId)
                 .ToListAsync();
 
