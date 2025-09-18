@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\Forum\Data\" />
-    <Folder Include="Areas\Forum\Models\" />
     <Folder Include="Areas\MemberManagement\Data\" />
     <Folder Include="Areas\MiniGame\Data\" />
     <Folder Include="Areas\MiniGame\Models\" />

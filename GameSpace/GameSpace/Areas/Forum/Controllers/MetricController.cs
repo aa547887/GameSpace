@@ -1,11 +1,10 @@
-﻿// MetricsController.cs
-//using GameSpace.Areas.Admin.Models.ViewModels;
-using GameSpace.Areas.Forum.Models.Metric;
+﻿// Areas/Admin/Controllers/MetricsController.cs
+using GameSpace.Areas.Forum.Models.Metric; // MetricListItemVm / MetricEditVm
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using System.Globalization;
 
 namespace GameSpace.Areas.Admin.Controllers
 {
@@ -16,12 +15,13 @@ namespace GameSpace.Areas.Admin.Controllers
         private readonly GameSpacedatabaseContext _db;
         public MetricsController(GameSpacedatabaseContext db) => _db = db;
 
+        // =============== Index（首次載入頁面） ===============
         [HttpGet]
         public async Task<IActionResult> Index(int? sourceId, string? q, DateOnly? date)
         {
-            // 目標日期（預設今天 UTC 的日）
             var target = date ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
+            // 上半部清單
             var baseQuery =
                 from m in _db.Metrics.AsNoTracking()
                 join s in _db.MetricSources.AsNoTracking() on m.SourceId equals s.SourceId
@@ -41,18 +41,19 @@ namespace GameSpace.Areas.Admin.Controllers
                     Code = x.m.Code,
                     Unit = x.m.Unit,
                     Description = x.m.Description,
-                    IsActive = x.m.IsActive ?? true,   // 你原本就是 nullable
+                    IsActive = x.m.IsActive ?? true,
                     CreatedAt = x.m.CreatedAt
                 })
                 .ToListAsync();
 
-            var sources = await _db.MetricSources.AsNoTracking().OrderBy(s => s.Name).ToListAsync();
+            var sources = await _db.MetricSources.AsNoTracking()
+                .OrderBy(s => s.Name).ToListAsync();
             ViewBag.Sources = new SelectList(sources, "SourceId", "Name", sourceId);
             ViewBag.SourceId = sourceId;
             ViewBag.Q = q;
 
-            // ➌ 下方排行榜（等權重、僅啟用指標）
-            var top10 = await BuildLeaderboardAsync(target);
+            // 下半部 Top10（等權重、僅啟用指標）
+            var top10 = await BuildLeaderboardAsync(target, sourceId, q);
 
             var vm = new MetricsIndexVm
             {
@@ -63,7 +64,38 @@ namespace GameSpace.Areas.Admin.Controllers
             return View(vm);
         }
 
+        // =============== AJAX：不重整預覽資料（表格＋圖） ===============
+        [HttpGet]
+        public async Task<IActionResult> PreviewJson(DateTime? date, int? sourceId, string? q)
+        {
+            // input type="date" 送來的是 yyyy-MM-dd（本地），取 Date 部分即可
+            var target = DateOnly.FromDateTime((date ?? DateTime.UtcNow).Date);
+            
+            var top10 = await BuildLeaderboardAsync(target, sourceId, q);
+            var ranks = top10.Select(x => x.Rank).ToArray();
+            var labelsDisplay = top10.Select(x => x.DisplayName).ToArray(); // 中文優先
+            var labelsEn = top10.Select(x => x.GameName).ToArray();    // 英文
+            var labels = top10.Select(x => x.GameName).ToArray();
+            var values = top10.Select(x => Math.Round(x.Score, 4)).ToArray(); // 前端會顯示四位小數
 
+            // 百分比在前端算也行，這裡也一起給
+            var total = values.Sum();
+            var shares = total == 0
+                ? values.Select(_ => 0d).ToArray()
+                : values.Select(v => Math.Round(v / (total == 0 ? 1 : total) * 100, 1)).ToArray();
+
+            return Json(new
+            {
+                date = target.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ranks,
+                labelsDisplay,
+                labelsEn,
+                values,
+                shares
+            });
+        }
+
+        // =============== CRUD（你原本的） ===============
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -148,6 +180,7 @@ namespace GameSpace.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // =============== Private helpers ===============
         private async Task FillSources(int? selected)
         {
             var sources = await _db.MetricSources.AsNoTracking()
@@ -159,40 +192,47 @@ namespace GameSpace.Areas.Admin.Controllers
 
         private async Task ValidateMetric(MetricEditVm vm)
         {
-            // (source_id, code) 唯一
             var dup = await _db.Metrics
                 .AnyAsync(x => x.SourceId == vm.SourceId && x.Code == vm.Code && x.MetricId != vm.MetricId);
             if (dup) ModelState.AddModelError("", "同一來源下的代碼必須唯一。");
         }
 
-        // ➊ 新增 VM：頁面總模型（上：清單｜下：Top10）
+        // =============== Page VMs ===============
         public class MetricsIndexVm
         {
             public DateOnly TargetDate { get; set; }
-            public List<MetricListItemVm> List { get; set; } = new();   // 你原本的 List VM
-            public List<LeaderboardRowVm> Top10 { get; set; } = new();  // 下方排行榜
+            public List<MetricListItemVm> List { get; set; } = new();
+            public List<LeaderboardRowVm> Top10 { get; set; } = new();
         }
 
-        // ➋ 新增 VM：排行榜每列
         public class LeaderboardRowVm
         {
             public int Rank { get; set; }
             public int GameId { get; set; }
             public string GameName { get; set; } = "";
-            public double Score { get; set; }           // 0~1 之間（等權重平均）
+            public string DisplayName { get; set; } = "";
+            public double Score { get; set; } // 0~1（等權重平均後）
         }
 
-        private async Task<List<LeaderboardRowVm>> BuildLeaderboardAsync(DateOnly date)
+        // =============== 核心：等權重排行榜（支援 sourceId / q 過濾） ===============
+        private async Task<List<LeaderboardRowVm>> BuildLeaderboardAsync(
+            DateOnly date, int? sourceId = null, string? q = null)
         {
-            // 1) 取啟用中的指標 IDs（int）
-            var activeMetricIds = await _db.Metrics
-                .Where(m => (m.IsActive ?? true))
-                .Select(m => m.MetricId)               // metrics.metric_id 是 int（PK）
-                .ToListAsync();
+            // 1) 活動中的指標（可選來源/關鍵字過濾）
+            var activeMetricIdsQ = _db.Metrics.AsNoTracking()
+                .Where(m => (m.IsActive ?? true));
+
+            if (sourceId.HasValue) activeMetricIdsQ = activeMetricIdsQ.Where(m => m.SourceId == sourceId);
+            if (!string.IsNullOrWhiteSpace(q))
+                activeMetricIdsQ = activeMetricIdsQ.Where(m => m.Code.Contains(q) || (m.Description ?? "").Contains(q));
+
+            var activeMetricIds = await activeMetricIdsQ
+                .Select(m => m.MetricId).ToListAsync();
 
             if (activeMetricIds.Count == 0) return new();
 
-            // 2) 取當日數據：先把 nullable 過濾掉再投影成非 nullable，才不會跟 List<int> 打架
+            // 2) 當日數據（你的欄位是 DateOnly 的 d.Date）
+            //    ⚠️ 如果你的欄位其實是 MetricDate，就把 d.Date 換成 d.MetricDate
             var rows = await _db.GameMetricDailies
                 .Where(d => d.Date == date
                             && d.GameId.HasValue
@@ -208,12 +248,15 @@ namespace GameSpace.Areas.Admin.Controllers
 
             if (rows.Count == 0) return new();
 
-            // 3) 每個指標的「當日最大值」→ 用來做 0~1 標準化
+            // 3) 每指標的當日最大值（避免全 0 導致除以 0）
             var maxByMetric = rows
                 .GroupBy(r => r.MetricId)
-                .ToDictionary(g => g.Key, g => g.Max(x => x.Value == 0 ? 1 : x.Value));
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Max(x => x.Value == 0 ? 1 : x.Value)
+                );
 
-            // 4) 等權重平均（每個啟用指標視為 weight=1）
+            // 4) 0~1 標準化後等權重平均
             var scoreByGame = rows
                 .GroupBy(r => r.GameId)
                 .Select(g => new
@@ -229,22 +272,36 @@ namespace GameSpace.Areas.Admin.Controllers
                 .Take(10)
                 .ToList();
 
-            // 5) 補遊戲名稱（不用 GetValueOrDefault，多數框架都支援 TryGetValue）
+            // 5) 遊戲名稱（同時取中/英）
             var gameIds = scoreByGame.Select(x => x.GameId).ToList();
-            var names = await _db.Games
+            var nameMap = await _db.Games.AsNoTracking()
                 .Where(g => gameIds.Contains(g.GameId))
-                .ToDictionaryAsync(g => g.GameId, g => g.Name);
+                .Select(g => new
+                {
+                    g.GameId,
+                    En = g.Name,          // 如果你的欄位叫別的，這裡改成正確的屬性
+                    Zh = g.NameZh         // 如果是 Name_zh → 改成 g.Name_zh
+                })
+                .ToDictionaryAsync(x => x.GameId, x => new { x.En, x.Zh });
 
-            return scoreByGame.Select((x, i) => new LeaderboardRowVm
+            return scoreByGame.Select((x, i) =>
             {
-                Rank = i + 1,
-                GameId = x.GameId,                                    // 這裡現在是 int → 不會再 CS0266
-                GameName = names.TryGetValue(x.GameId, out var n) ? n : $"#{x.GameId}", // 取不到就顯示 #ID
-                Score = Math.Round(x.Score, 4)
+                var hit = nameMap.TryGetValue(x.GameId, out var nm);
+                var en = hit ? (string.IsNullOrWhiteSpace(nm!.En) ? $"#{x.GameId}" : nm.En) : $"#{x.GameId}";
+                var zh = hit ? (nm!.Zh ?? "") : "";
+                var display = string.IsNullOrWhiteSpace(zh) ? en : zh;
+
+                return new LeaderboardRowVm
+                {
+                    Rank = i + 1,
+                    GameId = x.GameId,
+                    GameName = en,          // 英文
+                    DisplayName = display,  // 中文優先
+                    Score = Math.Round(x.Score, 4)
+                };
             }).ToList();
+
+
         }
-
-
-
     }
 }
