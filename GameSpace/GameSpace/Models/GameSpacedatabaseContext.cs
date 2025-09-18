@@ -1533,13 +1533,15 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("ProductCode");
 
+            entity.HasIndex(e => e.ProductId, "UQ_ProductCode_ProductId").IsUnique();
+
             entity.Property(e => e.ProductCode1)
                 .HasMaxLength(50)
                 .HasColumnName("product_code");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductCodes)
-                .HasForeignKey(d => d.ProductId)
+            entity.HasOne(d => d.Product).WithOne(p => p.ProductCode)
+                .HasForeignKey<ProductCode>(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductCode_ProductInfo");
         });

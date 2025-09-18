@@ -31,7 +31,7 @@ public partial class ProductInfo
 
     public virtual OtherProductDetail? OtherProductDetail { get; set; }
 
-    public virtual ICollection<ProductCode> ProductCodes { get; set; } = new List<ProductCode>();
+    public virtual ProductCode? ProductCode { get; set; }
 
     public virtual ManagerDatum ProductCreatedByNavigation { get; set; } = null!;
 
