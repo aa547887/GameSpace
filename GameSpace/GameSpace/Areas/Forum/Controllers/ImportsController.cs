@@ -58,16 +58,32 @@ namespace GameSpace.Areas.Forum.Controllers
                                    .ToDictionaryAsync(x => x.Name.ToLower().Trim(), x => x.GameId);
 
                 // ---- Metrics ----
+                // ---- Metrics ----
                 foreach (var row in wsM.RowsUsed().Skip(1))
                 {
                     var sourceName = row.Cell(1).GetString().Trim().ToLower();
                     var code = row.Cell(2).GetString().Trim();
                     var unit = row.Cell(3).GetString().Trim();
                     var desc = row.Cell(4).GetString().Trim();
-                    var active = row.Cell(5).GetValue<bool>();
 
-                    if (string.IsNullOrWhiteSpace(sourceName) || string.IsNullOrWhiteSpace(code)) { skipped++; continue; }
-                    if (!srcDict.TryGetValue(sourceName, out var sourceId)) { errors++; msgs.Add($"[Metrics] 未知來源: {sourceName}"); continue; }
+                    // 寬鬆解析 isActive：接受 1/0/true/false/是/否，忽略前後空白
+                    bool active = true; // 預設啟用
+                    var raw = row.Cell(5).GetString().Trim().ToLower();
+                    if (!string.IsNullOrEmpty(raw))
+                    {
+                        active = raw switch
+                        {
+                            "1" or "true" or "是" or "y" => true,
+                            "0" or "false" or "否" or "n" => false,
+                            _ => bool.TryParse(raw, out var b) ? b : true
+                        };
+                    }
+
+                    if (string.IsNullOrWhiteSpace(sourceName) || string.IsNullOrWhiteSpace(code))
+                    { skipped++; continue; }
+
+                    if (!srcDict.TryGetValue(sourceName, out var sourceId))
+                    { errors++; msgs.Add($"[Metrics] 未知來源: {sourceName}"); continue; }
 
                     var m = await _db.Metrics.FirstOrDefaultAsync(x => x.SourceId == sourceId && x.Code == code);
                     if (m == null)
@@ -76,7 +92,7 @@ namespace GameSpace.Areas.Forum.Controllers
                         {
                             SourceId = sourceId,
                             Code = code,
-                            Unit = unit,
+                            Unit = string.IsNullOrWhiteSpace(unit) ? "count" : unit,
                             Description = desc,
                             IsActive = active,
                             CreatedAt = DateTime.UtcNow
@@ -85,7 +101,9 @@ namespace GameSpace.Areas.Forum.Controllers
                     }
                     else
                     {
-                        m.Unit = unit; m.Description = desc; m.IsActive = active;
+                        m.Unit = string.IsNullOrWhiteSpace(unit) ? m.Unit : unit;
+                        m.Description = desc;
+                        m.IsActive = active;
                         updated++;
                     }
                 }
@@ -96,13 +114,20 @@ namespace GameSpace.Areas.Forum.Controllers
                     var gameName = row.Cell(1).GetString().Trim().ToLower();
                     var sourceName = row.Cell(2).GetString().Trim().ToLower();
                     var key = row.Cell(3).GetString().Trim();
-                    var url = row.Cell(4).GetString().Trim();
+                    // var url     = row.Cell(4).GetString().Trim(); // 你目前不存就先略
 
-                    if (!gameDict.TryGetValue(gameName, out var gameId)) { errors++; msgs.Add($"[Map] 未知遊戲: {gameName}"); continue; }
-                    if (!srcDict.TryGetValue(sourceName, out var sourceId)) { errors++; msgs.Add($"[Map] 未知來源: {sourceName}"); continue; }
-                    if (string.IsNullOrEmpty(key)) { skipped++; continue; }
+                    if (!gameDict.TryGetValue(gameName, out var gameId))
+                    { errors++; msgs.Add($"[Map] 未知遊戲: {gameName}"); continue; }
 
-                    var map = await _db.GameSourceMaps.FirstOrDefaultAsync(x => x.GameId == gameId && x.SourceId == sourceId);
+                    if (!srcDict.TryGetValue(sourceName, out var sourceId))
+                    { errors++; msgs.Add($"[Map] 未知來源: {sourceName}"); continue; }
+
+                    if (string.IsNullOrEmpty(key))
+                    { skipped++; msgs.Add($"[Map] externalKey 空白: game={gameName}, source={sourceName}"); continue; }
+
+                    var map = await _db.GameSourceMaps
+                        .FirstOrDefaultAsync(x => x.GameId == gameId && x.SourceId == sourceId);
+
                     if (map == null)
                     {
                         _db.GameSourceMaps.Add(new GameSourceMap
@@ -110,18 +135,24 @@ namespace GameSpace.Areas.Forum.Controllers
                             GameId = gameId,
                             SourceId = sourceId,
                             ExternalKey = key,
-                           //奔來借=就沒有 ExternalUrl = string.IsNullOrWhiteSpace(url) ? null : url,
                             CreatedAt = DateTime.UtcNow
                         });
                         inserted++;
                     }
                     else
                     {
-                        map.ExternalKey = key;
-                        //map.ExternalUrl = string.IsNullOrWhiteSpace(url) ? null : url;  本來就沒有
-                        updated++;
+                        if (!string.Equals(map.ExternalKey, key, StringComparison.Ordinal))
+                        {
+                            map.ExternalKey = key;
+                            updated++;
+                        }
+                        else
+                        {
+                            skipped++;
+                        }
                     }
                 }
+
 
                 await _db.SaveChangesAsync();
                 TempData["msg"] = $"定義匯入完成：+{inserted} / ✎{updated} / ↷{skipped} / ⚠{errors}";
