@@ -474,33 +474,41 @@ namespace GameSpace.Areas.social_hub.Controllers
 					((c.Party1Id == a && c.Party2Id == b) || (c.Party1Id == b && c.Party2Id == a)));
 		}
 
+		// ChatController.cs  ★ 取代既有的 ShouldBeManagerDmAsync
 		private async Task<bool> ShouldBeManagerDmAsync(int a, int b, bool meIsManager)
 		{
 			if (!meIsManager) return false;
-			var otherIsManager = await _db.DmConversations
+
+			// ★ FIX：直接用 ManagerData 驗證雙方都是管理員（而不是靠是否已有管理員 DM 紀錄）
+			var ids = new[] { a, b };
+			var count = await _db.ManagerData
 				.AsNoTracking()
-				.AnyAsync(c => c.IsManagerDm && (c.Party1Id == b || c.Party2Id == b));
-			return otherIsManager;
+				.CountAsync(m => ids.Contains(m.ManagerId));
+
+			return count == 2;
 		}
 
+
+		// ChatController.cs  ★ 覆寫 GetOrCreateConversationAsync 內決策 IsManagerDm 的那行
 		private async Task<DmConversation> GetOrCreateConversationAsync(int a, int b, bool preferManagerDm)
 		{
 			var found = await FindConversationAsync(a, b);
 			if (found != null) return found;
 
+			// ★ FIX：preferManagerDm（我方是管理員）且「雙方皆存在於 ManagerData」=> 才建立管理員 DM
 			var isMgrDm = preferManagerDm && await ShouldBeManagerDmAsync(a, b, true);
 
 			var p1 = Math.Min(a, b);
 			var p2 = Math.Max(a, b);
-
 			var now = DateTime.UtcNow;
+
 			var conv = new DmConversation
 			{
 				IsManagerDm = isMgrDm,
 				Party1Id = p1,
 				Party2Id = p2,
 				CreatedAt = now,
-				LastMessageAt = now  // ★ 避免 NOT NULL 與排序問題
+				LastMessageAt = now
 			};
 
 			_db.DmConversations.Add(conv);
@@ -511,11 +519,13 @@ namespace GameSpace.Areas.social_hub.Controllers
 			}
 			catch (DbUpdateException)
 			{
+				// 競態下重查一次
 				var again = await FindConversationAsync(a, b);
 				if (again != null) return again;
 				throw;
 			}
 		}
+
 
 		private async Task<(int total, int peerUnread)> ComputeUnreadAsync(int userId, int peerId)
 		{
