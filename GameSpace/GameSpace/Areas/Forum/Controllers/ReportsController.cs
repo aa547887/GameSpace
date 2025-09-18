@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using ClosedXML.Excel;
-using System.Linq; // ★ for LINQ
+using System.Linq;
 
 namespace GameSpace.Areas.Forum.Controllers
 {
@@ -46,7 +46,7 @@ namespace GameSpace.Areas.Forum.Controllers
             if (gameId.HasValue && from.HasValue && to.HasValue)
             {
                 // 傳入使用者勾的 metricIds；沒勾的話，內部會 fallback 用啟用中的全部
-                var rows = await QueryDailyIndexAsync(gameId.Value, from.Value, to.Value, metricIds); // ★
+                var rows = await QueryDailyIndexAsync(gameId.Value, from.Value, to.Value, metricIds);
                 return View(rows);
             }
 
@@ -57,9 +57,9 @@ namespace GameSpace.Areas.Forum.Controllers
         /// 匯出 CSV（純資料，不含圖）
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> ExportCsv(int gameId, DateOnly from, DateOnly to, [FromQuery] int[]? metricIds) // ★ 支援 metricIds
+        public async Task<IActionResult> ExportCsv(int gameId, DateOnly from, DateOnly to, [FromQuery] int[]? metricIds)
         {
-            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds); // ★
+            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds);
 
             var sb = new StringBuilder();
             sb.AppendLine("date,game,Index");
@@ -76,9 +76,9 @@ namespace GameSpace.Areas.Forum.Controllers
         /// 匯出 Excel（純資料，不含圖）
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> ExportExcel(int gameId, DateOnly from, DateOnly to, [FromQuery] int[]? metricIds) // ★ 支援 metricIds
+        public async Task<IActionResult> ExportExcel(int gameId, DateOnly from, DateOnly to, [FromQuery] int[]? metricIds)
         {
-            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds); // ★
+            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds);
 
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Index");
@@ -97,8 +97,7 @@ namespace GameSpace.Areas.Forum.Controllers
 
             using var ms = new MemoryStream();
             wb.SaveAs(ms);
-            var bytes = ms.ToArray();
-            return File(bytes,
+            return File(ms.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"index_{gameId}_{from:yyyyMMdd}_{to:yyyyMMdd}.xlsx");
         }
@@ -111,9 +110,9 @@ namespace GameSpace.Areas.Forum.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportExcelWithChartImage(
-            int gameId, DateOnly from, DateOnly to, [FromForm] int[]? metricIds, string? chartDataUrl) // ★ 支援 metricIds
+            int gameId, DateOnly from, DateOnly to, [FromForm] int[]? metricIds, string? chartDataUrl)
         {
-            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds); // ★
+            var rows = await QueryDailyIndexAsync(gameId, from, to, metricIds);
 
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Index");
@@ -131,31 +130,24 @@ namespace GameSpace.Areas.Forum.Controllers
             ws.Columns().AdjustToContents();
 
             // 解析 data:image/png;base64,...
-            byte[] pngBytes = Array.Empty<byte>();
             if (!string.IsNullOrWhiteSpace(chartDataUrl) && chartDataUrl.StartsWith("data:image"))
             {
                 var comma = chartDataUrl.IndexOf(',');
                 if (comma > 0)
                 {
                     var b64 = chartDataUrl[(comma + 1)..];
-                    pngBytes = Convert.FromBase64String(b64);
-                }
-            }
+                    var pngBytes = Convert.FromBase64String(b64);
 
-            // 有圖就貼（放在右邊 E1 起）
-            if (pngBytes.Length > 0)
-            {
-                using var imgStream = new MemoryStream(pngBytes);
-                var pic = ws.AddPicture(imgStream)
-                            .MoveTo(ws.Cell(1, 5)); // E1
-                pic.Name = "PopularityChart";  // 用屬性，不用 WithName()（避免撞 ASP.NET Core 路由擴充）
-                pic.Scale(0.9);
+                    using var imgStream = new MemoryStream(pngBytes);
+                    var pic = ws.AddPicture(imgStream).MoveTo(ws.Cell(1, 5)); // E1
+                    pic.Name = "PopularityChart"; // 不用 WithName()，避免路由擴充衝突
+                    pic.Scale(0.9);
+                }
             }
 
             using var ms = new MemoryStream();
             wb.SaveAs(ms);
-            var bytes = ms.ToArray();
-            return File(bytes,
+            return File(ms.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"index_{gameId}_{from:yyyyMMdd}_{to:yyyyMMdd}_chart.xlsx");
         }
@@ -163,7 +155,7 @@ namespace GameSpace.Areas.Forum.Controllers
         /// <summary>
         /// 舊簽名（3 參數）→ 為相容保留，內部轉呼叫新版（4 參數）
         /// </summary>
-        private Task<List<DailyIndexVm>> QueryDailyIndexAsync(int gameId, DateOnly from, DateOnly to) // ★ 包裝器
+        private Task<List<DailyIndexVm>> QueryDailyIndexAsync(int gameId, DateOnly from, DateOnly to)
             => QueryDailyIndexAsync(gameId, from, to, null);
 
         /// <summary>
@@ -172,9 +164,9 @@ namespace GameSpace.Areas.Forum.Controllers
         /// - 若 metricIds 有值：只用這些；否則只取啟用中的 metrics（IsActive = true/NULL→當作 true）
         /// - 逐日：先抓該日每個指標的最大值，用來做 0~1 標準化
         /// - 某遊戲的日指數 = 各指標標準化後的均值（分母用「使用中的指標數」）
+        /// ★ 重點：先整段撈回（by 日期），foreach 內在記憶體篩選 → 不會產生 OPENJSON
         /// </summary>
-        private async Task<List<DailyIndexVm>> QueryDailyIndexAsync( // ★ 主版本
-            int gameId, DateOnly from, DateOnly to, int[]? metricIds)
+        private async Task<List<DailyIndexVm>> QueryDailyIndexAsync(int gameId, DateOnly from, DateOnly to, int[]? metricIds)
         {
             var dates = EachDate(from, to).ToList();
 
@@ -189,21 +181,32 @@ namespace GameSpace.Areas.Forum.Controllers
                 : await _db.Metrics.Where(m => (m.IsActive ?? true))
                                    .Select(m => m.MetricId)
                                    .ToListAsync();
+            if (usingMetricIds.Count == 0) return new List<DailyIndexVm>();
+
+            var usingMetricIdSet = new HashSet<int>(usingMetricIds);
+
+            // ========= 一次把區間資料撈回（只靠日期 + NotNull 過濾） =========
+            var allRows = await _db.GameMetricDailies
+                .Where(x => x.Date >= from && x.Date <= to
+                            && x.GameId.HasValue && x.MetricId.HasValue)
+                .Select(x => new
+                {
+                    Date = x.Date,                               // 後續 per-day 會用到
+                    GameId = x.GameId!.Value,
+                    MetricId = x.MetricId!.Value,
+                    x.Value
+                })
+                .AsNoTracking()
+                .ToListAsync();
 
             var result = new List<DailyIndexVm>();
-            if (usingMetricIds.Count == 0) return result;
-            var usingMetricIdSet = new HashSet<int>(usingMetricIds);
+
             foreach (var d in dates)
             {
-                // 該日所有遊戲 + 指標資料（只取 usingMetricIds）
-                // 先把當日所有有值的資料抓回來（只靠日期 + NotNull 過濾，避免 EF 生成 OPENJSON）
-                var rowsRaw = await _db.GameMetricDailies
-                    .Where(x => x.Date == d && x.GameId.HasValue && x.MetricId.HasValue)
-                    .Select(x => new { GameId = x.GameId.Value, MetricId = x.MetricId.Value, x.Value })
-                    .ToListAsync();
-
-                // 再用 C# 在記憶體裡篩成只剩使用者選的指標（HashSet.Contains，不走 SQL）
-                var rows = rowsRaw.Where(r => usingMetricIdSet.Contains(r.MetricId)).ToList();
+                // 在記憶體裡篩出「當日 + 選定指標」
+                var rows = allRows
+                    .Where(r => r.Date == d && usingMetricIdSet.Contains(r.MetricId))
+                    .ToList();
 
                 if (rows.Count == 0)
                 {
@@ -211,12 +214,12 @@ namespace GameSpace.Areas.Forum.Controllers
                     continue;
                 }
 
-                // 各指標最大值（避免除以 0，max=0 時當 1）
+                // 各指標最大值（避免除 0，max=0 時當 1）
                 var maxByMetric = rows
                     .GroupBy(r => r.MetricId)
                     .ToDictionary(g => g.Key, g => g.Max(x => x.Value == 0 ? 1 : x.Value));
 
-                // 取本遊戲的當日各指標值
+                // 本遊戲的當日各指標值
                 var mine = rows.Where(r => r.GameId == gameId).ToList();
                 if (mine.Count == 0)
                 {
@@ -232,9 +235,7 @@ namespace GameSpace.Areas.Forum.Controllers
                     sum += norm; used++;
                 }
 
-                // 分母用「使用中的指標數」→ 即便某指標當日無資料，也算在分母裡（等權重）
-                var index = (used == 0) ? 0d : sum / usingMetricIds.Count;
-
+                var index = (used == 0) ? 0d : sum / usingMetricIds.Count; // 等權重
                 result.Add(new DailyIndexVm
                 {
                     Date = d,
