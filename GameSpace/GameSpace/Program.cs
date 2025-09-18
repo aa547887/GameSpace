@@ -183,14 +183,16 @@ namespace GameSpace
 			// ===== Middleware 管線 =====
 			if (app.Environment.IsDevelopment())
 			{
-				app.UseMigrationsEndPoint();
+				//app.UseMigrationsEndPoint(); 未來需調整回來
+				app.UseDeveloperExceptionPage(); //未來需刪掉
 			}
 			else
 			{
-				app.UseExceptionHandler("/Home/Error");
-				app.UseHsts();
+				app.UseExceptionHandler("/Home/Maintenance");
+				
+				 //app.UseHsts();   未來需要調整回來
 			}
-
+			app.UseStatusCodePagesWithReExecute("/Home/Http{0}");  // 4xx/5xx 統一轉送(未來必須需刪掉)
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
 

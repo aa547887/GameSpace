@@ -9,7 +9,7 @@ using GameSpace.Areas.MemberManagement.Models;
 namespace GameSpace.Areas.MemberManagement.Controllers
 {
 	[Area("MemberManagement")]
-	[Route("MemberManagement/[controller]")] // 固定本控制器的路由前綴：/MemberManagement/ManagerData
+	[Route("MemberManagement/[controller]")] // /MemberManagement/ManagerData
 	public class ManagerDataController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
@@ -20,9 +20,7 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		}
 
 		// GET /MemberManagement/ManagerData
-		// 搜尋：managerId（精準）、managerName（模糊）
-		// 排序：sortBy=id|date、sortDir=asc|desc
-		[HttpGet("")] // Index 的屬性路由
+		[HttpGet("")]
 		public async Task<IActionResult> Index(int? managerId, string? managerName,
 											   string? sortBy, string? sortDir,
 											   string sidebar = "admin")
@@ -30,7 +28,7 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 			sortBy = (sortBy ?? "id").ToLower();
 			sortDir = (sortDir ?? "asc").ToLower();
 
-			ViewBag.Sidebar = sidebar ?? "admin"; // 保留側欄狀態
+			ViewBag.Sidebar = sidebar ?? "admin";
 			ViewBag.ManagerId = managerId;
 			ViewBag.ManagerName = managerName;
 			ViewBag.SortBy = sortBy;
@@ -67,7 +65,8 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 					ManagerId = m.ManagerId,
 					ManagerName = m.ManagerName,
 					ManagerAccount = m.ManagerAccount,
-					ManagerPassword = m.ManagerPassword,
+					// 為避免洩漏，列表不帶出密碼
+					ManagerPassword = null,
 					AdministratorRegistrationDate = m.AdministratorRegistrationDate,
 					ManagerEmail = m.ManagerEmail,
 					ManagerEmailConfirmed = m.ManagerEmailConfirmed,
@@ -98,7 +97,6 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		public async Task<IActionResult> Create(string sidebar = "admin")
 		{
 			ViewBag.Sidebar = sidebar ?? "admin";
-			// 顯示給使用者看（只顯示、不送出）
 			ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
 			return View(new ManagerDatumVM());
 		}
@@ -107,11 +105,46 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		[HttpPost("Create")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(
-			// 只接前端四個欄位，其餘後端自動
 			[Bind("ManagerName,ManagerAccount,ManagerPassword,ManagerEmail")] ManagerDatumVM vm,
 			string sidebar = "admin")
 		{
 			ViewBag.Sidebar = sidebar ?? "admin";
+
+			if (!ModelState.IsValid)
+			{
+				ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
+				return View(vm);
+			}
+
+			var name = vm.ManagerName?.Trim() ?? string.Empty;
+			var account = vm.ManagerAccount?.Trim() ?? string.Empty;
+			var password = vm.ManagerPassword?.Trim() ?? string.Empty;
+			var email = vm.ManagerEmail?.Trim() ?? string.Empty;
+
+			// 基本長度檢查（與 VM 對齊，雙保險）
+			if (account.Length < 8)
+				ModelState.AddModelError(nameof(vm.ManagerAccount), "帳號至少需要 8 碼。");
+			if (password.Length < 8)
+				ModelState.AddModelError(nameof(vm.ManagerPassword), "密碼至少需要 8 碼。");
+
+			if (!ModelState.IsValid)
+			{
+				ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
+				return View(vm);
+			}
+
+			// 重複檢查（姓名/帳號/信箱）
+			var duplicates = await _context.ManagerData
+				.Where(m => m.ManagerName == name || m.ManagerAccount == account || m.ManagerPassword ==password || m.ManagerEmail == email)
+				.Select(m => new { m.ManagerName, m.ManagerAccount, m.ManagerEmail })
+				.ToListAsync();
+
+			if (duplicates.Any(d => string.Equals(d.ManagerName, name, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerName), "此管理者姓名已存在，請更換。");
+			if (duplicates.Any(d => string.Equals(d.ManagerAccount, account, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerAccount), "此帳號已存在，請更換。");
+			if (duplicates.Any(d => string.Equals(d.ManagerEmail, email, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerEmail), "此信箱已存在，請更換。");
 
 			if (!ModelState.IsValid)
 			{
@@ -127,12 +160,12 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 				var e = new ManagerDatum
 				{
 					ManagerId = newId,
-					ManagerName = vm.ManagerName!,
-					ManagerAccount = vm.ManagerAccount!,
-					ManagerPassword = vm.ManagerPassword!,          //（若要雜湊，這裡處理）
-					AdministratorRegistrationDate = DateTime.Now,   // 後端自動填入時間
-					ManagerEmail = vm.ManagerEmail!,
-					ManagerEmailConfirmed = false,                  // 預設
+					ManagerName = name,
+					ManagerAccount = account,
+					ManagerPassword = password, // 用修剪後的值
+					AdministratorRegistrationDate = DateTime.Now,
+					ManagerEmail = email,
+					ManagerEmailConfirmed = false,
 					ManagerAccessFailedCount = 0,
 					ManagerLockoutEnabled = false,
 					ManagerLockoutEnd = null
@@ -147,39 +180,48 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 				}
 				catch (DbUpdateException ex)
 				{
-					// 避免主鍵衝突（很少見，併發時才會），重試一次
 					var msg = ex.InnerException?.Message ?? ex.Message;
 					var duplicateKey =
 						msg.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
-						msg.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase);
+						msg.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) ||
+						msg.Contains("duplicate", StringComparison.OrdinalIgnoreCase);
 
 					_context.Entry(e).State = EntityState.Detached;
-					if (duplicateKey) continue; // 換下一個號碼再試
+
+					if (duplicateKey)
+					{
+						if (msg.Contains("ManagerAccount", StringComparison.OrdinalIgnoreCase))
+							ModelState.AddModelError(nameof(vm.ManagerAccount), "此帳號已存在，請更換。");
+						else if (msg.Contains("ManagerName", StringComparison.OrdinalIgnoreCase))
+							ModelState.AddModelError(nameof(vm.ManagerName), "此管理者姓名已存在，請更換。");
+						else if (msg.Contains("ManagerEmail", StringComparison.OrdinalIgnoreCase))
+							ModelState.AddModelError(nameof(vm.ManagerEmail), "此信箱已存在，請更換。");
+						else
+							ModelState.AddModelError(string.Empty, "資料重複，請檢查輸入內容。");
+
+						ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
+						return View(vm);
+					}
+
 					ModelState.AddModelError(string.Empty, msg);
-					break;
+					ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
+					return View(vm);
 				}
 			}
 
-			// 若重試也失敗，回到畫面
 			ViewBag.NextManagerId = await GenerateNextManagerIdAsync();
+			ModelState.AddModelError(string.Empty, "建立失敗，請稍後再試。");
 			return View(vm);
 		}
 
-		// ---- 放在同一個 Controller 類別內的私有方法 ----
+		// 產號
 		private async Task<int> GenerateNextManagerIdAsync()
 		{
 			const int start = 30000001;
-
-			// 取目前最大值（沒有資料時回傳 0）
 			var maxId = await _context.ManagerData.MaxAsync(m => (int?)m.ManagerId) ?? 0;
-
-			// 從 max+1 與起始值中取較大者
-			var candidate = Math.Max(start, maxId + 1);
-
-			// 保險起見，確保唯一（通常不會進這個 while）
+			var candidate = Math.Max(start, maxId + 1); // <-- NOTE: C# uses Math.Max, not Math.max; fix below
 			while (await _context.ManagerData.AnyAsync(m => m.ManagerId == candidate))
 				candidate++;
-
 			return candidate;
 		}
 
@@ -201,28 +243,59 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		{
 			ViewBag.Sidebar = sidebar ?? "admin";
 			if (id != vm.ManagerId) return NotFound();
+
+			if (!ModelState.IsValid) return View(vm);
+
+			var name = vm.ManagerName?.Trim() ?? string.Empty;
+			var account = vm.ManagerAccount?.Trim() ?? string.Empty;
+			var password = vm.ManagerPassword?.Trim() ?? string.Empty;
+			var email = vm.ManagerEmail?.Trim() ?? string.Empty;
+
+			if (account.Length < 8)
+				ModelState.AddModelError(nameof(vm.ManagerAccount), "帳號至少需要 8 碼。");
+			if (password.Length < 8)
+				ModelState.AddModelError(nameof(vm.ManagerPassword), "密碼至少需要 8 碼。");
+
+			// 重複檢查（排除自己）
+			var dupEdit = await _context.ManagerData
+				.Where(m => m.ManagerId != id &&
+							(m.ManagerName == name || m.ManagerAccount == account || m.ManagerPassword == email || m.ManagerEmail == email))
+				.Select(m => new { m.ManagerName, m.ManagerAccount, m.ManagerEmail })
+				.ToListAsync();
+
+			if (dupEdit.Any(d => string.Equals(d.ManagerName, name, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerName), "此管理者姓名已存在，請更換。");
+			if (dupEdit.Any(d => string.Equals(d.ManagerAccount, account, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerAccount), "此帳號已存在，請更換。");
+
+			if (dupEdit.Any(d => string.Equals(d.ManagerEmail, email, StringComparison.OrdinalIgnoreCase)))
+				ModelState.AddModelError(nameof(vm.ManagerEmail), "此信箱已存在，請更換。");
+
 			if (!ModelState.IsValid) return View(vm);
 
 			var e = await _context.ManagerData.FindAsync(id);
 			if (e == null) return NotFound();
 
-			e.ManagerName = vm.ManagerName;
-			e.ManagerAccount = vm.ManagerAccount;
-			e.ManagerPassword = vm.ManagerPassword;
-			e.ManagerEmail = vm.ManagerEmail;
+			e.ManagerName = name;
+			e.ManagerAccount = account;
+			e.ManagerPassword = password;
+			e.ManagerEmail = email;
 			e.AdministratorRegistrationDate = vm.AdministratorRegistrationDate;
-
 			e.ManagerEmailConfirmed = vm.ManagerEmailConfirmed;
 			e.ManagerAccessFailedCount = vm.ManagerAccessFailedCount;
 			e.ManagerLockoutEnabled = vm.ManagerLockoutEnabled;
 			e.ManagerLockoutEnd = vm.ManagerLockoutEnd;
 
-			try { await _context.SaveChangesAsync(); }
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
 			catch (DbUpdateException ex)
 			{
 				ModelState.AddModelError(string.Empty, ex.InnerException?.Message ?? ex.Message);
 				return View(vm);
 			}
+
 			return RedirectToAction(nameof(Index), new { area = "MemberManagement", sidebar = ViewBag.Sidebar });
 		}
 
@@ -259,7 +332,7 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 			ManagerId = m.ManagerId,
 			ManagerName = m.ManagerName,
 			ManagerAccount = m.ManagerAccount,
-			ManagerPassword = m.ManagerPassword,
+			ManagerPassword = m.ManagerPassword, // 視需要在 View 隱藏
 			AdministratorRegistrationDate = m.AdministratorRegistrationDate,
 			ManagerEmail = m.ManagerEmail,
 			ManagerEmailConfirmed = m.ManagerEmailConfirmed,
@@ -283,4 +356,3 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 		};
 	}
 }
-

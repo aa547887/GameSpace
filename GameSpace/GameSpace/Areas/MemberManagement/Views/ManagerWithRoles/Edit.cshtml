@@ -1,9 +1,9 @@
 ﻿@model GameSpace.Areas.MemberManagement.Models.ManagerRoleAssignVM
 @{
-    ViewData["Title"] = "調整管理者角色";
+    ViewData["Title"] = "管理者角色調動";
 }
 
-<h2 class="mb-3">@ViewData["Title"]</h2>
+<h1 class="mb-3">@ViewData["Title"]</h1>
 
 <form asp-action="Edit" method="post" class="mt-3">
     @Html.AntiForgeryToken()
@@ -25,7 +25,7 @@
     <div class="mb-3">
         <label asp-for="SelectedRoleId" class="form-label"></label>
         <select asp-for="SelectedRoleId" asp-items="Model.Roles" class="form-select">
-            <option value="0">-- 請選擇角色 --</option>
+            <option value="0">-- 請選擇職位 --</option>
         </select>
         <span asp-validation-for="SelectedRoleId" class="text-danger"></span>
     </div>

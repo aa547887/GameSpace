@@ -119,7 +119,7 @@ namespace GameSpace.Controllers
 		// POST: /Login/VerifyEmail
 		[HttpPost]
 		[AllowAnonymous]
-		[ValidateAntiForgeryToken]
+		[IgnoreAntiforgeryToken]
 		public async Task<IActionResult> VerifyEmail(VerifyEmailInput input)
 		{
 			var pending = await GetPendingOtpUserAsync();
@@ -161,7 +161,7 @@ namespace GameSpace.Controllers
 
 		// POST: /Login/Logout
 		[HttpPost] // ★★ 移除路由樣板，避免與慣例路由重複造成 AmbiguousMatch
-		[ValidateAntiForgeryToken]
+		[IgnoreAntiforgeryToken]
 		[AllowAnonymous] // 或移除任何 Authorize
 		public async Task<IActionResult> Logout()
 		{
@@ -233,7 +233,7 @@ namespace GameSpace.Controllers
 
 		[Authorize(AuthenticationSchemes = AdminCookieScheme)]
 		[HttpPost]
-		[ValidateAntiForgeryToken]
+		[IgnoreAntiforgeryToken]
 		public async Task<IActionResult> RefreshClaims()
 		{
 			var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

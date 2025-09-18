@@ -62,16 +62,16 @@
 
     // 對應到你的側邊選單
     bool canMember = hasAdmin || hasUserStat; // 帳號/職位管理
-    bool canSocialHub = hasMessage;              // 訊息/社群
-    bool canStore = hasShopping;             // 商城
-    bool canForum = hasCS || hasAdmin;       // 論壇（示範邏輯，可自訂）
-    bool canMiniGame = hasPetRight;                // 小遊戲（示範邏輯，可自訂）
+    bool canSocialHub = hasCS || hasAdmin || hasUserStat || hasShopping || hasMessage || hasPetRight;              // 訊息/社群
+    bool canStore = hasShopping ;             // 商城
+    bool canForum = hasMessage  ;       // 論壇（示範邏輯，可自訂）
+    bool canMiniGame = hasPetRight ;                // 小遊戲（示範邏輯，可自訂）
 }
 
 <nav class="nav flex-column p-2">
     @if (!(isAuthed && (managerId ?? 0) > 0))
     {
-        <div class="text-muted small">請先登入後台以顯示可用功能。</div>
+        <div class="text-white   ">請先登入解鎖功能。</div>
     }
     else
     {
@@ -88,7 +88,7 @@
             <a class="nav-link d-flex align-items-center text-white"
                asp-area="social_hub" asp-controller="Home" asp-action="Index">
                 <i class="fas fa-comments me-2"></i>
-                <span class="sidebar-text d-none d-sm-inline">訊息管理系統</span>
+                <span class="sidebar-text d-none d-sm-inline">社群管理系統</span>
             </a>
         }
         if (canStore)

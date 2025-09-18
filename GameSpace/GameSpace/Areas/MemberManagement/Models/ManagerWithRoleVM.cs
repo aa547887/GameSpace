@@ -13,7 +13,7 @@ namespace GameSpace.Areas.MemberManagement.Models
 		[Display(Name = "管理者角色編號")]
 		public int ManagerRoleId { get; set; }
 
-		[Display(Name = "角色名稱")]
+		[Display(Name = "職位名稱")]
 		public string RoleName { get; set; } = string.Empty;
 
 

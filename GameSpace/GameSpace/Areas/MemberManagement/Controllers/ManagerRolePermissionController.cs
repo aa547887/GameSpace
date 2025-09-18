@@ -1,10 +1,11 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using GameSpace.Areas.MemberManagement.Models;
 using GameSpace.Models;
-using GameSpace.Areas.MemberManagement.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace GameSpace.Areas.MemberManagement.Controllers
 {
@@ -65,15 +66,32 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 
 		//
 		// POST: MemberManagement/ManagerRolePermission/Create
-		//
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(ManagerRolePermissionVM vm, string sidebar = "admin")
 		{
 			ViewBag.Sidebar = sidebar ?? "admin";
 
-			// 由程式產號，避免模型驗證擋住
+			// 交由程式產號，避免驗證擋住
 			ModelState.Remove(nameof(ManagerRolePermissionVM.ManagerRoleId));
+
+			// ★ 先標準化 RoleName
+			vm.RoleName = (vm.RoleName ?? string.Empty).Trim();
+
+			// ★ 必填檢查
+			if (string.IsNullOrWhiteSpace(vm.RoleName))
+			{
+				ModelState.AddModelError(nameof(vm.RoleName), "請輸入職位名稱。");
+			}
+
+			// ★ 重複檢查（預設 SQL Server 多為不分大小寫的定序，這樣即可；若你的資料庫為區分大小寫，可改用 ToUpper 比對）
+			if (await _context.ManagerRolePermissions
+							  .AsNoTracking()
+							  .AnyAsync(x => x.RoleName == vm.RoleName))
+			{
+				ModelState.AddModelError(nameof(vm.RoleName), "此職位名稱已存在，請改用其他名稱。");
+			}
+
 			if (!ModelState.IsValid) return View(vm);
 
 			await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
@@ -81,8 +99,8 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 			{
 				// 1) 先取目前最大號（沒有就 0）
 				var nextId = (await _context.ManagerRolePermissions
-								  .Select(x => (int?)x.ManagerRoleId)
-								  .MaxAsync()) ?? 0;
+									  .Select(x => (int?)x.ManagerRoleId)
+									  .MaxAsync()) ?? 0;
 				nextId++; // 2) +1 起下一號
 
 				// 3) 若有人併發塞入同號，或資料中本來就有該號，往下找直到沒重複
@@ -94,7 +112,7 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 
 				var entity = new ManagerRolePermission
 				{
-					ManagerRoleId = nextId,                    // ★ 明確指定我們產出的編號
+					ManagerRoleId = nextId,
 					RoleName = vm.RoleName,
 					AdministratorPrivilegesManagement = vm.AdministratorPrivilegesManagement,
 					UserStatusManagement = vm.UserStatusManagement,
@@ -109,6 +127,13 @@ namespace GameSpace.Areas.MemberManagement.Controllers
 				await tx.CommitAsync();
 
 				return RedirectToAction(nameof(Index), new { area = "MemberManagement", sidebar = ViewBag.Sidebar });
+			}
+			// ★ 若你在資料庫層加了唯一索引，這裡把違反唯一索引的錯誤轉為友善訊息
+			catch (DbUpdateException dbex) when (dbex.InnerException is SqlException sqlEx && (sqlEx.Number == 2601 || sqlEx.Number == 2627))
+			{
+				await tx.RollbackAsync();
+				ModelState.AddModelError(nameof(vm.RoleName), "此職位名稱已存在，請改用其他名稱。");
+				return View(vm);
 			}
 			catch (Exception ex)
 			{
