@@ -25,5 +25,7 @@ public partial class OrderInfo
 
     public DateTime? CompletedAt { get; set; }
 
+    public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

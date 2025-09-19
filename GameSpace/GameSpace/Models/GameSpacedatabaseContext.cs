@@ -200,25 +200,25 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Coupon>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Coupon");
+            entity.ToTable("Coupon");
 
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.CouponId }, "Coupon_index_26");
 
+            entity.Property(e => e.CouponId)
+                .ValueGeneratedNever()
+                .HasColumnName("CouponID");
             entity.Property(e => e.CouponCode)
                 .HasMaxLength(20)
                 .IsUnicode(false);
-            entity.Property(e => e.CouponId).HasColumnName("CouponID");
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.UsedInOrderId).HasColumnName("UsedInOrderID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.UsedInOrder).WithMany()
+            entity.HasOne(d => d.UsedInOrder).WithMany(p => p.Coupons)
                 .HasForeignKey(d => d.UsedInOrderId)
                 .HasConstraintName("FK__Coupon__UsedInOr__6991A7CB");
 
-            entity.HasOne(d => d.User).WithMany()
+            entity.HasOne(d => d.User).WithMany(p => p.Coupons)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Coupon__UserID__689D8392");
@@ -226,9 +226,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<CouponType>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("CouponType");
+            entity.ToTable("CouponType");
 
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -1780,6 +1778,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.ToTable("Supplier");
 
             entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.SupplierName)
                 .HasMaxLength(100)
                 .HasColumnName("supplier_name");

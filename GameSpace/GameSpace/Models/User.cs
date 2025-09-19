@@ -27,6 +27,8 @@ public partial class User
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
+    public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
+
     public virtual ICollection<GroupBlock> GroupBlockBlockedByUsers { get; set; } = new List<GroupBlock>();
 
     public virtual ICollection<GroupBlock> GroupBlockUsers { get; set; } = new List<GroupBlock>();
