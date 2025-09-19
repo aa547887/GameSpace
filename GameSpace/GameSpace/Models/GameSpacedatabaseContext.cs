@@ -1780,6 +1780,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.ToTable("Supplier");
 
             entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.SupplierName)
                 .HasMaxLength(100)
                 .HasColumnName("supplier_name");
