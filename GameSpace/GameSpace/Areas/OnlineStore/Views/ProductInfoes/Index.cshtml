@@ -32,6 +32,7 @@
             }
         </ul>
     </div>
+
 }
 
 @section Styles {
@@ -116,7 +117,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
             <div class="d-flex gap-2">
                 <button id="btnShowTable" type="button" class="btn btn-outline-secondary"><i class="bi bi-table"></i> 表單</button>
-                <button id="btnShowStrips" type="button" class="btn btn-outline-secondary"><i class="bi bi-view-stacked"></i> 寬版</button>
+                @* <button id="btnShowStrips" type="button" class="btn btn-outline-secondary"><i class="bi bi-view-stacked"></i> 寬版</button> *@
             </div>
             <div class="d-flex gap-2">
                 <a class="btn btn-primary"
@@ -333,6 +334,24 @@
     </div>
 </div>
 
+<!-- 建議把 Toast 容器放在 _Layout（一次就好）；暫時也可放 Index 頁最底下 -->
+<div id="toastHost" class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:1080">
+  <div id="toastError" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+    <div class="d-flex">
+      <div class="toast-body" id="toastErrorBody">😿 發生錯誤</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+  <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mt-2" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="2500">
+    <div class="d-flex">
+      <div class="toast-body" id="toastSuccessBody">🎉 成功！</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -467,6 +486,51 @@
           }
         })();
     </script>
+    <script>
+(function(){
+  // 代理監聽：當 modal 內容替換（Create/Edit），仍可抓到 form
+  document.addEventListener('submit', async function(e){
+    const form = e.target;
+    if (!form.classList.contains('js-ajax-form')) return;
+
+    e.preventDefault();
+
+    const fd = new FormData(form);
+    const action = form.getAttribute('action') || location.href;
+    const method = (form.getAttribute('method') || 'post').toUpperCase();
+
+    try {
+      const resp = await fetch(action, { method, body: fd });
+      const data = await resp.json();  // 你的 Create/Edit 都回 JSON
+      if (data && data.ok) {
+        // 成功 → 跳成功 toast、關 modal、再刷新清單
+        showToast('toastSuccess', data.msg || '已儲存成功！');
+        const modalEl = form.closest('.modal');
+        if (modalEl) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).hide();  // 官方建議 API
+        }
+        // TODO：重載列表（依你的實作）
+        // e.g. reloadProductTable();
+      } else {
+        // 後端回傳失敗 → 顯示錯誤
+        showToast('toastError', (data && data.msg) ? data.msg : '儲存失敗');
+      }
+    } catch (err) {
+      showToast('toastError', '連線或伺服器錯誤，請稍後再試');
+    }
+  });
+
+  // 簡單的 toast helper
+  window.showToast = function(id, msg){
+    const el = document.getElementById(id);
+    if (!el) return;
+    const body = el.querySelector('.toast-body');
+    if (body && msg) body.textContent = msg;
+    bootstrap.Toast.getOrCreateInstance(el).show(); // 官方 JS API
+  };
+})();
+</script>
+
 }
 
 

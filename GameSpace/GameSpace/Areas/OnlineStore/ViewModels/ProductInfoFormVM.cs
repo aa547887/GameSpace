@@ -18,11 +18,12 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         public DateTime? ProductUpdatedAt { get; set; }
         public int? ProductUpdatedBy { get; set; }
 
-        // 共用
+        // 共用  Code 不確定要不要用到
         [Required] public int? SupplierId { get; set; }
+		public string? ProductCode { get; set; }
 
-        // Game
-        public int? PlatformId { get; set; }
+		// Game
+		public int? PlatformId { get; set; }
         public string? PlatformName { get; set; }
         public string? GameType { get; set; }
         public string? DownloadLink { get; set; }
