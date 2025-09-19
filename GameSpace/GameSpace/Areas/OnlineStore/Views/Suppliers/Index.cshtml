@@ -11,9 +11,12 @@
 <h1 class="mb-3">供應商管理</h1>
 
 <div class="d-flex gap-2 mb-2">
-    <button id="btnCreate" class="btn btn-primary btn-sm">新增供應商</button>
+    @* <button id="btnCreate" class="btn btn-primary btn-sm">新增供應商</button> *@
     <button id="btnViewProducts" class="btn btn-outline-secondary btn-sm" disabled asp-action="ProductsBySuppliers">查看所屬商品</button>
 </div>
+@{
+    bool allowOps = (bool?)ViewBag.AllowOperations ?? false;
+}
 
 <table id="tblSuppliers" class="display table-bordered table-striped table-hover table" style="width:100%">
     <thead>
@@ -34,25 +37,33 @@
                 <td>@s.SupplierName</td>
                 <td>@(s.IsActive ? "合作中" : "不合作")</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-secondary btn-edit" action="@Url.Action("Edit")">編輯</button>
-                    <form class="d-inline delete-form" method="post" action="@Url.Action("Delete") ">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@s.SupplierId" />
-                        <button type="submit" class="btn btn-sm btn-danger">刪除</button>
-                    </form>
-                    <form class="d-inline toggle-form" method="post" action="@Url.Action("ToggleActive")">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@s.SupplierId" />
-                        <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
-                            @(s.IsActive ? "取消合作" : "恢復合作")
-                        </button>
-                    </form>
+                    @if (allowOps)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary btn-edit" action="@Url.Action("Edit")">編輯</button>
+                        <form class="d-inline delete-form" method="post" action="@Url.Action("Delete") ">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.SupplierId" />
+                            <button type="submit" class="btn btn-sm btn-danger">刪除</button>
+                        </form>
+                        <form class="d-inline toggle-form" method="post" action="@Url.Action("ToggleActive")">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.SupplierId" />
+                            <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
+                                @(s.IsActive ? "取消合作" : "恢復合作")
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <!-- 操作隱藏中，可顯示文字或留空白 -->
+                        <span class="text-muted">尚未開放操作</span>
+                    }
                 </td>
             </tr>
         }
-    
     </tbody>
 </table>
+
 <!-- 全域 Anti-forgery（給 AJAX 用） -->
 <form id="global-anti-forgery">
     @Html.AntiForgeryToken()
