@@ -54,7 +54,7 @@
                     <div class="col-12 fw-bold text-muted mb-1">時間篩選</div>
                     <div class="col-sm-4 col-md-3">
                         <select class="form-select form-select-sm" id="dateField" name="dateField">
-                            <option value="all">全部</option>
+                            @* <option value="all">全部</option> *@
                             <option value="order">下單時間</option>
                             <option value="payment">付款時間</option>
                             <option value="shipped">出貨時間</option>
@@ -68,11 +68,11 @@
                         <input type="date" class="form-control form-control-sm" id="dateEnd" name="dateEnd" placeholder="迄" />
                     </div>
 
-                    <!-- 第二排：狀態篩選 -->
+                    @* <!-- 第二排：狀態篩選 -->
                     <div class="col-12 fw-bold text-muted mt-3 mb-1">狀態篩選</div>
-                    @* <div class="col-sm-4 col-md-3">
+                    <div class="col-sm-4 col-md-3">
                         <input type="text" class="form-control form-control-sm" id="orderStatus" name="orderStatus" placeholder="訂單狀態" />
-                    </div> *@
+                    </div>
                     <div class="col-sm-4 col-md-3">
                         <select class="form-select form-select-sm" id="orderStatus" name="orderStatus">
                             <option value="">訂單狀態(不篩選)</option>
@@ -91,7 +91,7 @@
                             <option value="FAILED">FAILED (付款失敗)</option>
                             <option value="REFUND">REFUND (已退款)</option>
                         </select>
-                    </div>
+                    </div> *@
 
                     <!-- 第三排：金額篩選 -->
                     <div class="col-12 fw-bold text-muted mt-3 mb-1">金額篩選</div>
