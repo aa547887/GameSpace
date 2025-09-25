@@ -4,28 +4,31 @@
 }
 
 <div class="container-fluid">
+    <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-wallet mr-2"></i>會員錢包管理
+            <i class="fas fa-wallet mr-2 text-primary"></i>會員錢包管理
         </h1>
         <div class="d-flex">
-            <a href="@Url.Action("GrantPoints")" class="btn btn-primary mr-2">
+            <a href="@Url.Action("GrantPoints")" class="btn btn-primary mr-2 shadow-sm">
                 <i class="fas fa-plus-circle"></i> 發放點數
             </a>
-            <a href="@Url.Action("GrantCoupons")" class="btn btn-success">
+            <a href="@Url.Action("GrantCoupons")" class="btn btn-success shadow-sm">
                 <i class="fas fa-ticket-alt"></i> 發放優惠券
             </a>
         </div>
     </div>
 
+    <!-- 統計卡片 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card border-left-primary shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總點數餘額</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">1,234,567</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPoints">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-coins fa-2x text-gray-300"></i>
@@ -36,12 +39,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
+            <div class="card border-left-success shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活躍優惠券</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">89</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeCoupons">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
@@ -52,12 +56,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
+            <div class="card border-left-info shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">電子券數量</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">156</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="eVouchers">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-info">+8</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-gift fa-2x text-gray-300"></i>
@@ -68,12 +73,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card border-left-warning shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日交易</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">234</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayTransactions">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-warning">+23</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
@@ -84,34 +90,55 @@
         </div>
     </div>
 
+    <!-- 快速操作 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-list"></i> 管理功能
+                        <i class="fas fa-bolt"></i> 快速操作
                     </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">操作選項</div>
+                            <a class="dropdown-item" href="@Url.Action("ViewHistory")">
+                                <i class="fas fa-history fa-sm fa-fw mr-2 text-gray-400"></i>
+                                查看完整記錄
+                            </a>
+                            <a class="dropdown-item" href="@Url.Action("AdjustEVouchers")">
+                                <i class="fas fa-edit fa-sm fa-fw mr-2 text-gray-400"></i>
+                                調整電子券
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryPoints")" class="btn btn-outline-primary btn-block">
+                            <a href="@Url.Action("QueryPoints")" class="btn btn-outline-primary btn-block btn-hover">
                                 <i class="fas fa-search"></i> 查詢點數
+                                <small class="d-block text-muted">查看會員點數餘額</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryCoupons")" class="btn btn-outline-success btn-block">
+                            <a href="@Url.Action("QueryCoupons")" class="btn btn-outline-success btn-block btn-hover">
                                 <i class="fas fa-ticket-alt"></i> 查詢優惠券
+                                <small class="d-block text-muted">管理優惠券狀態</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryEVouchers")" class="btn btn-outline-info btn-block">
+                            <a href="@Url.Action("QueryEVouchers")" class="btn btn-outline-info btn-block btn-hover">
                                 <i class="fas fa-gift"></i> 查詢電子券
+                                <small class="d-block text-muted">查看電子券使用情況</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryHistory")" class="btn btn-outline-warning btn-block">
-                                <i class="fas fa-history"></i> 查詢記錄
+                            <a href="@Url.Action("ViewHistory")" class="btn btn-outline-warning btn-block btn-hover">
+                                <i class="fas fa-history"></i> 查看記錄
+                                <small class="d-block text-muted">交易歷史記錄</small>
                             </a>
                         </div>
                     </div>
@@ -119,4 +146,144 @@
             </div>
         </div>
     </div>
+
+    <!-- 最近活動 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock"></i> 最近活動
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="recentActivityTable">
+                            <thead>
+                                <tr>
+                                    <th>時間</th>
+                                    <th>會員</th>
+                                    <th>類型</th>
+                                    <th>金額/數量</th>
+                                    <th>狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-01-15 14:30</td>
+                                    <td>user001</td>
+                                    <td><span class="badge badge-primary">點數發放</span></td>
+                                    <td>+1000</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:25</td>
+                                    <td>user002</td>
+                                    <td><span class="badge badge-info">優惠券發放</span></td>
+                                    <td>+1</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:20</td>
+                                    <td>user003</td>
+                                    <td><span class="badge badge-warning">電子券使用</span></td>
+                                    <td>-1</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .hover-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .btn-hover {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-hover::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-hover:hover::before {
+        left: 100%;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    .badge {
+        font-size: 0.75em;
+        padding: 0.5em 0.8em;
+    }
+    
+    .text-xs {
+        font-size: 0.7rem;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // 模擬載入數據
+        setTimeout(function() {
+            $("#totalPoints").text("1,234,567");
+            $("#activeCoupons").text("89");
+            $("#eVouchers").text("156");
+            $("#todayTransactions").text("234");
+        }, 1000);
+        
+        // 初始化 DataTable
+        $("#recentActivityTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 10,
+            "order": [[0, "desc"]],
+            "columnDefs": [
+                { "orderable": false, "targets": 4 }
+            ]
+        });
+        
+        // 添加載入動畫
+        $(".card").each(function(index) {
+            $(this).css("animation-delay", (index * 0.1) + "s");
+            $(this).addClass("fade-in");
+        });
+    });
+</script>

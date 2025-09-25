@@ -1,51 +1,97 @@
-@model GameSpace.Areas.MiniGame.Models.AdminPetQueryViewModel
 @{
-    ViewData["Title"] = "查詢會員寵物資料";
+    ViewData["Title"] = "查詢寵物資訊";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">查詢會員寵物資料</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-paw mr-2"></i>查詢寵物資訊
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
-    <!-- 搜索區域 -->
-    <div class="row mb-4">
+    <!-- 搜尋區域 -->
+    <div class="row">
         <div class="col-lg-12">
-            <div class="card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">搜索條件</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-filter"></i> 搜尋條件
+                    </h6>
                 </div>
                 <div class="card-body">
-                    <form method="get" asp-action="QueryPets">
+                    <form id="searchForm">
                         <div class="row">
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="userId">用戶ID</label>
-                                    <input type="number" class="form-control" id="userId" name="userId" 
-                                           value="@Model.UserId" placeholder="輸入用戶ID">
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="userId" class="form-label">會員ID</label>
+                                <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                             </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="userName">用戶名稱</label>
-                                    <input type="text" class="form-control" id="userName" name="userName" 
-                                           value="@Model.UserName" placeholder="輸入用戶名稱">
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="userName" class="form-label">會員名稱</label>
+                                <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱">
                             </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="petName">寵物名稱</label>
-                                    <input type="text" class="form-control" id="petName" name="petName" 
-                                           value="@Model.PetName" placeholder="輸入寵物名稱">
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="petName" class="form-label">寵物名稱</label>
+                                <input type="text" class="form-control" id="petName" name="petName" placeholder="輸入寵物名稱">
                             </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <button type="submit" class="btn btn-primary btn-block">
-                                        <i class="fas fa-search"></i> 搜索
-                                    </button>
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="petType" class="form-label">寵物類型</label>
+                                <select class="form-control" id="petType" name="petType">
+                                    <option value="">全部類型</option>
+                                    <option value="slime">史萊姆</option>
+                                    <option value="dragon">龍</option>
+                                    <option value="cat">貓</option>
+                                    <option value="dog">狗</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="minLevel" class="form-label">最小等級</label>
+                                <input type="number" class="form-control" id="minLevel" name="minLevel" placeholder="1" min="1">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="maxLevel" class="form-label">最大等級</label>
+                                <input type="number" class="form-control" id="maxLevel" name="maxLevel" placeholder="100" max="100">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="status" class="form-label">狀態</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="">全部狀態</option>
+                                    <option value="active">活躍</option>
+                                    <option value="sleeping">睡眠</option>
+                                    <option value="sick">生病</option>
+                                    <option value="dead">死亡</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="color" class="form-label">顏色</label>
+                                <select class="form-control" id="color" name="color">
+                                    <option value="">全部顏色</option>
+                                    <option value="red">紅色</option>
+                                    <option value="blue">藍色</option>
+                                    <option value="green">綠色</option>
+                                    <option value="yellow">黃色</option>
+                                    <option value="purple">紫色</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-right">
+                                <button type="button" class="btn btn-primary" id="searchBtn">
+                                    <i class="fas fa-search"></i> 搜尋
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="resetBtn">
+                                    <i class="fas fa-undo"></i> 重置
+                                </button>
+                                <button type="button" class="btn btn-success" id="exportBtn">
+                                    <i class="fas fa-download"></i> 匯出
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -54,15 +100,15 @@
         </div>
     </div>
 
-    <!-- 統計信息 -->
-    <div class="row mb-4">
+    <!-- 統計概覽 -->
+    <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總寵物數量</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Count</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總寵物數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPets">0</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-paw fa-2x text-gray-300"></i>
@@ -71,13 +117,14 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活躍寵物</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Count(p => p.IsActive)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activePets">0</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-heart fa-2x text-gray-300"></i>
@@ -86,13 +133,14 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均等級</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.Pets.Any() ? Model.Pets.Average(p => p.Level).ToString("F1") : "0")</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="avgLevel">0</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-star fa-2x text-gray-300"></i>
@@ -101,16 +149,17 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總餵食次數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Sum(p => p.FeedingCount)</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">最高等級</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="maxLevel">0</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-utensils fa-2x text-gray-300"></i>
+                            <i class="fas fa-crown fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -118,84 +167,298 @@
         </div>
     </div>
 
-    <!-- 寵物資料列表 -->
+    <!-- 結果區域 -->
     <div class="row">
         <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">寵物資料列表</h6>
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> 查詢結果
+                    </h6>
+                    <span class="badge badge-info" id="resultCount">共 0 筆資料</span>
                 </div>
                 <div class="card-body">
-                    @if (Model.Pets.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                <thead>
-                                    <tr>
-                                        <th>寵物ID</th>
-                                        <th>寵物名稱</th>
-                                        <th>用戶ID</th>
-                                        <th>用戶名稱</th>
-                                        <th>等級</th>
-                                        <th>餵食次數</th>
-                                        <th>狀態</th>
-                                        <th>創建時間</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var pet in Model.Pets.OrderByDescending(p => p.CreatedAt))
-                                    {
-                                        <tr>
-                                            <td>@pet.Id</td>
-                                            <td class="font-weight-bold">@pet.Name</td>
-                                            <td>@pet.UserId</td>
-                                            <td>@pet.UserName</td>
-                                            <td>
-                                                <span class="badge badge-info">Lv.@pet.Level</span>
-                                            </td>
-                                            <td class="text-warning">@pet.FeedingCount</td>
-                                            <td>
-                                                @if (pet.IsActive)
-                                                {
-                                                    <span class="badge badge-success">活躍</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge badge-secondary">休眠</span>
-                                                }
-                                            </td>
-                                            <td>@pet.CreatedAt.ToString("yyyy-MM-dd")</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info" onclick="viewPetDetails(@pet.Id)">
-                                                    <i class="fas fa-eye"></i> 詳情
-                                                </button>
-                                                <button class="btn btn-sm btn-warning" onclick="editPet(@pet.Id)">
-                                                    <i class="fas fa-edit"></i> 編輯
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <i class="fas fa-paw fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">沒有找到符合條件的寵物資料</p>
-                        </div>
-                    }
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="petsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th>寵物名稱</th>
+                                    <th>類型</th>
+                                    <th>等級</th>
+                                    <th>狀態</th>
+                                    <th>顏色</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 加載 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- 詳細資訊 Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">寵物詳細資訊</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>會員ID:</td><td id="detailUserId"></td></tr>
+                            <tr><td>會員名稱:</td><td id="detailUserName"></td></tr>
+                            <tr><td>寵物名稱:</td><td id="detailPetName"></td></tr>
+                            <tr><td>寵物類型:</td><td id="detailPetType"></td></tr>
+                            <tr><td>等級:</td><td id="detailLevel"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>屬性資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>生命值:</td><td id="detailHp"></td></tr>
+                            <tr><td>攻擊力:</td><td id="detailAttack"></td></tr>
+                            <tr><td>防禦力:</td><td id="detailDefense"></td></tr>
+                            <tr><td>速度:</td><td id="detailSpeed"></td></tr>
+                            <tr><td>狀態:</td><td id="detailStatus"></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>外觀資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>顏色:</td><td id="detailColor"></td></tr>
+                            <tr><td>大小:</td><td id="detailSize"></td></tr>
+                            <tr><td>特殊效果:</td><td id="detailSpecialEffects"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>時間資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>創建時間:</td><td id="detailCreateTime"></td></tr>
+                            <tr><td>最後更新:</td><td id="detailLastUpdate"></td></tr>
+                            <tr><td>最後餵食:</td><td id="detailLastFeed"></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-warning" id="adjustPetBtn">調整寵物</button>
+                <button type="button" class="btn btn-danger" id="deletePetBtn">刪除寵物</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    function viewPetDetails(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}`; }
+    $(document).ready(function() {
+        // 初始化 DataTable
+        var table = $("#petsTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 25,
+            "order": [[ 0, "asc" ]],
+            "columnDefs": [
+                { "orderable": false, "targets": 7 }
+            ]
+        });
 
-    function editPet(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}&mode=edit`; }
+        // 搜尋功能
+        $("#searchBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            $.ajax({
+                url: "@Url.Action("SearchPets", "AdminPet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        loadDataToTable(response.data);
+                        updateStatistics(response.statistics);
+                    } else {
+                        alert("搜尋失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("搜尋請求失敗，請稍後再試");
+                }
+            });
+        });
+
+        // 重置功能
+        $("#resetBtn").click(function() {
+            $("#searchForm")[0].reset();
+            table.clear().draw();
+            $("#resultCount").text("共 0 筆資料");
+            updateStatistics({ totalPets: 0, activePets: 0, avgLevel: 0, maxLevel: 0 });
+        });
+
+        // 匯出功能
+        $("#exportBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            window.open("@Url.Action("ExportPets", "AdminPet")?" + formData, "_blank");
+        });
+
+        // 載入數據到表格
+        function loadDataToTable(data) {
+            table.clear();
+            data.forEach(function(row) {
+                var statusClass = "";
+                switch(row.status) {
+                    case "活躍": statusClass = "badge-success"; break;
+                    case "睡眠": statusClass = "badge-info"; break;
+                    case "生病": statusClass = "badge-warning"; break;
+                    case "死亡": statusClass = "badge-danger"; break;
+                }
+                
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(\
+ + row.petId + 
+\)\">查看</button> " +
+                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustPet(\ + row.petId + \)\">調整</button>";
+                
+                table.row.add([
+                    row.userId,
+                    row.userName,
+                    row.petName,
+                    row.petType,
+                    row.level,
+                    "<span class=\"badge " + statusClass + "\">" + row.status + "</span>",
+                    row.color,
+                    actionButtons
+                ]);
+            });
+            table.draw();
+            $("#resultCount").text("共 " + data.length + " 筆資料");
+        }
+
+        // 更新統計資訊
+        function updateStatistics(stats) {
+            $("#totalPets").text(stats.totalPets);
+            $("#activePets").text(stats.activePets);
+            $("#avgLevel").text(stats.avgLevel.toFixed(1));
+            $("#maxLevel").text(stats.maxLevel);
+        }
+
+        // 查看詳細資訊
+        window.viewDetail = function(petId) {
+            $.ajax({
+                url: "@Url.Action("GetPetDetail", "AdminPet")",
+                type: "GET",
+                data: { petId: petId },
+                success: function(response) {
+                    if (response.success) {
+                        $("#detailUserId").text(response.data.userId);
+                        $("#detailUserName").text(response.data.userName);
+                        $("#detailPetName").text(response.data.petName);
+                        $("#detailPetType").text(response.data.petType);
+                        $("#detailLevel").text(response.data.level);
+                        $("#detailHp").text(response.data.hp);
+                        $("#detailAttack").text(response.data.attack);
+                        $("#detailDefense").text(response.data.defense);
+                        $("#detailSpeed").text(response.data.speed);
+                        $("#detailStatus").text(response.data.status);
+                        $("#detailColor").text(response.data.color);
+                        $("#detailSize").text(response.data.size);
+                        $("#detailSpecialEffects").text(response.data.specialEffects || "無");
+                        $("#detailCreateTime").text(response.data.createTime);
+                        $("#detailLastUpdate").text(response.data.lastUpdate);
+                        $("#detailLastFeed").text(response.data.lastFeed || "從未餵食");
+                        $("#detailModal").modal("show");
+                    } else {
+                        alert("獲取詳細資訊失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("獲取詳細資訊失敗，請稍後再試");
+                }
+            });
+        };
+
+        // 調整寵物
+        window.adjustPet = function(petId) {
+            var newLevel = prompt("請輸入新的等級:", "");
+            if (newLevel !== null && !isNaN(newLevel) && newLevel > 0) {
+                $.ajax({
+                    url: "@Url.Action("AdjustPet", "AdminPet")",
+                    type: "POST",
+                    data: { petId: petId, newLevel: newLevel },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("寵物調整成功");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("寵物調整失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("寵物調整失敗，請稍後再試");
+                    }
+                });
+            }
+        };
+
+        // 調整寵物按鈕
+        $("#adjustPetBtn").click(function() {
+            var petId = $("#detailPetName").text();
+            var currentLevel = $("#detailLevel").text();
+            var newLevel = prompt("請輸入新的等級:", currentLevel);
+            if (newLevel !== null && !isNaN(newLevel) && newLevel > 0) {
+                $.ajax({
+                    url: "@Url.Action("AdjustPet", "AdminPet")",
+                    type: "POST",
+                    data: { petId: petId, newLevel: newLevel },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("寵物調整成功");
+                            $("#detailModal").modal("hide");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("寵物調整失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("寵物調整失敗，請稍後再試");
+                    }
+                });
+            }
+        });
+
+        // 刪除寵物按鈕
+        $("#deletePetBtn").click(function() {
+            var petId = $("#detailPetName").text();
+            if (confirm("確定要刪除此寵物嗎？此操作無法撤銷。")) {
+                $.ajax({
+                    url: "@Url.Action("DeletePet", "AdminPet")",
+                    type: "POST",
+                    data: { petId: petId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("寵物刪除成功");
+                            $("#detailModal").modal("hide");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("寵物刪除失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("寵物刪除失敗，請稍後再試");
+                    }
+                });
+            }
+        });
+    });
 </script>
-

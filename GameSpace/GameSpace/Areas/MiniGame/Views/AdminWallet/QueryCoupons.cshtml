@@ -1,155 +1,308 @@
-@model IEnumerable<GameSpace.Areas.MiniGame.Models.CouponQueryModel>
 @{
-    ViewData["Title"] = "查詢會員擁有商城優惠券";
+    ViewData["Title"] = "查詢會員優惠券";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">查詢會員擁有商城優惠券</h1>
-    </div>
-
-    <!-- 搜尋表單 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">搜尋條件</h6>
-        </div>
-        <div class="card-body">
-            <form method="get" id="searchForm">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="userId">用戶ID</label>
-                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入用戶ID">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="couponCode">優惠券代碼</label>
-                            <input type="text" class="form-control" id="couponCode" name="couponCode" placeholder="輸入優惠券代碼">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="isUsed">使用狀態</label>
-                            <select class="form-control" id="isUsed" name="isUsed">
-                                <option value="">全部</option>
-                                <option value="false">未使用</option>
-                                <option value="true">已使用</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="startDate">開始日期</label>
-                            <input type="date" class="form-control" id="startDate" name="startDate">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="endDate">結束日期</label>
-                            <input type="date" class="form-control" id="endDate" name="endDate">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> 搜尋
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> 重置
-                    </button>
-                </div>
-            </form>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-ticket-alt mr-2"></i>查詢會員優惠券
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
         </div>
     </div>
 
-    <!-- 搜尋結果 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">搜尋結果</h6>
-            <span class="badge badge-info" id="resultCount">共 0 筆記錄</span>
+    <!-- 搜尋區域 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-filter"></i> 搜尋條件
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="searchForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="userId" class="form-label">會員ID</label>
+                                <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="couponType" class="form-label">優惠券類型</label>
+                                <select class="form-control" id="couponType" name="couponType">
+                                    <option value="">全部類型</option>
+                                    <option value="discount">折扣券</option>
+                                    <option value="cash">現金券</option>
+                                    <option value="free">免運券</option>
+                                    <option value="gift">贈品券</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="status" class="form-label">使用狀態</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="">全部狀態</option>
+                                    <option value="unused">未使用</option>
+                                    <option value="used">已使用</option>
+                                    <option value="expired">已過期</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="expireDate" class="form-label">到期日期</label>
+                                <input type="date" class="form-control" id="expireDate" name="expireDate">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-right">
+                                <button type="button" class="btn btn-primary" id="searchBtn">
+                                    <i class="fas fa-search"></i> 搜尋
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="resetBtn">
+                                    <i class="fas fa-undo"></i> 重置
+                                </button>
+                                <button type="button" class="btn btn-success" id="exportBtn">
+                                    <i class="fas fa-download"></i> 匯出
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>用戶ID</th>
-                            <th>用戶名稱</th>
-                            <th>優惠券代碼</th>
-                            <th>優惠券類型</th>
-                            <th>面額</th>
-                            <th>獲得日期</th>
-                            <th>到期日期</th>
-                            <th>使用狀態</th>
-                            <th>使用日期</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.Any())
-                        {
-                            @foreach (var coupon in Model)
-                            {
+    </div>
+
+    <!-- 結果區域 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> 查詢結果
+                    </h6>
+                    <span class="badge badge-info" id="resultCount">共 0 筆資料</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="couponsTable">
+                            <thead class="thead-light">
                                 <tr>
-                                    <td>@coupon.UserId</td>
-                                    <td>@coupon.UserName</td>
-                                    <td>@coupon.CouponCode</td>
-                                    <td>@coupon.CouponTypeName</td>
-                                    <td>@coupon.Value.ToString("C")</td>
-                                    <td>@coupon.CreatedAt.ToString("yyyy-MM-dd")</td>
-                                    <td>@coupon.ExpiryDate?.ToString("yyyy-MM-dd")</td>
-                                    <td>
-                                        @if (coupon.IsUsed)
-                                        {
-                                            <span class="badge badge-success">已使用</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge badge-warning">未使用</span>
-                                        }
-                                    </td>
-                                    <td>@coupon.UsedDate?.ToString("yyyy-MM-dd HH:mm")</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewCouponDetails(@coupon.Id)">
-                                            <i class="fas fa-eye"></i> 詳情
-                                        </button>
-                                    </td>
+                                    <th>會員ID</th>
+                                    <th>優惠券名稱</th>
+                                    <th>類型</th>
+                                    <th>折扣/面額</th>
+                                    <th>狀態</th>
+                                    <th>獲得日期</th>
+                                    <th>到期日期</th>
+                                    <th>操作</th>
                                 </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="10" class="text-center">請輸入搜尋條件進行查詢</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 加載 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細資訊 Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">優惠券詳細資訊</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>會員ID:</td><td id="detailUserId"></td></tr>
+                            <tr><td>優惠券名稱:</td><td id="detailCouponName"></td></tr>
+                            <tr><td>類型:</td><td id="detailCouponType"></td></tr>
+                            <tr><td>折扣/面額:</td><td id="detailDiscount"></td></tr>
+                            <tr><td>狀態:</td><td id="detailStatus"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>使用資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>獲得日期:</td><td id="detailGetDate"></td></tr>
+                            <tr><td>到期日期:</td><td id="detailExpireDate"></td></tr>
+                            <tr><td>使用日期:</td><td id="detailUseDate"></td></tr>
+                            <tr><td>使用訂單:</td><td id="detailOrderId"></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-warning" id="revokeCouponBtn">撤銷優惠券</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function resetForm() {
-    document.getElementById("searchForm").reset();
-}
+    $(document).ready(function() {
+        // 初始化 DataTable
+        var table = $("#couponsTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 25,
+            "order": [[ 0, "asc" ]],
+            "columnDefs": [
+                { "orderable": false, "targets": 7 }
+            ]
+        });
 
-function viewCouponDetails(couponId) {
-    // 顯示優惠券詳情
-    alert("查看優惠券詳情: " + couponId);
-}
+        // 搜尋功能
+        $("#searchBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            $.ajax({
+                url: "@Url.Action("SearchCoupons", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        loadDataToTable(response.data);
+                    } else {
+                        alert("搜尋失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("搜尋請求失敗，請稍後再試");
+                }
+            });
+        });
 
-// 更新結果計數
-document.addEventListener("DOMContentLoaded", function() {
-    const rows = document.querySelectorAll("tbody tr");
-    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
-    document.getElementById("resultCount").textContent = `共 ${count} 筆記錄`;
-});
+        // 重置功能
+        $("#resetBtn").click(function() {
+            $("#searchForm")[0].reset();
+            table.clear().draw();
+            $("#resultCount").text("共 0 筆資料");
+        });
+
+        // 匯出功能
+        $("#exportBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            window.open("@Url.Action("ExportCoupons", "AdminWallet")?" + formData, "_blank");
+        });
+
+        // 載入數據到表格
+        function loadDataToTable(data) {
+            table.clear();
+            data.forEach(function(row) {
+                var statusClass = "";
+                switch(row.status) {
+                    case "未使用": statusClass = "badge-success"; break;
+                    case "已使用": statusClass = "badge-info"; break;
+                    case "已過期": statusClass = "badge-danger"; break;
+                }
+                
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(\
+ + row.couponId + 
+\)\">查看</button>";
+                if (row.status === "未使用") {
+                    actionButtons += " <button class=\"btn btn-sm btn-warning\" onclick=\"revokeCoupon(\ + row.couponId + \)\">撤銷</button>";
+                }
+                
+                table.row.add([
+                    row.userId,
+                    row.couponName,
+                    row.couponType,
+                    row.discount,
+                    "<span class=\"badge " + statusClass + "\">" + row.status + "</span>",
+                    row.getDate,
+                    row.expireDate,
+                    actionButtons
+                ]);
+            });
+            table.draw();
+            $("#resultCount").text("共 " + data.length + " 筆資料");
+        }
+
+        // 查看詳細資訊
+        window.viewDetail = function(couponId) {
+            $.ajax({
+                url: "@Url.Action("GetCouponDetail", "AdminWallet")",
+                type: "GET",
+                data: { couponId: couponId },
+                success: function(response) {
+                    if (response.success) {
+                        $("#detailUserId").text(response.data.userId);
+                        $("#detailCouponName").text(response.data.couponName);
+                        $("#detailCouponType").text(response.data.couponType);
+                        $("#detailDiscount").text(response.data.discount);
+                        $("#detailStatus").text(response.data.status);
+                        $("#detailGetDate").text(response.data.getDate);
+                        $("#detailExpireDate").text(response.data.expireDate);
+                        $("#detailUseDate").text(response.data.useDate || "未使用");
+                        $("#detailOrderId").text(response.data.orderId || "無");
+                        $("#detailModal").modal("show");
+                    } else {
+                        alert("獲取詳細資訊失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("獲取詳細資訊失敗，請稍後再試");
+                }
+            });
+        };
+
+        // 撤銷優惠券
+        window.revokeCoupon = function(couponId) {
+            if (confirm("確定要撤銷此優惠券嗎？")) {
+                $.ajax({
+                    url: "@Url.Action("RevokeCoupon", "AdminWallet")",
+                    type: "POST",
+                    data: { couponId: couponId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("優惠券撤銷成功");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("優惠券撤銷失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("優惠券撤銷失敗，請稍後再試");
+                    }
+                });
+            }
+        };
+
+        // 撤銷優惠券按鈕
+        $("#revokeCouponBtn").click(function() {
+            var couponId = $("#detailCouponName").text();
+            if (confirm("確定要撤銷此優惠券嗎？")) {
+                $.ajax({
+                    url: "@Url.Action("RevokeCoupon", "AdminWallet")",
+                    type: "POST",
+                    data: { couponId: couponId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("優惠券撤銷成功");
+                            $("#detailModal").modal("hide");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("優惠券撤銷失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("優惠券撤銷失敗，請稍後再試");
+                    }
+                });
+            }
+        });
+    });
 </script>
-

@@ -1,16 +1,18 @@
 @{
-    ViewData["Title"] = "發放點數";
+    ViewData["Title"] = "發放會員點數";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-plus-circle mr-2"></i>發放點數
+            <i class="fas fa-plus-circle mr-2"></i>發放會員點數
         </h1>
-        <a href="@Url.Action("Index")" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> 返回列表
-        </a>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
     <div class="row">
@@ -18,54 +20,90 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-coins"></i> 點數發放設定
+                        <i class="fas fa-gift"></i> 點數發放設定
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form>
-                        <div class="form-group">
-                            <label for="userId">會員ID</label>
-                            <input type="text" class="form-control" id="userId" placeholder="請輸入會員ID">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="pointsAmount">點數數量</label>
-                            <input type="number" class="form-control" id="pointsAmount" placeholder="請輸入點數數量" min="1">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="reason">發放原因</label>
-                            <select class="form-control" id="reason">
-                                <option value="">請選擇發放原因</option>
-                                <option value="signin">簽到獎勵</option>
-                                <option value="game">遊戲獎勵</option>
-                                <option value="activity">活動獎勵</option>
-                                <option value="compensation">補償</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="description">備註說明</label>
-                            <textarea class="form-control" id="description" rows="3" placeholder="請輸入備註說明"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="confirm">
-                                <label class="form-check-label" for="confirm">
-                                    確認發放點數
-                                </label>
+                    <form id="grantPointsForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="grantType" class="form-label">發放類型</label>
+                                <select class="form-control" id="grantType" name="grantType" required>
+                                    <option value="">請選擇發放類型</option>
+                                    <option value="single">單一會員</option>
+                                    <option value="multiple">多個會員</option>
+                                    <option value="all">全體會員</option>
+                                    <option value="condition">條件發放</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="pointsAmount" class="form-label">點數金額</label>
+                                <input type="number" class="form-control" id="pointsAmount" name="pointsAmount" placeholder="輸入點數" required min="1">
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-check"></i> 確認發放
-                            </button>
-                            <button type="button" class="btn btn-secondary ml-2">
-                                <i class="fas fa-times"></i> 取消
-                            </button>
+                        <div class="row" id="singleUserRow" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="userId" class="form-label">會員ID</label>
+                                <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="multipleUsersRow" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="userIds" class="form-label">會員ID列表 (每行一個)</label>
+                                <textarea class="form-control" id="userIds" name="userIds" rows="5" placeholder="輸入會員ID，每行一個"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="conditionRow" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="conditionType" class="form-label">條件類型</label>
+                                <select class="form-control" id="conditionType" name="conditionType">
+                                    <option value="level">等級條件</option>
+                                    <option value="points">點數條件</option>
+                                    <option value="signin">簽到條件</option>
+                                    <option value="game">遊戲條件</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="conditionValue" class="form-label">條件值</label>
+                                <input type="text" class="form-control" id="conditionValue" name="conditionValue" placeholder="輸入條件值">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="reason" class="form-label">發放原因</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="請輸入發放原因" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="expireDate" class="form-label">有效期限</label>
+                                <input type="date" class="form-control" id="expireDate" name="expireDate">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="notifyUser" class="form-label">通知用戶</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="notifyUser" name="notifyUser" checked>
+                                    <label class="form-check-label" for="notifyUser">
+                                        發送通知給受影響的會員
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 text-right">
+                                <button type="button" class="btn btn-primary" id="previewBtn">
+                                    <i class="fas fa-eye"></i> 預覽
+                                </button>
+                                <button type="submit" class="btn btn-success" id="submitBtn">
+                                    <i class="fas fa-check"></i> 確認發放
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -76,18 +114,175 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-info">
-                        <i class="fas fa-info-circle"></i> 發放說明
+                        <i class="fas fa-info-circle"></i> 發放須知
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> 點數將立即到帳</li>
-                        <li><i class="fas fa-check text-success"></i> 系統會自動記錄交易</li>
-                        <li><i class="fas fa-check text-success"></i> 會員會收到通知</li>
-                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 請確認會員ID正確</li>
+                        <li><i class="fas fa-check text-success"></i> 點數發放後立即生效</li>
+                        <li><i class="fas fa-check text-success"></i> 系統會自動記錄發放記錄</li>
+                        <li><i class="fas fa-check text-success"></i> 可選擇是否通知會員</li>
+                        <li><i class="fas fa-check text-success"></i> 支援批次發放功能</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 請確認發放條件正確</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 大量發放前請先預覽</li>
                     </ul>
+                </div>
+            </div>
+            
+            <!-- 預覽結果 -->
+            <div class="card shadow mb-4" id="previewCard" style="display: none;">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-eye"></i> 預覽結果
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="previewContent">
+                        <!-- 預覽內容將在這裡顯示 -->
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        // 發放類型變更處理
+        $("#grantType").change(function() {
+            var type = $(this).val();
+            $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
+            
+            switch(type) {
+                case "single":
+                    $("#singleUserRow").show();
+                    break;
+                case "multiple":
+                    $("#multipleUsersRow").show();
+                    break;
+                case "condition":
+                    $("#conditionRow").show();
+                    break;
+            }
+        });
+        
+        // 預覽功能
+        $("#previewBtn").click(function() {
+            var formData = $("#grantPointsForm").serialize();
+            var isValid = validateForm();
+            
+            if (!isValid) {
+                return;
+            }
+            
+            $.ajax({
+                url: "@Url.Action("PreviewGrantPoints", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        showPreview(response.data);
+                    } else {
+                        alert("預覽失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("預覽請求失敗，請稍後再試");
+                }
+            });
+        });
+        
+        // 表單提交
+        $("#grantPointsForm").submit(function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            var isValid = validateForm();
+            
+            if (!isValid) {
+                return;
+            }
+            
+            if (!confirm("確定要發放點數嗎？此操作無法撤銷。")) {
+                return;
+            }
+            
+            $.ajax({
+                url: "@Url.Action("GrantPoints", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        alert("點數發放成功！影響 " + response.affectedUsers + " 位會員");
+                        $("#grantPointsForm")[0].reset();
+                        $("#previewCard").hide();
+                    } else {
+                        alert("點數發放失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("點數發放失敗，請稍後再試");
+                }
+            });
+        });
+        
+        // 表單驗證
+        function validateForm() {
+            var grantType = $("#grantType").val();
+            var pointsAmount = $("#pointsAmount").val();
+            var reason = $("#reason").val();
+            
+            if (!grantType) {
+                alert("請選擇發放類型");
+                return false;
+            }
+            
+            if (!pointsAmount || pointsAmount <= 0) {
+                alert("請輸入有效的點數金額");
+                return false;
+            }
+            
+            if (!reason.trim()) {
+                alert("請輸入發放原因");
+                return false;
+            }
+            
+            if (grantType === "single" && !$("#userId").val()) {
+                alert("請輸入會員ID");
+                return false;
+            }
+            
+            if (grantType === "multiple" && !$("#userIds").val()) {
+                alert("請輸入會員ID列表");
+                return false;
+            }
+            
+            if (grantType === "condition" && !$("#conditionValue").val()) {
+                alert("請輸入條件值");
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // 顯示預覽結果
+        function showPreview(data) {
+            var previewHtml = "<h6>發放設定預覽</h6>";
+            previewHtml += "<p><strong>發放類型:</strong> " + data.grantType + "</p>";
+            previewHtml += "<p><strong>點數金額:</strong> " + data.pointsAmount + "</p>";
+            previewHtml += "<p><strong>發放原因:</strong> " + data.reason + "</p>";
+            previewHtml += "<p><strong>影響會員數:</strong> " + data.affectedUsers + "</p>";
+            
+            if (data.userList && data.userList.length > 0) {
+                previewHtml += "<h6>影響的會員:</h6>";
+                previewHtml += "<ul>";
+                data.userList.forEach(function(user) {
+                    previewHtml += "<li>" + user.userId + " - " + user.userName + "</li>";
+                });
+                previewHtml += "</ul>";
+            }
+            
+            $("#previewContent").html(previewHtml);
+            $("#previewCard").show();
+        }
+    });
+</script>

@@ -4,28 +4,31 @@
 }
 
 <div class="container-fluid">
+    <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-calendar-check mr-2"></i>會員簽到統計管理
+            <i class="fas fa-calendar-check mr-2 text-primary"></i>會員簽到統計管理
         </h1>
         <div class="d-flex">
-            <a href="@Url.Action("RuleSettings")" class="btn btn-primary mr-2">
+            <a href="@Url.Action("RuleSettings")" class="btn btn-primary mr-2 shadow-sm">
                 <i class="fas fa-cog"></i> 規則設定
             </a>
-            <a href="@Url.Action("SignInRules")" class="btn btn-success">
-                <i class="fas fa-calendar-alt"></i> 簽到規則
+            <a href="@Url.Action("QueryRecords")" class="btn btn-success shadow-sm">
+                <i class="fas fa-search"></i> 查詢記錄
             </a>
         </div>
     </div>
 
+    <!-- 統計卡片 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card border-left-primary shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">567</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todaySignIns">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+15.3%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
@@ -36,12 +39,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
+            <div class="card border-left-success shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">連續簽到</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">234</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="consecutiveSignIns">載入中...</div>
+                            <div class="text-xs text-muted">最高記錄 <span class="text-success">30天</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-fire fa-2x text-gray-300"></i>
@@ -52,12 +56,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
+            <div class="card border-left-info shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">本月簽到率</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">78.5%</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthlyRate">載入中...</div>
+                            <div class="text-xs text-muted">目標 <span class="text-info">80%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-chart-line fa-2x text-gray-300"></i>
@@ -68,12 +73,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card border-left-warning shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總簽到次數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">12,456</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalSignIns">載入中...</div>
+                            <div class="text-xs text-muted">本月 <span class="text-warning">+1,234</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-trophy fa-2x text-gray-300"></i>
@@ -84,34 +90,55 @@
         </div>
     </div>
 
+    <!-- 快速操作 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-list"></i> 管理功能
+                        <i class="fas fa-bolt"></i> 快速操作
                     </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">操作選項</div>
+                            <a class="dropdown-item" href="@Url.Action("ViewRecords")">
+                                <i class="fas fa-eye fa-sm fa-fw mr-2 text-gray-400"></i>
+                                查看完整記錄
+                            </a>
+                            <a class="dropdown-item" href="@Url.Action("RuleSettings")">
+                                <i class="fas fa-cog fa-sm fa-fw mr-2 text-gray-400"></i>
+                                規則設定
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryRecords")" class="btn btn-outline-primary btn-block">
+                            <a href="@Url.Action("QueryRecords")" class="btn btn-outline-primary btn-block btn-hover">
                                 <i class="fas fa-search"></i> 查詢記錄
+                                <small class="d-block text-muted">搜尋特定會員簽到記錄</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("ViewRecords")" class="btn btn-outline-success btn-block">
+                            <a href="@Url.Action("ViewRecords")" class="btn btn-outline-success btn-block btn-hover">
                                 <i class="fas fa-eye"></i> 查看記錄
+                                <small class="d-block text-muted">瀏覽所有簽到記錄</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("RuleSettings")" class="btn btn-outline-info btn-block">
+                            <a href="@Url.Action("RuleSettings")" class="btn btn-outline-info btn-block btn-hover">
                                 <i class="fas fa-cog"></i> 規則設定
+                                <small class="d-block text-muted">設定簽到獎勵規則</small>
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("SignInRules")" class="btn btn-outline-warning btn-block">
-                                <i class="fas fa-calendar-alt"></i> 簽到規則
+                            <a href="@Url.Action("QueryRecords")" class="btn btn-outline-warning btn-block btn-hover">
+                                <i class="fas fa-chart-bar"></i> 統計分析
+                                <small class="d-block text-muted">查看簽到趨勢分析</small>
                             </a>
                         </div>
                     </div>
@@ -119,4 +146,265 @@
             </div>
         </div>
     </div>
+
+    <!-- 簽到趨勢圖表 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line"></i> 簽到趨勢分析
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="signInTrendChart" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-week"></i> 本週簽到統計
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>週一</span>
+                            <span class="font-weight-bold">89</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-primary" style="width: 89%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>週二</span>
+                            <span class="font-weight-bold">95</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 95%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>週三</span>
+                            <span class="font-weight-bold">78</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-info" style="width: 78%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>週四</span>
+                            <span class="font-weight-bold">92</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-warning" style="width: 92%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>週五</span>
+                            <span class="font-weight-bold">87</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-danger" style="width: 87%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近簽到記錄 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock"></i> 最近簽到記錄
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="recentSignInTable">
+                            <thead>
+                                <tr>
+                                    <th>時間</th>
+                                    <th>會員ID</th>
+                                    <th>連續天數</th>
+                                    <th>獲得獎勵</th>
+                                    <th>狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-01-15 14:30</td>
+                                    <td>user001</td>
+                                    <td><span class="badge badge-primary">15天</span></td>
+                                    <td>+100 點數</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:25</td>
+                                    <td>user002</td>
+                                    <td><span class="badge badge-success">30天</span></td>
+                                    <td>+500 點數 + 優惠券</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:20</td>
+                                    <td>user003</td>
+                                    <td><span class="badge badge-info">7天</span></td>
+                                    <td>+50 點數</td>
+                                    <td><span class="badge badge-success">成功</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .hover-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .btn-hover {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-hover::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-hover:hover::before {
+        left: 100%;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    .badge {
+        font-size: 0.75em;
+        padding: 0.5em 0.8em;
+    }
+    
+    .text-xs {
+        font-size: 0.7rem;
+    }
+    
+    .progress {
+        border-radius: 10px;
+    }
+    
+    .progress-bar {
+        border-radius: 10px;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // 模擬載入數據
+        setTimeout(function() {
+            $("#todaySignIns").text("567");
+            $("#consecutiveSignIns").text("234");
+            $("#monthlyRate").text("78.5%");
+            $("#totalSignIns").text("12,456");
+        }, 1000);
+        
+        // 初始化 DataTable
+        $("#recentSignInTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 10,
+            "order": [[0, "desc"]],
+            "columnDefs": [
+                { "orderable": false, "targets": 4 }
+            ]
+        });
+        
+        // 創建簽到趨勢圖表
+        var ctx = document.getElementById("signInTrendChart").getContext("2d");
+        var signInTrendChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: ["1月", "2月", "3月", "4月", "5月", "6月", "7月"],
+                datasets: [{
+                    label: "簽到次數",
+                    data: [1200, 1350, 1100, 1450, 1300, 1600, 1500],
+                    borderColor: "#667eea",
+                    backgroundColor: "rgba(102, 126, 234, 0.1)",
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: "rgba(0, 0, 0, 0.1)"
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: "rgba(0, 0, 0, 0.1)"
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // 添加載入動畫
+        $(".card").each(function(index) {
+            $(this).css("animation-delay", (index * 0.1) + "s");
+            $(this).addClass("fade-in");
+        });
+    });
+</script>

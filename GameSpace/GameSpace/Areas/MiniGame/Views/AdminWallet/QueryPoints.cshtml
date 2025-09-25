@@ -1,77 +1,70 @@
 @{
-    ViewData["Title"] = "查詢點數";
+    ViewData["Title"] = "查詢會員點數";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-search mr-2"></i>查詢點數
+            <i class="fas fa-search mr-2"></i>查詢會員點數
         </h1>
-        <a href="@Url.Action("Index")" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> 返回列表
-        </a>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
+    <!-- 搜尋區域 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-filter"></i> 查詢條件
+                        <i class="fas fa-filter"></i> 搜尋條件
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form>
+                    <form id="searchForm">
                         <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="userId">會員ID</label>
-                                    <input type="text" class="form-control" id="userId" placeholder="請輸入會員ID">
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="userId" class="form-label">會員ID</label>
+                                <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="userName">會員名稱</label>
-                                    <input type="text" class="form-control" id="userName" placeholder="請輸入會員名稱">
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="userName" class="form-label">會員名稱</label>
+                                <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱">
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="minPoints">最小點數</label>
-                                    <input type="number" class="form-control" id="minPoints" placeholder="最小點數" min="0">
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="email" class="form-label">電子郵件</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="輸入電子郵件">
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="maxPoints">最大點數</label>
-                                    <input type="number" class="form-control" id="maxPoints" placeholder="最大點數" min="0">
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="minPoints" class="form-label">最小點數</label>
+                                <input type="number" class="form-control" id="minPoints" name="minPoints" placeholder="0">
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="sortBy">排序方式</label>
-                                    <select class="form-control" id="sortBy">
-                                        <option value="points">點數</option>
-                                        <option value="userId">會員ID</option>
-                                        <option value="lastUpdate">最後更新</option>
-                                    </select>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="maxPoints" class="form-label">最大點數</label>
+                                <input type="number" class="form-control" id="maxPoints" name="maxPoints" placeholder="999999">
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>&nbsp;</label>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-search"></i> 查詢
-                                        </button>
-                                        <button type="button" class="btn btn-secondary ml-2">
-                                            <i class="fas fa-undo"></i> 重置
-                                        </button>
-                                    </div>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="dateRange" class="form-label">最後更新時間</label>
+                                <input type="date" class="form-control" id="dateRange" name="dateRange">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-right">
+                                <button type="button" class="btn btn-primary" id="searchBtn">
+                                    <i class="fas fa-search"></i> 搜尋
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="resetBtn">
+                                    <i class="fas fa-undo"></i> 重置
+                                </button>
+                                <button type="button" class="btn btn-success" id="exportBtn">
+                                    <i class="fas fa-download"></i> 匯出
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -80,47 +73,32 @@
         </div>
     </div>
 
+    <!-- 結果區域 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-list"></i> 查詢結果
                     </h6>
+                    <span class="badge badge-info" id="resultCount">共 0 筆資料</span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="pointsTable">
+                        <table class="table table-bordered table-hover" id="pointsTable">
                             <thead class="thead-light">
                                 <tr>
                                     <th>會員ID</th>
                                     <th>會員名稱</th>
+                                    <th>電子郵件</th>
                                     <th>點數餘額</th>
                                     <th>最後更新</th>
+                                    <th>狀態</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>U001</td>
-                                    <td>張三</td>
-                                    <td><span class="badge badge-primary">1,500</span></td>
-                                    <td>2024-01-15 14:30</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary">調整</button>
-                                        <button class="btn btn-sm btn-outline-info">詳情</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>U002</td>
-                                    <td>李四</td>
-                                    <td><span class="badge badge-primary">2,300</span></td>
-                                    <td>2024-01-15 13:45</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary">調整</button>
-                                        <button class="btn btn-sm btn-outline-info">詳情</button>
-                                    </td>
-                                </tr>
+                                <!-- 數據將通過 AJAX 加載 -->
                             </tbody>
                         </table>
                     </div>
@@ -130,14 +108,185 @@
     </div>
 </div>
 
+<!-- 詳細資訊 Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">會員點數詳細資訊</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>會員ID:</td><td id="detailUserId"></td></tr>
+                            <tr><td>會員名稱:</td><td id="detailUserName"></td></tr>
+                            <tr><td>電子郵件:</td><td id="detailEmail"></td></tr>
+                            <tr><td>點數餘額:</td><td id="detailPoints"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>最近交易</h6>
+                        <div id="recentTransactions">
+                            <!-- 最近交易記錄 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" id="adjustPointsBtn">調整點數</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function() {
-        $("#pointsTable").DataTable({
+        // 初始化 DataTable
+        var table = $("#pointsTable").DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
-            "pageLength": 10,
-            "order": [[ 0, "desc" ]]
+            "pageLength": 25,
+            "order": [[ 0, "asc" ]],
+            "columnDefs": [
+                { "orderable": false, "targets": 6 }
+            ]
+        });
+
+        // 搜尋功能
+        $("#searchBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            // 發送 AJAX 請求到後端
+            $.ajax({
+                url: "@Url.Action("SearchPoints", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        loadDataToTable(response.data);
+                    } else {
+                        alert("搜尋失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("搜尋請求失敗，請稍後再試");
+                }
+            });
+        });
+
+        // 重置功能
+        $("#resetBtn").click(function() {
+            $("#searchForm")[0].reset();
+            table.clear().draw();
+            $("#resultCount").text("共 0 筆資料");
+        });
+
+        // 匯出功能
+        $("#exportBtn").click(function() {
+            var formData = $("#searchForm").serialize();
+            window.open("@Url.Action("ExportPoints", "AdminWallet")?" + formData, "_blank");
+        });
+
+        // 載入數據到表格
+        function loadDataToTable(data) {
+            table.clear();
+            data.forEach(function(row) {
+                var statusBadge = row.status === "正常" ? "badge-success" : "badge-danger";
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(\
+ + row.userId + 
+\)\">查看</button> " +
+                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustPoints(\ + row.userId + \)\">調整</button>";
+                
+                table.row.add([
+                    row.userId,
+                    row.userName,
+                    row.email,
+                    row.points.toLocaleString(),
+                    row.lastUpdate,
+                    "<span class=\"badge " + statusBadge + "\">" + row.status + "</span>",
+                    actionButtons
+                ]);
+            });
+            table.draw();
+            $("#resultCount").text("共 " + data.length + " 筆資料");
+        }
+
+        // 查看詳細資訊
+        window.viewDetail = function(userId) {
+            $.ajax({
+                url: "@Url.Action("GetUserDetail", "AdminWallet")",
+                type: "GET",
+                data: { userId: userId },
+                success: function(response) {
+                    if (response.success) {
+                        $("#detailUserId").text(response.data.userId);
+                        $("#detailUserName").text(response.data.userName);
+                        $("#detailEmail").text(response.data.email);
+                        $("#detailPoints").text(response.data.points.toLocaleString());
+                        $("#detailModal").modal("show");
+                    } else {
+                        alert("獲取詳細資訊失敗: " + response.message);
+                    }
+                },
+                error: function() {
+                    alert("獲取詳細資訊失敗，請稍後再試");
+                }
+            });
+        };
+
+        // 調整點數
+        window.adjustPoints = function(userId) {
+            var newPoints = prompt("請輸入新的點數餘額:", "");
+            if (newPoints !== null && !isNaN(newPoints)) {
+                $.ajax({
+                    url: "@Url.Action("AdjustPoints", "AdminWallet")",
+                    type: "POST",
+                    data: { userId: userId, newPoints: newPoints },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("點數調整成功");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("點數調整失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("點數調整失敗，請稍後再試");
+                    }
+                });
+            }
+        };
+
+        // 調整點數按鈕
+        $("#adjustPointsBtn").click(function() {
+            var userId = $("#detailUserId").text();
+            var currentPoints = $("#detailPoints").text().replace(/,/g, "");
+            var newPoints = prompt("請輸入新的點數餘額:", currentPoints);
+            if (newPoints !== null && !isNaN(newPoints)) {
+                $.ajax({
+                    url: "@Url.Action("AdjustPoints", "AdminWallet")",
+                    type: "POST",
+                    data: { userId: userId, newPoints: newPoints },
+                    success: function(response) {
+                        if (response.success) {
+                            alert("點數調整成功");
+                            $("#detailModal").modal("hide");
+                            $("#searchBtn").click(); // 重新搜尋
+                        } else {
+                            alert("點數調整失敗: " + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("點數調整失敗，請稍後再試");
+                    }
+                });
+            }
         });
     });
 </script>

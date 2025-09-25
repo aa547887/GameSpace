@@ -8,17 +8,220 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/sb-admin/css/sb-admin-2.min.css" />
     <link rel="stylesheet" href="~/lib/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn {
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .badge {
+            border-radius: 20px;
+            padding: 0.5em 1em;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-control {
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .modal-content {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .text-primary {
+            color: #667eea !important;
+        }
+        
+        .text-success {
+            color: #28a745 !important;
+        }
+        
+        .text-info {
+            color: #17a2b8 !important;
+        }
+        
+        .text-warning {
+            color: #ffc107 !important;
+        }
+        
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        
+        .bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        }
+        
+        .bg-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%) !important;
+        }
+        
+        .bg-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+        }
+        
+        .bg-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
+        }
+        
+        .border-left-primary {
+            border-left: 4px solid #667eea !important;
+        }
+        
+        .border-left-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        
+        .border-left-info {
+            border-left: 4px solid #17a2b8 !important;
+        }
+        
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+        
+        .border-left-danger {
+            border-left: 4px solid #dc3545 !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
+    <div class="loading" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">載入中...</span>
+        </div>
+    </div>
+
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+            <nav class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse" id="sidebar">
                 @await Html.PartialAsync("_Sidebar")
             </nav>
 
             <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content fade-in">
                 @RenderBody()
             </main>
         </div>
@@ -28,6 +231,66 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/lib/sb-admin/js/sb-admin-2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // 顯示載入動畫
+            function showLoading() {
+                $("#loadingSpinner").addClass("show");
+            }
+            
+            // 隱藏載入動畫
+            function hideLoading() {
+                $("#loadingSpinner").removeClass("show");
+            }
+            
+            // 為所有 AJAX 請求添加載入動畫
+            $(document).ajaxStart(function() {
+                showLoading();
+            }).ajaxStop(function() {
+                hideLoading();
+            });
+            
+            // 為所有表單提交添加載入動畫
+            $("form").on("submit", function() {
+                showLoading();
+            });
+            
+            // 為所有連結點擊添加載入動畫
+            $("a[href]").on("click", function() {
+                var href = $(this).attr("href");
+                if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
+                    showLoading();
+                }
+            });
+            
+            // 頁面載入完成後隱藏載入動畫
+            hideLoading();
+            
+            // 添加頁面切換動畫
+            $(".fade-in").addClass("fade-in");
+            
+            // 處理響應式側邊欄
+            function toggleSidebar() {
+                $("#sidebar").toggleClass("show");
+            }
+            
+            // 在移動設備上添加側邊欄切換按鈕
+            if (window.innerWidth <= 768) {
+                $("body").prepend("<button class=\"btn btn-primary position-fixed\" style=\"top: 10px; left: 10px; z-index: 9999;\" onclick=\"toggleSidebar()\"><i class=\"fas fa-bars\"></i></button>");
+            }
+            
+            // 監聽視窗大小變化
+            $(window).resize(function() {
+                if (window.innerWidth > 768) {
+                    $("#sidebar").removeClass("show");
+                }
+            });
+        });
+    </script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
