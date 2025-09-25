@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "CanManageShopping")] // Requires Shopping permission
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminSignInController : Controller
     {
         private readonly IMiniGameAdminService _adminService;
@@ -20,22 +20,44 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var model = new AdminSignInIndexViewModel
+            try
             {
-                SignInStats = await _adminService.GetSignInStatsAsync(),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                var signInStats = await _adminService.GetSignInStatsAsync();
+                var users = await _adminService.GetUsersAsync();
+
+                var model = new AdminSignInIndexViewModel
+                {
+                    SignInStats = signInStats.Items,
+                    Users = users,
+                    TotalCount = signInStats.TotalCount,
+                    PageNumber = signInStats.PageNumber,
+                    PageSize = signInStats.PageSize
+                };
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入簽到統計時發生錯誤：{ex.Message}";
+                return View(new AdminSignInIndexViewModel());
+            }
         }
 
         public async Task<IActionResult> Rules()
         {
-            var model = new AdminSignInRulesViewModel
+            try
             {
-                SignInRule = await _adminService.GetSignInRuleAsync(),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                var signInRule = await _adminService.GetSignInRuleAsync();
+                var model = new AdminSignInRulesViewModel
+                {
+                    SignInRule = signInRule
+                };
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入簽到規則時發生錯誤：{ex.Message}";
+                return View(new AdminSignInRulesViewModel());
+            }
         }
 
         [HttpPost]
@@ -44,14 +66,21 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                var success = await _adminService.UpdateSignInRuleAsync(model);
-                if (success)
+                try
                 {
-                    TempData["SuccessMessage"] = "簽到規則更新成功";
+                    var success = await _adminService.UpdateSignInRuleAsync(model);
+                    if (success)
+                    {
+                        TempData["SuccessMessage"] = "簽到規則更新成功";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "簽到規則更新失敗";
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    TempData["ErrorMessage"] = "簽到規則更新失敗";
+                    TempData["ErrorMessage"] = $"更新簽到規則時發生錯誤：{ex.Message}";
                 }
             }
             return RedirectToAction("Rules");
@@ -59,28 +88,45 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         public async Task<IActionResult> UserHistory(int userId)
         {
-            var model = new AdminSignInUserHistoryViewModel
+            try
             {
-                UserId = userId,
-                UserName = _adminService.GetUserByIdAsync(userId).Result?.UserName ?? "",
-                SignInHistory = await _adminService.GetUserSignInHistoryAsync(userId),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                var user = await _adminService.GetUserByIdAsync(userId);
+                var signInHistory = await _adminService.GetUserSignInHistoryAsync(userId);
+
+                var model = new AdminSignInUserHistoryViewModel
+                {
+                    UserId = userId,
+                    UserName = user?.UserName ?? "未知用戶",
+                    SignInHistory = signInHistory
+                };
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入用戶簽到歷史時發生錯誤：{ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSignInRecord(int userId, DateTime signInDate)
         {
-            var success = await _adminService.AddUserSignInRecordAsync(userId, signInDate);
-            if (success)
+            try
             {
-                TempData["SuccessMessage"] = "簽到記錄新增成功";
+                var success = await _adminService.AddUserSignInRecordAsync(userId, signInDate);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "簽到記錄新增成功";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "簽到記錄新增失敗";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "簽到記錄新增失敗";
+                TempData["ErrorMessage"] = $"新增簽到記錄時發生錯誤：{ex.Message}";
             }
             return RedirectToAction("UserHistory", new { userId });
         }
@@ -89,14 +135,21 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveSignInRecord(int userId, DateTime signInDate)
         {
-            var success = await _adminService.RemoveUserSignInRecordAsync(userId, signInDate);
-            if (success)
+            try
             {
-                TempData["SuccessMessage"] = "簽到記錄移除成功";
+                var success = await _adminService.RemoveUserSignInRecordAsync(userId, signInDate);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "簽到記錄移除成功";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "簽到記錄移除失敗";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "簽到記錄移除失敗";
+                TempData["ErrorMessage"] = $"移除簽到記錄時發生錯誤：{ex.Message}";
             }
             return RedirectToAction("UserHistory", new { userId });
         }
