@@ -1,201 +1,206 @@
 @{
-    ViewData["Title"] = "會員點數查詢";
+    ViewData["Title"] = "我的錢包";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">會員點數查詢</h1>
-    </div>
-
-    <!-- 查詢表單 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">查詢條件</h6>
-        </div>
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label for="userId" class="form-label">會員ID</label>
-                    <input type="number" class="form-control" id="userId" name="userId" placeholder="輸入會員ID" value="@ViewBag.UserId">
-                </div>
-                <div class="col-md-4">
-                    <label for="userName" class="form-label">會員名稱</label>
-                    <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱" value="@ViewBag.UserName">
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-search me-1"></i>查詢
-                    </button>
-                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
-                        <i class="fas fa-times me-1"></i>清除
-                    </a>
-                </div>
-            </form>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-wallet mr-2"></i>我的錢包
+        </h1>
+        <div class="d-flex">
+            <span class="badge badge-success mr-2">
+                <i class="fas fa-circle text-success"></i> 正常
+            </span>
         </div>
     </div>
 
-    <!-- 查詢結果 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">查詢結果</h6>
-            @if (ViewBag.HasSearched == true)
-            {
-                <span class="badge badge-info">共 @ViewBag.ResultCount 筆記錄</span>
-            }
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">點數餘額</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">1,500</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>會員ID</th>
-                            <th>會員名稱</th>
-                            <th>當前點數</th>
-                            <th>最後異動時間</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (ViewBag.HasSearched == true)
-                        {
-                            @if (ViewBag.Results != null && ViewBag.Results.Count > 0)
-                            {
-                                @foreach (var user in ViewBag.Results)
-                                {
-                                    <tr>
-                                        <td>@user.Id</td>
-                                        <td>@user.UserName</td>
-                                        <td>
-                                            <span class="badge badge-success">@user.Points 點</span>
-                                        </td>
-                                        <td>@user.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                        <td>
-                                            <a href="@Url.Action("Details", new { id = user.Id })" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i> 詳情
-                                            </a>
-                                            <a href="@Url.Action("History", new { id = user.Id })" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-history"></i> 歷史
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">
-                                        <i class="fas fa-search fa-2x mb-2"></i><br>
-                                        未找到符合條件的會員
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">
-                                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
-                                    請輸入查詢條件進行搜尋
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">優惠券</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">5</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">電子券</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">3</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-gift fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">本月獲得</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">800</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 統計資訊 -->
-    @if (ViewBag.HasSearched == true)
-    {
-        <div class="row">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-primary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總會員數</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalUsers</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-users fa-2x text-gray-300"></i>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <ul class="nav nav-tabs card-header-tabs" id="walletTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="points-tab" data-toggle="tab" href="#points" role="tab">
+                                <i class="fas fa-coins"></i> 點數記錄
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="coupons-tab" data-toggle="tab" href="#coupons" role="tab">
+                                <i class="fas fa-ticket-alt"></i> 我的優惠券
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="evouchers-tab" data-toggle="tab" href="#evouchers" role="tab">
+                                <i class="fas fa-gift"></i> 我的電子券
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="walletTabsContent">
+                        <div class="tab-pane fade show active" id="points" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="pointsTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>時間</th>
+                                            <th>類型</th>
+                                            <th>金額</th>
+                                            <th>餘額</th>
+                                            <th>備註</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2024-01-15 14:30</td>
+                                            <td><span class="badge badge-success">簽到獎勵</span></td>
+                                            <td class="text-success">+10</td>
+                                            <td>1,500</td>
+                                            <td>每日簽到</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2024-01-15 13:45</td>
+                                            <td><span class="badge badge-info">遊戲獎勵</span></td>
+                                            <td class="text-success">+50</td>
+                                            <td>1,490</td>
+                                            <td>小遊戲高分</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-success shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總點數</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalPoints</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-coins fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均點數</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.AveragePoints</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+
+                        <div class="tab-pane fade" id="coupons" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="couponsTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>優惠券名稱</th>
+                                            <th>折扣</th>
+                                            <th>狀態</th>
+                                            <th>到期日</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>滿額折扣券</td>
+                                            <td>9折</td>
+                                            <td><span class="badge badge-success">可使用</span></td>
+                                            <td>2024-02-15</td>
+                                            <td><button class="btn btn-sm btn-primary">使用</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-warning shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">最高點數</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.MaxPoints</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-crown fa-2x text-gray-300"></i>
+
+                        <div class="tab-pane fade" id="evouchers" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="evouchersTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>電子券名稱</th>
+                                            <th>面額</th>
+                                            <th>狀態</th>
+                                            <th>到期日</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>現金券</td>
+                                            <td>NT$ 100</td>
+                                            <td><span class="badge badge-info">未使用</span></td>
+                                            <td>2024-03-15</td>
+                                            <td><button class="btn btn-sm btn-info">查看</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    }
+    </div>
 </div>
 
 <script>
-// 自動提交表單功能
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input[type="number"], input[type="text"]');
-    
-    inputs.forEach(input => {
-        input.addEventListener('input', function() {
-            // 延遲提交，避免頻繁請求
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(() => {
-                if (this.value.length > 0) {
-                    form.submit();
-                }
-            }, 500);
+    $(document).ready(function() {
+        $("#pointsTable, #couponsTable, #evouchersTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 10,
+            "order": [[ 0, "desc" ]]
         });
     });
-});
-
-// 清除表單功能
-function clearForm() {
-    document.getElementById('userId').value = '';
-    document.getElementById('userName').value = '';
-    window.location.href = '@Url.Action("Index")';
-}
 </script>

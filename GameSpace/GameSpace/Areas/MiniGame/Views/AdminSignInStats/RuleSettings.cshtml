@@ -1,214 +1,104 @@
-@model GameSpace.Areas.MiniGame.Models.SignInRuleModel
 @{
     ViewData["Title"] = "簽到規則設定";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">簽到規則設定</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cog mr-2"></i>簽到規則設定
+        </h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
     </div>
 
-    <!-- 規則設定表單 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">簽到規則配置</h6>
-        </div>
-        <div class="card-body">
-            <form asp-action="UpdateRuleSettings" method="post" id="ruleForm">
-                <div class="row">
-                    <div class="col-md-6">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-alt"></i> 簽到規則配置
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form>
                         <div class="form-group">
-                            <label asp-for="DailyPoints" class="control-label">每日簽到點數 *</label>
-                            <input asp-for="DailyPoints" class="form-control" type="number" min="1" placeholder="輸入每日簽到點數" required />
-                            <span asp-validation-for="DailyPoints" class="text-danger"></span>
+                            <label for="dailyPoints">每日簽到點數</label>
+                            <input type="number" class="form-control" id="dailyPoints" value="10" min="1">
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="ConsecutiveBonus" class="control-label">連續簽到獎勵點數</label>
-                            <input asp-for="ConsecutiveBonus" class="form-control" type="number" min="0" placeholder="輸入連續簽到獎勵" />
-                            <span asp-validation-for="ConsecutiveBonus" class="text-danger"></span>
+                            <label for="continuousBonus">連續簽到獎勵</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="day3">3天獎勵</label>
+                                    <input type="number" class="form-control" id="day3" value="50" min="0">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="day7">7天獎勵</label>
+                                    <input type="number" class="form-control" id="day7" value="100" min="0">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label for="day15">15天獎勵</label>
+                                    <input type="number" class="form-control" id="day15" value="200" min="0">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="day30">30天獎勵</label>
+                                    <input type="number" class="form-control" id="day30" value="500" min="0">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="ConsecutiveDays" class="control-label">連續簽到天數</label>
-                            <input asp-for="ConsecutiveDays" class="form-control" type="number" min="1" placeholder="輸入連續簽到天數" />
-                            <span asp-validation-for="ConsecutiveDays" class="text-danger"></span>
+                            <label for="resetDay">重置日</label>
+                            <select class="form-control" id="resetDay">
+                                <option value="1">每月1日</option>
+                                <option value="15">每月15日</option>
+                                <option value="0">不重置</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="WeeklyBonus" class="control-label">週簽到獎勵點數</label>
-                            <input asp-for="WeeklyBonus" class="form-control" type="number" min="0" placeholder="輸入週簽到獎勵" />
-                            <span asp-validation-for="WeeklyBonus" class="text-danger"></span>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableNotification" checked>
+                                <label class="form-check-label" for="enableNotification">
+                                    啟用簽到通知
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="MonthlyBonus" class="control-label">月簽到獎勵點數</label>
-                            <input asp-for="MonthlyBonus" class="form-control" type="number" min="0" placeholder="輸入月簽到獎勵" />
-                            <span asp-validation-for="MonthlyBonus" class="text-danger"></span>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 儲存設定
+                            </button>
+                            <button type="button" class="btn btn-secondary ml-2">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label asp-for="MaxConsecutiveDays" class="control-label">最大連續簽到天數</label>
-                            <input asp-for="MaxConsecutiveDays" class="form-control" type="number" min="1" placeholder="輸入最大連續天數" />
-                            <span asp-validation-for="MaxConsecutiveDays" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="form-check">
-                        <input asp-for="IsActive" class="form-check-input" type="checkbox" />
-                        <label asp-for="IsActive" class="form-check-label">啟用簽到系統</label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Description" class="control-label">規則說明</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="輸入規則說明"></textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
-                </div>
-
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> 儲存設定
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> 重置
-                    </button>
-                    <button type="button" class="btn btn-info" onclick="previewRules()">
-                        <i class="fas fa-eye"></i> 預覽規則
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 當前規則預覽 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">當前規則預覽</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card border-left-primary">
-                        <div class="card-body">
-                            <h6 class="card-title">每日簽到</h6>
-                            <p class="card-text">獲得 <span class="font-weight-bold text-primary">10</span> 點</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-left-success">
-                        <div class="card-body">
-                            <h6 class="card-title">連續簽到</h6>
-                            <p class="card-text">連續 <span class="font-weight-bold text-success">7</span> 天額外獲得 <span class="font-weight-bold text-success">50</span> 點</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-left-info">
-                        <div class="card-body">
-                            <h6 class="card-title">週簽到</h6>
-                            <p class="card-text">每週簽到 <span class="font-weight-bold text-info">7</span> 天獲得 <span class="font-weight-bold text-info">100</span> 點</p>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- 規則歷史 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">規則變更歷史</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>變更時間</th>
-                            <th>變更者</th>
-                            <th>變更內容</th>
-                            <th>變更原因</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2024-01-15 14:30:25</td>
-                            <td>管理員</td>
-                            <td>每日簽到點數從 5 調整為 10</td>
-                            <td>提升用戶參與度</td>
-                        </tr>
-                        <tr>
-                            <td>2024-01-10 09:15:12</td>
-                            <td>管理員</td>
-                            <td>新增連續簽到獎勵機制</td>
-                            <td>鼓勵連續簽到</td>
-                        </tr>
-                        <tr>
-                            <td>2024-01-05 16:45:08</td>
-                            <td>系統</td>
-                            <td>初始化簽到規則</td>
-                            <td>系統初始化</td>
-                        </tr>
-                    </tbody>
-                </table>
+        
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i> 規則說明
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 每日簽到可獲得基本點數</li>
+                        <li><i class="fas fa-check text-success"></i> 連續簽到有額外獎勵</li>
+                        <li><i class="fas fa-check text-success"></i> 可設定每月重置日</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 修改後立即生效</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-function resetForm() {
-    if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
-        document.getElementById("ruleForm").reset();
-    }
-}
-
-function previewRules() {
-    const dailyPoints = document.getElementById("DailyPoints").value || "10";
-    const consecutiveBonus = document.getElementById("ConsecutiveBonus").value || "50";
-    const consecutiveDays = document.getElementById("ConsecutiveDays").value || "7";
-    const weeklyBonus = document.getElementById("WeeklyBonus").value || "100";
-    
-    alert(`規則預覽：
-每日簽到：${dailyPoints} 點
-連續簽到 ${consecutiveDays} 天：額外 ${consecutiveBonus} 點
-週簽到：${weeklyBonus} 點`);
-}
-
-// 表單驗證
-document.getElementById("ruleForm").addEventListener("submit", function(e) {
-    const dailyPoints = document.getElementById("DailyPoints").value;
-    
-    if (!dailyPoints || dailyPoints <= 0) {
-        alert("請輸入有效的每日簽到點數");
-        e.preventDefault();
-        return;
-    }
-    
-    if (!confirm("確定要儲存簽到規則設定嗎？")) {
-        e.preventDefault();
-        return;
-    }
-});
-</script>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

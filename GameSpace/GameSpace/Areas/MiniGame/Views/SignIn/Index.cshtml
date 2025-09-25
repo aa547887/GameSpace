@@ -1,48 +1,142 @@
 @{
-    ViewData["Title"] = "簽到管理";
+    ViewData["Title"] = "每日簽到";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-check mr-2"></i>每日簽到
+        </h1>
+        <div class="d-flex">
+            <span class="badge badge-info mr-2">
+                <i class="fas fa-clock"></i> @DateTime.Now.ToString("yyyy-MM-dd")
+            </span>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">簽到管理</h3>
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-alt"></i> 簽到狀態
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="searchInput" placeholder="搜尋用戶...">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
-                                        <i class="fas fa-search"></i>
-                                    </button>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-calendar-check fa-5x text-success mb-3"></i>
+                        <h4 class="text-success">今日已簽到</h4>
+                        <p class="text-muted">恭喜您完成今日簽到！</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card border-left-primary">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">連續簽到</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">7 天</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6 text-right">
-                            <button class="btn btn-primary" id="addSignInBtn">
-                                <i class="fas fa-plus"></i> 新增簽到記錄
-                            </button>
+                        <div class="col-md-4">
+                            <div class="card border-left-success">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日獲得</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">10 點數</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-left-info">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">總簽到</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">45 天</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-gift"></i> 簽到獎勵
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            每日簽到
+                            <span class="badge badge-primary">10 點數</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            連續3天
+                            <span class="badge badge-success">50 點數</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            連續7天
+                            <span class="badge badge-info">100 點數</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            連續15天
+                            <span class="badge badge-warning">200 點數</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            連續30天
+                            <span class="badge badge-danger">500 點數</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> 簽到記錄
+                    </h6>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped" id="signInTable">
-                            <thead>
+                        <table class="table table-bordered" id="signInTable">
+                            <thead class="thead-light">
                                 <tr>
-                                    <th>簽到ID</th>
-                                    <th>用戶ID</th>
-                                    <th>簽到日期</th>
+                                    <th>日期</th>
+                                    <th>狀態</th>
+                                    <th>獲得點數</th>
                                     <th>連續天數</th>
-                                    <th>獲得獎勵</th>
-                                    <th>簽到時間</th>
-                                    <th>操作</th>
+                                    <th>備註</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- 簽到數據將動態載入 -->
+                                <tr>
+                                    <td>2024-01-15</td>
+                                    <td><span class="badge badge-success">已簽到</span></td>
+                                    <td class="text-success">+10</td>
+                                    <td>7</td>
+                                    <td>連續7天獎勵 +100</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-14</td>
+                                    <td><span class="badge badge-success">已簽到</span></td>
+                                    <td class="text-success">+10</td>
+                                    <td>6</td>
+                                    <td>每日簽到</td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-13</td>
+                                    <td><span class="badge badge-success">已簽到</span></td>
+                                    <td class="text-success">+10</td>
+                                    <td>5</td>
+                                    <td>每日簽到</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -52,185 +146,14 @@
     </div>
 </div>
 
-<!-- 新增/編輯簽到模態框 -->
-<div class="modal fade" id="signInModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="signInModalTitle">新增簽到記錄</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="signInForm">
-                    <input type="hidden" id="signInId" name="Id">
-                    <div class="form-group">
-                        <label for="userId">用戶ID</label>
-                        <input type="text" class="form-control" id="userId" name="UserId" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="signInDate">簽到日期</label>
-                        <input type="date" class="form-control" id="signInDate" name="SignInDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="consecutiveDays">連續天數</label>
-                        <input type="number" class="form-control" id="consecutiveDays" name="ConsecutiveDays" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="reward">獲得獎勵</label>
-                        <input type="text" class="form-control" id="reward" name="Reward" placeholder="例如：100遊戲幣">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="saveSignInBtn">儲存</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            loadSignIns();
-            
-            $('#addSignInBtn').click(function() {
-                $('#signInModalTitle').text('新增簽到記錄');
-                $('#signInForm')[0].reset();
-                $('#signInId').val('');
-                $('#signInDate').val(new Date().toISOString().split('T')[0]);
-                $('#signInModal').modal('show');
-            });
-            
-            $('#saveSignInBtn').click(function() {
-                saveSignIn();
-            });
-            
-            $('#searchBtn').click(function() {
-                loadSignIns();
-            });
-            
-            $('#searchInput').keypress(function(e) {
-                if (e.which == 13) {
-                    loadSignIns();
-                }
-            });
+<script>
+    $(document).ready(function() {
+        $("#signInTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 10,
+            "order": [[ 0, "desc" ]]
         });
-        
-        function loadSignIns() {
-            var searchTerm = $('#searchInput').val();
-            $.ajax({
-                url: '/MiniGame/SignIn/GetSignIns',
-                type: 'GET',
-                data: { search: searchTerm },
-                success: function(data) {
-                    var tbody = $('#signInTable tbody');
-                    tbody.empty();
-                    
-                    if (data && data.length > 0) {
-                        $.each(data, function(index, signIn) {
-                            var row = '<tr>' +
-                                '<td>' + signIn.id + '</td>' +
-                                '<td>' + signIn.userId + '</td>' +
-                                '<td>' + formatDate(signIn.signInDate) + '</td>' +
-                                '<td>' + signIn.consecutiveDays + '</td>' +
-                                '<td>' + (signIn.reward || '無') + '</td>' +
-                                '<td>' + formatDateTime(signIn.createdAt) + '</td>' +
-                                '<td>' +
-                                    '<button class="btn btn-sm btn-primary edit-signin" data-id="' + signIn.id + '">編輯</button> ' +
-                                    '<button class="btn btn-sm btn-danger delete-signin" data-id="' + signIn.id + '">刪除</button>' +
-                                '</td>' +
-                            '</tr>';
-                            tbody.append(row);
-                        });
-                    } else {
-                        tbody.append('<tr><td colspan="7" class="text-center">無數據</td></tr>');
-                    }
-                },
-                error: function() {
-                    alert('載入簽到數據失敗');
-                }
-            });
-        }
-        
-        function saveSignIn() {
-            var formData = $('#signInForm').serialize();
-            var isEdit = $('#signInId').val() !== '';
-            var url = isEdit ? '/MiniGame/SignIn/Update' : '/MiniGame/SignIn/Create';
-            
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    if (response.success) {
-                        $('#signInModal').modal('hide');
-                        loadSignIns();
-                        alert(isEdit ? '簽到記錄更新成功' : '簽到記錄新增成功');
-                    } else {
-                        alert('操作失敗: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('操作失敗');
-                }
-            });
-        }
-        
-        function formatDate(dateString) {
-            var date = new Date(dateString);
-            return date.toLocaleDateString('zh-TW');
-        }
-        
-        function formatDateTime(dateString) {
-            var date = new Date(dateString);
-            return date.toLocaleString('zh-TW');
-        }
-        
-        // 編輯簽到記錄
-        $(document).on('click', '.edit-signin', function() {
-            var signInId = $(this).data('id');
-            $.ajax({
-                url: '/MiniGame/SignIn/Get/' + signInId,
-                type: 'GET',
-                success: function(signIn) {
-                    $('#signInModalTitle').text('編輯簽到記錄');
-                    $('#signInId').val(signIn.id);
-                    $('#userId').val(signIn.userId);
-                    $('#signInDate').val(signIn.signInDate);
-                    $('#consecutiveDays').val(signIn.consecutiveDays);
-                    $('#reward').val(signIn.reward);
-                    $('#signInModal').modal('show');
-                },
-                error: function() {
-                    alert('載入簽到資料失敗');
-                }
-            });
-        });
-        
-        // 刪除簽到記錄
-        $(document).on('click', '.delete-signin', function() {
-            if (confirm('確定要刪除這個簽到記錄嗎？')) {
-                var signInId = $(this).data('id');
-                $.ajax({
-                    url: '/MiniGame/SignIn/Delete/' + signInId,
-                    type: 'POST',
-                    success: function(response) {
-                        if (response.success) {
-                            loadSignIns();
-                            alert('簽到記錄刪除成功');
-                        } else {
-                            alert('刪除失敗: ' + response.message);
-                        }
-                    },
-                    error: function() {
-                        alert('刪除失敗');
-                    }
-                });
-            }
-        });
-    </script>
-}
-
+    });
+</script>

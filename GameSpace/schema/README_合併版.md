@@ -17,7 +17,7 @@
 - **MiniGame Area 專用補充**：`MiniGame_Area_完整描述文件.md`、`MiniGame_area功能彙整.txt`  
 - **前台視覺與互動**：`index.txt`（僅供 Public 前台樣式；目前本組**只做 Admin**）
 
-> **重要**：**資料庫唯一真相源**為 `database.json` / `schema` 夾內的 SQL（供 AI 閱讀）；實際執行以 **本機 SQL Server（SSMS 已建立）**為準，**嚴禁 EF Migrations 修改 schema**。
+> **重要**：**資料庫唯一真相源**為 `schema` 夾內的資料庫（供 AI 閱讀）；實際執行以 **本機 SQL Server（SSMS 已建立）**為準，**嚴禁 EF Migrations 修改 schema**。
 
 > 備註：本文件不主張任何未經確認的檔名/路徑；具體實作請以實際專案為準（或於稽核後再補充）。
 
@@ -214,7 +214,7 @@
 
 - [ ] 使用 `AdminCookie` 登入後可進入 `/MiniGame/Home/Index`。  
 - [ ] 共用 `_Sidebar.cshtml` 含 **小遊戲**連結，MiniGame `_Sidebar.cshtml` 之**第二層按鈕**與第 3 章**逐字一致**。  
-- [ ] **會員點數系統（Admin）**：可查詢/發放點數、查詢/發放券、查閱收支明細。  
+- [ ] **會員錢包（Admin）**：可查詢/發放點數、查詢/發放券、查閱收支明細。  
 - [ ] **簽到（Admin）**：可設定規則、查閱會員簽到紀錄。  
 - [ ] **寵物（Admin）**：可設定全域規則、調整個別寵物資料、查詢清單與變更紀錄。  
 - [ ] **小遊戲（Admin）**：可設定獎勵規則與每日次數限制、查閱會員遊戲紀錄。  
@@ -242,7 +242,7 @@
 
 本機步驟（摘要）：
 1. 安裝 VS 2022+ 與 SQL Server 2019/2022。  
-2. 在 SSMS 執行 `database.json` / schema SQL（建立 **GameSpaceDatabase**）。  
+2. 在 SSMS 執行 SQL（建立 **GameSpaceDatabase**）。  
 3. 執行 seed（含 **MiniGame Area** 展示用假資料；**不得違反 schema**）。  
 4. 開啟 ASP.NET Core MVC 解決方案；設定 `appsettings.json` 的 `DefaultConnection`。  
 5. 建置並執行（Admin 站台）；以 **AdminCookie** 登入後進入 MiniGame 後台。

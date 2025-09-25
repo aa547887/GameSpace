@@ -1,22 +1,31 @@
-@model GameSpace.Areas.MiniGame.Models.AdminPetIndexViewModel
 @{
     ViewData["Title"] = "寵物系統管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">寵物系統管理</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-paw mr-2"></i>寵物系統管理
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("SystemRules")" class="btn btn-primary mr-2">
+                <i class="fas fa-cog"></i> 系統規則
+            </a>
+            <a href="@Url.Action("PetRules")" class="btn btn-success">
+                <i class="fas fa-paw"></i> 寵物規則
+            </a>
+        </div>
     </div>
 
-    <!-- 統計卡片 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總寵物數量</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Count</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總寵物數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">1,890</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-paw fa-2x text-gray-300"></i>
@@ -32,7 +41,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活躍寵物</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Count(p => p.IsActive)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">1,234</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-heart fa-2x text-gray-300"></i>
@@ -48,7 +57,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均等級</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.Pets.Any() ? Model.Pets.Average(p => p.Level).ToString("F1") : "0")</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">15.6</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-star fa-2x text-gray-300"></i>
@@ -63,11 +72,11 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總餵食次數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Pets.Sum(p => p.FeedingCount)</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日互動</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">456</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-utensils fa-2x text-gray-300"></i>
+                            <i class="fas fa-hand-paper fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -75,123 +84,39 @@
         </div>
     </div>
 
-    <!-- 功能按鈕區域 -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-lg-12">
-            <div class="card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">功能選單</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> 管理功能
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("PetRules", "AdminPet")" class="btn btn-primary btn-block">
-                                <i class="fas fa-cog"></i><br>
-                                寵物系統規則設定
+                            <a href="@Url.Action("QueryPets")" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-search"></i> 查詢寵物
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryPets", "AdminPet")" class="btn btn-success btn-block">
-                                <i class="fas fa-search"></i><br>
-                                查詢會員寵物資料
+                            <a href="@Url.Action("ListWithQuery")" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-list"></i> 寵物列表
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("PetReport", "AdminPet")" class="btn btn-info btn-block">
-                                <i class="fas fa-chart-bar"></i><br>
-                                寵物統計報表
+                            <a href="@Url.Action("SystemRules")" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-cog"></i> 系統規則
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("PetSettings", "AdminPet")" class="btn btn-warning btn-block">
-                                <i class="fas fa-tools"></i><br>
-                                寵物系統設定
+                            <a href="@Url.Action("PetRules")" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-paw"></i> 寵物規則
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 寵物列表 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">寵物列表</h6>
-                </div>
-                <div class="card-body">
-                    @if (Model.Pets.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                <thead>
-                                    <tr>
-                                        <th>寵物ID</th>
-                                        <th>寵物名稱</th>
-                                        <th>用戶ID</th>
-                                        <th>用戶名稱</th>
-                                        <th>等級</th>
-                                        <th>餵食次數</th>
-                                        <th>狀態</th>
-                                        <th>創建時間</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var pet in Model.Pets.OrderByDescending(p => p.CreatedAt))
-                                    {
-                                        <tr>
-                                            <td>@pet.Id</td>
-                                            <td class="font-weight-bold">@pet.Name</td>
-                                            <td>@pet.UserId</td>
-                                            <td>@pet.UserName</td>
-                                            <td>
-                                                <span class="badge badge-info">Lv.@pet.Level</span>
-                                            </td>
-                                            <td class="text-warning">@pet.FeedingCount</td>
-                                            <td>
-                                                @if (pet.IsActive)
-                                                {
-                                                    <span class="badge badge-success">活躍</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge badge-secondary">休眠</span>
-                                                }
-                                            </td>
-                                            <td>@pet.CreatedAt.ToString("yyyy-MM-dd")</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info" onclick="viewPetDetails(@pet.Id)">
-                                                    <i class="fas fa-eye"></i> 詳情
-                                                </button>
-                                                <button class="btn btn-sm btn-warning" onclick="editPet(@pet.Id)">
-                                                    <i class="fas fa-edit"></i> 編輯
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <i class="fas fa-paw fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">暫無寵物資料</p>
-                        </div>
-                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    function viewPetDetails(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}`; }
-
-    function editPet(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}&mode=edit`; }
-</script>
-

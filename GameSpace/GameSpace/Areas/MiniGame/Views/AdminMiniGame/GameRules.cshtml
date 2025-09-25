@@ -1,170 +1,94 @@
-@model GameSpace.Areas.MiniGame.Models.AdminMiniGameRulesViewModel
 @{
-    ViewData["Title"] = "小遊戲規則設定";
+    ViewData["Title"] = "遊戲規則設定";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">小遊戲規則設定</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cog mr-2"></i>遊戲規則設定
+        </h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- 小遊戲規則設定表單 -->
     <div class="row">
         <div class="col-lg-8">
-            <div class="card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">小遊戲規則設定</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-gamepad"></i> 遊戲規則配置
+                    </h6>
                 </div>
                 <div class="card-body">
-                    <form method="post" asp-action="SetGameRule">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="name">遊戲名稱</label>
-                                    <input type="text" class="form-control" id="name" name="name" 
-                                           value="@Model.MiniGameRule.Name" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="entryCost">入場費用</label>
-                                    <input type="number" class="form-control" id="entryCost" name="entryCost" 
-                                           value="@Model.MiniGameRule.EntryCost" min="0" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="winReward">勝利獎勵</label>
-                                    <input type="number" class="form-control" id="winReward" name="winReward" 
-                                           value="@Model.MiniGameRule.WinReward" min="0" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="losePenalty">失敗懲罰</label>
-                                    <input type="number" class="form-control" id="losePenalty" name="losePenalty" 
-                                           value="@Model.MiniGameRule.LosePenalty" min="0" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="maxPlayers">最大玩家數</label>
-                                    <input type="number" class="form-control" id="maxPlayers" name="maxPlayers" 
-                                           value="@Model.MiniGameRule.MaxPlayers" min="1" max="10" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="isActive">是否啟用</label>
-                                    <select class="form-control" id="isActive" name="isActive">
-                                        <option value="true" @(Model.MiniGameRule.IsActive ? "selected" : "")>啟用</option>
-                                        <option value="false" @(!Model.MiniGameRule.IsActive ? "selected" : "")>停用</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                    <form>
                         <div class="form-group">
-                            <label for="description">遊戲描述</label>
-                            <textarea class="form-control" id="description" name="description" rows="4">@Model.MiniGameRule.Description</textarea>
+                            <label for="maxScore">最高分數</label>
+                            <input type="number" class="form-control" id="maxScore" value="10000" min="1">
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="timeLimit">時間限制 (秒)</label>
+                            <input type="number" class="form-control" id="timeLimit" value="60" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="pointsPerScore">每分數對應點數</label>
+                            <input type="number" class="form-control" id="pointsPerScore" value="0.1" step="0.1" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="dailyLimit">每日遊戲次數限制</label>
+                            <input type="number" class="form-control" id="dailyLimit" value="10" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bonusThreshold">獎勵門檻分數</label>
+                            <input type="number" class="form-control" id="bonusThreshold" value="1000" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bonusMultiplier">獎勵倍數</label>
+                            <input type="number" class="form-control" id="bonusMultiplier" value="2" step="0.1" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableLeaderboard" checked>
+                                <label class="form-check-label" for="enableLeaderboard">
+                                    啟用排行榜
+                                </label>
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> 儲存設定
                             </button>
-                            <a href="@Url.Action("Index", "AdminMiniGame")" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> 返回列表
-                            </a>
+                            <button type="button" class="btn btn-secondary ml-2">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-
-        <!-- 規則說明 -->
+        
         <div class="col-lg-4">
-            <div class="card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">規則說明</h6>
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i> 規則說明
+                    </h6>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-gamepad"></i> 小遊戲系統說明</h6>
-                        <ul class="mb-0">
-                            <li><strong>入場費用：</strong>參與遊戲需要消耗的點數</li>
-                            <li><strong>勝利獎勵：</strong>獲勝後可獲得的點數</li>
-                            <li><strong>失敗懲罰：</strong>失敗後額外扣除的點數</li>
-                            <li><strong>最大玩家數：</strong>單場遊戲的最大參與人數</li>
-                            <li><strong>是否啟用：</strong>控制遊戲是否開放使用</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 當前規則狀態 -->
-    <div class="row mt-4">
-        <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">當前規則狀態</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>遊戲名稱</th>
-                                    <th>入場費用</th>
-                                    <th>勝利獎勵</th>
-                                    <th>失敗懲罰</th>
-                                    <th>最大玩家數</th>
-                                    <th>狀態</th>
-                                    <th>最後更新時間</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="font-weight-bold">@Model.MiniGameRule.Name</td>
-                                    <td class="text-danger">@Model.MiniGameRule.EntryCost</td>
-                                    <td class="text-success">@Model.MiniGameRule.WinReward</td>
-                                    <td class="text-warning">@Model.MiniGameRule.LosePenalty</td>
-                                    <td class="text-info">@Model.MiniGameRule.MaxPlayers</td>
-                                    <td>
-                                        @if (Model.MiniGameRule.IsActive)
-                                        {
-                                            <span class="badge badge-success">啟用</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge badge-danger">停用</span>
-                                        }
-                                    </td>
-                                    <td>@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 分數越高獲得點數越多</li>
+                        <li><i class="fas fa-check text-success"></i> 有時間限制增加挑戰性</li>
+                        <li><i class="fas fa-check text-success"></i> 每日有遊戲次數限制</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 修改後立即生效</li>
+                    </ul>
                 </div>
             </div>
         </div>

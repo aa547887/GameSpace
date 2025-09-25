@@ -1,305 +1,96 @@
-@model GameSpace.Areas.MiniGame.Models.PetSystemRuleModel
 @{
-    ViewData["Title"] = "整體寵物系統規則設定";
+    ViewData["Title"] = "寵物系統規則";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">整體寵物系統規則設定</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cog mr-2"></i>寵物系統規則
+        </h1>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
     </div>
 
-    <!-- 升級規則設定 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">升級規則設定</h6>
-        </div>
-        <div class="card-body">
-            <form asp-action="UpdateSystemRules" method="post" id="systemRulesForm">
-                <div class="row">
-                    <div class="col-md-6">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-paw"></i> 寵物系統配置
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form>
                         <div class="form-group">
-                            <label asp-for="MaxPetsPerUser" class="control-label">每用戶最大寵物數量 *</label>
-                            <input asp-for="MaxPetsPerUser" class="form-control" type="number" min="1" max="10" placeholder="輸入最大寵物數量" required />
-                            <span asp-validation-for="MaxPetsPerUser" class="text-danger"></span>
+                            <label for="maxLevel">最大等級</label>
+                            <input type="number" class="form-control" id="maxLevel" value="100" min="1" max="999">
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="BaseExpRequired" class="control-label">基礎升級所需經驗值 *</label>
-                            <input asp-for="BaseExpRequired" class="form-control" type="number" min="100" placeholder="輸入基礎經驗值" required />
-                            <span asp-validation-for="BaseExpRequired" class="text-danger"></span>
+                            <label for="expPerLevel">每級所需經驗值</label>
+                            <input type="number" class="form-control" id="expPerLevel" value="100" min="1">
                         </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="ExpMultiplier" class="control-label">經驗值倍數 *</label>
-                            <input asp-for="ExpMultiplier" class="form-control" type="number" step="0.1" min="1.0" placeholder="輸入經驗值倍數" required />
-                            <span asp-validation-for="ExpMultiplier" class="text-danger"></span>
+                            <label for="maxHunger">最大飢餓值</label>
+                            <input type="number" class="form-control" id="maxHunger" value="100" min="1">
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
                         <div class="form-group">
-                            <label asp-for="MaxLevel" class="control-label">最大等級 *</label>
-                            <input asp-for="MaxLevel" class="form-control" type="number" min="1" max="100" placeholder="輸入最大等級" required />
-                            <span asp-validation-for="MaxLevel" class="text-danger"></span>
+                            <label for="maxHappiness">最大快樂值</label>
+                            <input type="number" class="form-control" id="maxHappiness" value="100" min="1">
                         </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 互動狀態增益規則 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">互動狀態增益規則</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="FeedingCost" class="control-label">餵食消耗點數 *</label>
-                        <input asp-for="FeedingCost" class="form-control" type="number" min="0" placeholder="輸入餵食消耗點數" required />
-                        <span asp-validation-for="FeedingCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="FeedingExpReward" class="control-label">餵食經驗值獎勵 *</label>
-                        <input asp-for="FeedingExpReward" class="form-control" type="number" min="0" placeholder="輸入餵食經驗值獎勵" required />
-                        <span asp-validation-for="FeedingExpReward" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="BathingCost" class="control-label">洗澡消耗點數 *</label>
-                        <input asp-for="BathingCost" class="form-control" type="number" min="0" placeholder="輸入洗澡消耗點數" required />
-                        <span asp-validation-for="BathingCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="BathingExpReward" class="control-label">洗澡經驗值獎勵 *</label>
-                        <input asp-for="BathingExpReward" class="form-control" type="number" min="0" placeholder="輸入洗澡經驗值獎勵" required />
-                        <span asp-validation-for="BathingExpReward" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="PlayingCost" class="control-label">玩耍消耗點數 *</label>
-                        <input asp-for="PlayingCost" class="form-control" type="number" min="0" placeholder="輸入玩耍消耗點數" required />
-                        <span asp-validation-for="PlayingCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="PlayingExpReward" class="control-label">玩耍經驗值獎勵 *</label>
-                        <input asp-for="PlayingExpReward" class="form-control" type="number" min="0" placeholder="輸入玩耍經驗值獎勵" required />
-                        <span asp-validation-for="PlayingExpReward" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="SleepingCost" class="control-label">哄睡消耗點數 *</label>
-                        <input asp-for="SleepingCost" class="form-control" type="number" min="0" placeholder="輸入哄睡消耗點數" required />
-                        <span asp-validation-for="SleepingCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="SleepingExpReward" class="control-label">哄睡經驗值獎勵 *</label>
-                        <input asp-for="SleepingExpReward" class="form-control" type="number" min="0" placeholder="輸入哄睡經驗值獎勵" required />
-                        <span asp-validation-for="SleepingExpReward" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 寵物顏色選項 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">寵物顏色選項</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="ColorChangeCost" class="control-label">換色消耗點數 *</label>
-                        <input asp-for="ColorChangeCost" class="form-control" type="number" min="0" placeholder="輸入換色消耗點數" required />
-                        <span asp-validation-for="ColorChangeCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="AvailableColors" class="control-label">可用顏色 (逗號分隔) *</label>
-                        <input asp-for="AvailableColors" class="form-control" placeholder="例如: 紅色,藍色,綠色,黃色,紫色" required />
-                        <span asp-validation-for="AvailableColors" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 寵物背景選項 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">寵物背景選項</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="BackgroundChangeCost" class="control-label">換背景消耗點數 *</label>
-                        <input asp-for="BackgroundChangeCost" class="form-control" type="number" min="0" placeholder="輸入換背景消耗點數" required />
-                        <span asp-validation-for="BackgroundChangeCost" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label asp-for="AvailableBackgrounds" class="control-label">可用背景 (逗號分隔) *</label>
-                        <input asp-for="AvailableBackgrounds" class="form-control" placeholder="例如: 森林,海邊,城市,太空,花園" required />
-                        <span asp-validation-for="AvailableBackgrounds" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 系統設定 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">系統設定</h6>
-        </div>
-        <div class="card-body">
-            <div class="form-group">
-                <div class="form-check">
-                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
-                    <label asp-for="IsActive" class="form-check-label">啟用寵物系統</label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Description" class="control-label">系統說明</label>
-                <textarea asp-for="Description" class="form-control" rows="3" placeholder="輸入系統說明"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> 儲存設定
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                    <i class="fas fa-undo"></i> 重置
-                </button>
-                <button type="button" class="btn btn-info" onclick="previewRules()">
-                    <i class="fas fa-eye"></i> 預覽規則
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 規則預覽 -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">規則預覽</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card border-left-primary">
-                        <div class="card-body">
-                            <h6 class="card-title">升級規則</h6>
-                            <p class="card-text">每用戶最多 <span class="font-weight-bold text-primary">3</span> 隻寵物</p>
-                            <p class="card-text">基礎經驗值：<span class="font-weight-bold text-primary">100</span></p>
-                            <p class="card-text">最大等級：<span class="font-weight-bold text-primary">50</span></p>
+                        
+                        <div class="form-group">
+                            <label for="hungerDecay">飢餓值衰減率 (每小時)</label>
+                            <input type="number" class="form-control" id="hungerDecay" value="5" min="0" max="100">
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-left-success">
-                        <div class="card-body">
-                            <h6 class="card-title">互動規則</h6>
-                            <p class="card-text">餵食：<span class="font-weight-bold text-success">10</span> 點 → <span class="font-weight-bold text-success">20</span> 經驗</p>
-                            <p class="card-text">洗澡：<span class="font-weight-bold text-success">5</span> 點 → <span class="font-weight-bold text-success">15</span> 經驗</p>
-                            <p class="card-text">玩耍：<span class="font-weight-bold text-success">8</span> 點 → <span class="font-weight-bold text-success">25</span> 經驗</p>
+                        
+                        <div class="form-group">
+                            <label for="happinessDecay">快樂值衰減率 (每小時)</label>
+                            <input type="number" class="form-control" id="happinessDecay" value="3" min="0" max="100">
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-left-info">
-                        <div class="card-body">
-                            <h6 class="card-title">外觀規則</h6>
-                            <p class="card-text">換色：<span class="font-weight-bold text-info">50</span> 點</p>
-                            <p class="card-text">換背景：<span class="font-weight-bold text-info">100</span> 點</p>
-                            <p class="card-text">可用顏色：<span class="font-weight-bold text-info">5</span> 種</p>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableEvolution" checked>
+                                <label class="form-check-label" for="enableEvolution">
+                                    啟用進化系統
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 儲存設定
+                            </button>
+                            <button type="button" class="btn btn-secondary ml-2">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i> 規則說明
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 寵物有等級上限</li>
+                        <li><i class="fas fa-check text-success"></i> 經驗值決定等級</li>
+                        <li><i class="fas fa-check text-success"></i> 飢餓值和快樂值會衰減</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 修改後立即生效</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-function resetForm() {
-    if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
-        document.getElementById("systemRulesForm").reset();
-    }
-}
-
-function previewRules() {
-    const maxPets = document.getElementById("MaxPetsPerUser").value || "3";
-    const baseExp = document.getElementById("BaseExpRequired").value || "100";
-    const maxLevel = document.getElementById("MaxLevel").value || "50";
-    const feedingCost = document.getElementById("FeedingCost").value || "10";
-    const feedingReward = document.getElementById("FeedingExpReward").value || "20";
-    
-    alert(`規則預覽：
-每用戶最大寵物數：${maxPets}
-基礎經驗值：${baseExp}
-最大等級：${maxLevel}
-餵食：${feedingCost} 點 → ${feedingReward} 經驗`);
-}
-
-// 表單驗證
-document.getElementById("systemRulesForm").addEventListener("submit", function(e) {
-    const maxPets = document.getElementById("MaxPetsPerUser").value;
-    const baseExp = document.getElementById("BaseExpRequired").value;
-    
-    if (!maxPets || maxPets <= 0) {
-        alert("請輸入有效的最大寵物數量");
-        e.preventDefault();
-        return;
-    }
-    
-    if (!baseExp || baseExp <= 0) {
-        alert("請輸入有效的基礎經驗值");
-        e.preventDefault();
-        return;
-    }
-    
-    if (!confirm("確定要儲存寵物系統規則設定嗎？")) {
-        e.preventDefault();
-        return;
-    }
-});
-</script>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
