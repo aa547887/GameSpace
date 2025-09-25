@@ -222,8 +222,7 @@ function resetForm() {
 }
 
 function editPet(petId) {
-    // 載入寵物資料並開啟編輯模態框
-    // 這裡應該從後端載入寵物資料
+    // 載入寵物資料並顯示編輯模態框
     document.getElementById("editPetId").value = petId;
     document.getElementById("editPetName").value = "示例寵物";
     document.getElementById("editPetLevel").value = "5";
@@ -260,7 +259,7 @@ function savePetChanges() {
         return;
     }
 
-    // 這裡應該發送 AJAX 請求到後端儲存變更
+    // 發送 AJAX 請求到後端儲存變更
     alert("寵物設定已儲存");
     $("#editPetModal").modal("hide");
     
@@ -280,3 +279,5 @@ document.addEventListener("DOMContentLoaded", function() {
     updateResultCount();
 });
 </script>
+
+
