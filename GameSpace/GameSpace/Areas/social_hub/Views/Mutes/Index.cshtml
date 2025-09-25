@@ -1,0 +1,208 @@
+﻿@model IEnumerable<GameSpace.Models.Mute>
+@{
+    ViewData["Title"] = "穢語清單";
+    bool canManage = (bool)(ViewBag.CanManageMutes ?? false);
+    bool canAdminAll = (bool)(ViewBag.CanAdminAll ?? false);
+    int currentMid = (int)(ViewBag.ManagerId ?? 0);
+    var nameMap = ViewBag.ManagerNames as IDictionary<int, string>;
+
+    var page = (int)(ViewBag.Page ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalItems = (int)(ViewBag.TotalItems ?? 0);
+    var pageSize = (int)(ViewBag.PageSize ?? 10);
+
+    int window = 2;
+    int start = Math.Max(1, page - window);
+    int end = Math.Min(totalPages, page + window);
+    if (end - start < window * 2)
+    {
+        if (start == 1) end = Math.Min(totalPages, start + window * 2);
+        else if (end == totalPages) start = Math.Max(1, end - window * 2);
+    }
+
+    // 欄位數：ID / 詞彙 / 替代字 / 狀態 / 建立時間 / 管理員 / （操作）
+    int colCount = canManage ? 7 : 6;
+}
+<div class="mutes-header">
+    <h2 class="mutes-title">
+        <span>@ViewData["Title"]</span>
+        @if (!canManage)
+        {
+            <span class="badge rounded-pill badge-readonly">唯讀</span>
+        }
+        else
+        {
+            <span class="badge rounded-pill badge-manage">管理</span>
+        }
+    </h2>
+    <div class="mutes-subtle">
+        @if (!canManage)
+        {
+            <span><i class="fas fa-eye me-1"></i>僅顯示啟用中的禁詞</span>
+        }
+        else if (canAdminAll)
+        {
+            <span><i class="fas fa-user-shield me-1"></i>可管理全部</span>
+        }
+        else
+        {
+            <span><i class="fas fa-user-lock me-1"></i>僅可管理自己建立</span>
+        }
+    </div>
+</div>
+
+<partial name="_Toast" />
+
+<div class="mutes-toolbar">
+    <form asp-action="Index" method="get" class="d-flex gap-2 align-items-center" id="mutes-search-form">
+        <input type="hidden" name="page" value="1" />
+        <div class="position-relative mutes-search">
+            <i class="fas fa-search icon"></i>
+            <input id="mutes-search" name="q" value="@((string)(ViewBag.Q ?? ""))"
+                   class="form-control"
+                   placeholder="搜尋：詞彙 / 替代字 / id:1 / mid:5 / 啟用 / 停用" />
+        </div>
+        @if (!string.IsNullOrWhiteSpace((string)(ViewBag.Q ?? "")))
+        {
+            <a class="btn btn-outline-secondary" asp-action="Index">清除</a>
+        }
+        <button type="submit" class="btn btn-outline-primary">搜尋</button>
+    </form>
+
+    <div class="d-flex gap-2">
+        @if (canManage)
+        {
+            <form asp-action="Reload" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-info">
+                    <i class="fas fa-sync-alt me-1"></i>重載詞庫
+                </button>
+            </form>
+
+            <a class="btn btn-primary" asp-action="Create">
+                <i class="fas fa-plus me-1"></i>新增詞彙
+            </a>
+        }
+    </div>
+</div>
+
+<div class="mutes-card">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width:80px;">ID</th>
+                    <th>詞彙</th>
+                    <th style="width:200px;">替代字</th>
+                    <th style="width:140px;">狀態</th>
+                    <th style="width:200px;">建立時間</th>
+                    <th style="width:160px;">管理員</th>
+                    @if (canManage)
+                    {
+                        <th style="width:240px;">操作</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="@colCount" class="text-center text-muted py-4">目前沒有資料</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        var canEditThis = canManage && (canAdminAll || (item.ManagerId.HasValue && item.ManagerId.Value == currentMid));
+                        <tr>
+                            <td>@item.MuteId</td>
+                            <td data-copy="@item.Word" title="點擊複製">@item.Word</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.Replacement))
+                                {
+                                    <span data-copy="@item.Replacement" title="點擊複製">@item.Replacement</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">（預設遮罩）</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsActive == true)
+                                {
+                                    <span class="cell-chip on">啟用</span>
+                                }
+                                else
+                                {
+                                    <span class="cell-chip off">停用</span>
+                                }
+                            </td>
+                            <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                            <td>
+                                @if (item.ManagerId.HasValue)
+                                {
+                                    var id = item.ManagerId.Value;
+                                    var nm = (nameMap != null && nameMap.ContainsKey(id)) ? nameMap[id] : $"管理員#{id}";
+                                    <span title="ID: @id">@nm</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            @if (canManage)
+                            {
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@item.MuteId">明細</a>
+                                        @if (canEditThis)
+                                        {
+                                            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@item.MuteId">編輯</a>
+                                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@item.MuteId">刪除</a>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@{
+    var from = totalItems == 0 ? 0 : ((page - 1) * pageSize) + 1;
+    var to = Math.Min(page * pageSize, totalItems);
+}
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted">顯示第 @from–@to 筆，共 @totalItems 筆</div>
+    <nav aria-label="mute-pagination">
+        <ul class="pagination mb-0">
+            <li class="page-item @(page <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-q="@((string)(ViewBag.Q ?? ""))">«</a>
+            </li>
+            <li class="page-item @(page <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(page - 1)" asp-route-q="@((string)(ViewBag.Q ?? ""))">上一頁</a>
+            </li>
+            @for (int p = start; p <= end; p++)
+            {
+                <li class="page-item @(p == page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-q="@((string)(ViewBag.Q ?? ""))">@p</a>
+                </li>
+            }
+            <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(page + 1)" asp-route-q="@((string)(ViewBag.Q ?? ""))">下一頁</a>
+            </li>
+            <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-q="@((string)(ViewBag.Q ?? ""))">»</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+@section Styles {
+    <link href="~/lib/social_hub/css/mutes.css" rel="stylesheet" />
+}
+@section Scripts {
+    <script src="~/lib/social_hub/js/mutes.js"></script>
+}

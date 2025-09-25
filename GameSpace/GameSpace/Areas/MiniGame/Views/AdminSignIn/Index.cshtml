@@ -1,0 +1,199 @@
+@model GameSpace.Areas.MiniGame.Models.AdminSignInIndexViewModel
+@{
+    ViewData["Title"] = "會員簽到管理";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">會員簽到管理</h3>
+                </div>
+                <div class="card-body">
+                    <!-- 搜尋區域 -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" id="searchTerm" class="form-control" placeholder="搜尋會員名稱或帳號" value="@Model.SearchTerm">
+                                <button class="btn btn-primary" onclick="searchUsers()">搜尋</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 會員列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th>會員帳號</th>
+                                    <th>總簽到天數</th>
+                                    <th>連續簽到天數</th>
+                                    <th>最後簽到日期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>@user.UserId</td>
+                                        <td>@user.UserName</td>
+                                        <td>@user.UserAccount</td>
+                                        <td id="totalSignInDays_@user.UserId">-</td>
+                                        <td id="consecutiveSignInDays_@user.UserId">-</td>
+                                        <td id="lastSignInDate_@user.UserId">-</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewSignInStats(@user.UserId)">查看統計</button>
+                                            <button class="btn btn-sm btn-warning" onclick="adjustSignIn(@user.UserId)">調整簽到</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 簽到統計模態框 -->
+<div class="modal fade" id="signInStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">簽到統計</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="signInStatsContent">
+                    <!-- 統計內容將在這裡動態載入 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 調整簽到模態框 -->
+<div class="modal fade" id="adjustSignInModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">調整簽到</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adjustSignInForm">
+                    <input type="hidden" id="adjustUserId" name="userId">
+                    <div class="mb-3">
+                        <label for="signInDate" class="form-label">簽到日期</label>
+                        <input type="date" id="signInDate" name="signInDate" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustAction" class="form-label">操作</label>
+                        <select id="adjustAction" name="action" class="form-control" required>
+                            <option value="add">新增簽到</option>
+                            <option value="remove">移除簽到</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitAdjustSignIn()">確認</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function searchUsers() {
+    const searchTerm = document.getElementById('searchTerm').value;
+    window.location.href = '@Url.Action("Index")' + '?searchTerm=' + encodeURIComponent(searchTerm);
+}
+
+function viewSignInStats(userId) {
+    fetch('@Url.Action("GetUserSignInStats")' + '?userId=' + userId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const stats = data.data;
+                document.getElementById('signInStatsContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>總簽到天數:</strong> ${stats.totalSignInDays || 0}</p>
+                            <p><strong>連續簽到天數:</strong> ${stats.consecutiveSignInDays || 0}</p>
+                            <p><strong>最後簽到日期:</strong> ${stats.lastSignInDate || '無'}</p>
+                        </div>
+                    </div>
+                `;
+                new bootstrap.Modal(document.getElementById('signInStatsModal')).show();
+            } else {
+                alert('獲取簽到統計失敗: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('獲取簽到統計失敗');
+        });
+}
+
+function adjustSignIn(userId) {
+    document.getElementById('adjustUserId').value = userId;
+    document.getElementById('signInDate').value = new Date().toISOString().split('T')[0];
+    new bootstrap.Modal(document.getElementById('adjustSignInModal')).show();
+}
+
+function submitAdjustSignIn() {
+    const formData = {
+        userId: parseInt(document.getElementById('adjustUserId').value),
+        signInDate: document.getElementById('signInDate').value,
+        action: document.getElementById('adjustAction').value
+    };
+
+    fetch('@Url.Action("AdjustUserSignIn")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('調整簽到成功');
+            bootstrap.Modal.getInstance(document.getElementById('adjustSignInModal')).hide();
+            location.reload();
+        } else {
+            alert('調整簽到失敗: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('調整簽到失敗');
+    });
+}
+
+// 頁面載入時獲取所有會員的簽到統計
+document.addEventListener('DOMContentLoaded', function() {
+    @foreach (var user in Model.Users)
+    {
+        <text>
+        fetch('@Url.Action("GetUserSignInStats")' + '?userId=' + @user.UserId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const stats = data.data;
+                    document.getElementById('totalSignInDays_@user.UserId').textContent = stats.totalSignInDays || 0;
+                    document.getElementById('consecutiveSignInDays_@user.UserId').textContent = stats.consecutiveSignInDays || 0;
+                    document.getElementById('lastSignInDate_@user.UserId').textContent = stats.lastSignInDate || '無';
+                }
+            })
+            .catch(error => console.error('Error loading stats for user @user.UserId:', error));
+        </text>
+    }
+});
+</script>

@@ -1,0 +1,48 @@
+﻿@{
+    // 四種層級 + 舊版相容 Msg（視為 Success）
+    var success = TempData["Toast.Success"] as string;
+    var info = TempData["Toast.Info"] as string;
+    var warn = TempData["Toast.Warn"] as string;
+    var error = TempData["Toast.Error"] as string;
+    var legacy = TempData["Msg"] as string;
+
+    // 自動關閉毫秒數（預設 4000；設 0 不自動關）
+    var autoStr = TempData["Toast.AutoHideMs"]?.ToString();
+    int autoMs = 4000;
+    if (!string.IsNullOrWhiteSpace(autoStr) && int.TryParse(autoStr, out var ms)) autoMs = ms;
+
+    var items = new List<(string Class, string Icon, string Text)>();
+    if (!string.IsNullOrWhiteSpace(success)) items.Add(("success", "fa-check-circle", success));
+    if (!string.IsNullOrWhiteSpace(info)) items.Add(("info", "fa-info-circle", info));
+    if (!string.IsNullOrWhiteSpace(warn)) items.Add(("warning", "fa-exclamation-triangle", warn));
+    if (!string.IsNullOrWhiteSpace(error)) items.Add(("danger", "fa-times-circle", error));
+    if (items.Count == 0 && !string.IsNullOrWhiteSpace(legacy))
+        items.Add(("success", "fa-check-circle", legacy)); // 相容舊訊息
+}
+@if (items.Count > 0)
+{
+    foreach (var it in items)
+    {
+        <div class="alert alert-@it.Class alert-dismissible fade show mt-2 js-toast-autohide" role="alert">
+            <i class="fas @it.Icon me-2"></i>@it.Text
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    if (autoMs > 0)
+    {
+        <script>
+            (function () {
+                var ms = @autoMs;
+                window.setTimeout(function () {
+                    document.querySelectorAll('.js-toast-autohide').forEach(function (el) {
+                        try {
+                            var inst = bootstrap.Alert.getOrCreateInstance(el);
+                            inst.close();
+                        } catch (_) { el.classList.remove('show'); }
+                    });
+                }, ms);
+            })();
+        </script>
+    }
+}

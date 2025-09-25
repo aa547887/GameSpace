@@ -1,0 +1,40 @@
+using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models;
+
+namespace GameSpace.Areas.MiniGame.Services
+{
+    public interface IMiniGameAdminService
+    {
+        #region User_Wallet 模組服務
+
+        Task<WalletSummaryReadModel> GetWalletSummaryAsync();
+        Task<PagedResult<WalletReadModel>> GetWalletsAsync(WalletQueryModel query);
+        Task<WalletDetailReadModel?> GetWalletDetailAsync(int userId);
+
+        #endregion
+
+        #region UserSignInStat 模組服務
+
+        Task<SignInSummaryReadModel> GetSignInSummaryAsync();
+        Task<PagedResult<SignInStatsReadModel>> GetSignInStatsAsync(SignInQueryModel query);
+        Task<IEnumerable<UserSignInHistoryReadModel>> GetUserSignInHistoryAsync(int userId);
+
+        #endregion
+
+        #region Pet 模組服務
+
+        Task<PetSummaryReadModel> GetPetSummaryAsync();
+        Task<PagedResult<PetReadModel>> GetPetsAsync(PetQueryModel query);
+        Task<PetDetailReadModel?> GetPetDetailAsync(int petId);
+
+        #endregion
+
+        #region MiniGame 模組服務
+
+        Task<GameSummaryReadModel> GetGameSummaryAsync();
+        Task<PagedResult<GameRecordReadModel>> GetGameRecordsAsync(GameQueryModel query);
+        Task<GameDetailReadModel?> GetGameDetailAsync(int playId);
+
+        #endregion
+    }
+}
