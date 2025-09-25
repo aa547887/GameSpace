@@ -19,6 +19,9 @@ using System.Threading.Tasks; // async Main
 using GameSpace.Areas.social_hub.Hubs;
 using GameSpace.Infrastructure.Login;
 
+// ---- MiniGame Area 服務 ----
+using GameSpace.Areas.MiniGame.config;
+
 // ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
@@ -79,6 +82,9 @@ namespace GameSpace
 			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
 			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
+
+			// ========== 6.5) MiniGame Area 服務（★必須：讓 MiniGame 功能可注入） ==========
+			builder.Services.AddMiniGameServices(builder.Configuration);
 
 			// ========== 7) CORS（如需跨網域前端；排序：UseRouting 之後、MapHub 之前） ==========
 			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
@@ -164,6 +170,7 @@ namespace GameSpace
 				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
 				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
 				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
+				options.AddPolicy("AdminOnly", p => p.RequireClaim("perm:Admin", "true")); // MiniGame 管理員專用
 			});
 
             //// 商品串API()ImgBB 新增：註冊 IHttpClientFactory（解決 ImgBB 上傳的 HttpClient 依賴注入問題）
@@ -177,8 +184,6 @@ namespace GameSpace
             //builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBB"));
             ////商城圖片API (使用ImgBB) (可能會用到 如果伺服器上傳限制：如需調高 Kestrel/ IIS 限制)
             ////builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 104857600); // 100 MB
-
-
 
             var app = builder.Build();
 

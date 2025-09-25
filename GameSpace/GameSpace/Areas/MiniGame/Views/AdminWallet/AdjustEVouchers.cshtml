@@ -1,0 +1,264 @@
+@model GameSpace.Areas.MiniGame.Models.AdjustEVouchersModel
+@{
+    ViewData["Title"] = "調整會員擁有電子禮券";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">調整會員擁有電子禮券</h1>
+    </div>
+
+    <!-- 調整表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">電子禮券調整資訊</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="AdjustEVouchers" method="post" id="adjustForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="UserId" class="control-label">用戶ID *</label>
+                            <input asp-for="UserId" class="form-control" placeholder="輸入用戶ID" required />
+                            <span asp-validation-for="UserId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="EVoucherTypeId" class="control-label">禮券類型 *</label>
+                            <select asp-for="EVoucherTypeId" class="form-control" required>
+                                <option value="">請選擇禮券類型</option>
+                                <option value="1">現金禮券</option>
+                                <option value="2">商品禮券</option>
+                                <option value="3">服務禮券</option>
+                                <option value="4">節日禮券</option>
+                            </select>
+                            <span asp-validation-for="EVoucherTypeId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Quantity" class="control-label">調整數量 *</label>
+                            <input asp-for="Quantity" class="form-control" type="number" min="1" max="10" placeholder="輸入數量" required />
+                            <span asp-validation-for="Quantity" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ExpiryDate" class="control-label">到期日期 *</label>
+                            <input asp-for="ExpiryDate" class="form-control" type="date" required />
+                            <span asp-validation-for="ExpiryDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Reason" class="control-label">調整原因 *</label>
+                            <select asp-for="Reason" class="form-control" required>
+                                <option value="">請選擇調整原因</option>
+                                <option value="活動獎勵">活動獎勵</option>
+                                <option value="補償">補償</option>
+                                <option value="客服處理">客服處理</option>
+                                <option value="生日禮物">生日禮物</option>
+                                <option value="節日禮物">節日禮物</option>
+                                <option value="其他">其他</option>
+                            </select>
+                            <span asp-validation-for="Reason" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="CustomValue" class="control-label">自訂面額</label>
+                            <input asp-for="CustomValue" class="form-control" type="number" step="0.01" min="0" placeholder="留空使用預設面額" />
+                            <span asp-validation-for="CustomValue" class="text-danger"></span>
+                            <small class="form-text text-muted">留空將使用禮券類型的預設面額</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Description" class="control-label">詳細說明</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="輸入詳細說明"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-gift"></i> 發放禮券
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> 重置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 禮券類型資訊 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">可用禮券類型</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>類型ID</th>
+                            <th>類型名稱</th>
+                            <th>預設面額</th>
+                            <th>使用範圍</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>現金禮券</td>
+                            <td>NT$ 500</td>
+                            <td>全站通用</td>
+                            <td><span class="badge badge-success">啟用</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>商品禮券</td>
+                            <td>NT$ 300</td>
+                            <td>指定商品</td>
+                            <td><span class="badge badge-success">啟用</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>服務禮券</td>
+                            <td>NT$ 200</td>
+                            <td>指定服務</td>
+                            <td><span class="badge badge-success">啟用</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>節日禮券</td>
+                            <td>NT$ 1000</td>
+                            <td>節日限定</td>
+                            <td><span class="badge badge-success">啟用</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近調整記錄 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">最近調整記錄</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>調整時間</th>
+                            <th>用戶ID</th>
+                            <th>禮券類型</th>
+                            <th>調整數量</th>
+                            <th>調整原因</th>
+                            <th>操作者</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-01-15 14:30:25</td>
+                            <td>user001</td>
+                            <td>現金禮券</td>
+                            <td>1</td>
+                            <td>活動獎勵</td>
+                            <td>管理員</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-15 13:45:12</td>
+                            <td>user002</td>
+                            <td>商品禮券</td>
+                            <td>2</td>
+                            <td>補償</td>
+                            <td>管理員</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-15 12:20:08</td>
+                            <td>user003</td>
+                            <td>節日禮券</td>
+                            <td>1</td>
+                            <td>節日禮物</td>
+                            <td>系統</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
+        document.getElementById("adjustForm").reset();
+    }
+}
+
+// 表單驗證
+document.getElementById("adjustForm").addEventListener("submit", function(e) {
+    const userId = document.getElementById("UserId").value.trim();
+    const evoucherTypeId = document.getElementById("EVoucherTypeId").value;
+    const quantity = document.getElementById("Quantity").value;
+    const expiryDate = document.getElementById("ExpiryDate").value;
+    const reason = document.getElementById("Reason").value;
+
+    if (!userId) {
+        alert("請輸入用戶ID");
+        e.preventDefault();
+        return;
+    }
+
+    if (!evoucherTypeId) {
+        alert("請選擇禮券類型");
+        e.preventDefault();
+        return;
+    }
+
+    if (!quantity || quantity <= 0) {
+        alert("請輸入有效的調整數量");
+        e.preventDefault();
+        return;
+    }
+
+    if (!expiryDate) {
+        alert("請選擇到期日期");
+        e.preventDefault();
+        return;
+    }
+
+    if (!reason) {
+        alert("請選擇調整原因");
+        e.preventDefault();
+        return;
+    }
+
+    if (!confirm(`確定要發放 ${quantity} 張電子禮券給用戶 ${userId} 嗎？`)) {
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

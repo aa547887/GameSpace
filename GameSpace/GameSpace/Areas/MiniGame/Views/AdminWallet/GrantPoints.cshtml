@@ -1,0 +1,170 @@
+@model GameSpace.Areas.MiniGame.Models.GrantPointsModel
+@{
+    ViewData["Title"] = "發放會員點數";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">發放會員點數</h1>
+    </div>
+
+    <!-- 發放表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">點數發放資訊</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="GrantPoints" method="post" id="grantForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="UserId" class="control-label">用戶ID *</label>
+                            <input asp-for="UserId" class="form-control" placeholder="輸入用戶ID" required />
+                            <span asp-validation-for="UserId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Points" class="control-label">發放點數 *</label>
+                            <input asp-for="Points" class="form-control" type="number" min="1" placeholder="輸入點數" required />
+                            <span asp-validation-for="Points" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Reason" class="control-label">發放原因 *</label>
+                            <select asp-for="Reason" class="form-control" required>
+                                <option value="">請選擇發放原因</option>
+                                <option value="活動獎勵">活動獎勵</option>
+                                <option value="補償">補償</option>
+                                <option value="客服處理">客服處理</option>
+                                <option value="系統獎勵">系統獎勵</option>
+                                <option value="其他">其他</option>
+                            </select>
+                            <span asp-validation-for="Reason" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ExpiryDate" class="control-label">點數到期日期</label>
+                            <input asp-for="ExpiryDate" class="form-control" type="date" />
+                            <span asp-validation-for="ExpiryDate" class="text-danger"></span>
+                            <small class="form-text text-muted">留空表示永不過期</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Description" class="control-label">詳細說明</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="輸入詳細說明"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-gift"></i> 發放點數
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> 重置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 最近發放記錄 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">最近發放記錄</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>發放時間</th>
+                            <th>用戶ID</th>
+                            <th>發放點數</th>
+                            <th>發放原因</th>
+                            <th>操作者</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-01-15 14:30:25</td>
+                            <td>user001</td>
+                            <td>100</td>
+                            <td>活動獎勵</td>
+                            <td>管理員</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-15 13:45:12</td>
+                            <td>user002</td>
+                            <td>50</td>
+                            <td>補償</td>
+                            <td>管理員</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-15 12:20:08</td>
+                            <td>user003</td>
+                            <td>200</td>
+                            <td>系統獎勵</td>
+                            <td>系統</td>
+                            <td><span class="badge badge-success">成功</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
+        document.getElementById("grantForm").reset();
+    }
+}
+
+// 表單驗證
+document.getElementById("grantForm").addEventListener("submit", function(e) {
+    const userId = document.getElementById("UserId").value.trim();
+    const points = document.getElementById("Points").value;
+    const reason = document.getElementById("Reason").value;
+
+    if (!userId) {
+        alert("請輸入用戶ID");
+        e.preventDefault();
+        return;
+    }
+
+    if (!points || points <= 0) {
+        alert("請輸入有效的點數");
+        e.preventDefault();
+        return;
+    }
+
+    if (!reason) {
+        alert("請選擇發放原因");
+        e.preventDefault();
+        return;
+    }
+
+    if (!confirm(`確定要發放 ${points} 點給用戶 ${userId} 嗎？`)) {
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

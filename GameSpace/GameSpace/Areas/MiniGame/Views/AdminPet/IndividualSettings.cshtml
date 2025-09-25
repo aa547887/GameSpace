@@ -1,0 +1,282 @@
+@model GameSpace.Areas.MiniGame.Models.PetIndividualSettingsModel
+@{
+    ViewData["Title"] = "會員個別寵物設定";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">會員個別寵物設定</h1>
+    </div>
+
+    <!-- 搜尋表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">搜尋寵物</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" id="searchForm">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="userId">用戶ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入用戶ID">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="petName">寵物名稱</label>
+                            <input type="text" class="form-control" id="petName" name="petName" placeholder="輸入寵物名稱">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="petId">寵物ID</label>
+                            <input type="text" class="form-control" id="petId" name="petId" placeholder="輸入寵物ID">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> 搜尋
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> 重置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 寵物列表 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">寵物列表</h6>
+            <span class="badge badge-info" id="resultCount">共 0 隻寵物</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>寵物ID</th>
+                            <th>用戶ID</th>
+                            <th>寵物名稱</th>
+                            <th>等級</th>
+                            <th>經驗值</th>
+                            <th>膚色</th>
+                            <th>背景</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Pets != null && Model.Pets.Any())
+                        {
+                            @foreach (var pet in Model.Pets)
+                            {
+                                <tr>
+                                    <td>@pet.Id</td>
+                                    <td>@pet.UserId</td>
+                                    <td>@pet.Name</td>
+                                    <td>
+                                        <span class="badge badge-primary">@pet.Level</span>
+                                    </td>
+                                    <td>@pet.Experience</td>
+                                    <td>
+                                        <span class="badge badge-info" style="background-color: @pet.SkinColor;">@pet.SkinColor</span>
+                                    </td>
+                                    <td>@pet.Background</td>
+                                    <td>
+                                        @if (pet.IsActive)
+                                        {
+                                            <span class="badge badge-success">活躍</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">非活躍</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning" onclick="editPet(@pet.Id)">
+                                            <i class="fas fa-edit"></i> 編輯
+                                        </button>
+                                        <button class="btn btn-sm btn-info" onclick="viewPetDetails(@pet.Id)">
+                                            <i class="fas fa-eye"></i> 詳情
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center">請輸入搜尋條件進行查詢</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯寵物模態框 -->
+<div class="modal fade" id="editPetModal" tabindex="-1" role="dialog" aria-labelledby="editPetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPetModalLabel">編輯寵物設定</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editPetForm">
+                    <input type="hidden" id="editPetId" name="petId">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetName">寵物名稱 *</label>
+                                <input type="text" class="form-control" id="editPetName" name="petName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetLevel">等級 *</label>
+                                <input type="number" class="form-control" id="editPetLevel" name="level" min="1" max="100" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetExperience">經驗值 *</label>
+                                <input type="number" class="form-control" id="editPetExperience" name="experience" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetSkinColor">膚色 *</label>
+                                <select class="form-control" id="editPetSkinColor" name="skinColor" required>
+                                    <option value="">請選擇膚色</option>
+                                    <option value="紅色">紅色</option>
+                                    <option value="藍色">藍色</option>
+                                    <option value="綠色">綠色</option>
+                                    <option value="黃色">黃色</option>
+                                    <option value="紫色">紫色</option>
+                                    <option value="橙色">橙色</option>
+                                    <option value="粉色">粉色</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetBackground">背景 *</label>
+                                <select class="form-control" id="editPetBackground" name="background" required>
+                                    <option value="">請選擇背景</option>
+                                    <option value="森林">森林</option>
+                                    <option value="海邊">海邊</option>
+                                    <option value="城市">城市</option>
+                                    <option value="太空">太空</option>
+                                    <option value="花園">花園</option>
+                                    <option value="雪山">雪山</option>
+                                    <option value="沙漠">沙漠</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editPetStatus">狀態</label>
+                                <select class="form-control" id="editPetStatus" name="isActive">
+                                    <option value="true">活躍</option>
+                                    <option value="false">非活躍</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPetDescription">描述</label>
+                        <textarea class="form-control" id="editPetDescription" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="savePetChanges()">儲存變更</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    document.getElementById("searchForm").reset();
+}
+
+function editPet(petId) {
+    // 載入寵物資料並開啟編輯模態框
+    // 這裡應該從後端載入寵物資料
+    document.getElementById("editPetId").value = petId;
+    document.getElementById("editPetName").value = "示例寵物";
+    document.getElementById("editPetLevel").value = "5";
+    document.getElementById("editPetExperience").value = "250";
+    document.getElementById("editPetSkinColor").value = "藍色";
+    document.getElementById("editPetBackground").value = "森林";
+    document.getElementById("editPetStatus").value = "true";
+    document.getElementById("editPetDescription").value = "這是一隻可愛的寵物";
+    
+    $("#editPetModal").modal("show");
+}
+
+function viewPetDetails(petId) {
+    // 查看寵物詳情
+    alert("查看寵物詳情: " + petId);
+}
+
+function savePetChanges() {
+    const petId = document.getElementById("editPetId").value;
+    const petName = document.getElementById("editPetName").value;
+    const level = document.getElementById("editPetLevel").value;
+    const experience = document.getElementById("editPetExperience").value;
+    const skinColor = document.getElementById("editPetSkinColor").value;
+    const background = document.getElementById("editPetBackground").value;
+    const isActive = document.getElementById("editPetStatus").value;
+    const description = document.getElementById("editPetDescription").value;
+
+    if (!petName || !level || !experience || !skinColor || !background) {
+        alert("請填寫所有必填欄位");
+        return;
+    }
+
+    if (!confirm(`確定要儲存寵物 ${petName} 的變更嗎？`)) {
+        return;
+    }
+
+    // 這裡應該發送 AJAX 請求到後端儲存變更
+    alert("寵物設定已儲存");
+    $("#editPetModal").modal("hide");
+    
+    // 重新載入頁面或更新表格
+    location.reload();
+}
+
+// 更新結果計數
+function updateResultCount() {
+    const rows = document.querySelectorAll("tbody tr");
+    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
+    document.getElementById("resultCount").textContent = `共 ${count} 隻寵物`;
+}
+
+// 頁面載入時執行
+document.addEventListener("DOMContentLoaded", function() {
+    updateResultCount();
+});
+</script>

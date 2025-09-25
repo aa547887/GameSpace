@@ -1,0 +1,363 @@
+@model IEnumerable<GameSpace.Areas.MiniGame.Models.GameRecordModel>
+@{
+    ViewData["Title"] = "查看會員遊戲紀錄";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">查看會員遊戲紀錄</h1>
+    </div>
+
+    <!-- 搜尋表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">搜尋條件</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" id="searchForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="userId">用戶ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入用戶ID">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="userName">用戶名稱</label>
+                            <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入用戶名稱">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="gameName">遊戲名稱</label>
+                            <select class="form-control" id="gameName" name="gameName">
+                                <option value="">全部</option>
+                                <option value="益智遊戲">益智遊戲</option>
+                                <option value="動作遊戲">動作遊戲</option>
+                                <option value="策略遊戲">策略遊戲</option>
+                                <option value="休閒遊戲">休閒遊戲</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="gameResult">遊戲結果</label>
+                            <select class="form-control" id="gameResult" name="gameResult">
+                                <option value="">全部</option>
+                                <option value="Win">勝利</option>
+                                <option value="Lose">失敗</option>
+                                <option value="Draw">平局</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="startDate">開始日期</label>
+                            <input type="date" class="form-control" id="startDate" name="startDate">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="endDate">結束日期</label>
+                            <input type="date" class="form-control" id="endDate" name="endDate">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="minScore">最小分數</label>
+                            <input type="number" class="form-control" id="minScore" name="minScore" min="0" placeholder="最小分數">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="maxScore">最大分數</label>
+                            <input type="number" class="form-control" id="maxScore" name="maxScore" min="0" placeholder="最大分數">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> 搜尋
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> 重置
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="exportRecords()">
+                        <i class="fas fa-download"></i> 匯出
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 統計資訊 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總遊戲次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalGames">5,678</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-gamepad fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">勝利次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalWins">3,456</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-trophy fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">失敗次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalLosses">2,222</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">淨點數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="netPoints">+12,340</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲記錄 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">遊戲記錄</h6>
+            <span class="badge badge-info" id="resultCount">共 0 筆記錄</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>遊戲時間</th>
+                            <th>用戶ID</th>
+                            <th>用戶名稱</th>
+                            <th>遊戲名稱</th>
+                            <th>遊戲結果</th>
+                            <th>分數</th>
+                            <th>獲得點數</th>
+                            <th>遊戲時長</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var record in Model)
+                            {
+                                <tr>
+                                    <td>@record.StartTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td>@record.UserId</td>
+                                    <td>@record.UserName</td>
+                                    <td>
+                                        <span class="badge badge-primary">@record.GameName</span>
+                                    </td>
+                                    <td>
+                                        @switch (record.Result)
+                                        {
+                                            case "Win":
+                                                <span class="badge badge-success">勝利</span>
+                                                break;
+                                            case "Lose":
+                                                <span class="badge badge-danger">失敗</span>
+                                                break;
+                                            case "Draw":
+                                                <span class="badge badge-warning">平局</span>
+                                                break;
+                                            default:
+                                                <span class="badge badge-secondary">@record.Result</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="font-weight-bold">@record.Score</span>
+                                    </td>
+                                    <td>
+                                        @if (record.PointsEarned > 0)
+                                        {
+                                            <span class="font-weight-bold text-success">+@record.PointsEarned</span>
+                                        }
+                                        else if (record.PointsEarned < 0)
+                                        {
+                                            <span class="font-weight-bold text-danger">@record.PointsEarned</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="font-weight-bold text-secondary">0</span>
+                                        }
+                                    </td>
+                                    <td>@record.Duration 秒</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="viewGameDetails(@record.Id)">
+                                            <i class="fas fa-eye"></i> 詳情
+                                        </button>
+                                        <button class="btn btn-sm btn-warning" onclick="viewGameReplay(@record.Id)">
+                                            <i class="fas fa-play"></i> 重播
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center">請輸入搜尋條件進行查詢</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲統計圖表 -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">遊戲類型分布</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="gameTypeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">勝率統計</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="winRateChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    document.getElementById("searchForm").reset();
+}
+
+function exportRecords() {
+    // 匯出遊戲記錄
+    alert("匯出功能開發中...");
+}
+
+function viewGameDetails(recordId) {
+    // 查看遊戲詳情
+    alert("查看遊戲詳情: " + recordId);
+}
+
+function viewGameReplay(recordId) {
+    // 查看遊戲重播
+    alert("查看遊戲重播: " + recordId);
+}
+
+// 更新結果計數
+function updateResultCount() {
+    const rows = document.querySelectorAll("tbody tr");
+    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
+    document.getElementById("resultCount").textContent = `共 ${count} 筆記錄`;
+}
+
+// 繪製圖表
+function drawCharts() {
+    // 遊戲類型分布圖
+    const gameTypeCtx = document.getElementById("gameTypeChart").getContext("2d");
+    new Chart(gameTypeCtx, {
+        type: "doughnut",
+        data: {
+            labels: ["益智遊戲", "動作遊戲", "策略遊戲", "休閒遊戲"],
+            datasets: [{
+                data: [30, 25, 20, 25],
+                backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc", "#f6c23e"]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // 勝率統計圖
+    const winRateCtx = document.getElementById("winRateChart").getContext("2d");
+    new Chart(winRateCtx, {
+        type: "bar",
+        data: {
+            labels: ["益智遊戲", "動作遊戲", "策略遊戲", "休閒遊戲"],
+            datasets: [{
+                label: "勝率 (%)",
+                data: [65, 45, 70, 55],
+                backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc", "#f6c23e"]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+// 頁面載入時執行
+document.addEventListener("DOMContentLoaded", function() {
+    updateResultCount();
+    drawCharts();
+});
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
