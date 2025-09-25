@@ -39,15 +39,32 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: MiniGame/AdminCoupon/Details/5
         public async Task<IActionResult> Details(int couponId)
         {
-            // 這裡需要根據實際的資料庫結構來實現
-            TempData["ErrorMessage"] = "功能開發中";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                var coupon = await _adminService.GetCouponDetailsAsync(couponId);
+                if (coupon == null)
+                {
+                    TempData["ErrorMessage"] = "找不到指定的優惠券";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(coupon);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入優惠券詳情時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: MiniGame/AdminCoupon/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var viewModel = new AdminCouponCreateViewModel();
+            var couponTypes = await _adminService.GetCouponTypesAsync();
+            var viewModel = new AdminCouponCreateViewModel
+            {
+                CouponTypes = couponTypes
+            };
             return View(viewModel);
         }
 
@@ -58,29 +75,73 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.CouponTypes = await _adminService.GetCouponTypesAsync();
                 return View(model);
             }
 
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "優惠券創建成功";
-                return RedirectToAction(nameof(Index));
+                var success = await _adminService.CreateCouponAsync(new CouponCreateModel
+                {
+                    CouponName = model.CouponName,
+                    CouponCode = model.CouponCode,
+                    DiscountValue = model.DiscountValue,
+                    DiscountType = model.DiscountType,
+                    Quantity = model.Quantity,
+                    ExpiryDate = model.ExpiryDate
+                });
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "優惠券創建成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "優惠券創建失敗";
+                }
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"優惠券創建失敗：{ex.Message}";
             }
 
+            model.CouponTypes = await _adminService.GetCouponTypesAsync();
             return View(model);
         }
 
         // GET: MiniGame/AdminCoupon/Edit/5
         public async Task<IActionResult> Edit(int couponId)
         {
-            // 這裡需要根據實際的資料庫結構來實現
-            TempData["ErrorMessage"] = "功能開發中";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                var coupon = await _adminService.GetCouponForEditAsync(couponId);
+                if (coupon == null)
+                {
+                    TempData["ErrorMessage"] = "找不到指定的優惠券";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var couponTypes = await _adminService.GetCouponTypesAsync();
+                var viewModel = new AdminCouponEditViewModel
+                {
+                    CouponId = coupon.CouponId,
+                    CouponName = coupon.CouponName,
+                    CouponCode = coupon.CouponCode,
+                    DiscountValue = coupon.DiscountValue,
+                    DiscountType = coupon.DiscountType,
+                    Quantity = coupon.Quantity,
+                    ExpiryDate = coupon.ExpiryDate,
+                    CouponTypes = couponTypes
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入優惠券時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: MiniGame/AdminCoupon/Edit
@@ -90,20 +151,39 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.CouponTypes = await _adminService.GetCouponTypesAsync();
                 return View(model);
             }
 
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "優惠券更新成功";
-                return RedirectToAction(nameof(Index));
+                var success = await _adminService.UpdateCouponAsync(new CouponUpdateModel
+                {
+                    CouponId = model.CouponId,
+                    CouponName = model.CouponName,
+                    CouponCode = model.CouponCode,
+                    DiscountValue = model.DiscountValue,
+                    DiscountType = model.DiscountType,
+                    Quantity = model.Quantity,
+                    ExpiryDate = model.ExpiryDate
+                });
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "優惠券更新成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "優惠券更新失敗";
+                }
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"優惠券更新失敗：{ex.Message}";
             }
 
+            model.CouponTypes = await _adminService.GetCouponTypesAsync();
             return View(model);
         }
 
@@ -114,8 +194,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "優惠券刪除成功";
+                var success = await _adminService.DeleteCouponAsync(couponId);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "優惠券刪除成功";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "優惠券刪除失敗";
+                }
             }
             catch (Exception ex)
             {
@@ -190,6 +277,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [DataType(DataType.DateTime)]
         public DateTime? ExpiryDate { get; set; }
 
+        public List<CouponTypeReadModel> CouponTypes { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }
 
@@ -219,6 +307,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [DataType(DataType.DateTime)]
         public DateTime? ExpiryDate { get; set; }
 
+        public List<CouponTypeReadModel> CouponTypes { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }
 

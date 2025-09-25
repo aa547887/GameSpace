@@ -39,15 +39,32 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: MiniGame/AdminEVoucher/Details/5
         public async Task<IActionResult> Details(int eVoucherId)
         {
-            // 這裡需要根據實際的資料庫結構來實現
-            TempData["ErrorMessage"] = "功能開發中";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                var eVoucher = await _adminService.GetEVoucherDetailsAsync(eVoucherId);
+                if (eVoucher == null)
+                {
+                    TempData["ErrorMessage"] = "找不到指定的電子禮券";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(eVoucher);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入電子禮券詳情時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: MiniGame/AdminEVoucher/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var viewModel = new AdminEVoucherCreateViewModel();
+            var eVoucherTypes = await _adminService.GetEVoucherTypesAsync();
+            var viewModel = new AdminEVoucherCreateViewModel
+            {
+                EVoucherTypes = eVoucherTypes
+            };
             return View(viewModel);
         }
 
@@ -58,29 +75,71 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
                 return View(model);
             }
 
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "電子禮券創建成功";
-                return RedirectToAction(nameof(Index));
+                var success = await _adminService.CreateEVoucherAsync(new EVoucherCreateModel
+                {
+                    EVoucherName = model.EVoucherName,
+                    EVoucherCode = model.EVoucherCode,
+                    Value = model.Value,
+                    Quantity = model.Quantity,
+                    ExpiryDate = model.ExpiryDate
+                });
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "電子禮券創建成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "電子禮券創建失敗";
+                }
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"電子禮券創建失敗：{ex.Message}";
             }
 
+            model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
             return View(model);
         }
 
         // GET: MiniGame/AdminEVoucher/Edit/5
         public async Task<IActionResult> Edit(int eVoucherId)
         {
-            // 這裡需要根據實際的資料庫結構來實現
-            TempData["ErrorMessage"] = "功能開發中";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                var eVoucher = await _adminService.GetEVoucherForEditAsync(eVoucherId);
+                if (eVoucher == null)
+                {
+                    TempData["ErrorMessage"] = "找不到指定的電子禮券";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var eVoucherTypes = await _adminService.GetEVoucherTypesAsync();
+                var viewModel = new AdminEVoucherEditViewModel
+                {
+                    EVoucherId = eVoucher.EVoucherId,
+                    EVoucherName = eVoucher.EVoucherName,
+                    EVoucherCode = eVoucher.EVoucherCode,
+                    Value = eVoucher.Value,
+                    Quantity = eVoucher.Quantity,
+                    ExpiryDate = eVoucher.ExpiryDate,
+                    EVoucherTypes = eVoucherTypes
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入電子禮券時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: MiniGame/AdminEVoucher/Edit
@@ -90,20 +149,38 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
                 return View(model);
             }
 
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "電子禮券更新成功";
-                return RedirectToAction(nameof(Index));
+                var success = await _adminService.UpdateEVoucherAsync(new EVoucherUpdateModel
+                {
+                    EVoucherId = model.EVoucherId,
+                    EVoucherName = model.EVoucherName,
+                    EVoucherCode = model.EVoucherCode,
+                    Value = model.Value,
+                    Quantity = model.Quantity,
+                    ExpiryDate = model.ExpiryDate
+                });
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "電子禮券更新成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "電子禮券更新失敗";
+                }
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"電子禮券更新失敗：{ex.Message}";
             }
 
+            model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
             return View(model);
         }
 
@@ -114,8 +191,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             try
             {
-                // 這裡需要根據實際的資料庫結構來實現
-                TempData["SuccessMessage"] = "電子禮券刪除成功";
+                var success = await _adminService.DeleteEVoucherAsync(eVoucherId);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "電子禮券刪除成功";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "電子禮券刪除失敗";
+                }
             }
             catch (Exception ex)
             {
@@ -187,6 +271,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [DataType(DataType.DateTime)]
         public DateTime? ExpiryDate { get; set; }
 
+        public List<EVoucherTypeReadModel> EVoucherTypes { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }
 
@@ -213,6 +298,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [DataType(DataType.DateTime)]
         public DateTime? ExpiryDate { get; set; }
 
+        public List<EVoucherTypeReadModel> EVoucherTypes { get; set; } = new();
         public string Sidebar { get; set; } = "admin";
     }
 
