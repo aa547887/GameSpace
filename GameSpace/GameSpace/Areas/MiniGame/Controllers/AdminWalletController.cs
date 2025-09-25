@@ -6,7 +6,7 @@ using GameSpace.Areas.MiniGame.Models;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminWalletController : Controller
     {
         private readonly IMiniGameAdminService _adminService;
@@ -16,7 +16,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _adminService = adminService;
         }
 
-        public async Task<IActionResult> Index(CouponQueryModel query)
+        // 查詢會員點數
+        public async Task<IActionResult> QueryPoints(CouponQueryModel query)
         {
             if (query.PageNumber <= 0) query.PageNumber = 1;
             if (query.PageSize <= 0) query.PageSize = 10;
@@ -28,117 +29,210 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 UserPoints = userPoints.Items,
                 Users = users,
-                SearchTerm = query.SearchTerm,
-                Page = userPoints.Page,
-                PageSize = userPoints.PageSize,
+                Query = query,
                 TotalCount = userPoints.TotalCount,
-                TotalPages = userPoints.TotalPages
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
             };
 
             return View(viewModel);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AdjustPoints(int userId, int points, string reason)
+        // 查詢會員擁有商城優惠券
+        public async Task<IActionResult> QueryCoupons(CouponQueryModel query)
         {
-            var result = await _adminService.AdjustUserPointsAsync(userId, points, reason);
-            if (result)
-            {
-                TempData["SuccessMessage"] = "點數調整成功";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "點數調整失敗";
-            }
-            return RedirectToAction("Index");
-        }
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
 
-        public async Task<IActionResult> AdjustCoupons()
-        {
-            var couponTypes = await _adminService.GetCouponTypesAsync();
+            var result = await _adminService.QueryUserCouponsAsync(query);
             var users = await _adminService.GetUsersAsync();
 
-            var viewModel = new AdminAdjustCouponsViewModel
+            var viewModel = new AdminCouponIndexViewModel
             {
-                CouponTypes = couponTypes,
-                Users = users
+                Coupons = result.Items,
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
             };
 
             return View(viewModel);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AdjustCoupons(AdminAdjustCouponsViewModel model)
+        // 查詢會員擁有電子禮券
+        public async Task<IActionResult> QueryEVouchers(EVoucherQueryModel query)
         {
-            if (ModelState.IsValid)
-            {
-                bool result;
-                if (model.Action == "add")
-                {
-                    result = await _adminService.IssueCouponToUserAsync(model.UserId, model.CouponTypeId, model.Quantity);
-                }
-                else
-                {
-                    result = await _adminService.RemoveCouponFromUserAsync(model.UserId, model.CouponTypeId);
-                }
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
 
-                if (result)
-                {
-                    TempData["SuccessMessage"] = "優惠券調整成功";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "優惠券調整失敗";
-                }
-            }
-            return RedirectToAction("AdjustCoupons");
+            var result = await _adminService.QueryUserEVouchersAsync(query);
+            var users = await _adminService.GetUsersAsync();
+
+            var viewModel = new AdminEVoucherIndexViewModel
+            {
+                EVouchers = result.Items,
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
+
+            return View(viewModel);
         }
 
+        // 發放會員點數
+        [HttpGet]
+        public async Task<IActionResult> GrantPoints()
+        {
+            var users = await _adminService.GetUsersAsync();
+            var viewModel = new GrantPointsViewModel
+            {
+                Users = users
+            };
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GrantPoints(GrantPointsViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Users = await _adminService.GetUsersAsync();
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.GrantUserPointsAsync(model.UserId, model.Points, model.Reason);
+                TempData["SuccessMessage"] = "會員點數發放成功！";
+                return RedirectToAction(nameof(QueryPoints));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"發放失敗：{ex.Message}");
+                model.Users = await _adminService.GetUsersAsync();
+                return View(model);
+            }
+        }
+
+        // 發放會員擁有商城優惠券（含發放）
+        [HttpGet]
+        public async Task<IActionResult> GrantCoupons()
+        {
+            var users = await _adminService.GetUsersAsync();
+            var couponTypes = await _adminService.GetCouponTypesAsync();
+            
+            var viewModel = new GrantCouponsViewModel
+            {
+                Users = users,
+                CouponTypes = couponTypes
+            };
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GrantCoupons(GrantCouponsViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Users = await _adminService.GetUsersAsync();
+                model.CouponTypes = await _adminService.GetCouponTypesAsync();
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.GrantUserCouponsAsync(model.UserId, model.CouponTypeId, model.Quantity, model.Reason);
+                TempData["SuccessMessage"] = "商城優惠券發放成功！";
+                return RedirectToAction(nameof(QueryCoupons));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"發放失敗：{ex.Message}");
+                model.Users = await _adminService.GetUsersAsync();
+                model.CouponTypes = await _adminService.GetCouponTypesAsync();
+                return View(model);
+            }
+        }
+
+        // 調整會員擁有電子禮券（發放）
+        [HttpGet]
         public async Task<IActionResult> AdjustEVouchers()
         {
-            var evoucherTypes = await _adminService.GetEVoucherTypesAsync();
+            var users = await _adminService.GetUsersAsync();
+            var eVoucherTypes = await _adminService.GetEVoucherTypesAsync();
+            
+            var viewModel = new AdjustEVouchersViewModel
+            {
+                Users = users,
+                EVoucherTypes = eVoucherTypes
+            };
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AdjustEVouchers(AdjustEVouchersViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Users = await _adminService.GetUsersAsync();
+                model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.AdjustUserEVouchersAsync(model.UserId, model.EVoucherTypeId, model.Quantity, model.Reason);
+                TempData["SuccessMessage"] = "電子禮券調整成功！";
+                return RedirectToAction(nameof(QueryEVouchers));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"調整失敗：{ex.Message}");
+                model.Users = await _adminService.GetUsersAsync();
+                model.EVoucherTypes = await _adminService.GetEVoucherTypesAsync();
+                return View(model);
+            }
+        }
+
+        // 查看會員收支明細
+        public async Task<IActionResult> ViewHistory(WalletHistoryQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            var result = await _adminService.QueryWalletHistoryAsync(query);
             var users = await _adminService.GetUsersAsync();
 
-            var viewModel = new AdminAdjustEVouchersViewModel
+            var viewModel = new AdminWalletHistoryViewModel
             {
-                EVoucherTypes = evoucherTypes,
-                Users = users
+                WalletHistories = result.Items,
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
             };
 
             return View(viewModel);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AdjustEVouchers(AdminAdjustEVouchersViewModel model)
+        // 保持舊有的Index方法以向後兼容
+        public async Task<IActionResult> Index(CouponQueryModel query)
         {
-            if (ModelState.IsValid)
-            {
-                bool result;
-                if (model.Action == "add")
-                {
-                    result = await _adminService.IssueEVoucherToUserAsync(model.UserId, model.EVoucherTypeId, model.Quantity);
-                }
-                else
-                {
-                    result = await _adminService.RemoveEVoucherFromUserAsync(model.UserId, model.EVoucherTypeId);
-                }
-
-                if (result)
-                {
-                    TempData["SuccessMessage"] = "電子優惠券調整成功";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "電子優惠券調整失敗";
-                }
-            }
-            return RedirectToAction("AdjustEVouchers");
+            return await QueryPoints(query);
         }
 
-        public async Task<IActionResult> TransactionHistory(CouponQueryModel query)
+        public async Task<IActionResult> AdjustPoints()
         {
-            var transactions = await _adminService.QueryWalletTransactionsAsync(query);
-            return View(transactions);
+            return await GrantPoints();
+        }
+
+        public async Task<IActionResult> History(WalletHistoryQueryModel query)
+        {
+            return await ViewHistory(query);
         }
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "CanPet")] // Requires Pet permission
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminPetController : Controller
     {
         private readonly IMiniGameAdminService _adminService;
@@ -18,115 +18,188 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _authService = authService;
         }
 
-        public async Task<IActionResult> Index(PetQueryModel query)
+        // 整體寵物系統規則設定
+        [HttpGet]
+        public async Task<IActionResult> SystemRules()
         {
-            var model = new AdminPetIndexViewModel
+            try
             {
-                Pets = await _adminService.GetPetsAsync(query),
-                PetSummary = await _adminService.GetPetSummaryAsync(),
-                Query = query,
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                var settings = await _adminService.GetPetSystemRulesAsync();
+                return View(settings);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入寵物系統規則時發生錯誤：{ex.Message}";
+                return View(new PetSystemRulesViewModel());
+            }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> SystemRules(PetSystemRulesViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.UpdatePetSystemRulesAsync(model);
+                TempData["SuccessMessage"] = "寵物系統規則已成功更新！";
+                return RedirectToAction(nameof(SystemRules));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"更新寵物系統規則時發生錯誤：{ex.Message}");
+                return View(model);
+            }
+        }
+
+        // 會員個別寵物設定：手動調整基本資料
+        [HttpGet]
+        public async Task<IActionResult> IndividualSettings(int? userId = null)
+        {
+            try
+            {
+                var users = await _adminService.GetUsersAsync();
+                var viewModel = new IndividualPetSettingsViewModel
+                {
+                    Users = users
+                };
+
+                if (userId.HasValue)
+                {
+                    var pet = await _adminService.GetUserPetAsync(userId.Value);
+                    if (pet != null)
+                    {
+                        viewModel.SelectedUserId = userId.Value;
+                        viewModel.Pet = pet;
+                    }
+                }
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入寵物設定時發生錯誤：{ex.Message}";
+                return View(new IndividualPetSettingsViewModel
+                {
+                    Users = await _adminService.GetUsersAsync()
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> IndividualSettings(IndividualPetSettingsViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Users = await _adminService.GetUsersAsync();
+                if (model.SelectedUserId > 0)
+                {
+                    model.Pet = await _adminService.GetUserPetAsync(model.SelectedUserId);
+                }
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.UpdateUserPetAsync(model.SelectedUserId, model.Pet);
+                TempData["SuccessMessage"] = "寵物基本資料已成功更新！";
+                return RedirectToAction(nameof(IndividualSettings), new { userId = model.SelectedUserId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"更新寵物資料時發生錯誤：{ex.Message}");
+                model.Users = await _adminService.GetUsersAsync();
+                return View(model);
+            }
+        }
+
+        // 會員個別寵物清單含查詢
+        [HttpGet]
+        public async Task<IActionResult> ListWithQuery(PetQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
+            {
+                var result = await _adminService.QueryUserPetsAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new AdminPetListViewModel
+                {
+                    Pets = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢寵物清單時發生錯誤：{ex.Message}";
+                return View(new AdminPetListViewModel
+                {
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
+            }
+        }
+
+        // 換膚／換背景紀錄查詢
+        [HttpGet]
+        public async Task<IActionResult> ColorChangeHistory(PetColorChangeQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
+            {
+                var result = await _adminService.QueryPetColorChangeHistoryAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new PetColorChangeHistoryViewModel
+                {
+                    ColorChangeHistory = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢換膚換背景紀錄時發生錯誤：{ex.Message}";
+                return View(new PetColorChangeHistoryViewModel
+                {
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
+            }
+        }
+
+        // 保持舊有方法名稱以向後兼容
         public async Task<IActionResult> Rules()
         {
-            var model = new AdminPetRulesViewModel
-            {
-                PetRule = await _adminService.GetPetRuleAsync(),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+            return await SystemRules();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateRules(PetRuleUpdateModel model)
+        public async Task<IActionResult> MemberPets()
         {
-            if (ModelState.IsValid)
-            {
-                var success = await _adminService.UpdatePetRuleAsync(model);
-                if (success)
-                {
-                    TempData["SuccessMessage"] = "寵物規則更新成功";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "寵物規則更新失敗";
-                }
-            }
-            return RedirectToAction("Rules");
+            return await IndividualSettings();
         }
 
-        public async Task<IActionResult> Details(int petId)
+        public async Task<IActionResult> PetDetails(PetQueryModel query)
         {
-            var model = new AdminPetDetailsViewModel
-            {
-                Pet = await _adminService.GetPetDetailAsync(petId),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
-        }
-
-        [HttpGet]
-        public IActionResult Edit(int petId)
-        {
-            var pet = _adminService.GetPetDetailAsync(petId).Result;
-            if (pet == null)
-            {
-                TempData["ErrorMessage"] = "找不到指定的寵物";
-                return RedirectToAction("Index");
-            }
-
-            var model = new AdminPetEditViewModel
-            {
-                Pet = pet,
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int petId, PetUpdateModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var success = await _adminService.UpdatePetDetailsAsync(petId, model);
-                if (success)
-                {
-                    TempData["SuccessMessage"] = "寵物資料更新成功";
-                    return RedirectToAction("Details", new { petId });
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "寵物資料更新失敗";
-                }
-            }
-            return View(new AdminPetEditViewModel { Pet = await _adminService.GetPetDetailAsync(petId), Sidebar = new SidebarViewModel() });
-        }
-
-        public async Task<IActionResult> SkinColorChangeLog(PetQueryModel query)
-        {
-            var model = new AdminPetSkinColorChangeLogViewModel
-            {
-                SkinColorChangeLogs = await _adminService.GetPetSkinColorChangeLogsAsync(query),
-                Query = query,
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
-        }
-
-        public async Task<IActionResult> BackgroundColorChangeLog(PetQueryModel query)
-        {
-            var model = new AdminPetBackgroundColorChangeLogViewModel
-            {
-                BackgroundColorChangeLogs = await _adminService.GetPetBackgroundColorChangeLogsAsync(query),
-                Query = query,
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+            return await ListWithQuery(query);
         }
     }
 }

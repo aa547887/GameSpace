@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "CanUserStatus")] // Requires UserStatus permission
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminSignInStatsController : Controller
     {
         private readonly IMiniGameAdminService _adminService;
@@ -18,68 +18,93 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _authService = authService;
         }
 
-        public async Task<IActionResult> Index(SignInQueryModel query)
+        // 簽到規則設定
+        [HttpGet]
+        public async Task<IActionResult> RuleSettings()
         {
-            var stats = await _adminService.GetSignInStatsAsync();
-            return View(stats);
-        }
-
-        public async Task<IActionResult> SetRule()
-        {
-            var rule = await _adminService.GetSignInRuleAsync();
-            return View(rule);
+            try
+            {
+                var settings = await _adminService.GetSignInRuleSettingsAsync();
+                return View(settings);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入簽到規則設定時發生錯誤：{ex.Message}";
+                return View(new SignInRuleSettingsViewModel());
+            }
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SetRule(SignInRuleUpdateModel model)
+        public async Task<IActionResult> RuleSettings(SignInRuleSettingsViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var success = await _adminService.UpdateSignInRuleAsync(model);
-                if (success)
+                return View(model);
+            }
+
+            try
+            {
+                await _adminService.UpdateSignInRuleSettingsAsync(model);
+                TempData["SuccessMessage"] = "簽到規則設定已成功更新！";
+                return RedirectToAction(nameof(RuleSettings));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"更新簽到規則設定時發生錯誤：{ex.Message}");
+                return View(model);
+            }
+        }
+
+        // 查看會員簽到紀錄
+        [HttpGet]
+        public async Task<IActionResult> ViewRecords(SignInStatsQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
+            {
+                var result = await _adminService.QuerySignInStatsAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new AdminSignInStatsViewModel
                 {
-                    TempData["SuccessMessage"] = "簽到規則更新成功";
-                    return RedirectToAction("SetRule");
-                }
-                else
+                    SignInStats = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢簽到紀錄時發生錯誤：{ex.Message}";
+                return View(new AdminSignInStatsViewModel
                 {
-                    TempData["ErrorMessage"] = "簽到規則更新失敗";
-                }
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
             }
-            return View(model);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddRecord(int userId, DateTime signInDate)
+        // 保持舊有方法名稱以向後兼容
+        public async Task<IActionResult> Rules()
         {
-            var success = await _adminService.AddUserSignInRecordAsync(userId, signInDate);
-            if (success)
-            {
-                TempData["SuccessMessage"] = "簽到記錄新增成功";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "簽到記錄新增失敗";
-            }
-            return RedirectToAction("Index");
+            return await RuleSettings();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveRecord(int userId, DateTime signInDate)
+        public async Task<IActionResult> Records(SignInStatsQueryModel query)
         {
-            var success = await _adminService.RemoveUserSignInRecordAsync(userId, signInDate);
-            if (success)
-            {
-                TempData["SuccessMessage"] = "簽到記錄移除成功";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "簽到記錄移除失敗";
-            }
-            return RedirectToAction("Index");
+            return await ViewRecords(query);
+        }
+
+        public async Task<IActionResult> Adjust()
+        {
+            // 重導向到查看紀錄頁面，因為調整功能整合在查看頁面中
+            return RedirectToAction(nameof(ViewRecords));
         }
     }
 }

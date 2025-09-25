@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "CanManageShopping")] // Requires Shopping permission
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminMiniGameController : Controller
     {
         private readonly IMiniGameAdminService _adminService;
@@ -18,55 +18,103 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _authService = authService;
         }
 
-        public async Task<IActionResult> Index(GameQueryModel query)
+        // 遊戲規則設定
+        [HttpGet]
+        public async Task<IActionResult> GameRules()
         {
-            var model = new AdminMiniGameIndexViewModel
+            try
             {
-                GameRecords = await _adminService.GetGameRecordsAsync(query),
-                GameSummary = await _adminService.GetGameSummaryAsync(),
-                Query = query,
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
-        }
-
-        public async Task<IActionResult> Rules()
-        {
-            var model = new AdminMiniGameRulesViewModel
+                var settings = await _adminService.GetMiniGameRulesAsync();
+                return View(settings);
+            }
+            catch (Exception ex)
             {
-                GameRule = await _adminService.GetGameRuleAsync(),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                TempData["ErrorMessage"] = $"載入遊戲規則設定時發生錯誤：{ex.Message}";
+                return View(new MiniGameRulesViewModel());
+            }
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateRules(GameRuleUpdateModel model)
+        public async Task<IActionResult> GameRules(MiniGameRulesViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var success = await _adminService.UpdateGameRuleAsync(model);
-                if (success)
-                {
-                    TempData["SuccessMessage"] = "遊戲規則更新成功";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "遊戲規則更新失敗";
-                }
+                return View(model);
             }
-            return RedirectToAction("Rules");
+
+            try
+            {
+                await _adminService.UpdateMiniGameRulesAsync(model);
+                TempData["SuccessMessage"] = "遊戲規則設定已成功更新！";
+                return RedirectToAction(nameof(GameRules));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"更新遊戲規則設定時發生錯誤：{ex.Message}");
+                return View(model);
+            }
         }
 
-        public async Task<IActionResult> Details(int gameId)
+        // 查看會員遊戲紀錄
+        [HttpGet]
+        public async Task<IActionResult> ViewGameRecords(MiniGameRecordQueryModel query)
         {
-            var model = new AdminMiniGameDetailsViewModel
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
             {
-                Game = await _adminService.GetGameDetailAsync(gameId),
-                Sidebar = new SidebarViewModel()
-            };
-            return View(model);
+                var result = await _adminService.QueryMiniGameRecordsAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new AdminMiniGameRecordsViewModel
+                {
+                    GameRecords = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢遊戲紀錄時發生錯誤：{ex.Message}";
+                return View(new AdminMiniGameRecordsViewModel
+                {
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
+            }
+        }
+
+        // 遊戲統計分析
+        [HttpGet]
+        public async Task<IActionResult> GameStatistics(GameStatisticsQueryModel query)
+        {
+            try
+            {
+                var statistics = await _adminService.GetMiniGameStatisticsAsync(query);
+                return View(statistics);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"載入遊戲統計資料時發生錯誤：{ex.Message}";
+                return View(new GameStatisticsViewModel());
+            }
+        }
+
+        // 保持舊有方法名稱以向後兼容
+        public async Task<IActionResult> Rules()
+        {
+            return await GameRules();
+        }
+
+        public async Task<IActionResult> Records(MiniGameRecordQueryModel query)
+        {
+            return await ViewGameRecords(query);
         }
     }
 }
