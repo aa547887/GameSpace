@@ -20,10 +20,10 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 
         // 共用  Code 不確定要不要用到
         [Required] public int? SupplierId { get; set; }
-		public string? ProductCode { get; set; }
+        public string? ProductCode { get; set; }
 
-		// Game
-		public int? PlatformId { get; set; }
+        // Game
+        public int? PlatformId { get; set; }
         public string? PlatformName { get; set; }
         public string? GameType { get; set; }
         public string? DownloadLink { get; set; }
@@ -47,8 +47,26 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         public IFormFile? Image { get; set; }  // 圖片檔案上傳
 
         public ProductImage? productImage { get; set; }
-    
+		// 原本已有的欄位…例如 ProductName, Price, SupplierId 等
+
+		// 用來上傳本機檔案
+		public List<IFormFile>? NewImageFiles { get; set; }
+
+		// 用來輸入外部圖片 URL 的文字框（如果你要支援這樣）
+		public List<string>? NewImageUrls { get; set; }
+
+		// 用來標示前端已有圖片是否要被刪除之類的
+		public List<ExistingImageInfo>? ExistingImages { get; set; }
+
     }
+	
+
+	public class ExistingImageInfo
+	{
+		public int ImageId { get; set; }
+		public bool Remove { get; set; }
+	}
+
 
 
 

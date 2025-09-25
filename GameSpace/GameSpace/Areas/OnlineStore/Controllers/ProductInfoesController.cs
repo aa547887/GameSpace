@@ -117,267 +117,337 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			return View(rows);
 		}
 
-//		// ============================================================
-//		// Strips（寬條清單，支援完整篩選＋每頁筆數）→ 以商品代碼數字排序 
-//		// ============================================================
-//		// 寬條清單（穩定版：避免無法翻譯的巢狀 Select）
-//		[HttpGet]
-//		public async Task<IActionResult> Strips(
-//			string? keyword, string? type,
-//			string status = "all",
-//			int page = 1, int pageSize = 12,
-//			int? supplierId = null, int? platformId = null, int? merchTypeId = null,
-//			string? gameType = null)
-//		{
-//			// 1) 基底查詢（只碰 ProductInfo，可順利翻譯）
-//			var q = _context.ProductInfos.AsNoTracking().AsQueryable();
+		//		// ============================================================
+		//		// Strips（寬條清單，支援完整篩選＋每頁筆數）→ 以商品代碼數字排序 
+		//		// ============================================================
+		//		// 寬條清單（穩定版：避免無法翻譯的巢狀 Select）
+		//		[HttpGet]
+		//		public async Task<IActionResult> Strips(
+		//			string? keyword, string? type,
+		//			string status = "all",
+		//			int page = 1, int pageSize = 12,
+		//			int? supplierId = null, int? platformId = null, int? merchTypeId = null,
+		//			string? gameType = null)
+		//		{
+		//			// 1) 基底查詢（只碰 ProductInfo，可順利翻譯）
+		//			var q = _context.ProductInfos.AsNoTracking().AsQueryable();
 
-//			if (!string.IsNullOrWhiteSpace(keyword))
-//				q = q.Where(p => p.ProductName.Contains(keyword) || p.ProductType.Contains(keyword));
-//			if (!string.IsNullOrWhiteSpace(type))
-//				q = q.Where(p => p.ProductType == type);
-//			if (!string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
-//			{
-//				bool isActive = string.Equals(status, "active", StringComparison.OrdinalIgnoreCase);
-//				q = q.Where(p => p.IsActive == isActive);
-//			}
+		//			if (!string.IsNullOrWhiteSpace(keyword))
+		//				q = q.Where(p => p.ProductName.Contains(keyword) || p.ProductType.Contains(keyword));
+		//			if (!string.IsNullOrWhiteSpace(type))
+		//				q = q.Where(p => p.ProductType == type);
+		//			if (!string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
+		//			{
+		//				bool isActive = string.Equals(status, "active", StringComparison.OrdinalIgnoreCase);
+		//				q = q.Where(p => p.IsActive == isActive);
+		//			}
 
-//			// 進階條件：用子表 Exists 過濾（仍在單一 Where 層，不在 Select 裡巢）
-//			if (supplierId.HasValue)
-//				q = q.Where(p =>
-//					_context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.SupplierId == supplierId) ||
-//					_context.OtherProductDetails.Any(o => o.ProductId == p.ProductId && o.SupplierId == supplierId));
-//			if (platformId.HasValue)
-//				q = q.Where(p => _context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.PlatformId == platformId));
-//			if (merchTypeId.HasValue)
-//				q = q.Where(p => _context.OtherProductDetails.Any(o => o.ProductId == p.ProductId && o.MerchTypeId == merchTypeId));
-//			if (!string.IsNullOrWhiteSpace(gameType))
-//				q = q.Where(p => _context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.GameType.Contains(gameType)));
+		//			// 進階條件：用子表 Exists 過濾（仍在單一 Where 層，不在 Select 裡巢）
+		//			if (supplierId.HasValue)
+		//				q = q.Where(p =>
+		//					_context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.SupplierId == supplierId) ||
+		//					_context.OtherProductDetails.Any(o => o.ProductId == p.ProductId && o.SupplierId == supplierId));
+		//			if (platformId.HasValue)
+		//				q = q.Where(p => _context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.PlatformId == platformId));
+		//			if (merchTypeId.HasValue)
+		//				q = q.Where(p => _context.OtherProductDetails.Any(o => o.ProductId == p.ProductId && o.MerchTypeId == merchTypeId));
+		//			if (!string.IsNullOrWhiteSpace(gameType))
+		//				q = q.Where(p => _context.GameProductDetails.Any(g => g.ProductId == p.ProductId && g.GameType.Contains(gameType)));
 
-//			// 2) 先抓「基本欄位」
-//			var basics = await q
-//				.Select(p => new
-//				{
-//					p.ProductId,
-//					p.ProductName,
-//					p.ProductType,
-//					p.Price,
-//					p.IsActive,
-//					p.ShipmentQuantity,
-//					p.ProductCreatedAt
-//				})
-//				.ToListAsync();
+		//			// 2) 先抓「基本欄位」
+		//			var basics = await q
+		//				.Select(p => new
+		//				{
+		//					p.ProductId,
+		//					p.ProductName,
+		//					p.ProductType,
+		//					p.Price,
+		//					p.IsActive,
+		//					p.ShipmentQuantity,
+		//					p.ProductCreatedAt
+		//				})
+		//				.ToListAsync();
 
-//			var ids = basics.Select(b => b.ProductId).ToList();
-//			if (ids.Count == 0)
-//			{
-//				ViewBag.TypeList = await _context.ProductInfos.AsNoTracking()
-//					.Select(p => p.ProductType).Distinct().OrderBy(s => s).ToListAsync();
-//				ViewBag.SupplierList = await _context.Suppliers.AsNoTracking()
-//					.OrderBy(s => s.SupplierName).Select(s => new { s.SupplierId, s.SupplierName }).ToListAsync();
-//				ViewBag.PlatformList = await _context.GameProductDetails.AsNoTracking()
-//					.Where(g => g.PlatformId != null)
-//					.Select(g => new { g.PlatformId, g.PlatformName }).Distinct()
-//					.OrderBy(g => g.PlatformName).ToListAsync();
-//				ViewBag.MerchTypeList = await _context.MerchTypes.AsNoTracking()
-//					.OrderBy(m => m.MerchTypeName).Select(m => new { m.MerchTypeId, m.MerchTypeName }).ToListAsync();
+		//			var ids = basics.Select(b => b.ProductId).ToList();
+		//			if (ids.Count == 0)
+		//			{
+		//				ViewBag.TypeList = await _context.ProductInfos.AsNoTracking()
+		//					.Select(p => p.ProductType).Distinct().OrderBy(s => s).ToListAsync();
+		//				ViewBag.SupplierList = await _context.Suppliers.AsNoTracking()
+		//					.OrderBy(s => s.SupplierName).Select(s => new { s.SupplierId, s.SupplierName }).ToListAsync();
+		//				ViewBag.PlatformList = await _context.GameProductDetails.AsNoTracking()
+		//					.Where(g => g.PlatformId != null)
+		//					.Select(g => new { g.PlatformId, g.PlatformName }).Distinct()
+		//					.OrderBy(g => g.PlatformName).ToListAsync();
+		//				ViewBag.MerchTypeList = await _context.MerchTypes.AsNoTracking()
+		//					.OrderBy(m => m.MerchTypeName).Select(m => new { m.MerchTypeId, m.MerchTypeName }).ToListAsync();
 
-//				ViewBag.Keyword = keyword; ViewBag.Type = type; ViewBag.Status = status;
-//				ViewBag.SupplierId = supplierId; ViewBag.PlatformId = platformId;
-//				ViewBag.MerchTypeId = merchTypeId; ViewBag.GameType = gameType;
-//				ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = 0;
+		//				ViewBag.Keyword = keyword; ViewBag.Type = type; ViewBag.Status = status;
+		//				ViewBag.SupplierId = supplierId; ViewBag.PlatformId = platformId;
+		//				ViewBag.MerchTypeId = merchTypeId; ViewBag.GameType = gameType;
+		//				ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = 0;
 
-//				return PartialView("_StripsList", Array.Empty<object>());
-//			}
+		//				return PartialView("_StripsList", Array.Empty<object>());
+		//			}
 
-//			// 3) 各子表一次性查回來 → 字典
-//			var codeMap = await _context.ProductCodes.AsNoTracking()
-//				.Where(c => ids.Contains(c.ProductId))
-//				.GroupBy(c => c.ProductId)
-//				.Select(g => new { ProductId = g.Key, Code = g.Select(x => x.ProductCode1).FirstOrDefault() })
-//				.ToDictionaryAsync(x => x.ProductId, x => x.Code);
+		//			// 3) 各子表一次性查回來 → 字典
+		//			var codeMap = await _context.ProductCodes.AsNoTracking()
+		//				.Where(c => ids.Contains(c.ProductId))
+		//				.GroupBy(c => c.ProductId)
+		//				.Select(g => new { ProductId = g.Key, Code = g.Select(x => x.ProductCode1).FirstOrDefault() })
+		//				.ToDictionaryAsync(x => x.ProductId, x => x.Code);
 
-//			var lastChangedMap = await _context.ProductInfoAuditLogs.AsNoTracking()
-//				.Where(a => ids.Contains(a.ProductId))
-//				.GroupBy(a => a.ProductId)
-//				.Select(g => new { ProductId = g.Key, ChangedAt = g.Max(a => a.ChangedAt) })
-//				.ToDictionaryAsync(x => x.ProductId, x => (DateTime?)x.ChangedAt);
+		//			var lastChangedMap = await _context.ProductInfoAuditLogs.AsNoTracking()
+		//				.Where(a => ids.Contains(a.ProductId))
+		//				.GroupBy(a => a.ProductId)
+		//				.Select(g => new { ProductId = g.Key, ChangedAt = g.Max(a => a.ChangedAt) })
+		//				.ToDictionaryAsync(x => x.ProductId, x => (DateTime?)x.ChangedAt);
 
-//			// 最新一張圖（用 GroupBy + FirstOrDefault 可翻譯）
-//			var imgMap = await _context.ProductImages.AsNoTracking()
-//				.Where(i => ids.Contains(i.ProductId))
-//				.GroupBy(i => i.ProductId)
-//				.Select(g => new
-//				{
-//					ProductId = g.Key,
-//					Url = g.OrderByDescending(i => i.ProductimgId).Select(i => i.ProductimgUrl).FirstOrDefault()
-//				})
-//				.ToDictionaryAsync(x => x.ProductId, x => x.Url);
+		//			// 最新一張圖（用 GroupBy + FirstOrDefault 可翻譯）
+		//			var imgMap = await _context.ProductImages.AsNoTracking()
+		//				.Where(i => ids.Contains(i.ProductId))
+		//				.GroupBy(i => i.ProductId)
+		//				.Select(g => new
+		//				{
+		//					ProductId = g.Key,
+		//					Url = g.OrderByDescending(i => i.ProductimgId).Select(i => i.ProductimgUrl).FirstOrDefault()
+		//				})
+		//				.ToDictionaryAsync(x => x.ProductId, x => x.Url);
 
-//			// 供應商（Game + Other 合併）
-//			var gameSup = await (from d in _context.GameProductDetails.AsNoTracking()
-//								 join s in _context.Suppliers.AsNoTracking()
-//								   on d.SupplierId equals s.SupplierId
-//								 where ids.Contains(d.ProductId)
-//								 select new { d.ProductId, s.SupplierName }).ToListAsync();
-//			var otherSup = await (from d in _context.OtherProductDetails.AsNoTracking()
-//								  join s in _context.Suppliers.AsNoTracking()
-//									on d.SupplierId equals s.SupplierId
-//								  where ids.Contains(d.ProductId)
-//								  select new { d.ProductId, s.SupplierName }).ToListAsync();
-//			var supMap = gameSup.Concat(otherSup)
-//				.GroupBy(x => x.ProductId)
-//				.ToDictionary(g => g.Key, g => g.Select(x => x.SupplierName).FirstOrDefault());
+		//			// 供應商（Game + Other 合併）
+		//			var gameSup = await (from d in _context.GameProductDetails.AsNoTracking()
+		//								 join s in _context.Suppliers.AsNoTracking()
+		//								   on d.SupplierId equals s.SupplierId
+		//								 where ids.Contains(d.ProductId)
+		//								 select new { d.ProductId, s.SupplierName }).ToListAsync();
+		//			var otherSup = await (from d in _context.OtherProductDetails.AsNoTracking()
+		//								  join s in _context.Suppliers.AsNoTracking()
+		//									on d.SupplierId equals s.SupplierId
+		//								  where ids.Contains(d.ProductId)
+		//								  select new { d.ProductId, s.SupplierName }).ToListAsync();
+		//			var supMap = gameSup.Concat(otherSup)
+		//				.GroupBy(x => x.ProductId)
+		//				.ToDictionary(g => g.Key, g => g.Select(x => x.SupplierName).FirstOrDefault());
 
-//			// 平台 / 遊戲類型（只針對 game）
-//			var gameMeta = await _context.GameProductDetails.AsNoTracking()
-//				.Where(g => ids.Contains(g.ProductId))
-//				.GroupBy(g => g.ProductId)
-//				.Select(g => new
-//				{
-//					ProductId = g.Key,
-//					PlatformName = g.Select(x => x.PlatformName).FirstOrDefault(),
-//					GameType = g.Select(x => x.GameType).FirstOrDefault()
-//				})
-//				.ToListAsync();
-//			var platMap = gameMeta.ToDictionary(x => x.ProductId, x => x.PlatformName);
-//			var gameTypeMap = gameMeta.ToDictionary(x => x.ProductId, x => x.GameType);
+		//			// 平台 / 遊戲類型（只針對 game）
+		//			var gameMeta = await _context.GameProductDetails.AsNoTracking()
+		//				.Where(g => ids.Contains(g.ProductId))
+		//				.GroupBy(g => g.ProductId)
+		//				.Select(g => new
+		//				{
+		//					ProductId = g.Key,
+		//					PlatformName = g.Select(x => x.PlatformName).FirstOrDefault(),
+		//					GameType = g.Select(x => x.GameType).FirstOrDefault()
+		//				})
+		//				.ToListAsync();
+		//			var platMap = gameMeta.ToDictionary(x => x.ProductId, x => x.PlatformName);
+		//			var gameTypeMap = gameMeta.ToDictionary(x => x.ProductId, x => x.GameType);
 
-//			// 周邊分類名稱（只針對 notgame）
-//			var otherMeta = await (from d in _context.OtherProductDetails.AsNoTracking()
-//								   join m in _context.MerchTypes.AsNoTracking()
-//									 on d.MerchTypeId equals m.MerchTypeId
-//								   where ids.Contains(d.ProductId)
-//								   select new { d.ProductId, m.MerchTypeName }).ToListAsync();
-//			var merchMap = otherMeta.GroupBy(x => x.ProductId)
-//				.ToDictionary(g => g.Key, g => g.Select(x => x.MerchTypeName).FirstOrDefault());
+		//			// 周邊分類名稱（只針對 notgame）
+		//			var otherMeta = await (from d in _context.OtherProductDetails.AsNoTracking()
+		//								   join m in _context.MerchTypes.AsNoTracking()
+		//									 on d.MerchTypeId equals m.MerchTypeId
+		//								   where ids.Contains(d.ProductId)
+		//								   select new { d.ProductId, m.MerchTypeName }).ToListAsync();
+		//			var merchMap = otherMeta.GroupBy(x => x.ProductId)
+		//				.ToDictionary(g => g.Key, g => g.Select(x => x.MerchTypeName).FirstOrDefault());
 
-//			// 4) 合併到 ViewModel（避免在 Select 裡做子查詢）
-//			var list = basics.Select(b => new
-//			{
-//				b.ProductId,
-//				b.ProductName,
-//				b.ProductType,
-//				b.Price,
-//				b.IsActive,
-//				b.ShipmentQuantity,
-//				b.ProductCreatedAt,
-//				ProductCode = codeMap.GetValueOrDefault(b.ProductId),
-//				LastChangedAt = lastChangedMap.GetValueOrDefault(b.ProductId),
-//				ImageUrl = imgMap.GetValueOrDefault(b.ProductId),
-//				SupplierName = supMap.GetValueOrDefault(b.ProductId),
-//				PlatformName = platMap.GetValueOrDefault(b.ProductId),
-//				GameType = gameTypeMap.GetValueOrDefault(b.ProductId),
-//				MerchTypeName = merchMap.GetValueOrDefault(b.ProductId)
-//			}).ToList();
+		//			// 4) 合併到 ViewModel（避免在 Select 裡做子查詢）
+		//			var list = basics.Select(b => new
+		//			{
+		//				b.ProductId,
+		//				b.ProductName,
+		//				b.ProductType,
+		//				b.Price,
+		//				b.IsActive,
+		//				b.ShipmentQuantity,
+		//				b.ProductCreatedAt,
+		//				ProductCode = codeMap.GetValueOrDefault(b.ProductId),
+		//				LastChangedAt = lastChangedMap.GetValueOrDefault(b.ProductId),
+		//				ImageUrl = imgMap.GetValueOrDefault(b.ProductId),
+		//				SupplierName = supMap.GetValueOrDefault(b.ProductId),
+		//				PlatformName = platMap.GetValueOrDefault(b.ProductId),
+		//				GameType = gameTypeMap.GetValueOrDefault(b.ProductId),
+		//				MerchTypeName = merchMap.GetValueOrDefault(b.ProductId)
+		//			}).ToList();
 
-//			// 5) 商品代碼數字排序（無代碼者最後）
-//			list = list.OrderBy(x =>
-//			{
-//				if (string.IsNullOrWhiteSpace(x.ProductCode)) return int.MaxValue;
-//				var s = new string(x.ProductCode.Trim().SkipWhile(ch => !char.IsDigit(ch)).TakeWhile(char.IsDigit).ToArray());
-//				return int.TryParse(s, out var n) ? n : int.MaxValue;
-//			}).ToList();
+		//			// 5) 商品代碼數字排序（無代碼者最後）
+		//			list = list.OrderBy(x =>
+		//			{
+		//				if (string.IsNullOrWhiteSpace(x.ProductCode)) return int.MaxValue;
+		//				var s = new string(x.ProductCode.Trim().SkipWhile(ch => !char.IsDigit(ch)).TakeWhile(char.IsDigit).ToArray());
+		//				return int.TryParse(s, out var n) ? n : int.MaxValue;
+		//			}).ToList();
 
-//			// 6) 分頁
-//			var total = list.Count;
-//			page = Math.Max(1, page);
-//			pageSize = Math.Max(1, pageSize);
-//			var pageList = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+		//			// 6) 分頁
+		//			var total = list.Count;
+		//			page = Math.Max(1, page);
+		//			pageSize = Math.Max(1, pageSize);
+		//			var pageList = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-//			// 下拉來源 + 查詢字串回填
-//			ViewBag.TypeList = await _context.ProductInfos.AsNoTracking()
-//				.Select(p => p.ProductType).Distinct().OrderBy(s => s).ToListAsync();
-//			ViewBag.SupplierList = await _context.Suppliers.AsNoTracking()
-//				.OrderBy(s => s.SupplierName).Select(s => new { s.SupplierId, s.SupplierName }).ToListAsync();
-//			ViewBag.PlatformList = await _context.GameProductDetails.AsNoTracking()
-//				.Where(g => g.PlatformId != null)
-//				.Select(g => new { g.PlatformId, g.PlatformName }).Distinct()
-//				.OrderBy(g => g.PlatformName).ToListAsync();
-//			ViewBag.MerchTypeList = await _context.MerchTypes.AsNoTracking()
-//				.OrderBy(m => m.MerchTypeName).Select(m => new { m.MerchTypeId, m.MerchTypeName }).ToListAsync();
+		//			// 下拉來源 + 查詢字串回填
+		//			ViewBag.TypeList = await _context.ProductInfos.AsNoTracking()
+		//				.Select(p => p.ProductType).Distinct().OrderBy(s => s).ToListAsync();
+		//			ViewBag.SupplierList = await _context.Suppliers.AsNoTracking()
+		//				.OrderBy(s => s.SupplierName).Select(s => new { s.SupplierId, s.SupplierName }).ToListAsync();
+		//			ViewBag.PlatformList = await _context.GameProductDetails.AsNoTracking()
+		//				.Where(g => g.PlatformId != null)
+		//				.Select(g => new { g.PlatformId, g.PlatformName }).Distinct()
+		//				.OrderBy(g => g.PlatformName).ToListAsync();
+		//			ViewBag.MerchTypeList = await _context.MerchTypes.AsNoTracking()
+		//				.OrderBy(m => m.MerchTypeName).Select(m => new { m.MerchTypeId, m.MerchTypeName }).ToListAsync();
 
-//			ViewBag.Keyword = keyword; ViewBag.Type = type; ViewBag.Status = status;
-//			ViewBag.SupplierId = supplierId; ViewBag.PlatformId = platformId;
-//			ViewBag.MerchTypeId = merchTypeId; ViewBag.GameType = gameType;
-//			ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = total;
+		//			ViewBag.Keyword = keyword; ViewBag.Type = type; ViewBag.Status = status;
+		//			ViewBag.SupplierId = supplierId; ViewBag.PlatformId = platformId;
+		//			ViewBag.MerchTypeId = merchTypeId; ViewBag.GameType = gameType;
+		//			ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = total;
 
-//			return PartialView("_StripsList", pageList);
-//		}
+		//			return PartialView("_StripsList", pageList);
+		//		}
 
-//        // 儲存目錄（相對於 wwwroot）
-//        private const string ProductImagesRelFolder = "/images/products";
+		//        // 儲存目錄（相對於 wwwroot）
+		//        private const string ProductImagesRelFolder = "/images/products";
 
-//        // 目錄（實體路徑）
-//        private string ProductImagesAbsFolder =>
-//            Path.Combine(_hostEnvironment.WebRootPath, "images", "products");
+		//        // 目錄（實體路徑）
+		//        private string ProductImagesAbsFolder =>
+		//            Path.Combine(_hostEnvironment.WebRootPath, "images", "products");
 
-//        // 允許的副檔名（可依需求增減）
-//        private static readonly HashSet<string> _allowedExts = new(StringComparer.OrdinalIgnoreCase)
-//{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+		//        // 允許的副檔名（可依需求增減）
+		//        private static readonly HashSet<string> _allowedExts = new(StringComparer.OrdinalIgnoreCase)
+		//{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
 
-//        // 產生安全檔名（避免原始檔名注入/碰撞）
-//        private static string MakeSafeFileName(string? prefer, string ext)
-//        {
-//            var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
-//            var guid = Guid.NewGuid().ToString("N");
-//            var baseName = string.IsNullOrWhiteSpace(prefer)
-//                ? "img"
-//                : Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-"); // 簡單 slug
-//            baseName = baseName.Trim('-');
-//            if (baseName.Length > 40) baseName = baseName.Substring(0, 40);
-//            return $"{baseName}_{stamp}_{guid}{ext}";
-//        }
+		//        // 產生安全檔名（避免原始檔名注入/碰撞）
+		//        private static string MakeSafeFileName(string? prefer, string ext)
+		//        {
+		//            var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+		//            var guid = Guid.NewGuid().ToString("N");
+		//            var baseName = string.IsNullOrWhiteSpace(prefer)
+		//                ? "img"
+		//                : Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-"); // 簡單 slug
+		//            baseName = baseName.Trim('-');
+		//            if (baseName.Length > 40) baseName = baseName.Substring(0, 40);
+		//            return $"{baseName}_{stamp}_{guid}{ext}";
+		//        }
 
-//        // 實際存檔：回傳【相對路徑】清單（/images/products/xxx.ext）
-//        private async Task<List<string>> SaveUploadedFilesAsync(IEnumerable<IFormFile> files, string? preferNameForSlug)
-//        {
-//            Directory.CreateDirectory(ProductImagesAbsFolder);
-//            var relPaths = new List<string>();
+		//        // 實際存檔：回傳【相對路徑】清單（/images/products/xxx.ext）
+		//        private async Task<List<string>> SaveUploadedFilesAsync(IEnumerable<IFormFile> files, string? preferNameForSlug)
+		//        {
+		//            Directory.CreateDirectory(ProductImagesAbsFolder);
+		//            var relPaths = new List<string>();
 
-//            foreach (var f in files)
-//            {
-//                if (f == null || f.Length == 0) continue;
+		//            foreach (var f in files)
+		//            {
+		//                if (f == null || f.Length == 0) continue;
 
-//                var ext = Path.GetExtension(f.FileName);
-//                if (string.IsNullOrWhiteSpace(ext) || !_allowedExts.Contains(ext))
-//                    continue; // 直接忽略不合規檔案
+		//                var ext = Path.GetExtension(f.FileName);
+		//                if (string.IsNullOrWhiteSpace(ext) || !_allowedExts.Contains(ext))
+		//                    continue; // 直接忽略不合規檔案
 
-//                var fname = MakeSafeFileName(preferNameForSlug, ext);
-//                var abs = Path.Combine(ProductImagesAbsFolder, fname);
-//                using (var fs = System.IO.File.Create(abs))
-//                {
-//                    await f.CopyToAsync(fs);
-//                }
-//                relPaths.Add($"{ProductImagesRelFolder}/{fname}".Replace('\\', '/'));
-//            }
-//            return relPaths;
-//        }
+		//                var fname = MakeSafeFileName(preferNameForSlug, ext);
+		//                var abs = Path.Combine(ProductImagesAbsFolder, fname);
+		//                using (var fs = System.IO.File.Create(abs))
+		//                {
+		//                    await f.CopyToAsync(fs);
+		//                }
+		//                relPaths.Add($"{ProductImagesRelFolder}/{fname}".Replace('\\', '/'));
+		//            }
+		//            return relPaths;
+		//        }
 
-//        // 刪除實體檔（只有在無其他紀錄引用同一路徑時才刪）
-//        private async Task TryDeletePhysicalFileIfNoReferenceAsync(string relPath)
-//        {
-//            if (string.IsNullOrWhiteSpace(relPath)) return;
+		//        // 刪除實體檔（只有在無其他紀錄引用同一路徑時才刪）
+		//        private async Task TryDeletePhysicalFileIfNoReferenceAsync(string relPath)
+		//        {
+		//            if (string.IsNullOrWhiteSpace(relPath)) return;
 
-//            var stillRef = await _context.ProductImages
-//                .AsNoTracking()
-//                .AnyAsync(x => x.ProductimgUrl == relPath);
-//            if (stillRef) return; // 還有人用就不刪
+		//            var stillRef = await _context.ProductImages
+		//                .AsNoTracking()
+		//                .AnyAsync(x => x.ProductimgUrl == relPath);
+		//            if (stillRef) return; // 還有人用就不刪
 
-//            // 限制只能刪 wwwroot/images/products 下的檔
-//            if (!relPath.StartsWith(ProductImagesRelFolder, StringComparison.OrdinalIgnoreCase)) return;
+		//            // 限制只能刪 wwwroot/images/products 下的檔
+		//            if (!relPath.StartsWith(ProductImagesRelFolder, StringComparison.OrdinalIgnoreCase)) return;
 
-//            var abs = Path.Combine(_hostEnvironment.WebRootPath, relPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-//            if (System.IO.File.Exists(abs))
-//            {
-//                try { System.IO.File.Delete(abs); } catch { /* ignore */ }
-//            }
-        //}
+		//            var abs = Path.Combine(_hostEnvironment.WebRootPath, relPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+		//            if (System.IO.File.Exists(abs))
+		//            {
+		//                try { System.IO.File.Delete(abs); } catch { /* ignore */ }
+		//            }
+		//}
 
-        // ============================================================
-        // Detail（Modal / Panel）— 共用 Builder
-        // ============================================================
-        [HttpGet]
+		// 儲存目錄（相對於 wwwroot）
+		private const string ProductImagesRelFolder = "/images/products";
+
+		// 目錄（實體路徑）
+		private string ProductImagesAbsFolder =>
+			Path.Combine(_hostEnvironment.WebRootPath, "images", "products");
+
+		// 允許的副檔名
+		private static readonly HashSet<string> _allowedExts = new(StringComparer.OrdinalIgnoreCase)
+{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+		// 產生安全檔名（避免原始檔名注入/碰撞）
+		private static string MakeSafeFileName(string? prefer, string ext)
+		{
+			var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+			var guid = Guid.NewGuid().ToString("N");
+			var baseName = string.IsNullOrWhiteSpace(prefer)
+				? "img"
+				: Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-");
+			baseName = baseName.Trim('-');
+			if (baseName.Length > 40) baseName = baseName.Substring(0, 40);
+			return $"{baseName}_{stamp}_{guid}{ext}";
+		}
+
+		// 存單/多檔至 wwwroot/images/products，回傳【相對路徑】清單（/images/products/xxx.ext）
+		private async Task<List<string>> SaveUploadedFilesAsync(IEnumerable<IFormFile> files, string? preferNameForSlug)
+		{
+			Directory.CreateDirectory(ProductImagesAbsFolder);
+			var relPaths = new List<string>();
+
+			foreach (var f in files)
+			{
+				if (f == null || f.Length == 0) continue;
+
+				var ext = Path.GetExtension(f.FileName);
+				if (string.IsNullOrWhiteSpace(ext) || !_allowedExts.Contains(ext))
+					continue;
+
+				var fname = MakeSafeFileName(preferNameForSlug, ext);
+				var abs = Path.Combine(ProductImagesAbsFolder, fname);
+				using (var fs = System.IO.File.Create(abs))
+				{
+					await f.CopyToAsync(fs);
+				}
+				relPaths.Add($"{ProductImagesRelFolder}/{fname}".Replace('\\', '/'));
+			}
+			return relPaths;
+		}
+
+		// （選用）如果資料庫已無人引用該相對路徑，就刪除實體檔
+		private async Task TryDeletePhysicalFileIfNoReferenceAsync(string relPath)
+		{
+			if (string.IsNullOrWhiteSpace(relPath)) return;
+
+			var stillRef = await _context.ProductImages
+				.AsNoTracking()
+				.AnyAsync(x => x.ProductimgUrl == relPath);
+			if (stillRef) return;
+
+			if (!relPath.StartsWith(ProductImagesRelFolder, StringComparison.OrdinalIgnoreCase)) return;
+
+			var abs = Path.Combine(_hostEnvironment.WebRootPath,
+				relPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+			if (System.IO.File.Exists(abs))
+			{
+				try { System.IO.File.Delete(abs); } catch { /* ignore */ }
+			}
+		}
+
+
+		// ============================================================
+		// Detail（Modal / Panel）— 共用 Builder
+		// ============================================================
+		[HttpGet]
 		public async Task<IActionResult> DetailModal(int id)
 		{
 			var vm = await BuildDetailVM(id);
@@ -411,11 +481,19 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				ProductCreatedBy = p.ProductCreatedBy,
 				ProductUpdatedAt = p.ProductUpdatedAt,
 				ProductUpdatedBy = p.ProductUpdatedBy,
-				ProductCode = await _context.ProductCodes.Where(c => c.ProductId == id).Select(c => c.ProductCode1).FirstOrDefaultAsync(),
+				ProductCode = await _context.ProductCodes
+					.Where(c => c.ProductId == id)
+					.Select(c => c.ProductCode1)
+					.FirstOrDefaultAsync(),
 				Images = await _context.ProductImages.AsNoTracking()
-					.Where(i => i.ProductId == id)
+					.Where(i => i.ProductId == id && i.ProductimgUrl != null && i.ProductimgUrl != "")
 					.OrderByDescending(i => i.ProductimgId)
-					.Select(i => new ProductDetailModalVM.ImageVM { Id = i.ProductimgId, Url = i.ProductimgUrl, Alt = i.ProductimgAltText })
+					.Select(i => new ProductDetailModalVM.ImageVM
+					{
+						Id = i.ProductimgId,
+						Url = i.ProductimgUrl!, // e.g. "/images/products/xxx.jpg"
+						Alt = i.ProductimgAltText ?? p.ProductName
+					})
 					.ToListAsync()
 			};
 
@@ -433,7 +511,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					vm.GameDescription = d.ProductDescription;
 				}
 			}
-			else
+			else if (string.Equals(p.ProductType, "notgame", StringComparison.OrdinalIgnoreCase))
 			{
 				var d = await _context.OtherProductDetails.AsNoTracking().FirstOrDefaultAsync(x => x.ProductId == id);
 				if (d != null)
@@ -453,6 +531,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				}
 			}
 
+			// 異動紀錄
 			vm.LastLogs = await _context.ProductInfoAuditLogs.AsNoTracking()
 				.Where(a => a.ProductId == id)
 				.OrderByDescending(a => a.ChangedAt)
@@ -470,6 +549,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 
 			return vm;
 		}
+
 
 		// 小工具：將 productType 正規化
 		private static string NormalizeType(string? type)
@@ -537,16 +617,18 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			ViewBag.EnableOther = type == "notgame";
 			await FillDropdownsAsync();
 
-			// --- 條件式驗證 ---
+			// 清掉不屬於該類別的欄位，防跨區誤寫
+			GateFieldsByType(vm);
+
+			// === 條件式驗證 ===
 			if (string.IsNullOrWhiteSpace(type))
 				ModelState.AddModelError(nameof(vm.ProductType), "請先選擇類別");
+			if (!vm.SupplierId.HasValue)
+				ModelState.AddModelError(nameof(vm.SupplierId), "供應商為必選");
 
 			if (type == "game")
 			{
-				// 移除原本的：平台為必填
-				// if (string.IsNullOrWhiteSpace(vm.PlatformName) && vm.PlatformId == null)
-				//     ModelState.AddModelError(nameof(vm.PlatformName), "平台為必填");
-
+				// 平台允許為空（拿掉必填限制）
 				if (string.IsNullOrWhiteSpace(vm.GameType))
 					ModelState.AddModelError(nameof(vm.GameType), "遊戲類型為必填");
 			}
@@ -560,7 +642,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					ModelState.AddModelError(nameof(vm.StockQuantity), "庫存數量不可小於 0");
 			}
 
-			// 收集錯誤給 View
+			// 收集錯誤（回傳部分檢核頁面時使用）
 			var allErrors = ModelState
 				.Where(ms => ms.Value.Errors.Any())
 				.Select(ms => new
@@ -573,9 +655,10 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 			if (!ModelState.IsValid)
 				return PartialView("_CreateEditModal", vm);
 
+			await using var tx = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				// === 1) 建 Info ===
+				// === 1) 建 ProductInfo ===
 				var entity = new ProductInfo();
 				ApplyFromVM(entity, vm);
 				entity.ProductType = type;
@@ -583,16 +666,16 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 				entity.ProductCreatedAt = DateTime.Now;
 
 				_context.ProductInfos.Add(entity);
-				await _context.SaveChangesAsync(); // 取 ProductId
+				await _context.SaveChangesAsync(); // 先拿 ProductId
 
-				// === 2) 建 Detail ===
+				// === 2) 建對應 Detail ===
 				if (type == "game")
 				{
 					_context.GameProductDetails.Add(new GameProductDetail
 					{
 						ProductId = entity.ProductId,
 						SupplierId = vm.SupplierId!.Value,
-						PlatformId = vm.PlatformId,       // 可以是 null
+						PlatformId = vm.PlatformId,          // 可為 null
 						PlatformName = vm.PlatformName,
 						GameType = vm.GameType,
 						DownloadLink = vm.DownloadLink,
@@ -600,7 +683,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 						IsActive = vm.IsActive
 					});
 				}
-				else if (type == "notgame")
+				else // notgame
 				{
 					_context.OtherProductDetails.Add(new OtherProductDetail
 					{
@@ -619,7 +702,7 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					});
 				}
 
-				// === 3) 產生 ProductCode ===
+				// === 3) 補商品代碼 ===
 				var code = await GenerateProductCodeAsync(type);
 				_context.ProductCodes.Add(new ProductCode
 				{
@@ -627,17 +710,97 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 					ProductCode1 = code
 				});
 
-				// 圖片上傳 & Audit Log & 存檔等照原本邏輯...
+				// 先把主資料/明細/代碼寫入
+				await _context.SaveChangesAsync();
+
+				// === 4) 圖片處理（上傳到 wwwroot/images/products + 外部連結）===
+				// 允許 .jpg/.jpeg/.png/.gif/.webp
+				var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+				// 確保資料夾存在：{webroot}/images/products
+				var webroot = _hostEnvironment.WebRootPath;
+				var absFolder = Path.Combine(webroot, "images", "products");
+				Directory.CreateDirectory(absFolder);
+				string Rel(string fileName) => $"/images/products/{fileName}".Replace('\\', '/');
+
+				// 建立安全檔名
+				static string MakeSafeFileName(string? prefer, string ext)
+				{
+					var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+					var guid = Guid.NewGuid().ToString("N");
+					var baseName = string.IsNullOrWhiteSpace(prefer)
+						? "img"
+						: Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-").Trim('-');
+					if (baseName.Length > 40) baseName = baseName[..40];
+					return $"{baseName}_{stamp}_{guid}{ext}";
+				}
+
+				// 4.1 上傳本機檔
+				if (vm.NewImageFiles is { Count: > 0 })
+				{
+					foreach (var f in vm.NewImageFiles)
+					{
+						if (f == null || f.Length == 0) continue;
+						var ext = Path.GetExtension(f.FileName);
+						if (string.IsNullOrWhiteSpace(ext) || !allowedExts.Contains(ext)) continue;
+
+						var fname = MakeSafeFileName(entity.ProductName, ext);
+						var abs = Path.Combine(absFolder, fname);
+						using (var fs = System.IO.File.Create(abs))
+							await f.CopyToAsync(fs);
+
+						_context.ProductImages.Add(new ProductImage
+						{
+							ProductId = entity.ProductId,
+							ProductimgUrl = Rel(fname),                // 儲相對路徑（/images/products/xxx）
+							ProductimgAltText = entity.ProductName,
+							ProductimgUpdatedAt = DateTime.Now
+						});
+					}
+				}
+
+				// 4.2 外部 URL
+				if (vm.NewImageUrls is { Count: > 0 })
+				{
+					foreach (var url in vm.NewImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
+					{
+						_context.ProductImages.Add(new ProductImage
+						{
+							ProductId = entity.ProductId,
+							ProductimgUrl = url.Trim(),
+							ProductimgAltText = entity.ProductName,
+							ProductimgUpdatedAt = DateTime.Now
+						});
+					}
+				}
 
 				await _context.SaveChangesAsync();
 
+				// === 5) 建一筆 CREATE 異動紀錄 ===
+				_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+				{
+					ProductId = entity.ProductId,
+					ActionType = "CREATE",
+					FieldName = "(all)",
+					OldValue = null,
+					NewValue = $"Name={entity.ProductName}, Price={entity.Price}, Type={entity.ProductType}, Code={code}",
+					ManagerId = entity.ProductCreatedBy,
+					ChangedAt = DateTime.Now
+				});
+
+				await _context.SaveChangesAsync();
+				await tx.CommitAsync();
+
 				return Json(new { ok = true, msg = $"「{entity.ProductName}」已新增！" });
 			}
-			catch (SqlException ex)
+			catch (Exception ex)
 			{
+				await tx.RollbackAsync();
 				return Json(new { ok = false, msg = $"新增失敗：{ex.Message}" });
 			}
 		}
+
 
 
 
@@ -659,209 +822,302 @@ namespace GameSpace.Areas.OnlineStore.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Edit(ProductInfoFormVM vm)
 		{
-			// 先決定類別與灰階旗標（回填畫面要用）
+			// 類別標準化 + UI 灰階旗標
 			var type = NormalizeType(vm.ProductType); // "game" / "notgame" / ""
-			vm.ProductType = type;                    // 標準化回 VM，避免 ApplyFromVM 帶入不一致
+			vm.ProductType = type;
 			ViewBag.Mode = "edit";
 			ViewBag.EnableGame = type == "game";
 			ViewBag.EnableOther = type == "notgame";
 
-			await FillDropdownsAsync(); // 若需回傳部分檢核頁面
+			// 清空不屬於該類型的欄位
+			GateFieldsByType(vm);
 
-			if (!ModelState.IsValid)
-				return PartialView("_CreateEditModal", vm);
+			await FillDropdownsAsync();
+			if (!ModelState.IsValid) return PartialView("_CreateEditModal", vm);
 
 			var p = await _context.ProductInfos.FindAsync(vm.ProductId);
 			if (p == null) return NotFound();
 
 			if (!vm.SupplierId.HasValue)
 				return Json(new { ok = false, msg = "請選擇供應商。" });
-
-			// 依類別必填檢核
-			if (type == "game")
-			{
-				if (!vm.PlatformId.HasValue)
-					return Json(new { ok = false, msg = "請選擇平台（PlatformId）。" });
-
-				if (string.IsNullOrWhiteSpace(vm.PlatformName))
-					vm.PlatformName = await LookupPlatformNameById(vm.PlatformId.Value);
-			}
-			else if (type == "notgame")
-			{
-				if (!vm.MerchTypeId.HasValue)
-					return Json(new { ok = false, msg = "非遊戲類需選擇周邊分類。" });
-			}
-			else
-			{
+			if (type == "notgame" && !vm.MerchTypeId.HasValue)
+				return Json(new { ok = false, msg = "非遊戲類需選擇周邊分類。" });
+			if (string.IsNullOrEmpty(type))
 				return Json(new { ok = false, msg = "請先選擇類別（game / notgame）。" });
-			}
 
-			// 變更前快照（log 用）
+			// 變更前快照（寫 log 用）
 			var old = new { p.ProductName, p.Price, p.ShipmentQuantity, p.IsActive, p.ProductType };
 
 			// 套用 Info
-			ApplyFromVM(p, vm);            // 會寫入名稱/類別/價格/幣別/存量/IsActive
-			p.ProductType = type;      // 再次保險：類別用標準化後
+			ApplyFromVM(p, vm);
+			p.ProductType = type; // 再保險
 			p.ProductUpdatedBy = GetCurrentManagerId();
 			p.ProductUpdatedAt = DateTime.Now;
 
-			// 類別切換：刪舊建新
-			if (!string.Equals(old.ProductType, type, StringComparison.OrdinalIgnoreCase))
+			await using var tx = await _context.Database.BeginTransactionAsync();
+			try
 			{
-				if (string.Equals(old.ProductType, "game", StringComparison.OrdinalIgnoreCase))
+				// === Detail：類別切換 → 刪舊建新；未切換 → 更新 ===
+				if (!string.Equals(old.ProductType, type, StringComparison.OrdinalIgnoreCase))
 				{
-					var g = await _context.GameProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
-					if (g != null) _context.GameProductDetails.Remove(g);
+					if (string.Equals(old.ProductType, "game", StringComparison.OrdinalIgnoreCase))
+					{
+						var g = await _context.GameProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
+						if (g != null) _context.GameProductDetails.Remove(g);
+					}
+					else if (string.Equals(old.ProductType, "notgame", StringComparison.OrdinalIgnoreCase))
+					{
+						var o = await _context.OtherProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
+						if (o != null) _context.OtherProductDetails.Remove(o);
+					}
+
+					if (type == "game")
+					{
+						_context.GameProductDetails.Add(new GameProductDetail
+						{
+							ProductId = p.ProductId,
+							SupplierId = vm.SupplierId!.Value,
+							PlatformId = vm.PlatformId,         // 可為 null
+							PlatformName = vm.PlatformName,
+							GameType = vm.GameType,
+							DownloadLink = vm.DownloadLink,
+							ProductDescription = vm.GameProductDescription,
+							IsActive = vm.IsActive
+						});
+					}
+					else // notgame
+					{
+						_context.OtherProductDetails.Add(new OtherProductDetail
+						{
+							ProductId = p.ProductId,
+							SupplierId = vm.SupplierId!.Value,
+							MerchTypeId = vm.MerchTypeId,
+							DigitalCode = vm.DigitalCode,
+							Size = vm.Size,
+							Color = vm.Color,
+							Weight = vm.Weight,
+							Dimensions = vm.Dimensions,
+							Material = vm.Material,
+							StockQuantity = vm.StockQuantity ?? 0,
+							ProductDescription = vm.OtherProductDescription,
+							IsActive = vm.IsActive
+						});
+					}
 				}
 				else
 				{
-					var o = await _context.OtherProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
-					if (o != null) _context.OtherProductDetails.Remove(o);
-				}
-
-				if (type == "game")
-				{
-					_context.GameProductDetails.Add(new GameProductDetail
+					if (type == "game")
 					{
-						ProductId = p.ProductId,
-						SupplierId = vm.SupplierId!.Value,
-						PlatformId = vm.PlatformId,
-						PlatformName = vm.PlatformName,
-						GameType = vm.GameType,
-						DownloadLink = vm.DownloadLink,
-						ProductDescription = vm.GameProductDescription,
-						IsActive = vm.IsActive
-					});
-				}
-				else // notgame
-				{
-					_context.OtherProductDetails.Add(new OtherProductDetail
+						var d = await _context.GameProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
+						if (d == null) { d = new GameProductDetail { ProductId = p.ProductId }; _context.GameProductDetails.Add(d); }
+						d.SupplierId = vm.SupplierId!.Value;
+						d.PlatformId = vm.PlatformId; // 可為 null
+						d.PlatformName = vm.PlatformName;
+						d.GameType = vm.GameType;
+						d.DownloadLink = vm.DownloadLink;
+						d.ProductDescription = vm.GameProductDescription;
+						d.IsActive = vm.IsActive;
+					}
+					else // notgame
 					{
-						ProductId = p.ProductId,
-						SupplierId = vm.SupplierId!.Value,
-						MerchTypeId = vm.MerchTypeId,
-						DigitalCode = vm.DigitalCode,
-						Size = vm.Size,
-						Color = vm.Color,
-						Weight = vm.Weight,
-						Dimensions = vm.Dimensions,
-						Material = vm.Material,
-						StockQuantity = vm.StockQuantity ?? 0,
-						ProductDescription = vm.OtherProductDescription,
-						IsActive = vm.IsActive
-					});
+						var d = await _context.OtherProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
+						if (d == null) { d = new OtherProductDetail { ProductId = p.ProductId }; _context.OtherProductDetails.Add(d); }
+						d.SupplierId = vm.SupplierId!.Value;
+						d.MerchTypeId = vm.MerchTypeId;
+						d.DigitalCode = vm.DigitalCode;
+						d.Size = vm.Size;
+						d.Color = vm.Color;
+						d.Weight = vm.Weight;
+						d.Dimensions = vm.Dimensions;
+						d.Material = vm.Material;
+						d.StockQuantity = vm.StockQuantity ?? d.StockQuantity;
+						d.ProductDescription = vm.OtherProductDescription;
+						d.IsActive = vm.IsActive;
+					}
 				}
-			}
-			else
-			{
-				// 類別未變：更新 Detail
-				if (type == "game")
+
+				// 若尚未有 ProductCode → 補一筆（不重發新代碼）
+				var hasCode = await _context.ProductCodes.AsNoTracking()
+					.AnyAsync(c => c.ProductId == p.ProductId);
+				if (!hasCode)
 				{
-					var d = await _context.GameProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
-					if (d == null) { d = new GameProductDetail { ProductId = p.ProductId }; _context.GameProductDetails.Add(d); }
-					d.SupplierId = vm.SupplierId!.Value;
-					d.PlatformId = vm.PlatformId;
-					d.PlatformName = vm.PlatformName;
-					d.GameType = vm.GameType;
-					d.DownloadLink = vm.DownloadLink;
-					d.ProductDescription = vm.GameProductDescription;
-					d.IsActive = vm.IsActive;
+					var code = await GenerateProductCodeAsync(type);
+					_context.ProductCodes.Add(new ProductCode { ProductId = p.ProductId, ProductCode1 = code });
 				}
-				else // notgame
+
+				// 先落地主資料/明細
+				await _context.SaveChangesAsync();
+
+				// === 圖片處理（wwwroot/images/products + 外部 URL） ===
+				var allowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{ ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+				var webroot = _hostEnvironment.WebRootPath;
+				var absFolder = Path.Combine(webroot, "images", "products");
+				Directory.CreateDirectory(absFolder);
+				string Rel(string fileName) => $"/images/products/{fileName}".Replace('\\', '/');
+
+				static string MakeSafeFileName(string? prefer, string ext)
 				{
-					var d = await _context.OtherProductDetails.FirstOrDefaultAsync(x => x.ProductId == p.ProductId);
-					if (d == null) { d = new OtherProductDetail { ProductId = p.ProductId }; _context.OtherProductDetails.Add(d); }
-					d.SupplierId = vm.SupplierId!.Value;
-					d.MerchTypeId = vm.MerchTypeId;
-					d.DigitalCode = vm.DigitalCode;
-					d.Size = vm.Size;
-					d.Color = vm.Color;
-					d.Weight = vm.Weight;
-					d.Dimensions = vm.Dimensions;
-					d.Material = vm.Material;
-					d.StockQuantity = vm.StockQuantity ?? d.StockQuantity;
-					d.ProductDescription = vm.OtherProductDescription;
-					d.IsActive = vm.IsActive;
+					var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+					var guid = Guid.NewGuid().ToString("N");
+					var baseName = string.IsNullOrWhiteSpace(prefer)
+						? "img"
+						: Regex.Replace(prefer, @"[^a-zA-Z0-9\-_]+", "-").Trim('-');
+					if (baseName.Length > 40) baseName = baseName[..40];
+					return $"{baseName}_{stamp}_{guid}{ext}";
 				}
-			}
 
-			//// 刪除舊圖（勾選 Remove 的）
-			//if (vm.ExistingImages is { Count: > 0 })
-			//{
-			//	var idsToRemove = vm.ExistingImages.Where(x => x.Remove).Select(x => x.ImageId).ToList();
-			//	if (idsToRemove.Count > 0)
-			//	{
-			//		var imgs = await _context.ProductImages
-			//			.Where(i => i.ProductId == p.ProductId && idsToRemove.Contains(i.ProductimgId))
-			//			.ToListAsync();
-
-			//		foreach (var img in imgs)
-			//		{
-			//			_context.ProductImages.Remove(img);
-			//			_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
-			//			{
-			//				ProductId = p.ProductId,
-			//				ActionType = "UPDATE",
-			//				FieldName = "image:remove",
-			//				OldValue = img.ProductimgUrl,
-			//				NewValue = null,
-			//				ManagerId = p.ProductUpdatedBy,
-			//				ChangedAt = DateTime.Now
-			//			});
-			//		}
-			//	}
-			//}
-
-			// 新圖：
-			// 1) 前端傳來的外部連結（NewImageUrls）
-			// 2) 若也有本地檔案，直接上傳
-			// IIamge
-			
-
-			// 若此商品尚未有 ProductCode，補一筆（不重發新代碼）
-			var hasCode = await _context.ProductCodes.AsNoTracking().AnyAsync(c => c.ProductId == p.ProductId);
-			if (!hasCode)
-			{
-				var code = await GenerateProductCodeAsync(type);
-				_context.ProductCodes.Add(new ProductCode { ProductId = p.ProductId, ProductCode1 = code });
-			}
-
-			// 一次存檔
-			await _context.SaveChangesAsync();
-
-
-			// Log（概述）
-			var log = new ProductInfoAuditLog
-			{
-				ProductId = p.ProductId,
-				ActionType = "UPDATE",
-				FieldName = "(mixed)",
-				OldValue = $"Name={old.ProductName}, Price={old.Price}, Qty={old.ShipmentQuantity}, Active={old.IsActive}, Type={old.ProductType}",
-				NewValue = $"Name={p.ProductName}, Price={p.Price}, Qty={p.ShipmentQuantity}, Active={p.IsActive}, Type={p.ProductType}",
-				ManagerId = p.ProductUpdatedBy,
-				ChangedAt = DateTime.Now
-			};
-			_context.ProductInfoAuditLogs.Add(log);
-			await _context.SaveChangesAsync();
-
-			return Json(new
-			{
-				ok = true,
-				msg = $"「{p.ProductName}」的商品資訊已修改完成！",
-				updated = new
+				// 刪舊圖（若前端有傳 ExistingImages.Remove）
+				if (vm.ExistingImages is { Count: > 0 })
 				{
-					id = p.ProductId,
-					name = p.ProductName,
-					type = p.ProductType,
-					priceN0 = p.Price.ToString("N0"),
-					qty = p.ShipmentQuantity,
-					active = p.IsActive,
-					lastChangedText = log.ChangedAt.ToString("yyyy/MM/dd tt hh:mm"),
-					lastChangedRaw = log.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss"),
-					lastManagerId = log.ManagerId
+					var idsToRemove = vm.ExistingImages.Where(x => x.Remove)
+													   .Select(x => x.ImageId)
+													   .ToList();
+					if (idsToRemove.Count > 0)
+					{
+						var imgs = await _context.ProductImages
+							.Where(i => i.ProductId == p.ProductId && idsToRemove.Contains(i.ProductimgId))
+							.ToListAsync();
+
+						foreach (var img in imgs)
+						{
+							_context.ProductImages.Remove(img);
+							// （選擇性刪實體檔：僅限 /images/products 下、且無其他紀錄引用）
+							try
+							{
+								if (!string.IsNullOrWhiteSpace(img.ProductimgUrl)
+									&& img.ProductimgUrl.StartsWith("/images/products", StringComparison.OrdinalIgnoreCase))
+								{
+									var abs = Path.Combine(webroot, img.ProductimgUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+									// 檢查是否還有其他引用
+									var stillRef = await _context.ProductImages.AsNoTracking()
+										.AnyAsync(x => x.ProductimgUrl == img.ProductimgUrl && x.ProductId != p.ProductId);
+									if (!stillRef && System.IO.File.Exists(abs))
+										System.IO.File.Delete(abs);
+								}
+							}
+							catch { /* ignore */ }
+
+							_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+							{
+								ProductId = p.ProductId,
+								ActionType = "UPDATE",
+								FieldName = "image:remove",
+								OldValue = img.ProductimgUrl,
+								NewValue = null,
+								ManagerId = p.ProductUpdatedBy,
+								ChangedAt = DateTime.Now
+							});
+						}
+					}
 				}
-			});
+
+				// 新上傳檔案
+				if (vm.NewImageFiles is { Count: > 0 })
+				{
+					foreach (var f in vm.NewImageFiles)
+					{
+						if (f == null || f.Length == 0) continue;
+						var ext = Path.GetExtension(f.FileName);
+						if (string.IsNullOrWhiteSpace(ext) || !allowedExts.Contains(ext)) continue;
+
+						var fname = MakeSafeFileName(p.ProductName, ext);
+						var abs = Path.Combine(absFolder, fname);
+						using (var fs = System.IO.File.Create(abs))
+							await f.CopyToAsync(fs);
+
+						var rel = Rel(fname);
+						_context.ProductImages.Add(new ProductImage
+						{
+							ProductId = p.ProductId,
+							ProductimgUrl = rel,
+							ProductimgAltText = p.ProductName,
+							ProductimgUpdatedAt = DateTime.Now
+						});
+
+						_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+						{
+							ProductId = p.ProductId,
+							ActionType = "UPDATE",
+							FieldName = "image:add",
+							OldValue = null,
+							NewValue = rel,
+							ManagerId = p.ProductUpdatedBy,
+							ChangedAt = DateTime.Now
+						});
+					}
+				}
+
+				// 新增外部 URL
+				if (vm.NewImageUrls is { Count: > 0 })
+				{
+					foreach (var url in vm.NewImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
+					{
+						var clean = url.Trim();
+						_context.ProductImages.Add(new ProductImage
+						{
+							ProductId = p.ProductId,
+							ProductimgUrl = clean,
+							ProductimgAltText = p.ProductName,
+							ProductimgUpdatedAt = DateTime.Now
+						});
+
+						_context.ProductInfoAuditLogs.Add(new ProductInfoAuditLog
+						{
+							ProductId = p.ProductId,
+							ActionType = "UPDATE",
+							FieldName = "image:add:url",
+							OldValue = null,
+							NewValue = clean,
+							ManagerId = p.ProductUpdatedBy,
+							ChangedAt = DateTime.Now
+						});
+					}
+				}
+
+				await _context.SaveChangesAsync();
+
+				// === 總覽式 UPDATE 異動紀錄 ===
+				var log = new ProductInfoAuditLog
+				{
+					ProductId = p.ProductId,
+					ActionType = "UPDATE",
+					FieldName = "(mixed)",
+					OldValue = $"Name={old.ProductName}, Price={old.Price}, Qty={old.ShipmentQuantity}, Active={old.IsActive}, Type={old.ProductType}",
+					NewValue = $"Name={p.ProductName}, Price={p.Price}, Qty={p.ShipmentQuantity}, Active={p.IsActive}, Type={p.ProductType}",
+					ManagerId = p.ProductUpdatedBy,
+					ChangedAt = DateTime.Now
+				};
+				_context.ProductInfoAuditLogs.Add(log);
+				await _context.SaveChangesAsync();
+
+				await tx.CommitAsync();
+
+				return Json(new
+				{
+					ok = true,
+					msg = $"「{p.ProductName}」的商品資訊已修改完成！",
+					updated = new
+					{
+						id = p.ProductId,
+						name = p.ProductName,
+						type = p.ProductType,
+						priceN0 = p.Price.ToString("N0"),
+						qty = p.ShipmentQuantity,
+						active = p.IsActive,
+						lastChangedText = log.ChangedAt.ToString("yyyy/MM/dd tt hh:mm"),
+						lastChangedRaw = log.ChangedAt.ToString("yyyy/MM/dd HH:mm:ss"),
+						lastManagerId = log.ManagerId
+					}
+				});
+			}
+			catch (Exception ex)
+			{
+				await tx.RollbackAsync();
+				return Json(new { ok = false, msg = "更新失敗：" + ex.Message });
+			}
 		}
+
 
 		//=======================
 		// Delete（軟刪）+ Deactivate（寬版 AJAX 用）

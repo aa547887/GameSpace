@@ -19,6 +19,692 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Areas\OnlineStore\wwwroot\ChatGPT Image 2025年9月18日 下午02_24_24.png" />
+    <None Remove="Areas\OnlineStore\wwwroot\css\cat-ears.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\css\site.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\css\stylecol.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\all.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\all.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\brands.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\brands.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\fontawesome.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\fontawesome.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\regular.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\regular.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\solid.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\solid.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\svg-with-js.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\svg-with-js.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\svg.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\svg.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v4-font-face.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v4-font-face.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v4-shims.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v4-shims.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v5-font-face.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\css\v5-font-face.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\all.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\all.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\brands.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\brands.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\conflict-detection.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\conflict-detection.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\fontawesome.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\fontawesome.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\regular.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\regular.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\solid.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\solid.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\v4-shims.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\js\v4-shims.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\sprites\brands.svg" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\sprites\regular.svg" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\sprites\solid.svg" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-brands-400.woff2" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-regular-400.woff2" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-solid-900.woff2" />
+    <None Remove="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-v4compatibility.woff2" />
+    <None Remove="Areas\OnlineStore\wwwroot\icon\ImageToStl.com_Gamiport.ico" />
+    <None Remove="Areas\OnlineStore\wwwroot\js\cat-ears.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\js\test.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\bootstrap\LICENSE" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\image\undraw_profile.svg" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\additional-methods.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\additional-methods.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\jquery.validate.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\jquery.validate.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery-validation\LICENSE.md" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.min.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.min.map" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\jquery\LICENSE.txt" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\401.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\404.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\500.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-area-demo.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-bar-demo.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-pie-demo.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\datatables-demo.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\img\error-404-monochrome.svg" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\charts.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\css\styles.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\index.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\js\datatables-simple-demo.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\js\scripts.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\layout-sidenav-light.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\layout-static.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\login.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\password.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\register.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\sb-admin\tables.html" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\css\chat-1to1.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\css\mutes.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\css\Notification_Detail.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\css\Notification_Index.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\css\support-bubbles.css" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\js\chat-1to1.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\lib\social_hub\js\mutes.js" />
+    <None Remove="Areas\OnlineStore\wwwroot\picture\5377.jpg" />
+    <None Remove="Areas\OnlineStore\wwwroot\picture\537Login.gif" />
+    <None Remove="Areas\OnlineStore\wwwroot\picture\Gamiport.png" />
+    <None Remove="Areas\OnlineStore\wwwroot\picture\home.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Areas\OnlineStore\wwwroot\ChatGPT Image 2025年9月18日 下午02_24_24.png">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\css\cat-ears.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\css\site.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\css\stylecol.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\all.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\all.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\brands.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\brands.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\fontawesome.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\fontawesome.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\regular.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\regular.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\solid.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\solid.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\svg-with-js.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\svg-with-js.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\svg.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\svg.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v4-font-face.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v4-font-face.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v4-shims.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v4-shims.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v5-font-face.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\css\v5-font-face.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\all.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\all.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\brands.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\brands.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\conflict-detection.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\conflict-detection.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\fontawesome.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\fontawesome.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\regular.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\regular.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\solid.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\solid.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\v4-shims.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\js\v4-shims.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\sprites\brands.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\sprites\regular.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\sprites\solid.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-brands-400.woff2">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-regular-400.woff2">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-solid-900.woff2">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\font-awesome\webfonts\fa-v4compatibility.woff2">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\icon\ImageToStl.com_Gamiport.ico">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\js\cat-ears.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\js\test.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\bootstrap\LICENSE">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\image\undraw_profile.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\additional-methods.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\additional-methods.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\jquery.validate.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation\dist\jquery.validate.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery-validation\LICENSE.md">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery\dist\jquery.min.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\jquery\LICENSE.txt">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\401.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\404.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\500.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-area-demo.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-bar-demo.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\chart-pie-demo.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\demo\datatables-demo.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\assets\img\error-404-monochrome.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\charts.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\css\styles.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\index.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\js\datatables-simple-demo.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\js\scripts.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\layout-sidenav-light.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\layout-static.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\login.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\password.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\register.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\sb-admin\tables.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\css\chat-1to1.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\css\mutes.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\css\Notification_Detail.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\css\Notification_Index.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\css\support-bubbles.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\js\chat-1to1.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\lib\social_hub\js\mutes.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\picture\5377.jpg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\picture\537Login.gif">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\picture\Gamiport.png">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="Areas\OnlineStore\wwwroot\picture\home.jpg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
@@ -36,6 +722,7 @@
     <Folder Include="Areas\MiniGame\Models\" />
     <Folder Include="Areas\OnlineStore\Data\" />
     <Folder Include="Areas\OnlineStore\Models\" />
+    <Folder Include="Areas\OnlineStore\wwwroot\NewFolder\" />
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="wwwroot\lib\image\" />
     <Folder Include="wwwroot\icon\" />
