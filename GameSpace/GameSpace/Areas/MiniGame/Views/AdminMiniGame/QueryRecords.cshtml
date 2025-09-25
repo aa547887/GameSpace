@@ -189,8 +189,6 @@
 </div>
 
 <script>
-    function viewGameDetails(recordId) {
-        // 這裡可以添加查看遊戲詳情的功能
-        alert('查看遊戲記錄詳情: ' + recordId);
-    }
+    function viewGameDetails(recordId) { window.location.href = `/MiniGame/AdminMiniGame/ViewGameRecords?id=${recordId}`; }
 </script>
+

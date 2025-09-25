@@ -16,11 +16,11 @@
             <form method="get" class="row g-3">
                 <div class="col-md-4">
                     <label for="userId" class="form-label">會員ID</label>
-                    <input type="number" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
+                    <input type="number" class="form-control" id="userId" name="userId" placeholder="輸入會員ID" value="@ViewBag.UserId">
                 </div>
                 <div class="col-md-4">
                     <label for="userName" class="form-label">會員名稱</label>
-                    <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱">
+                    <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱" value="@ViewBag.UserName">
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
@@ -36,8 +36,12 @@
 
     <!-- 查詢結果 -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">查詢結果</h6>
+            @if (ViewBag.HasSearched == true)
+            {
+                <span class="badge badge-info">共 @ViewBag.ResultCount 筆記錄</span>
+            }
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -52,12 +56,146 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">請輸入查詢條件</td>
-                        </tr>
+                        @if (ViewBag.HasSearched == true)
+                        {
+                            @if (ViewBag.Results != null && ViewBag.Results.Count > 0)
+                            {
+                                @foreach (var user in ViewBag.Results)
+                                {
+                                    <tr>
+                                        <td>@user.Id</td>
+                                        <td>@user.UserName</td>
+                                        <td>
+                                            <span class="badge badge-success">@user.Points 點</span>
+                                        </td>
+                                        <td>@user.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>
+                                            <a href="@Url.Action("Details", new { id = user.Id })" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> 詳情
+                                            </a>
+                                            <a href="@Url.Action("History", new { id = user.Id })" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-history"></i> 歷史
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        <i class="fas fa-search fa-2x mb-2"></i><br>
+                                        未找到符合條件的會員
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                                    請輸入查詢條件進行搜尋
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- 統計資訊 -->
+    @if (ViewBag.HasSearched == true)
+    {
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總會員數</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalUsers</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總點數</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalPoints</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-coins fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均點數</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.AveragePoints</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">最高點數</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.MaxPoints</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-crown fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
+
+<script>
+// 自動提交表單功能
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[type="number"], input[type="text"]');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // 延遲提交，避免頻繁請求
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                if (this.value.length > 0) {
+                    form.submit();
+                }
+            }, 500);
+        });
+    });
+});
+
+// 清除表單功能
+function clearForm() {
+    document.getElementById('userId').value = '';
+    document.getElementById('userName').value = '';
+    window.location.href = '@Url.Action("Index")';
+}
+</script>

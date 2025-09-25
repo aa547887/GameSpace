@@ -188,8 +188,6 @@
 </div>
 
 <script>
-    function viewDetails(recordId) {
-        // 這裡可以添加查看詳情的功能
-        alert('查看簽到記錄詳情: ' + recordId);
-    }
+    function viewDetails(recordId) { window.location.href = `/MiniGame/AdminSignInStats/ViewRecords?id=${recordId}`; }
 </script>
+

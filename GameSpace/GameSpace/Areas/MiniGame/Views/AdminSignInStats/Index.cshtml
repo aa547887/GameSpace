@@ -183,8 +183,6 @@
 </div>
 
 <script>
-    function viewSignInDetails(signInId) {
-        // 這裡可以添加查看簽到詳情的功能
-        alert('查看簽到詳情: ' + signInId);
-    }
+    function viewSignInDetails(signInId) { window.location.href = `/MiniGame/AdminSignInStats/ViewRecords?id=${signInId}`; }
 </script>
+

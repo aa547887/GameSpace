@@ -190,13 +190,8 @@
 </div>
 
 <script>
-    function viewPetDetails(petId) {
-        // 這裡可以添加查看寵物詳情的功能
-        alert('查看寵物詳情: ' + petId);
-    }
+    function viewPetDetails(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}`; }
 
-    function editPet(petId) {
-        // 這裡可以添加編輯寵物的功能
-        alert('編輯寵物: ' + petId);
-    }
+    function editPet(petId) { window.location.href = `/MiniGame/AdminPet/IndividualSettings?id=${petId}&mode=edit`; }
 </script>
+

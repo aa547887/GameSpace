@@ -123,10 +123,11 @@
     document.getElementById('userId').addEventListener('input', function() {
         const userId = this.value;
         if (userId) {
-            // 這裡可以添加AJAX調用來獲取用戶信息
+            // 使用AJAX調用來獲取用戶信息
             document.getElementById('userInfo').innerHTML = '<p class="text-info">正在查詢用戶信息...</p>';
         } else {
             document.getElementById('userInfo').innerHTML = '<p class="text-muted">請輸入用戶ID查看信息</p>';
         }
     });
 </script>
+

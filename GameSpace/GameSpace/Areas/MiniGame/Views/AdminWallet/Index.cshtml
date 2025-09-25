@@ -182,13 +182,8 @@
 </div>
 
 <script>
-    function viewUserDetails(userId) {
-        // 這裡可以添加查看用戶詳情的功能
-        alert('查看用戶詳情: ' + userId);
-    }
+    function viewUserDetails(userId) { window.location.href = `/MiniGame/AdminWallet/QueryPoints?userId=${userId}`; }
 
-    function adjustPoints(userId) {
-        // 這裡可以添加調整點數的功能
-        alert('調整用戶點數: ' + userId);
-    }
+    function adjustPoints(userId) { window.location.href = `/MiniGame/AdminWallet/AdjustPoints?userId=${userId}`; }
 </script>
+
