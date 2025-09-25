@@ -14,7 +14,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<bool> HasPermissionAsync(int managerId, string permission)
         {
-            var manager = await _context.ManagerData
+            var manager = await _context.ManagerDatum
                 .Include(m => m.ManagerRoles)
                 .ThenInclude(r => r.ManagerRolePermission)
                 .FirstOrDefaultAsync(m => m.ManagerId == managerId);
@@ -28,7 +28,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<List<ManagerRolePermission>> GetManagerPermissionsAsync(int managerId)
         {
-            var manager = await _context.ManagerData
+            var manager = await _context.ManagerDatum
                 .Include(m => m.ManagerRoles)
                 .ThenInclude(r => r.ManagerRolePermission)
                 .FirstOrDefaultAsync(m => m.ManagerId == managerId);
@@ -36,9 +36,9 @@ namespace GameSpace.Areas.MiniGame.Services
             return manager?.ManagerRoles?.Select(r => r.ManagerRolePermission).ToList() ?? new List<ManagerRolePermission>();
         }
 
-        public async Task<ManagerData?> GetManagerDataAsync(int managerId)
+        public async Task<ManagerDatum?> GetManagerDatumAsync(int managerId)
         {
-            return await _context.ManagerData
+            return await _context.ManagerDatum
                 .Include(m => m.ManagerRoles)
                 .ThenInclude(r => r.ManagerRolePermission)
                 .FirstOrDefaultAsync(m => m.ManagerId == managerId);

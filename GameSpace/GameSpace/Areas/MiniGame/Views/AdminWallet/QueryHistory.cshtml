@@ -1,0 +1,181 @@
+@model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
+@{
+    ViewData["Title"] = "查詢會員收支明細";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">查詢會員收支明細</h1>
+    </div>
+
+    <!-- 搜索區域 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">搜索條件</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-action="QueryHistory">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="userId">用戶ID</label>
+                                    <input type="number" class="form-control" id="userId" name="userId" 
+                                           value="@ViewBag.UserId" placeholder="輸入用戶ID">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="startDate">開始日期</label>
+                                    <input type="date" class="form-control" id="startDate" name="startDate" 
+                                           value="@ViewBag.StartDate">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="endDate">結束日期</label>
+                                    <input type="date" class="form-control" id="endDate" name="endDate" 
+                                           value="@ViewBag.EndDate">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search"></i> 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計信息 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總收入</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalIncome</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">總支出</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalExpense</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">淨變化</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.NetChange</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-balance-scale fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">交易筆數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TransactionCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收支明細列表 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">收支明細列表</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.UserPoints.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>交易時間</th>
+                                        <th>交易類型</th>
+                                        <th>交易金額</th>
+                                        <th>交易後餘額</th>
+                                        <th>交易說明</th>
+                                        <th>操作員</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var record in Model.UserPoints)
+                                    {
+                                        <tr>
+                                            <td>@record.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                            <td>
+                                                @if (record.UserPoint > 0)
+                                                {
+                                                    <span class="badge badge-success">收入</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-danger">支出</span>
+                                                }
+                                            </td>
+                                            <td class="@(record.UserPoint > 0 ? "text-success" : "text-danger")">
+                                                @(record.UserPoint > 0 ? "+" : "")@record.UserPoint
+                                            </td>
+                                            <td class="font-weight-bold">@record.UserPoint</td>
+                                            <td>@record.UserName</td>
+                                            <td>系統管理員</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">沒有找到符合條件的收支記錄</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

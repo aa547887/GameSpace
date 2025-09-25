@@ -1,0 +1,172 @@
+@model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
+@{
+    ViewData["Title"] = "查詢會員點數";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">查詢會員點數</h1>
+    </div>
+
+    <!-- 搜索區域 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">搜索條件</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-action="QueryPoints">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="searchTerm">用戶名稱或ID</label>
+                                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                                           value="@Model.SearchTerm" placeholder="輸入用戶名稱或ID">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="pageSize">每頁顯示</label>
+                                    <select class="form-control" id="pageSize" name="pageSize">
+                                        <option value="10" @(Model.PageSize == 10 ? "selected" : "")>10</option>
+                                        <option value="20" @(Model.PageSize == 20 ? "selected" : "")>20</option>
+                                        <option value="50" @(Model.PageSize == 50 ? "selected" : "")>50</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search"></i> 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計信息 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總用戶數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總點數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.WalletSummary.TotalPoints</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 點數列表 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">會員點數列表</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.UserPoints.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>用戶ID</th>
+                                        <th>用戶名稱</th>
+                                        <th>點數餘額</th>
+                                        <th>最後更新時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var userPoint in Model.UserPoints)
+                                    {
+                                        <tr>
+                                            <td>@userPoint.UserId</td>
+                                            <td>@userPoint.UserName</td>
+                                            <td class="text-success font-weight-bold">@userPoint.UserPoint</td>
+                                            <td>@userPoint.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                            <td>
+                                                <a href="@Url.Action("AdjustPoints", "AdminWallet", new { userId = userPoint.UserId })" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i> 調整點數
+                                                </a>
+                                                <a href="@Url.Action("QueryHistory", "AdminWallet", new { userId = userPoint.UserId })" 
+                                                   class="btn btn-sm btn-info">
+                                                    <i class="fas fa-history"></i> 查看歷史
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分頁 -->
+                        @if (Model.TotalPages > 1)
+                        {
+                            <nav aria-label="分頁導航">
+                                <ul class="pagination justify-content-center">
+                                    @if (Model.Page > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="@Url.Action("QueryPoints", new { page = Model.Page - 1, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">上一頁</a>
+                                        </li>
+                                    }
+                                    
+                                    @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                                    {
+                                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("QueryPoints", new { page = i, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">@i</a>
+                                        </li>
+                                    }
+                                    
+                                    @if (Model.Page < Model.TotalPages)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="@Url.Action("QueryPoints", new { page = Model.Page + 1, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">下一頁</a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">沒有找到符合條件的會員點數記錄</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

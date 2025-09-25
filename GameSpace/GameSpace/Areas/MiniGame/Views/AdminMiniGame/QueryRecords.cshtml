@@ -1,15 +1,61 @@
-@model GameSpace.Areas.MiniGame.Models.AdminMiniGameIndexViewModel
+@model GameSpace.Areas.MiniGame.Models.AdminMiniGameRecordsViewModel
 @{
-    ViewData["Title"] = "小遊戲系統管理";
+    ViewData["Title"] = "查詢會員遊戲紀錄";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">小遊戲系統管理</h1>
+        <h1 class="h3 mb-0 text-gray-800">查詢會員遊戲紀錄</h1>
     </div>
 
-    <!-- 統計卡片 -->
-    <div class="row">
+    <!-- 搜索區域 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">搜索條件</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-action="QueryRecords">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="userId">用戶ID</label>
+                                    <input type="number" class="form-control" id="userId" name="userId" 
+                                           value="@Model.UserId" placeholder="輸入用戶ID">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="userName">用戶名稱</label>
+                                    <input type="text" class="form-control" id="userName" name="userName" 
+                                           value="@Model.UserName" placeholder="輸入用戶名稱">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="gameName">遊戲名稱</label>
+                                    <input type="text" class="form-control" id="gameName" name="gameName" 
+                                           value="@Model.GameName" placeholder="輸入遊戲名稱">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search"></i> 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計信息 -->
+    <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
@@ -25,7 +71,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
@@ -41,7 +86,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-danger shadow h-100 py-2">
                 <div class="card-body">
@@ -57,7 +101,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
@@ -75,51 +118,12 @@
         </div>
     </div>
 
-    <!-- 功能按鈕區域 -->
-    <div class="row mb-4">
-        <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">功能選單</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("GameRules", "AdminMiniGame")" class="btn btn-primary btn-block">
-                                <i class="fas fa-cog"></i><br>
-                                小遊戲規則設定
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryRecords", "AdminMiniGame")" class="btn btn-success btn-block">
-                                <i class="fas fa-search"></i><br>
-                                查詢會員遊戲紀錄
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("GameReport", "AdminMiniGame")" class="btn btn-info btn-block">
-                                <i class="fas fa-chart-bar"></i><br>
-                                遊戲統計報表
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("GameSettings", "AdminMiniGame")" class="btn btn-warning btn-block">
-                                <i class="fas fa-tools"></i><br>
-                                遊戲系統設定
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 最近遊戲記錄 -->
+    <!-- 遊戲紀錄列表 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">最近遊戲記錄</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">遊戲紀錄列表</h6>
                 </div>
                 <div class="card-body">
                     @if (Model.GameRecords.Any())
@@ -139,7 +143,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var record in Model.GameRecords.OrderByDescending(r => r.GameTime).Take(20))
+                                    @foreach (var record in Model.GameRecords.OrderByDescending(r => r.GameTime))
                                     {
                                         <tr>
                                             <td>@record.GameTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
@@ -175,7 +179,7 @@
                     {
                         <div class="text-center py-4">
                             <i class="fas fa-gamepad fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">暫無遊戲記錄</p>
+                            <p class="text-gray-500">沒有找到符合條件的遊戲記錄</p>
                         </div>
                     }
                 </div>

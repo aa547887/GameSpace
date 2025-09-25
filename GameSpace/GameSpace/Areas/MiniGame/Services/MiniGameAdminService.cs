@@ -296,7 +296,17 @@ namespace GameSpace.Areas.MiniGame.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> RemoveSignInRecordAsync(int userId, DateTime signInDate)
+        
+        public async Task<bool> RemoveSignInRecordAsync(int signInId)
+        {
+            var signIn = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.SignInId == signInId);
+            if (signIn != null)
+            {
+                _context.UserSignInStats.Remove(signIn);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
         {
             var signIn = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.UserId == userId && s.SignTime.Date == signInDate.Date);
             if (signIn != null)
@@ -307,12 +317,22 @@ namespace GameSpace.Areas.MiniGame.Services
             return false;
         }
 
-        public async Task<List<UserSignInStat>> GetSignInStatsAsync()
+        public async Task<PagedResult<UserSignInStat>> GetSignInStatsAsync()
         {
-            return await _context.UserSignInStats
+            var query = _context.UserSignInStats
                 .Include(s => s.User)
-                .OrderByDescending(s => s.SignTime)
-                .ToListAsync();
+                .OrderByDescending(s => s.SignTime);
+
+            var totalCount = await query.CountAsync();
+            var items = await query.ToListAsync();
+
+            return new PagedResult<UserSignInStat>
+            {
+                Items = items,
+                Page = 1,
+                PageSize = totalCount, // 返回所有記錄
+                TotalCount = totalCount
+            };
         }
 
         public async Task<SignInRuleReadModel> GetSignInRuleAsync()

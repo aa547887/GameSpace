@@ -1,0 +1,147 @@
+@model GameSpace.Areas.MiniGame.Models.AdminSignInRulesViewModel
+@{
+    ViewData["Title"] = "簽到規則設定";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">簽到規則設定</h1>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 簽到規則設定表單 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">簽到規則設定</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="SetRule">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">規則名稱</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="@Model.SignInRule.Name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pointsReward">點數獎勵</label>
+                                    <input type="number" class="form-control" id="pointsReward" name="pointsReward" 
+                                           value="@Model.SignInRule.PointsReward" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="consecutiveDays">連續簽到天數</label>
+                                    <input type="number" class="form-control" id="consecutiveDays" name="consecutiveDays" 
+                                           value="@Model.SignInRule.ConsecutiveDays" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="isActive">是否啟用</label>
+                                    <select class="form-control" id="isActive" name="isActive">
+                                        <option value="true" @(Model.SignInRule.IsActive ? "selected" : "")>啟用</option>
+                                        <option value="false" @(!Model.SignInRule.IsActive ? "selected" : "")>停用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 儲存設定
+                            </button>
+                            <a href="@Url.Action("Index", "AdminSignInStats")" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 規則說明 -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">規則說明</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> 設定說明</h6>
+                        <ul class="mb-0">
+                            <li><strong>規則名稱：</strong>用於識別此簽到規則</li>
+                            <li><strong>點數獎勵：</strong>每次簽到可獲得的點數</li>
+                            <li><strong>連續簽到天數：</strong>達到此天數可獲得額外獎勵</li>
+                            <li><strong>是否啟用：</strong>控制此規則是否生效</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 當前規則狀態 -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">當前規則狀態</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>規則名稱</th>
+                                    <th>點數獎勵</th>
+                                    <th>連續簽到天數</th>
+                                    <th>狀態</th>
+                                    <th>最後更新時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>@Model.SignInRule.Name</td>
+                                    <td class="text-success font-weight-bold">@Model.SignInRule.PointsReward</td>
+                                    <td>@Model.SignInRule.ConsecutiveDays</td>
+                                    <td>
+                                        @if (Model.SignInRule.IsActive)
+                                        {
+                                            <span class="badge badge-success">啟用</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">停用</span>
+                                        }
+                                    </td>
+                                    <td>@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

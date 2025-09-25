@@ -1,22 +1,22 @@
 @model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
 @{
-    ViewData["Title"] = "會員點數管理";
+    ViewData["Title"] = "會員點數系統管理";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">會員點數管理</h1>
+        <h1 class="h3 mb-0 text-gray-800">會員點數系統管理</h1>
     </div>
 
     <!-- 統計卡片 -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總用戶數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.WalletSummary.TotalUsers</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.UserPoints.Count</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -32,7 +32,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總點數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.WalletSummary.TotalPoints</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.UserPoints.Sum(x => x.UserPoint)</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-coins fa-2x text-gray-300"></i>
@@ -48,7 +48,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均點數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.WalletSummary.AveragePoints</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.UserPoints.Any() ? Model.UserPoints.Average(x => x.UserPoint).ToString("F0") : "0")</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-chart-line fa-2x text-gray-300"></i>
@@ -57,76 +57,138 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 功能按鈕 -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="btn-group" role="group">
-                <a href="@Url.Action("QueryPoints", "AdminWallet")" class="btn btn-primary">
-                    <i class="fas fa-search"></i> 查詢會員點數
-                </a>
-                <a href="@Url.Action("QueryCoupons", "AdminWallet")" class="btn btn-success">
-                    <i class="fas fa-ticket-alt"></i> 查詢會員商城優惠券
-                </a>
-                <a href="@Url.Action("QueryEVouchers", "AdminWallet")" class="btn btn-info">
-                    <i class="fas fa-gift"></i> 查詢會員電子禮券
-                </a>
-                <a href="@Url.Action("AdjustPoints", "AdminWallet")" class="btn btn-warning">
-                    <i class="fas fa-edit"></i> 調整會員點數
-                </a>
-                <a href="@Url.Action("AdjustCoupons", "AdminWallet")" class="btn btn-secondary">
-                    <i class="fas fa-edit"></i> 調整會員商城優惠券
-                </a>
-                <a href="@Url.Action("AdjustEVouchers", "AdminWallet")" class="btn btn-dark">
-                    <i class="fas fa-edit"></i> 調整會員電子禮券
-                </a>
-                <a href="@Url.Action("QueryHistory", "AdminWallet")" class="btn btn-light">
-                    <i class="fas fa-history"></i> 查詢會員收支明細
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 內容區域 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">會員點數列表</h6>
-                </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>用戶ID</th>
-                                    <th>用戶名稱</th>
-                                    <th>點數餘額</th>
-                                    <th>最後更新時間</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var wallet in Model.Wallets.Items)
-                                {
-                                    <tr>
-                                        <td>@wallet.UserId</td>
-                                        <td>@wallet.UserName</td>
-                                        <td>@wallet.UserPoint</td>
-                                        <td>@wallet.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                        <td>
-                                            <a href="@Url.Action("AdjustPoints", "AdminWallet", new { userId = wallet.UserId })" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i> 調整點數
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">活躍用戶</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.UserPoints.Count(x => x.UserPoint > 0)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 功能按鈕區域 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">功能選單</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("QueryHistory", "AdminWallet")" class="btn btn-primary btn-block">
+                                <i class="fas fa-history"></i><br>
+                                查詢會員收支明細
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("AdjustPoints", "AdminWallet")" class="btn btn-success btn-block">
+                                <i class="fas fa-plus-circle"></i><br>
+                                調整會員點數
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("PointsReport", "AdminWallet")" class="btn btn-info btn-block">
+                                <i class="fas fa-chart-bar"></i><br>
+                                點數統計報表
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("PointsSettings", "AdminWallet")" class="btn btn-warning btn-block">
+                                <i class="fas fa-cog"></i><br>
+                                點數系統設定
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用戶點數列表 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">用戶點數列表</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.UserPoints.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>用戶ID</th>
+                                        <th>用戶名稱</th>
+                                        <th>當前點數</th>
+                                        <th>最後更新時間</th>
+                                        <th>狀態</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.UserPoints.OrderByDescending(x => x.UserPoint))
+                                    {
+                                        <tr>
+                                            <td>@user.UserId</td>
+                                            <td class="font-weight-bold">@user.UserName</td>
+                                            <td class="text-success font-weight-bold">@user.UserPoint</td>
+                                            <td>@user.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                            <td>
+                                                @if (user.UserPoint > 0)
+                                                {
+                                                    <span class="badge badge-success">活躍</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-secondary">無點數</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" onclick="viewUserDetails(@user.UserId)">
+                                                    <i class="fas fa-eye"></i> 詳情
+                                                </button>
+                                                <button class="btn btn-sm btn-warning" onclick="adjustPoints(@user.UserId)">
+                                                    <i class="fas fa-edit"></i> 調整
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-wallet fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">暫無用戶點數資料</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    function viewUserDetails(userId) {
+        // 這裡可以添加查看用戶詳情的功能
+        alert('查看用戶詳情: ' + userId);
+    }
+
+    function adjustPoints(userId) {
+        // 這裡可以添加調整點數的功能
+        alert('調整用戶點數: ' + userId);
+    }
+</script>

@@ -1,38 +1,190 @@
+@model GameSpace.Areas.MiniGame.Models.AdminSignInStatsIndexViewModel
 @{
-    ViewData["Title"] = "會員簽到系統";
+    ViewData["Title"] = "會員簽到系統管理";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">會員簽到系統</h1>
+        <h1 class="h3 mb-0 text-gray-800">會員簽到系統管理</h1>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="btn-group" role="group">
-                <a href="@Url.Action("SignInRules", "AdminSignInStats")" class="btn btn-primary">
-                    <i class="fas fa-cog"></i> 簽到規則設定
-                </a>
-                <a href="@Url.Action("QueryRecords", "AdminSignInStats")" class="btn btn-success">
-                    <i class="fas fa-search"></i> 查詢會員簽到紀錄
-                </a>
-                <a href="@Url.Action("AdjustRecords", "AdminSignInStats")" class="btn btn-warning">
-                    <i class="fas fa-edit"></i> 調整會員簽到紀錄
-                </a>
+    <!-- 統計卡片 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到人數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodaySignInCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總簽到次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalSignInCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-history fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">連續簽到用戶</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ConsecutiveSignInCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-fire fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總發放點數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalPointsAwarded</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 功能按鈕區域 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">功能選單</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("SignInRules", "AdminSignInStats")" class="btn btn-primary btn-block">
+                                <i class="fas fa-cog"></i><br>
+                                簽到規則設定
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("QueryRecords", "AdminSignInStats")" class="btn btn-success btn-block">
+                                <i class="fas fa-search"></i><br>
+                                查詢會員簽到紀錄
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("SignInReport", "AdminSignInStats")" class="btn btn-info btn-block">
+                                <i class="fas fa-chart-bar"></i><br>
+                                簽到統計報表
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="@Url.Action("SignInSettings", "AdminSignInStats")" class="btn btn-warning btn-block">
+                                <i class="fas fa-tools"></i><br>
+                                簽到系統設定
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近簽到記錄 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">會員簽到系統</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">最近簽到記錄</h6>
                 </div>
                 <div class="card-body">
-                    <p>請選擇上方功能按鈕來管理會員簽到相關功能。</p>
+                    @if (Model.RecentSignIns.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>簽到時間</th>
+                                        <th>用戶ID</th>
+                                        <th>用戶名稱</th>
+                                        <th>獲得點數</th>
+                                        <th>連續天數</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var signIn in Model.RecentSignIns.OrderByDescending(x => x.SignTime))
+                                    {
+                                        <tr>
+                                            <td>@signIn.SignTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                            <td>@signIn.UserId</td>
+                                            <td class="font-weight-bold">@signIn.UserName</td>
+                                            <td class="text-success font-weight-bold">+@signIn.PointsEarned</td>
+                                            <td>
+                                                @if (signIn.ConsecutiveDays >= 7)
+                                                {
+                                                    <span class="badge badge-danger">@signIn.ConsecutiveDays 天</span>
+                                                }
+                                                else if (signIn.ConsecutiveDays >= 3)
+                                                {
+                                                    <span class="badge badge-warning">@signIn.ConsecutiveDays 天</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-info">@signIn.ConsecutiveDays 天</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" onclick="viewSignInDetails(@signIn.Id)">
+                                                    <i class="fas fa-eye"></i> 詳情
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">暫無簽到記錄</p>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function viewSignInDetails(signInId) {
+        // 這裡可以添加查看簽到詳情的功能
+        alert('查看簽到詳情: ' + signInId);
+    }
+</script>

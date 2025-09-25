@@ -1,0 +1,132 @@
+@model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
+@{
+    ViewData["Title"] = "調整會員點數";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">調整會員點數</h1>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 調整點數表單 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">點數調整</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="AdjustPoints">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userId">用戶ID</label>
+                                    <input type="number" class="form-control" id="userId" name="userId" 
+                                           value="@ViewBag.UserId" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="points">調整點數</label>
+                                    <input type="number" class="form-control" id="points" name="points" 
+                                           placeholder="正數為增加，負數為減少" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="reason">調整原因</label>
+                                    <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                              placeholder="請輸入調整原因" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 確認調整
+                            </button>
+                            <a href="@Url.Action("QueryPoints", "AdminWallet")" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用戶信息 -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">用戶信息</h6>
+                </div>
+                <div class="card-body">
+                    <div id="userInfo">
+                        <p class="text-muted">請輸入用戶ID查看信息</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近調整記錄 -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">最近調整記錄</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>用戶ID</th>
+                                    <th>調整點數</th>
+                                    <th>調整原因</th>
+                                    <th>調整時間</th>
+                                    <th>操作員</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">暫無調整記錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 用戶ID輸入時自動查詢用戶信息
+    document.getElementById('userId').addEventListener('input', function() {
+        const userId = this.value;
+        if (userId) {
+            // 這裡可以添加AJAX調用來獲取用戶信息
+            document.getElementById('userInfo').innerHTML = '<p class="text-info">正在查詢用戶信息...</p>';
+        } else {
+            document.getElementById('userInfo').innerHTML = '<p class="text-muted">請輸入用戶ID查看信息</p>';
+        }
+    });
+</script>

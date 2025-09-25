@@ -11,8 +11,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [AllowAnonymous]
         public IActionResult Login()
         {
-            ViewData["Title"] = "小遊戲管理系統 - 登入";
-            return View();
+            // 重導向到主登入系統
+            return Redirect("/Login");
         }
 
         [Authorize(AuthenticationSchemes = "AdminCookie")]
