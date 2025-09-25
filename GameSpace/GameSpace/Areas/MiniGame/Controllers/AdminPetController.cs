@@ -64,17 +64,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 var users = await _adminService.GetUsersAsync();
                 var viewModel = new IndividualPetSettingsViewModel
                 {
-                    Users = users
+                    Users = users,
+                    SelectedUserId = userId ?? 0
                 };
 
-                if (userId.HasValue)
+                if (userId.HasValue && userId > 0)
                 {
-                    var pet = await _adminService.GetUserPetAsync(userId.Value);
-                    if (pet != null)
-                    {
-                        viewModel.SelectedUserId = userId.Value;
-                        viewModel.Pet = pet;
-                    }
+                    viewModel.Pet = await _adminService.GetUserPetAsync(userId.Value);
                 }
 
                 return View(viewModel);
@@ -113,6 +109,41 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 ModelState.AddModelError("", $"更新寵物資料時發生錯誤：{ex.Message}");
                 model.Users = await _adminService.GetUsersAsync();
                 return View(model);
+            }
+        }
+
+        // 查詢寵物
+        [HttpGet]
+        public async Task<IActionResult> QueryPets(PetQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
+            {
+                var result = await _adminService.QueryUserPetsAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new AdminPetListViewModel
+                {
+                    Pets = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢寵物時發生錯誤：{ex.Message}";
+                return View(new AdminPetListViewModel
+                {
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
             }
         }
 

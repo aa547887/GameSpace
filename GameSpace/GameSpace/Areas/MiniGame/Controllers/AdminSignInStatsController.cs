@@ -90,6 +90,41 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 查詢簽到紀錄
+        [HttpGet]
+        public async Task<IActionResult> QueryRecords(SignInStatsQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            try
+            {
+                var result = await _adminService.QuerySignInStatsAsync(query);
+                var users = await _adminService.GetUsersAsync();
+
+                var viewModel = new AdminSignInStatsViewModel
+                {
+                    SignInStats = result.Items,
+                    Users = users,
+                    Query = query,
+                    TotalCount = result.TotalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"查詢簽到紀錄時發生錯誤：{ex.Message}";
+                return View(new AdminSignInStatsViewModel
+                {
+                    Query = query,
+                    Users = await _adminService.GetUsersAsync()
+                });
+            }
+        }
+
         // 保持舊有方法名稱以向後兼容
         public async Task<IActionResult> Rules()
         {
