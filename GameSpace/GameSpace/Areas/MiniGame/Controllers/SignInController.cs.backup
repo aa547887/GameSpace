@@ -1,0 +1,188 @@
+using Microsoft.AspNetCore.Mvc;
+using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace GameSpace.Areas.MiniGame.Controllers
+{
+    [Area("MiniGame")]
+    public class SignInController : Controller
+    {
+        private readonly GameSpacedatabaseContext _context;
+        private readonly ILogger<SignInController> _logger;
+
+        public SignInController(GameSpacedatabaseContext context, ILogger<SignInController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var today = DateTime.Today;
+
+                var todaySignIn = await _context.UserSignInStats
+                    .FirstOrDefaultAsync(s => s.UserId == userId && s.SignInDate.Date == today);
+
+                var consecutiveDays = await GetConsecutiveSignInDays(userId);
+
+                var monthStart = new DateTime(today.Year, today.Month, 1);
+                var monthSignIns = await _context.UserSignInStats
+                    .Where(s => s.UserId == userId && s.SignInDate >= monthStart)
+                    .CountAsync();
+
+                var viewModel = new SignInIndexViewModel
+                {
+                    HasSignedInToday = todaySignIn != null,
+                    ConsecutiveDays = consecutiveDays,
+                    MonthSignInCount = monthSignIns,
+                    TodaySignIn = todaySignIn,
+                    SignInRewards = GetSignInRewards()
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得簽到頁面時發生錯誤");
+                return View(new SignInIndexViewModel());
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SignIn()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var today = DateTime.Today;
+
+                var existingSignIn = await _context.UserSignInStats
+                    .FirstOrDefaultAsync(s => s.UserId == userId && s.SignInDate.Date == today);
+
+                if (existingSignIn != null)
+                {
+                    return Json(new { success = false, message = "今天已經簽到過了" });
+                }
+
+                var consecutiveDays = await GetConsecutiveSignInDays(userId);
+                var newConsecutiveDays = consecutiveDays + 1;
+
+                var rewards = CalculateSignInRewards(newConsecutiveDays);
+
+                var signInRecord = new UserSignInStat
+                {
+                    UserId = userId,
+                    SignInDate = today,
+                    ConsecutiveDays = newConsecutiveDays,
+                    PointsEarned = rewards.Points,
+                    ExperienceEarned = rewards.Experience,
+                    BonusReward = rewards.BonusReward
+                };
+
+                _context.UserSignInStats.Add(signInRecord);
+
+                var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
+                if (wallet != null)
+                {
+                    wallet.UserPoint += rewards.Points;
+                    wallet.Experience += rewards.Experience;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { 
+                    success = true, 
+                    message = "簽到成功！",
+                    consecutiveDays = newConsecutiveDays,
+                    rewards = rewards
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "簽到時發生錯誤");
+                return Json(new { success = false, message = "簽到失敗" });
+            }
+        }
+
+        private async Task<int> GetConsecutiveSignInDays(int userId)
+        {
+            var today = DateTime.Today;
+            var consecutiveDays = 0;
+
+            for (int i = 0; i < 30; i++)
+            {
+                var checkDate = today.AddDays(-i);
+                var signIn = await _context.UserSignInStats
+                    .FirstOrDefaultAsync(s => s.UserId == userId && s.SignInDate.Date == checkDate);
+
+                if (signIn != null)
+                {
+                    consecutiveDays++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return consecutiveDays;
+        }
+
+        private SignInReward CalculateSignInRewards(int consecutiveDays)
+        {
+            var basePoints = 10;
+            var baseExp = 5;
+            var bonusMultiplier = Math.Min(consecutiveDays / 7, 3);
+
+            var points = basePoints + (consecutiveDays * 2) + (bonusMultiplier * 10);
+            var exp = baseExp + (consecutiveDays * 1) + (bonusMultiplier * 5);
+
+            string bonusReward = null;
+            if (consecutiveDays % 7 == 0 && consecutiveDays > 0)
+            {
+                bonusReward = "連續簽到獎勵！";
+            }
+            else if (consecutiveDays % 30 == 0 && consecutiveDays > 0)
+            {
+                bonusReward = "月度簽到獎勵！";
+            }
+
+            return new SignInReward
+            {
+                Points = points,
+                Experience = exp,
+                BonusReward = bonusReward
+            };
+        }
+
+        private List<SignInReward> GetSignInRewards()
+        {
+            return new List<SignInReward>
+            {
+                new SignInReward { Day = 1, Points = 10, Experience = 5 },
+                new SignInReward { Day = 3, Points = 15, Experience = 8 },
+                new SignInReward { Day = 7, Points = 30, Experience = 15, BonusReward = "連續簽到獎勵" },
+                new SignInReward { Day = 15, Points = 50, Experience = 25 },
+                new SignInReward { Day = 30, Points = 100, Experience = 50, BonusReward = "月度簽到獎勵" }
+            };
+        }
+
+        private int GetCurrentUserId()
+        {
+            return 1;
+        }
+    }
+
+    public class SignInReward
+    {
+        public int Day { get; set; }
+        public int Points { get; set; }
+        public int Experience { get; set; }
+        public string? BonusReward { get; set; }
+    }
+}

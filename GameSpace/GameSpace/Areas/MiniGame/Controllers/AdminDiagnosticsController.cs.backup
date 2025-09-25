@@ -1,0 +1,171 @@
+using Microsoft.AspNetCore.Mvc;
+using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+
+namespace GameSpace.Areas.MiniGame.Controllers
+{
+    [Area("MiniGame")]
+    public class AdminDiagnosticsController : Controller
+    {
+        private readonly GameSpacedatabaseContext _context;
+        private readonly IWebHostEnvironment _environment;
+
+        public AdminDiagnosticsController(GameSpacedatabaseContext context, IWebHostEnvironment environment)
+        {
+            _context = context;
+            _environment = environment;
+        }
+
+        [HttpGet]
+        public IActionResult FieldCoverage()
+        {
+            try
+            {
+                var tables = new List<object>();
+                var tableMappings = new Dictionary<string, Type>
+                {
+                    { "Users", typeof(User) },
+                    { "Pet", typeof(Pet) },
+                    { "MiniGame", typeof(GameSpace.Models.MiniGame) },
+                    { "UserSignInStats", typeof(UserSignInStat) },
+                    { "Coupon", typeof(Coupon) },
+                    { "EVoucher", typeof(Evoucher) },
+                    { "UserWallet", typeof(UserWallet) },
+                    { "WalletHistory", typeof(WalletHistory) },
+                    { "PetRule", typeof(PetRule) },
+                    { "SignInRule", typeof(SignInRule) }
+                };
+
+                foreach (var mapping in tableMappings)
+                {
+                    var tableName = mapping.Key;
+                    var entityType = mapping.Value;
+                    var entityProperties = entityType.GetProperties()
+                        .Where(p => p.CanRead && p.CanWrite)
+                        .Select(p => p.Name)
+                        .ToList();
+                    var schemaFields = GetSchemaFields(tableName);
+                    var viewFields = GetViewFields(tableName);
+                    var missingInView = schemaFields.Except(viewFields).ToList();
+                    tables.Add(new
+                    {
+                        table = tableName,
+                        schemaCount = schemaFields.Count,
+                        entityCount = entityProperties.Count,
+                        viewFieldCount = viewFields.Count,
+                        missingInView = missingInView
+                    });
+                }
+                return Json(new { tables = tables });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult DatabaseConnection()
+        {
+            try
+            {
+                var canConnect = _context.Database.CanConnect();
+                var connectionString = _context.Database.GetConnectionString();
+                
+                return Json(new { 
+                    canConnect = canConnect,
+                    connectionString = connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0)) + "...",
+                    message = canConnect ? "資料庫連接成功" : "資料庫連接失敗"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    canConnect = false,
+                    error = ex.Message,
+                    message = "資料庫連接測試失敗"
+                });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult MiniGameTables()
+        {
+            try
+            {
+                var miniGameTables = new List<object>();
+                
+                // 檢查 MiniGame 相關表格
+                var miniGameCount = _context.MiniGames.Count();
+                var petCount = _context.Pets.Count();
+                var userSignInCount = _context.UserSignInStats.Count();
+                var couponCount = _context.Coupons.Count();
+                var evoucherCount = _context.Evouchers.Count();
+                var userWalletCount = _context.UserWallets.Count();
+
+                miniGameTables.Add(new { table = "MiniGames", count = miniGameCount });
+                miniGameTables.Add(new { table = "Pets", count = petCount });
+                miniGameTables.Add(new { table = "UserSignInStats", count = userSignInCount });
+                miniGameTables.Add(new { table = "Coupons", count = couponCount });
+                miniGameTables.Add(new { table = "EVouchers", count = evoucherCount });
+                miniGameTables.Add(new { table = "UserWallets", count = userWalletCount });
+
+                return Json(new { tables = miniGameTables });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult SeedData()
+        {
+            try
+            {
+                var seedDataPath = Path.Combine(_environment.ContentRootPath, "..", "..", "..", "..", "..", "schema", "seedMiniGameArea.json");
+                
+                if (!System.IO.File.Exists(seedDataPath))
+                {
+                    return Json(new { error = "種子數據文件不存在", path = seedDataPath });
+                }
+
+                var seedData = System.IO.File.ReadAllText(seedDataPath);
+                var seedDataJson = JsonSerializer.Deserialize<object>(seedData);
+                
+                return Json(new { 
+                    success = true,
+                    data = seedDataJson,
+                    message = "種子數據讀取成功"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        private List<string> GetSchemaFields(string tableName)
+        {
+            // 這裡應該從實際的資料庫 schema 取得欄位列表
+            // 暫時返回模擬資料
+            return new List<string>
+            {
+                "Id", "Name", "CreatedAt", "UpdatedAt", "IsActive"
+            };
+        }
+
+        private List<string> GetViewFields(string tableName)
+        {
+            // 這裡應該從實際的 View 檔案取得欄位列表
+            // 暫時返回模擬資料
+            return new List<string>
+            {
+                "Id", "Name", "CreatedAt"
+            };
+        }
+    }
+}

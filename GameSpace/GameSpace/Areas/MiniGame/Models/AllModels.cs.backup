@@ -1,0 +1,355 @@
+using GameSpace.Models;
+
+namespace GameSpace.Areas.MiniGame.Models
+{
+    public class CouponQueryModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class SignInRuleReadModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyPoints { get; set; }
+        public int WeeklyBonus { get; set; }
+        public int MonthlyBonus { get; set; }
+    }
+
+    public class PetRuleReadModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int LevelUpExp { get; set; }
+        public int MaxLevel { get; set; }
+        public int ColorChangeCost { get; set; }
+        public int BackgroundChangeCost { get; set; }
+    }
+
+    public class GameRuleReadModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyLimit { get; set; }
+        public int MonsterCount { get; set; }
+        public double MonsterSpeed { get; set; }
+        public int WinPoints { get; set; }
+        public int WinExp { get; set; }
+    }
+
+    public class SignInRuleUpdateModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyPoints { get; set; }
+        public int WeeklyBonus { get; set; }
+        public int MonthlyBonus { get; set; }
+    }
+
+    public class PetRuleUpdateModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int LevelUpExp { get; set; }
+        public int MaxLevel { get; set; }
+        public int ColorChangeCost { get; set; }
+        public int BackgroundChangeCost { get; set; }
+    }
+
+    public class GameRuleUpdateModel
+    {
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyLimit { get; set; }
+        public int MonsterCount { get; set; }
+        public double MonsterSpeed { get; set; }
+        public int WinPoints { get; set; }
+        public int WinExp { get; set; }
+    }
+
+    public class SignInRule
+    {
+        public int Id { get; set; }
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyPoints { get; set; }
+        public int WeeklyBonus { get; set; }
+        public int MonthlyBonus { get; set; }
+    }
+
+    public class PetRule
+    {
+        public int Id { get; set; }
+        public string RuleName { get; set; } = string.Empty;
+        public int LevelUpExp { get; set; }
+        public int MaxLevel { get; set; }
+        public int ColorChangeCost { get; set; }
+        public int BackgroundChangeCost { get; set; }
+    }
+
+    public class GameRule
+    {
+        public int Id { get; set; }
+        public string RuleName { get; set; } = string.Empty;
+        public int DailyLimit { get; set; }
+        public int MonsterCount { get; set; }
+        public double MonsterSpeed { get; set; }
+        public int WinPoints { get; set; }
+        public int WinExp { get; set; }
+    }
+
+    public class PaginatedResult<T>
+    {
+        public List<T> Items { get; set; } = new List<T>();
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public bool HasPreviousPage => Page > 1;
+        public bool HasNextPage => Page < TotalPages;
+    }
+
+    public class PetSummary
+    {
+        public int TotalPets { get; set; }
+        public int ActivePets { get; set; }
+        public double AverageLevel { get; set; }
+    }
+
+    public class GameSummary
+    {
+        public int TotalGames { get; set; }
+        public int CompletedGames { get; set; }
+        public double AverageScore { get; set; }
+    }
+
+    public class WalletSummary
+    {
+        public int TotalUsers { get; set; }
+        public long TotalPoints { get; set; }
+        public int TotalCoupons { get; set; }
+        public int TotalEVouchers { get; set; }
+    }
+
+    public class PetSkinColorChangeLog
+    {
+        public int LogId { get; set; }
+        public int PetId { get; set; }
+        public string OldColor { get; set; } = string.Empty;
+        public string NewColor { get; set; } = string.Empty;
+        public DateTime ChangeDate { get; set; }
+        public int PointsCost { get; set; }
+    }
+
+    public class PetBackgroundColorChangeLog
+    {
+        public int LogId { get; set; }
+        public int PetId { get; set; }
+        public string OldBackground { get; set; } = string.Empty;
+        public string NewBackground { get; set; } = string.Empty;
+        public DateTime ChangeDate { get; set; }
+        public int PointsCost { get; set; }
+    }
+
+    public class WalletTransaction
+    {
+        public int TransactionId { get; set; }
+        public int UserId { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+        public int Amount { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public DateTime TransactionDate { get; set; }
+        public string UserName { get; set; } = string.Empty;
+    }
+
+    public class AdminWalletIndexViewModel
+    {
+        public PagedResult<UserPointsReadModel> Wallets { get; set; } = new PagedResult<UserPointsReadModel>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+    }
+
+    public class AdminAdjustCouponsViewModel
+    {
+        public List<GameSpace.Models.CouponType> CouponTypes { get; set; } = new List<GameSpace.Models.CouponType>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string Action { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public int CouponTypeId { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
+    public class AdminAdjustEVouchersViewModel
+    {
+        public List<EvoucherType> EVoucherTypes { get; set; } = new List<EvoucherType>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string Action { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public int EVoucherTypeId { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
+    public class AdminSignInIndexViewModel
+    {
+        public List<UserSignInStat> SignInStats { get; set; } = new List<UserSignInStat>();
+        public List<GameSpace.Models.User> Users { get; set; } = new List<GameSpace.Models.User>();
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public SidebarViewModel Sidebar { get; set; } = new SidebarViewModel();
+    }
+
+    public class AdminSignInRulesViewModel
+    {
+        public SignInRuleReadModel Rule { get; set; } = new SignInRuleReadModel();
+    }
+
+    public class AdminSignInUserHistoryViewModel
+    {
+        public List<UserSignInStat> UserSignInHistory { get; set; } = new List<UserSignInStat>();
+        public GameSpace.Models.User User { get; set; } = new GameSpace.Models.User();
+    }
+
+    public class UserPointsReadModel
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int UserPoint { get; set; }
+        public DateTime LastUpdated { get; set; }
+    }
+
+    public class UserCouponReadModel
+    {
+        public int CouponId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string CouponTypeName { get; set; } = string.Empty;
+        public bool IsUsed { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
+
+    public class PetSummaryReadModel
+    {
+        public int TotalPets { get; set; }
+        public int ActivePets { get; set; }
+        public double AverageLevel { get; set; }
+    }
+
+    public class PetDetailReadModel
+    {
+        public int PetId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string PetName { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+        public string Background { get; set; } = string.Empty;
+        public int Experience { get; set; }
+        public int Level { get; set; }
+        public int Hunger { get; set; }
+        public int Happiness { get; set; }
+        public int Health { get; set; }
+        public int Energy { get; set; }
+        public int Cleanliness { get; set; }
+    }
+
+    public class GameSummaryReadModel
+    {
+        public int TotalGames { get; set; }
+        public int CompletedGames { get; set; }
+        public double AverageScore { get; set; }
+    }
+
+    public class GameDetailReadModel
+    {
+        public int GameId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public string Result { get; set; } = string.Empty;
+        public int PointsReward { get; set; }
+        public int ExpReward { get; set; }
+        public int CouponReward { get; set; }
+    }
+
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new List<T>();
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public bool HasPreviousPage => Page > 1;
+        public bool HasNextPage => Page < TotalPages;
+    }
+
+    public class SidebarViewModel
+    {
+        public string CurrentArea { get; set; } = string.Empty;
+        public string CurrentController { get; set; } = string.Empty;
+        public string CurrentAction { get; set; } = string.Empty;
+    }
+
+    public class EVoucherQueryModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class UserEVoucherReadModel
+    {
+        public int EVoucherId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string EVoucherTypeName { get; set; } = string.Empty;
+        public bool IsUsed { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
+
+    public class PetQueryModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class GameQueryModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class PetUpdateModel
+    {
+        public int PetId { get; set; }
+        public string PetName { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+        public string Background { get; set; } = string.Empty;
+        public int Experience { get; set; }
+        public int Level { get; set; }
+        public int Hunger { get; set; }
+        public int Happiness { get; set; }
+        public int Health { get; set; }
+        public int Energy { get; set; }
+        public int Cleanliness { get; set; }
+    }
+
+    public class SignInQueryModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class TopUserReadModel
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int TotalPoints { get; set; }
+        public int TotalGames { get; set; }
+        public int TotalSignIns { get; set; }
+    }
+}

@@ -1,0 +1,114 @@
+@{
+    ViewData["Title"] = "MiniGame 後台管理系統";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">MiniGame 後台管理系統</h1>
+    </div>
+
+    <!-- 歡迎卡片 -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">歡迎使用 MiniGame 後台管理系統</h6>
+                </div>
+                <div class="card-body">
+                    <p>這是一個基於 ASP.NET Core MVC 的 MiniGame 後台管理系統。</p>
+                    <p>系統包含以下主要功能模組：</p>
+                    <ul>
+                        <li><strong>會員點數系統</strong> - 管理會員點數、優惠券、電子禮券等</li>
+                        <li><strong>會員簽到系統</strong> - 管理會員簽到規則和紀錄</li>
+                        <li><strong>寵物系統</strong> - 管理寵物相關功能和設定</li>
+                        <li><strong>小遊戲系統</strong> - 管理小遊戲規則和統計</li>
+                    </ul>
+                    <p class="text-muted">請使用左側選單來導航到各個功能模組。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速統計卡片 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                總會員數
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                1,234
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                今日簽到
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                567
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                遊戲次數
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                8,901
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-gamepad fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                活躍寵物
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                2,345
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-paw fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

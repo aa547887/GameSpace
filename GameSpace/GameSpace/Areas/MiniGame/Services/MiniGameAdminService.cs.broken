@@ -1,0 +1,699 @@
+using Microsoft.EntityFrameworkCore;
+using GameSpace.Data;
+using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models;
+
+namespace GameSpace.Areas.MiniGame.Services
+{
+    public class MiniGameAdminService : IMiniGameAdminService
+    {
+        private readonly ApplicationDbContext _context;
+
+        public MiniGameAdminService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // ?¢Â??∏È?
+        public async Task<PagedResult<UserPointsReadModel>> QueryUserPointsAsync(CouponQueryModel query)
+        {
+            var userPoints = await _context.UserPoints
+                .Include(up => up.User)
+                .Where(up => string.IsNullOrEmpty(query.SearchTerm) || 
+                            up.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(up => new UserPointsReadModel
+                {
+                    UserId = up.UserId,
+                    UserName = up.User.UserName,
+                    Points = up.Points,
+                    LastUpdated = up.LastUpdated
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.UserPoints
+                .Where(up => string.IsNullOrEmpty(query.SearchTerm) || 
+                            up.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<UserPointsReadModel>
+            {
+                Items = userPoints,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<PagedResult<CouponReadModel>> QueryUserCouponsAsync(CouponQueryModel query)
+        {
+            var coupons = await _context.Coupons
+                .Include(c => c.User)
+                .Include(c => c.CouponType)
+                .Where(c => string.IsNullOrEmpty(query.SearchTerm) || 
+                           c.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(c => new CouponReadModel
+                {
+                    CouponID = c.CouponID,
+                    UserID = c.UserID,
+                    UserName = c.User.UserName,
+                    CouponTypeID = c.CouponTypeID,
+                    CouponTypeName = c.CouponType.CouponName,
+                    IsUsed = c.IsUsed,
+                    IssuedDate = c.IssuedDate
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.Coupons
+                .Where(c => string.IsNullOrEmpty(query.SearchTerm) || 
+                           c.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<CouponReadModel>
+            {
+                Items = coupons,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<PagedResult<EVoucherReadModel>> QueryUserEVouchersAsync(EVoucherQueryModel query)
+        {
+            var evouchers = await _context.EVouchers
+                .Include(e => e.User)
+                .Include(e => e.EvoucherType)
+                .Where(e => string.IsNullOrEmpty(query.SearchTerm) || 
+                           e.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(e => new EVoucherReadModel
+                {
+                    EVoucherID = e.EVoucherID,
+                    UserId = e.UserId,
+                    UserName = e.User.UserName,
+                    EVoucherTypeID = e.EVoucherTypeID,
+                    EVoucherTypeName = e.EVoucherType.EVoucherName,
+                    IsRevoked = e.IsRevoked,
+                    IsRevoked = e.IsRevoked,
+                    IssuedDate = e.IssuedDate
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.EVouchers
+                .Where(e => string.IsNullOrEmpty(query.SearchTerm) || 
+                           e.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<EVoucherReadModel>
+            {
+                Items = evouchers,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<PagedResult<WalletTransactionReadModel>> QueryWalletTransactionsAsync(CouponQueryModel query)
+        {
+            var transactions = await _context.WalletHistories
+                .Include(w => w.User)
+                .Where(w => string.IsNullOrEmpty(query.SearchTerm) || 
+                           w.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(w => new WalletTransactionReadModel
+                {
+                    TransactionId = w.TransactionId,
+                    UserId = w.UserId,
+                    UserName = w.User.UserName,
+                    TransactionType = w.TransactionType,
+                    Amount = w.Amount,
+                    Description = w.Description,
+                    CreatedAt = w.CreatedAt
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.WalletHistories
+                .Where(w => string.IsNullOrEmpty(query.SearchTerm) || 
+                           w.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<WalletTransactionReadModel>
+            {
+                Items = transactions,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<bool> AdjustUserPointsAsync(int userId, int points, string reason)
+        {
+            try
+            {
+                var userPoints = await _context.UserPoints.FirstOrDefaultAsync(up => up.UserId == userId);
+                if (userPoints == null)
+                {
+                    userPoints = new UserPoints
+                    {
+                        UserId = userId,
+                        Points = 0,
+                        LastUpdated = DateTime.Now
+                    };
+                    _context.UserPoints.Add(userPoints);
+                }
+
+                userPoints.Points += points;
+                userPoints.LastUpdated = DateTime.Now;
+
+                var transaction = new WalletHistory
+                {
+                    UserId = userId,
+                    TransactionType = points > 0 ? "earn" : "spend",
+                    Amount = Math.Abs(points),
+                    Description = reason,
+                    CreatedAt = DateTime.Now
+                };
+                _context.WalletHistories.Add(transaction);
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> IssueCouponToUserAsync(int userId, int couponTypeId, int quantity)
+        {
+            try
+            {
+                for (int i = 0; i < quantity; i++)
+                {
+                    var coupon = new Coupon
+                    {
+                        UserId = userId,
+                        CouponTypeId = couponTypeId,
+                        IsUsed = false,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.Coupons.Add(coupon);
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> IssueEVoucherToUserAsync(int userId, int EvoucherTypeId, int quantity)
+        {
+            try
+            {
+                for (int i = 0; i < quantity; i++)
+                {
+                    var evoucher = new EVoucher
+                    {
+                        UserId = userId,
+                        EvoucherTypeId = EvoucherTypeId,
+                        IsUsed = false,
+                        IsRevoked = false,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.EVouchers.Add(evoucher);
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveCouponFromUserAsync(int userId, int couponId)
+        {
+            try
+            {
+                var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.CouponId == couponId && c.UserId == userId);
+                if (coupon != null)
+                {
+                    _context.Coupons.Remove(coupon);
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveEVoucherFromUserAsync(int userId, int evoucherId)
+        {
+            try
+            {
+                var evoucher = await _context.EVouchers.FirstOrDefaultAsync(e => e.EVoucherId == evoucherId && e.UserId == userId);
+                if (evoucher != null)
+                {
+                    _context.EVouchers.Remove(evoucher);
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Á∞ΩÂà∞?∏È?
+        public async Task<PagedResult<SignInStatsReadModel>> GetSignInStatsAsync(CouponQueryModel query)
+        {
+            var signInStats = await _context.UserSignInStats
+                .Include(s => s.User)
+                .Where(s => string.IsNullOrEmpty(query.SearchTerm) || 
+                           s.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(s => new SignInStatsReadModel
+                {
+                    UserId = s.UserId,
+                    UserName = s.User.UserName,
+                    SignInCount = s.SignInCount,
+                    LastSignInDate = s.LastSignInDate,
+                    CreatedAt = s.SignTime
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.UserSignInStats
+                .Where(s => string.IsNullOrEmpty(query.SearchTerm) || 
+                           s.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<SignInStatsReadModel>
+            {
+                Items = signInStats,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<SignInRuleReadModel?> GetSignInRuleAsync()
+        {
+            return new SignInRuleReadModel
+            {
+                RuleId = 1,
+                RuleName = "ÊØèÊó•Á∞ΩÂà∞Ë¶èÂ?",
+                Description = "ÊØèÊó•Á∞ΩÂà∞?ØÁç≤ÂæóÁ???,
+                PointsReward = 10,
+                ExpReward = 5,
+                CouponReward = 0,
+                IsActive = true
+            };
+        }
+
+        public async Task<bool> UpdateSignInRuleAsync(SignInRuleUpdateModel model)
+        {
+            return true;
+        }
+
+        public async Task<bool> AddUserSignInRecordAsync(int userId, DateTime signInDate)
+        {
+            try
+            {
+                var signIn = new SignIn
+                {
+                    UserId = userId,
+                    SignInDate = signInDate,
+                    CreatedAt = DateTime.Now
+                };
+                _context.SignIns.Add(signIn);
+
+                var userSignInStats = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.UserId == userId);
+                if (userSignInStats == null)
+                {
+                    userSignInStats = new UserSignInStats
+                    {
+                        UserId = userId,
+                        SignInCount = 0,
+                        LastSignInDate = signInDate,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.UserSignInStats.Add(userSignInStats);
+                }
+
+                userSignInStats.SignInCount++;
+                userSignInStats.LastSignInDate = signInDate;
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveUserSignInRecordAsync(int userId, DateTime signInDate)
+        {
+            try
+            {
+                var signIn = await _context.SignIns.FirstOrDefaultAsync(s => s.UserId == userId && s.SignInDate.Date == signInDate.Date);
+                if (signIn != null)
+                {
+                    _context.SignIns.Remove(signIn);
+
+                    var userSignInStats = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.UserId == userId);
+                    if (userSignInStats != null)
+                    {
+                        userSignInStats.SignInCount = Math.Max(0, userSignInStats.SignInCount - 1);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // ÂØµÁâ©?∏È?
+        public async Task<PagedResult<PetReadModel>> GetPetsAsync(CouponQueryModel query)
+        {
+            var pets = await _context.Pets
+                .Include(p => p.User)
+                .Where(p => string.IsNullOrEmpty(query.SearchTerm) || 
+                           p.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(p => new PetReadModel
+                {
+                    PetId = p.PetID,
+                    UserId = p.UserId,
+                    UserName = p.User.UserName,
+                    PetName = p.PetName,
+                    PetLevel = p.PetLevel,
+                    PetExp = p.PetExp,
+                    PetColor = p.PetColor,
+                    PetBackground = p.PetBackground,
+                    PetHappiness = p.PetHappiness,
+                    PetHunger = p.PetHunger,
+                    PetCleanliness = p.PetCleanliness,
+                    PetEnergy = p.PetEnergy,
+                    PetHealth = p.PetHealth,
+                    CreatedAt = p.CreatedAt
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.Pets
+                .Where(p => string.IsNullOrEmpty(query.SearchTerm) || 
+                           p.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<PetReadModel>
+            {
+                Items = pets,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<PetSummaryReadModel> GetPetSummaryAsync()
+        {
+            var totalPets = await _context.Pets.CountAsync();
+            var activePets = await _context.Pets.CountAsync(p => p.PetLevel > 0);
+            var totalUsers = await _context.Pets.Select(p => p.UserId).Distinct().CountAsync();
+
+            return new PetSummaryReadModel
+            {
+                TotalPets = totalPets,
+                ActivePets = activePets,
+                TotalUsers = totalUsers
+            };
+        }
+
+        public async Task<PetRuleReadModel?> GetPetRuleAsync()
+        {
+            return new PetRuleReadModel
+            {
+                RuleId = 1,
+                RuleName = "ÂØµÁâ©Á≥ªÁµ±Ë¶èÂ?",
+                Description = "ÂØµÁâ©?áÁ??å‰??ïË???,
+                LevelUpExp = 100,
+                InteractionPoints = 10,
+                ColorChangeCost = 50,
+                BackgroundChangeCost = 100,
+                IsActive = true
+            };
+        }
+
+        public async Task<bool> UpdatePetRuleAsync(PetRuleUpdateModel model)
+        {
+            return true;
+        }
+
+        public async Task<PetReadModel?> GetPetDetailAsync(int petId)
+        {
+            var pet = await _context.Pets
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.PetId == petId);
+
+            if (pet == null) return null;
+
+            return new PetReadModel
+            {
+                PetId = pet.PetId,
+                UserId = pet.UserId,
+                UserName = pet.User.UserName,
+                PetName = pet.PetName,
+                PetLevel = pet.PetLevel,
+                PetExp = pet.PetExp,
+                PetColor = pet.PetColor,
+                PetBackground = pet.PetBackground,
+                PetHappiness = pet.PetHappiness,
+                PetHunger = pet.PetHunger,
+                PetCleanliness = pet.PetCleanliness,
+                PetEnergy = pet.PetEnergy,
+                PetHealth = pet.PetHealth,
+                CreatedAt = pet.CreatedAt
+            };
+        }
+
+        public async Task<bool> UpdatePetDetailsAsync(int petId, PetReadModel model)
+        {
+            try
+            {
+                var pet = await _context.Pets.FirstOrDefaultAsync(p => p.PetId == petId);
+                if (pet != null)
+                {
+                    pet.PetName = model.PetName;
+                    pet.PetLevel = model.PetLevel;
+                    pet.PetExp = model.PetExp;
+                    pet.PetColor = model.PetColor;
+                    pet.PetBackground = model.PetBackground;
+                    pet.PetHappiness = model.PetHappiness;
+                    pet.PetHunger = model.PetHunger;
+                    pet.PetCleanliness = model.PetCleanliness;
+                    pet.PetEnergy = model.PetEnergy;
+                    pet.PetHealth = model.PetHealth;
+
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<List<PetSkinColorChangeLogReadModel>> GetPetSkinColorChangeLogsAsync(int petId)
+        {
+            return new List<PetSkinColorChangeLogReadModel>();
+        }
+
+        public async Task<List<PetBackgroundColorChangeLogReadModel>> GetPetBackgroundColorChangeLogsAsync(int petId)
+        {
+            return new List<PetBackgroundColorChangeLogReadModel>();
+        }
+
+        // Â∞èÈ??≤Áõ∏??
+        public async Task<GameSummaryReadModel> GetGameSummaryAsync()
+        {
+            var totalGames = await _context.MiniGames.CountAsync();
+            var totalUsers = await _context.MiniGames.Select(g => g.UserId).Distinct().CountAsync();
+
+            return new GameSummaryReadModel
+            {
+                TotalGames = totalGames,
+                TotalUsers = totalUsers
+            };
+        }
+
+        public async Task<GameRuleReadModel?> GetGameRuleAsync()
+        {
+            return new GameRuleReadModel
+            {
+                RuleId = 1,
+                RuleName = "Â∞èÈ??≤Ë???,
+                Description = "Â∞èÈ??≤Ë??áË®≠ÂÆ?,
+                MonsterCount = 5,
+                MonsterSpeed = 1.0f,
+                PointsReward = 20,
+                ExpReward = 10,
+                CouponReward = 0,
+                DailyLimit = 3,
+                IsActive = true
+            };
+        }
+
+        public async Task<bool> UpdateGameRuleAsync(GameRuleUpdateModel model)
+        {
+            return true;
+        }
+
+        public async Task<PagedResult<GameRecordReadModel>> GetGameRecordsAsync(CouponQueryModel query)
+        {
+            var gameRecords = await _context.MiniGames
+                .Include(g => g.User)
+                .Where(g => string.IsNullOrEmpty(query.SearchTerm) || 
+                           g.User.UserName.Contains(query.SearchTerm))
+                .Skip((query.PageNumber - 1) * query.PageNumberSize)
+                .Take(query.PageNumberSize)
+                .Select(g => new GameRecordReadModel
+                {
+                    GameId = g.GameId,
+                    UserID = g.UserID,
+                    UserName = g.User.UserName,
+                    StartTime = g.StartTime,
+                    EndTime = g.EndTime,
+                    Result = g.Result,
+                    PointsEarned = g.PointsEarned,
+                    ExpEarned = g.ExpEarned,
+                    CouponEarned = g.CouponEarned,
+                    CreatedAt = g.CreatedAt
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.MiniGames
+                .Where(g => string.IsNullOrEmpty(query.SearchTerm) || 
+                           g.User.UserName.Contains(query.SearchTerm))
+                .CountAsync();
+
+            return new PagedResult<GameRecordReadModel>
+            {
+                Items = gameRecords,
+                Page = query.PageNumber,
+                PageSize = query.PageNumberSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageNumberSize)
+            };
+        }
+
+        public async Task<GameRecordReadModel?> GetGameDetailAsync(int gameId)
+        {
+            var game = await _context.MiniGames
+                .Include(g => g.User)
+                .FirstOrDefaultAsync(g => g.GameId == gameId);
+
+            if (game == null) return null;
+
+            return new GameRecordReadModel
+            {
+                GameId = game.GameId,
+                UserId = game.UserId,
+                UserName = game.User.UserName,
+                StartTime = game.StartTime,
+                EndTime = game.EndTime,
+                Result = game.Result,
+                PointsEarned = game.PointsEarned,
+                ExpEarned = game.ExpEarned,
+                CouponEarned = game.CouponEarned,
+                CreatedAt = game.CreatedAt
+            };
+        }
+
+        // ?®Êà∂?∏È?
+        public async Task<GameSpace.Models.User?> GetUserByIdAsync(int userId)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        }
+
+        public async Task<List<GameSpace.Models.User>> GetUsersAsync()
+        {
+            return await _context.Users.ToListAsync();
+        }
+
+        // Áµ±Ë??∏È?
+        public async Task<WalletSummaryReadModel> GetWalletSummaryAsync()
+        {
+            var totalUsers = await _context.UserPoints.CountAsync();
+            var totalPoints = await _context.UserPoints.SumAsync(up => up.Points);
+            var totalTransactions = await _context.WalletHistories.CountAsync();
+
+            return new WalletSummaryReadModel
+            {
+                TotalUsers = totalUsers,
+                TotalPoints = totalPoints,
+                TotalTransactions = totalTransactions
+            };
+        }
+
+        // ?≤Â??™Ê??∏È???
+        public async Task<List<GameSpace.Models.CouponType>> GetCouponTypesAsync()
+        {
+            return await _context.CouponTypes.ToListAsync();
+        }
+
+        // ?≤Â??ªÂ??™Ê??∏È???
+        public async Task<List<GameSpace.Models.EvoucherType>> GetEVoucherTypesAsync()
+        {
+            return await _context.EvoucherTypes.ToListAsync();
+        }
+
+        // Â∞èÈ??≤Áõ∏?úÊñπÊ≥?
+        public async Task<PagedResult<MiniGameReadModel>> GetMiniGamesAsync(CouponQueryModel query)
+        {
+            return new PagedResult<MiniGameReadModel> { Items = new List<MiniGameReadModel>(), TotalCount = 0, Page = 1, PageSize = 10 };
+        }
+
+        public async Task<MiniGameRuleReadModel?> GetMiniGameRuleAsync()
+        {
+            return new MiniGameRuleReadModel { RuleId = 1, MonstersPerLevel = 5, MonsterSpeed = 1.0m, DailyGameLimit = 3, BasePointsReward = 10, BaseExpReward = 5, CreatedAt = DateTime.Now, UpdatedAt = DateTime.Now };
+        }
+
+        public async Task<bool> UpdateMiniGameRuleAsync(MiniGameRuleUpdateModel model)
+        {
+            return true;
+        }
+
+        public async Task<bool> UpdatePetAsync(int petId, PetUpdateModel model)
+        {
+            return true;
+        }
+    }
+}

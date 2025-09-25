@@ -1,0 +1,118 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.MiniGame.Models;
+
+namespace GameSpace.Areas.MiniGame.Controllers
+{
+    [Area("MiniGame")]
+    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    public class AdminWalletController : Controller
+    {
+        private readonly IMiniGameAdminService _adminService;
+
+        public AdminWalletController(IMiniGameAdminService adminService)
+        {
+            _adminService = adminService;
+        }
+
+        public async Task<IActionResult> Index(WalletQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            var wallets = await _adminService.GetWalletsAsync(query);
+            var walletSummary = await _adminService.GetWalletSummaryAsync();
+
+            var viewModel = new AdminWalletIndexViewModel
+            {
+                Wallets = wallets,
+                WalletSummary = walletSummary,
+                Query = query
+            };
+
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Details(int userId)
+        {
+            var walletDetail = await _adminService.GetWalletDetailAsync(userId);
+
+            var viewModel = new AdminWalletDetailsViewModel
+            {
+                WalletDetail = walletDetail ?? new WalletDetailReadModel()
+            };
+
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Statistics()
+        {
+            var walletSummary = await _adminService.GetWalletSummaryAsync();
+            var wallets = await _adminService.GetWalletsAsync(new WalletQueryModel { PageSize = 10 });
+
+            var viewModel = new AdminWalletStatisticsViewModel
+            {
+                Summary = walletSummary,
+                TopWallets = wallets.Items.ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // 新增缺少的 Action
+        public async Task<IActionResult> QueryPoints(WalletQueryModel query)
+        {
+            if (query.PageNumber <= 0) query.PageNumber = 1;
+            if (query.PageSize <= 0) query.PageSize = 10;
+
+            var wallets = await _adminService.GetWalletsAsync(query);
+            var walletSummary = await _adminService.GetWalletSummaryAsync();
+
+            var viewModel = new AdminWalletIndexViewModel
+            {
+                Wallets = wallets,
+                WalletSummary = walletSummary,
+                Query = query
+            };
+
+            return View("Index", viewModel);
+        }
+
+        public async Task<IActionResult> QueryCoupons()
+        {
+            // 實作查詢會員商城優惠券邏輯
+            return View();
+        }
+
+        public async Task<IActionResult> QueryEVouchers()
+        {
+            // 實作查詢會員電子禮券邏輯
+            return View();
+        }
+
+        public async Task<IActionResult> AdjustPoints()
+        {
+            // 實作調整會員點數邏輯
+            return View();
+        }
+
+        public async Task<IActionResult> AdjustCoupons()
+        {
+            // 實作調整會員商城優惠券邏輯
+            return View();
+        }
+
+        public async Task<IActionResult> AdjustEVouchers()
+        {
+            // 實作調整會員電子禮券邏輯
+            return View();
+        }
+
+        public async Task<IActionResult> QueryHistory()
+        {
+            // 實作查詢會員收支明細邏輯
+            return View();
+        }
+    }
+}

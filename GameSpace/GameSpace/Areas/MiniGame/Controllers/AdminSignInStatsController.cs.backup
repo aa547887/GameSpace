@@ -1,0 +1,407 @@
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GameSpace.Areas.MiniGame.Controllers
+{
+    [Area("MiniGame")]
+    public class AdminSignInStatsController : Controller
+    {
+        private readonly IMiniGameAdminService _adminService;
+
+        public AdminSignInStatsController(IMiniGameAdminService adminService)
+        {
+            _adminService = adminService;
+        }
+
+        public async Task<IActionResult> Index(SignInQueryModel query)
+        {
+            var signInStats = await _adminService.GetSignInStatsAsync(query);
+            var signInSummary = await _adminService.GetSignInSummaryAsync();
+
+            var viewModel = new AdminSignInStatsIndexViewModel
+            {
+                SignInStats = signInStats,
+                SignInSummary = signInSummary,
+                Query = query
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Rules
+        public async Task<IActionResult> Rules()
+        {
+            var rules = await _adminService.GetSignInRulesAsync();
+
+            var viewModel = new AdminSignInStatsRulesViewModel
+            {
+                Rules = rules
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Rules
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Rules(AdminSignInStatsRulesViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                var success = await _adminService.UpdateSignInRulesAsync(model.Rules);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "簽到規則更新成功";
+                    return RedirectToAction(nameof(Rules));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "簽到規則更新失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到規則更新失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Adjust
+        public IActionResult Adjust()
+        {
+            var viewModel = new AdminSignInStatsAdjustViewModel();
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Adjust
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Adjust(AdminSignInStatsAdjustViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                bool success;
+                if (model.Action == "add")
+                {
+                    success = await _adminService.AddUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+                else
+                {
+                    success = await _adminService.RemoveUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到記錄操作失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+    }
+
+    // ViewModels
+    public class AdminSignInStatsRulesViewModel
+    {
+        public SignInRuleReadModel Rules { get; set; } = new();
+        public string Sidebar { get; set; } = "admin";
+    }
+
+    public class AdminSignInStatsAdjustViewModel
+    {
+        [Required(ErrorMessage = "請選擇用戶")]
+        public int UserId { get; set; }
+
+        [Required(ErrorMessage = "請選擇日期")]
+        public DateTime SignInDate { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "請選擇操作類型")]
+        public string Action { get; set; } = "add"; // add, remove
+
+        public string Sidebar { get; set; } = "admin";
+    }
+        }
+
+        public async Task<IActionResult> Details(int userId)
+        {
+            var userSignInHistory = await _adminService.GetUserSignInHistoryAsync(userId);
+            var userInfo = await _adminService.GetUserInfoAsync(userId);
+
+            var viewModel = new AdminSignInStatsDetailsViewModel
+            {
+                UserInfo = userInfo,
+                UserSignInHistory = userSignInHistory.ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Rules
+        public async Task<IActionResult> Rules()
+        {
+            var rules = await _adminService.GetSignInRulesAsync();
+
+            var viewModel = new AdminSignInStatsRulesViewModel
+            {
+                Rules = rules
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Rules
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Rules(AdminSignInStatsRulesViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                var success = await _adminService.UpdateSignInRulesAsync(model.Rules);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "簽到規則更新成功";
+                    return RedirectToAction(nameof(Rules));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "簽到規則更新失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到規則更新失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Adjust
+        public IActionResult Adjust()
+        {
+            var viewModel = new AdminSignInStatsAdjustViewModel();
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Adjust
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Adjust(AdminSignInStatsAdjustViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                bool success;
+                if (model.Action == "add")
+                {
+                    success = await _adminService.AddUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+                else
+                {
+                    success = await _adminService.RemoveUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到記錄操作失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+    }
+
+    // ViewModels
+    public class AdminSignInStatsRulesViewModel
+    {
+        public SignInRuleReadModel Rules { get; set; } = new();
+        public string Sidebar { get; set; } = "admin";
+    }
+
+    public class AdminSignInStatsAdjustViewModel
+    {
+        [Required(ErrorMessage = "請選擇用戶")]
+        public int UserId { get; set; }
+
+        [Required(ErrorMessage = "請選擇日期")]
+        public DateTime SignInDate { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "請選擇操作類型")]
+        public string Action { get; set; } = "add"; // add, remove
+
+        public string Sidebar { get; set; } = "admin";
+    }
+        }
+
+        public async Task<IActionResult> Statistics()
+        {
+            var statistics = await _adminService.GetSignInStatisticsAsync();
+
+            var viewModel = new AdminSignInStatsStatisticsViewModel
+            {
+                TotalUsers = statistics.TotalUsers,
+                ActiveUsers = statistics.ActiveUsers,
+                SignInRate = statistics.SignInRate,
+                TopUsers = statistics.TopUsers?.ToList() ?? new List<TopUserReadModel>()
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Rules
+        public async Task<IActionResult> Rules()
+        {
+            var rules = await _adminService.GetSignInRulesAsync();
+
+            var viewModel = new AdminSignInStatsRulesViewModel
+            {
+                Rules = rules
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Rules
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Rules(AdminSignInStatsRulesViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                var success = await _adminService.UpdateSignInRulesAsync(model.Rules);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "簽到規則更新成功";
+                    return RedirectToAction(nameof(Rules));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "簽到規則更新失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到規則更新失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+
+        // GET: MiniGame/AdminSignInStats/Adjust
+        public IActionResult Adjust()
+        {
+            var viewModel = new AdminSignInStatsAdjustViewModel();
+            return View(viewModel);
+        }
+
+        // POST: MiniGame/AdminSignInStats/Adjust
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Adjust(AdminSignInStatsAdjustViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                bool success;
+                if (model.Action == "add")
+                {
+                    success = await _adminService.AddUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+                else
+                {
+                    success = await _adminService.RemoveUserSignInRecordAsync(model.UserId, model.SignInDate);
+                }
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = $"簽到記錄{model.Action == "add" ? "新增" : "移除"}失敗";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"簽到記錄操作失敗：{ex.Message}";
+            }
+
+            return View(model);
+        }
+    }
+
+    // ViewModels
+    public class AdminSignInStatsRulesViewModel
+    {
+        public SignInRuleReadModel Rules { get; set; } = new();
+        public string Sidebar { get; set; } = "admin";
+    }
+
+    public class AdminSignInStatsAdjustViewModel
+    {
+        [Required(ErrorMessage = "請選擇用戶")]
+        public int UserId { get; set; }
+
+        [Required(ErrorMessage = "請選擇日期")]
+        public DateTime SignInDate { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "請選擇操作類型")]
+        public string Action { get; set; } = "add"; // add, remove
+
+        public string Sidebar { get; set; } = "admin";
+    }
+        }
+    }
+}
+
