@@ -18,7 +18,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _adminService = adminService;
         }
 
-        // 簽到規則設定
+        // 1. 簽到規則設定
         [HttpGet]
         public async Task<IActionResult> SignInRules()
         {
@@ -61,16 +61,19 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 查看會員簽到紀錄
+        // 2. 查看會員簽到紀錄
+        [HttpGet]
         public async Task<IActionResult> SignInRecords(SignInRecordQueryModel query)
         {
             if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 10;
+            if (query.PageSize <= 0) query.PageSize = 20;
 
             try
             {
                 var result = await QuerySignInRecordsAsync(query);
-                var users = await _context.Users.ToListAsync();
+                var users = await _context.Users
+                    .Select(u => new { u.Id, u.UserName, u.Email })
+                    .ToListAsync();
 
                 var viewModel = new AdminSignInRecordsViewModel
                 {
@@ -106,14 +109,29 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 獲取簽到趨勢圖表資料
+        // 獲取簽到規則詳細信息
         [HttpGet]
-        public async Task<IActionResult> GetSignInTrends(int days = 30)
+        public async Task<IActionResult> GetSignInRulesDetails()
         {
             try
             {
-                var trends = await GetSignInTrendDataAsync(days);
-                return Json(new { success = true, data = trends });
+                var rules = await GetSignInRulesAsync();
+                return Json(new { success = true, data = rules });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 更新簽到規則
+        [HttpPost]
+        public async Task<IActionResult> UpdateSignInRules([FromBody] SignInRuleModel rule)
+        {
+            try
+            {
+                await UpdateSignInRuleAsync(rule);
+                return Json(new { success = true, message = "簽到規則更新成功！" });
             }
             catch (Exception ex)
             {
@@ -123,12 +141,31 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         // 獲取用戶簽到詳情
         [HttpGet]
-        public async Task<IActionResult> GetUserSignInDetails(int userId, int days = 30)
+        public async Task<IActionResult> GetUserSignInDetails(int userId, DateTime? startDate = null, DateTime? endDate = null)
         {
             try
             {
-                var details = await GetUserSignInDetailsAsync(userId, days);
-                return Json(new { success = true, data = details });
+                var user = await _context.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.Id, u.UserName, u.Email })
+                    .FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的用戶" });
+                }
+
+                var records = await GetUserSignInRecordsAsync(userId, startDate, endDate);
+                var stats = await GetUserSignInStatsAsync(userId, startDate, endDate);
+
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        User = user, 
+                        Records = records, 
+                        Stats = stats 
+                    } 
+                });
             }
             catch (Exception ex)
             {
@@ -136,65 +173,45 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 手動為用戶添加簽到記錄
-        [HttpPost]
-        public async Task<IActionResult> AddManualSignIn(ManualSignInModel model)
-        {
-            if (!ModelState.IsValid)
-                return Json(new { success = false, message = "請填寫所有必要欄位" });
-
-            try
-            {
-                await AddManualSignInRecordAsync(model);
-                return Json(new { success = true, message = "手動簽到記錄添加成功！" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 刪除簽到記錄
-        [HttpPost]
-        public async Task<IActionResult> DeleteSignInRecord(int recordId)
+        // 導出簽到紀錄
+        [HttpGet]
+        public async Task<IActionResult> ExportSignInRecords(SignInRecordQueryModel query)
         {
             try
             {
-                await DeleteSignInRecordAsync(recordId);
-                return Json(new { success = true, message = "簽到記錄刪除成功！" });
+                var records = await GetAllSignInRecordsAsync(query);
+                var csv = GenerateSignInRecordsCSV(records);
+                
+                var fileName = $"簽到紀錄_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                TempData["ErrorMessage"] = $"導出簽到紀錄時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(SignInRecords));
             }
         }
 
-        // 私有方法
+        // 私有方法：獲取簽到規則
         private async Task<List<SignInRuleModel>> GetSignInRulesAsync()
         {
             var rules = await _context.SignInRules
                 .OrderBy(r => r.DayNumber)
                 .Select(r => new SignInRuleModel
                 {
-                    RuleId = r.RuleId,
+                    Id = r.Id,
                     DayNumber = r.DayNumber,
-                    PointsReward = r.PointsReward,
-                    ExpReward = r.ExpReward,
-                    CouponReward = r.CouponReward,
+                    RewardType = r.RewardType,
+                    RewardValue = r.RewardValue,
+                    Description = r.Description,
                     IsActive = r.IsActive
                 })
                 .ToListAsync();
 
-            // 如果沒有規則，創建預設規則
-            if (!rules.Any())
-            {
-                rules = CreateDefaultSignInRules();
-                await SaveDefaultSignInRulesAsync(rules);
-            }
-
             return rules;
         }
 
+        // 私有方法：更新簽到規則
         private async Task UpdateSignInRulesAsync(List<SignInRuleModel> rules)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -210,10 +227,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     var signInRule = new SignInRule
                     {
                         DayNumber = rule.DayNumber,
-                        PointsReward = rule.PointsReward,
-                        ExpReward = rule.ExpReward,
-                        CouponReward = rule.CouponReward,
-                        IsActive = rule.IsActive
+                        RewardType = rule.RewardType,
+                        RewardValue = rule.RewardValue,
+                        Description = rule.Description,
+                        IsActive = rule.IsActive,
+                        CreateTime = DateTime.Now,
+                        LastUpdateTime = DateTime.Now
                     };
                     _context.SignInRules.Add(signInRule);
                 }
@@ -228,6 +247,40 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 私有方法：更新單個簽到規則
+        private async Task UpdateSignInRuleAsync(SignInRuleModel rule)
+        {
+            var existingRule = await _context.SignInRules
+                .FirstOrDefaultAsync(r => r.Id == rule.Id);
+
+            if (existingRule != null)
+            {
+                existingRule.DayNumber = rule.DayNumber;
+                existingRule.RewardType = rule.RewardType;
+                existingRule.RewardValue = rule.RewardValue;
+                existingRule.Description = rule.Description;
+                existingRule.IsActive = rule.IsActive;
+                existingRule.LastUpdateTime = DateTime.Now;
+            }
+            else
+            {
+                var newRule = new SignInRule
+                {
+                    DayNumber = rule.DayNumber,
+                    RewardType = rule.RewardType,
+                    RewardValue = rule.RewardValue,
+                    Description = rule.Description,
+                    IsActive = rule.IsActive,
+                    CreateTime = DateTime.Now,
+                    LastUpdateTime = DateTime.Now
+                };
+                _context.SignInRules.Add(newRule);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // 私有方法：查詢簽到紀錄
         private async Task<PagedResult<SignInRecordModel>> QuerySignInRecordsAsync(SignInRecordQueryModel query)
         {
             var queryable = _context.UserSignInStats
@@ -235,343 +288,215 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .AsQueryable();
 
             if (query.UserId.HasValue)
+            {
                 queryable = queryable.Where(s => s.UserId == query.UserId.Value);
+            }
 
-            if (!string.IsNullOrEmpty(query.UserName))
-                queryable = queryable.Where(s => s.User.UserName.Contains(query.UserName));
+            if (!string.IsNullOrEmpty(query.SearchTerm))
+            {
+                queryable = queryable.Where(s => 
+                    s.User.UserName.Contains(query.SearchTerm) || 
+                    s.User.Email.Contains(query.SearchTerm));
+            }
 
             if (query.StartDate.HasValue)
-                queryable = queryable.Where(s => s.SignTime >= query.StartDate.Value);
+            {
+                queryable = queryable.Where(s => s.SignInDate >= query.StartDate.Value);
+            }
 
             if (query.EndDate.HasValue)
-                queryable = queryable.Where(s => s.SignTime <= query.EndDate.Value);
+            {
+                queryable = queryable.Where(s => s.SignInDate <= query.EndDate.Value);
+            }
 
             var totalCount = await queryable.CountAsync();
 
             var items = await queryable
-                .OrderByDescending(s => s.SignTime)
+                .OrderByDescending(s => s.SignInDate)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .Select(s => new SignInRecordModel
                 {
-                    SignInId = s.SignInId,
+                    Id = s.Id,
                     UserId = s.UserId,
                     UserName = s.User.UserName,
-                    SignTime = s.SignTime,
-                    PointsGained = s.PointsGained,
-                    ExpGained = s.ExpGained,
-                    ConsecutiveDays = s.ConsecutiveDays
+                    Email = s.User.Email,
+                    SignInDate = s.SignInDate,
+                    RewardType = s.RewardType,
+                    RewardValue = s.RewardValue,
+                    Description = s.Description
                 })
                 .ToListAsync();
 
             return new PagedResult<SignInRecordModel>
             {
                 Items = items,
-                TotalCount = totalCount,
-                PageNumber = query.PageNumber,
-                PageSize = query.PageSize
+                TotalCount = totalCount
             };
         }
 
-        private async Task<SignInStatisticsModel> GetSignInStatisticsAsync(string period)
+        // 私有方法：獲取簽到統計
+        private async Task<SignInStatsModel> GetSignInStatisticsAsync(string period)
         {
             var today = DateTime.Today;
-            var startDate = period switch
+            var thisMonth = new DateTime(today.Year, today.Month, 1);
+            var thisWeek = today.AddDays(-(int)today.DayOfWeek);
+
+            var queryable = _context.UserSignInStats.AsQueryable();
+
+            switch (period.ToLower())
             {
-                "today" => today,
-                "week" => today.AddDays(-7),
-                "month" => new DateTime(today.Year, today.Month, 1),
-                "year" => new DateTime(today.Year, 1, 1),
-                _ => today
-            };
+                case "today":
+                    queryable = queryable.Where(s => s.SignInDate.Date == today);
+                    break;
+                case "week":
+                    queryable = queryable.Where(s => s.SignInDate >= thisWeek);
+                    break;
+                case "month":
+                    queryable = queryable.Where(s => s.SignInDate >= thisMonth);
+                    break;
+            }
 
-            var totalSignIns = await _context.UserSignInStats
-                .Where(s => s.SignTime >= startDate)
-                .CountAsync();
-
-            var uniqueUsers = await _context.UserSignInStats
-                .Where(s => s.SignTime >= startDate)
-                .Select(s => s.UserId)
-                .Distinct()
-                .CountAsync();
-
-            var totalPoints = await _context.UserSignInStats
-                .Where(s => s.SignTime >= startDate)
-                .SumAsync(s => s.PointsGained);
-
-            var totalExp = await _context.UserSignInStats
-                .Where(s => s.SignTime >= startDate)
-                .SumAsync(s => s.ExpGained);
-
-            return new SignInStatisticsModel
+            var stats = new SignInStatsModel
             {
                 Period = period,
-                TotalSignIns = totalSignIns,
-                UniqueUsers = uniqueUsers,
-                TotalPoints = totalPoints,
-                TotalExp = totalExp
+                TotalSignIns = await queryable.CountAsync(),
+                UniqueUsers = await queryable.Select(s => s.UserId).Distinct().CountAsync(),
+                TotalPointsRewarded = await queryable
+                    .Where(s => s.RewardType == "Points")
+                    .SumAsync(s => s.RewardValue),
+                TotalCouponsRewarded = await queryable
+                    .Where(s => s.RewardType == "Coupon")
+                    .CountAsync()
             };
+
+            return stats;
         }
 
-        private async Task<List<SignInTrendModel>> GetSignInTrendDataAsync(int days)
+        // 私有方法：獲取用戶簽到紀錄
+        private async Task<List<SignInRecordModel>> GetUserSignInRecordsAsync(int userId, DateTime? startDate, DateTime? endDate)
         {
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-days);
+            var queryable = _context.UserSignInStats
+                .Include(s => s.User)
+                .Where(s => s.UserId == userId);
 
-            var trends = await _context.UserSignInStats
-                .Where(s => s.SignTime >= startDate && s.SignTime <= endDate)
-                .GroupBy(s => s.SignTime.Date)
-                .Select(g => new SignInTrendModel
-                {
-                    Date = g.Key,
-                    SignInCount = g.Count(),
-                    UniqueUsers = g.Select(s => s.UserId).Distinct().Count()
-                })
-                .OrderBy(t => t.Date)
-                .ToListAsync();
+            if (startDate.HasValue)
+            {
+                queryable = queryable.Where(s => s.SignInDate >= startDate.Value);
+            }
 
-            return trends;
-        }
+            if (endDate.HasValue)
+            {
+                queryable = queryable.Where(s => s.SignInDate <= endDate.Value);
+            }
 
-        private async Task<UserSignInDetailsModel> GetUserSignInDetailsAsync(int userId, int days)
-        {
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-days);
-
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                throw new Exception("找不到指定的用戶");
-
-            var signInRecords = await _context.UserSignInStats
-                .Where(s => s.UserId == userId && s.SignTime >= startDate)
-                .OrderByDescending(s => s.SignTime)
+            return await queryable
+                .OrderByDescending(s => s.SignInDate)
                 .Select(s => new SignInRecordModel
                 {
-                    SignInId = s.SignInId,
+                    Id = s.Id,
                     UserId = s.UserId,
                     UserName = s.User.UserName,
-                    SignTime = s.SignTime,
-                    PointsGained = s.PointsGained,
-                    ExpGained = s.ExpGained,
-                    ConsecutiveDays = s.ConsecutiveDays
+                    Email = s.User.Email,
+                    SignInDate = s.SignInDate,
+                    RewardType = s.RewardType,
+                    RewardValue = s.RewardValue,
+                    Description = s.Description
                 })
                 .ToListAsync();
+        }
 
-            var totalSignIns = signInRecords.Count;
-            var totalPoints = signInRecords.Sum(s => s.PointsGained);
-            var totalExp = signInRecords.Sum(s => s.ExpGained);
-            var maxConsecutive = signInRecords.Max(s => s.ConsecutiveDays);
+        // 私有方法：獲取用戶簽到統計
+        private async Task<UserSignInStatsModel> GetUserSignInStatsAsync(int userId, DateTime? startDate, DateTime? endDate)
+        {
+            var queryable = _context.UserSignInStats
+                .Where(s => s.UserId == userId);
 
-            return new UserSignInDetailsModel
+            if (startDate.HasValue)
             {
-                UserId = userId,
-                UserName = user.UserName,
-                SignInRecords = signInRecords,
-                TotalSignIns = totalSignIns,
-                TotalPoints = totalPoints,
-                TotalExp = totalExp,
-                MaxConsecutive = maxConsecutive
+                queryable = queryable.Where(s => s.SignInDate >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                queryable = queryable.Where(s => s.SignInDate <= endDate.Value);
+            }
+
+            var records = await queryable.ToListAsync();
+
+            return new UserSignInStatsModel
+            {
+                TotalSignIns = records.Count,
+                TotalPointsEarned = records
+                    .Where(r => r.RewardType == "Points")
+                    .Sum(r => r.RewardValue),
+                TotalCouponsEarned = records
+                    .Where(r => r.RewardType == "Coupon")
+                    .Count(),
+                LastSignInDate = records
+                    .OrderByDescending(r => r.SignInDate)
+                    .Select(r => r.SignInDate)
+                    .FirstOrDefault()
             };
         }
 
-        private async Task AddManualSignInRecordAsync(ManualSignInModel model)
+        // 私有方法：獲取所有簽到紀錄（用於導出）
+        private async Task<List<SignInRecordModel>> GetAllSignInRecordsAsync(SignInRecordQueryModel query)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            var queryable = _context.UserSignInStats
+                .Include(s => s.User)
+                .AsQueryable();
+
+            if (query.UserId.HasValue)
             {
-                var user = await _context.Users.FindAsync(model.UserId);
-                if (user == null)
-                    throw new Exception("找不到指定的用戶");
-
-                var signInRecord = new UserSignInStat
-                {
-                    UserId = model.UserId,
-                    SignTime = model.SignTime,
-                    PointsGained = model.PointsGained,
-                    ExpGained = model.ExpGained,
-                    ConsecutiveDays = model.ConsecutiveDays,
-                    IsManual = true
-                };
-                _context.UserSignInStats.Add(signInRecord);
-
-                // 更新用戶錢包
-                var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == model.UserId);
-                if (wallet == null)
-                {
-                    wallet = new UserWallet { UserId = model.UserId, UserPoint = 0 };
-                    _context.UserWallets.Add(wallet);
-                }
-                wallet.UserPoint += model.PointsGained;
-
-                // 添加錢包歷史記錄
-                var walletHistory = new WalletHistory
-                {
-                    UserId = model.UserId,
-                    ChangeType = "SignIn",
-                    PointsChanged = model.PointsGained,
-                    Description = $"手動簽到獎勵：{model.PointsGained} 點",
-                    ChangeTime = DateTime.Now
-                };
-                _context.WalletHistories.Add(walletHistory);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                queryable = queryable.Where(s => s.UserId == query.UserId.Value);
             }
-            catch
+
+            if (!string.IsNullOrEmpty(query.SearchTerm))
             {
-                await transaction.RollbackAsync();
-                throw;
+                queryable = queryable.Where(s => 
+                    s.User.UserName.Contains(query.SearchTerm) || 
+                    s.User.Email.Contains(query.SearchTerm));
             }
+
+            if (query.StartDate.HasValue)
+            {
+                queryable = queryable.Where(s => s.SignInDate >= query.StartDate.Value);
+            }
+
+            if (query.EndDate.HasValue)
+            {
+                queryable = queryable.Where(s => s.SignInDate <= query.EndDate.Value);
+            }
+
+            return await queryable
+                .OrderByDescending(s => s.SignInDate)
+                .Select(s => new SignInRecordModel
+                {
+                    Id = s.Id,
+                    UserId = s.UserId,
+                    UserName = s.User.UserName,
+                    Email = s.User.Email,
+                    SignInDate = s.SignInDate,
+                    RewardType = s.RewardType,
+                    RewardValue = s.RewardValue,
+                    Description = s.Description
+                })
+                .ToListAsync();
         }
 
-        private async Task DeleteSignInRecordAsync(int recordId)
+        // 私有方法：生成CSV
+        private string GenerateSignInRecordsCSV(List<SignInRecordModel> records)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("用戶ID,用戶名稱,電子郵件,簽到日期,獎勵類型,獎勵數值,描述");
+
+            foreach (var record in records)
             {
-                var record = await _context.UserSignInStats.FindAsync(recordId);
-                if (record == null)
-                    throw new Exception("找不到指定的簽到記錄");
-
-                // 如果是手動添加的記錄，可以刪除
-                if (record.IsManual)
-                {
-                    // 扣除相應的點數
-                    var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == record.UserId);
-                    if (wallet != null)
-                    {
-                        wallet.UserPoint = Math.Max(0, wallet.UserPoint - record.PointsGained);
-                    }
-
-                    _context.UserSignInStats.Remove(record);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    throw new Exception("只能刪除手動添加的簽到記錄");
-                }
-
-                await transaction.CommitAsync();
+                csv.AppendLine($"{record.UserId},{record.UserName},{record.Email},{record.SignInDate:yyyy-MM-dd},{record.RewardType},{record.RewardValue},{record.Description}");
             }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+
+            return csv.ToString();
         }
-
-        private List<SignInRuleModel> CreateDefaultSignInRules()
-        {
-            return new List<SignInRuleModel>
-            {
-                new() { DayNumber = 1, PointsReward = 10, ExpReward = 5, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 2, PointsReward = 15, ExpReward = 8, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 3, PointsReward = 20, ExpReward = 10, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 4, PointsReward = 25, ExpReward = 12, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 5, PointsReward = 30, ExpReward = 15, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 6, PointsReward = 35, ExpReward = 18, CouponReward = 0, IsActive = true },
-                new() { DayNumber = 7, PointsReward = 50, ExpReward = 25, CouponReward = 1, IsActive = true }
-            };
-        }
-
-        private async Task SaveDefaultSignInRulesAsync(List<SignInRuleModel> rules)
-        {
-            foreach (var rule in rules)
-            {
-                var signInRule = new SignInRule
-                {
-                    DayNumber = rule.DayNumber,
-                    PointsReward = rule.PointsReward,
-                    ExpReward = rule.ExpReward,
-                    CouponReward = rule.CouponReward,
-                    IsActive = rule.IsActive
-                };
-                _context.SignInRules.Add(signInRule);
-            }
-            await _context.SaveChangesAsync();
-        }
-    }
-
-    // ViewModels
-    public class SignInRulesViewModel
-    {
-        public List<SignInRuleModel> Rules { get; set; } = new();
-    }
-
-    public class SignInRecordQueryModel
-    {
-        public int? UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
-
-    public class AdminSignInRecordsViewModel
-    {
-        public List<SignInRecordModel> SignInRecords { get; set; } = new();
-        public List<User> Users { get; set; } = new();
-        public SignInRecordQueryModel Query { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-    }
-
-    public class SignInRuleModel
-    {
-        public int RuleId { get; set; }
-        public int DayNumber { get; set; }
-        public int PointsReward { get; set; }
-        public int ExpReward { get; set; }
-        public int CouponReward { get; set; }
-        public bool IsActive { get; set; }
-    }
-
-    public class SignInRecordModel
-    {
-        public int SignInId { get; set; }
-        public int UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public DateTime SignTime { get; set; }
-        public int PointsGained { get; set; }
-        public int ExpGained { get; set; }
-        public int ConsecutiveDays { get; set; }
-    }
-
-    public class SignInStatisticsModel
-    {
-        public string Period { get; set; } = string.Empty;
-        public int TotalSignIns { get; set; }
-        public int UniqueUsers { get; set; }
-        public int TotalPoints { get; set; }
-        public int TotalExp { get; set; }
-    }
-
-    public class SignInTrendModel
-    {
-        public DateTime Date { get; set; }
-        public int SignInCount { get; set; }
-        public int UniqueUsers { get; set; }
-    }
-
-    public class UserSignInDetailsModel
-    {
-        public int UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public List<SignInRecordModel> SignInRecords { get; set; } = new();
-        public int TotalSignIns { get; set; }
-        public int TotalPoints { get; set; }
-        public int TotalExp { get; set; }
-        public int MaxConsecutive { get; set; }
-    }
-
-    public class ManualSignInModel
-    {
-        public int UserId { get; set; }
-        public DateTime SignTime { get; set; }
-        public int PointsGained { get; set; }
-        public int ExpGained { get; set; }
-        public int ConsecutiveDays { get; set; }
     }
 }

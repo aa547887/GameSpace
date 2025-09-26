@@ -18,29 +18,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _adminService = adminService;
         }
 
-        // 小遊戲管理首頁
-        public async Task<IActionResult> Index()
-        {
-            try
-            {
-                var dashboardData = await GetMiniGameDashboardDataAsync();
-                return View(dashboardData);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入小遊戲管理頁面時發生錯誤：{ex.Message}";
-                return View(new MiniGameDashboardViewModel());
-            }
-        }
-
-        // 遊戲規則設定（獎勵規則、每日遊戲次數限制）
+        // 1. 遊戲規則設定（獎勵規則、每日遊戲次數限制（預設 3 次/日））
         [HttpGet]
         public async Task<IActionResult> GameRules()
         {
             try
             {
                 var rules = await GetGameRulesAsync();
-                var viewModel = new AdminMiniGameRulesViewModel
+                var viewModel = new GameRulesViewModel
                 {
                     Rules = rules
                 };
@@ -49,12 +34,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"載入遊戲規則時發生錯誤：{ex.Message}";
-                return View(new AdminMiniGameRulesViewModel());
+                return View(new GameRulesViewModel());
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> GameRules(AdminMiniGameRulesViewModel model)
+        public async Task<IActionResult> GameRules(GameRulesViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -76,23 +61,24 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 查看會員遊戲紀錄
+        // 2. 查看會員遊戲紀錄（startTime、endTime、win/lose/abort、獲得獎勵）
+        [HttpGet]
         public async Task<IActionResult> GameRecords(GameRecordQueryModel query)
         {
             if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 10;
+            if (query.PageSize <= 0) query.PageSize = 20;
 
             try
             {
                 var result = await QueryGameRecordsAsync(query);
-                var users = await _context.Users.ToListAsync();
-                var games = await _context.MiniGames.ToListAsync();
+                var users = await _context.Users
+                    .Select(u => new { u.Id, u.UserName, u.Email })
+                    .ToListAsync();
 
                 var viewModel = new AdminGameRecordsViewModel
                 {
                     GameRecords = result.Items,
                     Users = users,
-                    Games = games,
                     Query = query,
                     TotalCount = result.TotalCount,
                     PageNumber = query.PageNumber,
@@ -108,144 +94,43 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 小遊戲清單管理
-        public async Task<IActionResult> GameList(GameQueryModel query)
-        {
-            if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 10;
-
-            try
-            {
-                var result = await QueryGamesAsync(query);
-                var viewModel = new AdminGameListViewModel
-                {
-                    Games = result.Items,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"查詢小遊戲清單時發生錯誤：{ex.Message}";
-                return View(new AdminGameListViewModel());
-            }
-        }
-
-        // 新增小遊戲
+        // 查看遊戲紀錄詳情
         [HttpGet]
-        public async Task<IActionResult> CreateGame()
+        public async Task<IActionResult> GameRecordDetails(int recordId)
         {
             try
             {
-                var viewModel = new CreateGameViewModel();
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入新增小遊戲頁面時發生錯誤：{ex.Message}";
-                return View(new CreateGameViewModel());
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateGame(CreateGameViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            try
-            {
-                await CreateGameAsync(model);
-                TempData["SuccessMessage"] = "小遊戲創建成功！";
-                return RedirectToAction(nameof(GameList));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"創建失敗：{ex.Message}");
-                return View(model);
-            }
-        }
-
-        // 編輯小遊戲
-        [HttpGet]
-        public async Task<IActionResult> EditGame(int id)
-        {
-            try
-            {
-                var game = await _context.MiniGames.FindAsync(id);
-                if (game == null)
+                var record = await GetGameRecordDetailsAsync(recordId);
+                if (record == null)
                 {
-                    TempData["ErrorMessage"] = "找不到指定的小遊戲";
-                    return RedirectToAction(nameof(GameList));
+                    TempData["ErrorMessage"] = "找不到指定的遊戲紀錄！";
+                    return RedirectToAction(nameof(GameRecords));
                 }
 
-                var viewModel = new EditGameViewModel
+                var rewards = await GetGameRecordRewardsAsync(recordId);
+                var viewModel = new GameRecordDetailsViewModel
                 {
-                    GameId = game.GameId,
-                    GameName = game.GameName,
-                    Description = game.Description,
-                    IsActive = game.IsActive,
-                    PointsReward = game.PointsReward,
-                    ExpReward = game.ExpReward,
-                    Difficulty = game.Difficulty
+                    GameRecord = record,
+                    Rewards = rewards
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"載入編輯小遊戲頁面時發生錯誤：{ex.Message}";
-                return RedirectToAction(nameof(GameList));
+                TempData["ErrorMessage"] = $"查看遊戲紀錄詳情時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(GameRecords));
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> EditGame(EditGameViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            try
-            {
-                await UpdateGameAsync(model);
-                TempData["SuccessMessage"] = "小遊戲更新成功！";
-                return RedirectToAction(nameof(GameList));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"更新失敗：{ex.Message}");
-                return View(model);
-            }
-        }
-
-        // 刪除小遊戲
-        [HttpPost]
-        public async Task<IActionResult> DeleteGame(int id)
-        {
-            try
-            {
-                await DeleteGameAsync(id);
-                TempData["SuccessMessage"] = "小遊戲刪除成功！";
-                return RedirectToAction(nameof(GameList));
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"刪除失敗：{ex.Message}";
-                return RedirectToAction(nameof(GameList));
-            }
-        }
-
-        // AJAX API 方法
+        // 獲取遊戲統計資料
         [HttpGet]
         public async Task<IActionResult> GetGameStats(string period = "today")
         {
             try
             {
                 var stats = await GetGameStatisticsAsync(period);
-                return Json(new { success = true, stats = stats });
+                return Json(new { success = true, data = stats });
             }
             catch (Exception ex)
             {
@@ -253,30 +138,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 獲取遊戲規則詳細信息
         [HttpGet]
-        public async Task<IActionResult> GetUserGameRecords(int userId)
+        public async Task<IActionResult> GetGameRulesDetails()
         {
             try
             {
-                var records = await _context.GameRecords
-                    .Include(g => g.Game)
-                    .Where(g => g.UserId == userId)
-                    .OrderByDescending(g => g.StartTime)
-                    .Take(10)
-                    .Select(g => new
-                    {
-                        playId = g.PlayId,
-                        gameName = g.Game.GameName,
-                        level = g.Level,
-                        result = g.Result,
-                        pointsGained = g.PointsGained,
-                        expGained = g.ExpGained,
-                        startTime = g.StartTime,
-                        endTime = g.EndTime
-                    })
-                    .ToListAsync();
-
-                return Json(new { success = true, records = records });
+                var rules = await GetGameRulesAsync();
+                return Json(new { success = true, data = rules });
             }
             catch (Exception ex)
             {
@@ -284,90 +153,110 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 私有方法
-        private async Task<MiniGameDashboardViewModel> GetMiniGameDashboardDataAsync()
+        // 更新遊戲規則
+        [HttpPost]
+        public async Task<IActionResult> UpdateGameRule([FromBody] GameRuleModel rule)
         {
-            var today = DateTime.Today;
-            var thisMonth = new DateTime(today.Year, today.Month, 1);
-
-            var totalGames = await _context.MiniGames.CountAsync();
-            var activeGames = await _context.MiniGames.CountAsync(g => g.IsActive);
-            var totalPlays = await _context.GameRecords.CountAsync();
-            var todayPlays = await _context.GameRecords.CountAsync(g => g.StartTime.Date == today);
-            var thisMonthPlays = await _context.GameRecords.CountAsync(g => g.StartTime >= thisMonth);
-
-            var recentGames = await _context.GameRecords
-                .Include(g => g.User)
-                .Include(g => g.Game)
-                .OrderByDescending(g => g.StartTime)
-                .Take(5)
-                .Select(g => new RecentGameModel
-                {
-                    PlayId = g.PlayId,
-                    UserId = g.UserId,
-                    UserName = g.User.UserName,
-                    GameName = g.Game.GameName,
-                    Level = g.Level,
-                    Result = g.Result,
-                    PointsGained = g.PointsGained,
-                    ExpGained = g.ExpGained,
-                    StartTime = g.StartTime
-                })
-                .ToListAsync();
-
-            var topPlayers = await _context.GameRecords
-                .Include(g => g.User)
-                .GroupBy(g => g.UserId)
-                .Select(g => new TopPlayerModel
-                {
-                    UserId = g.Key,
-                    UserName = g.First().User.UserName,
-                    TotalPlays = g.Count(),
-                    TotalPoints = g.Sum(x => x.PointsGained),
-                    TotalExp = g.Sum(x => x.ExpGained)
-                })
-                .OrderByDescending(p => p.TotalPlays)
-                .Take(5)
-                .ToListAsync();
-
-            return new MiniGameDashboardViewModel
+            try
             {
-                TotalGames = totalGames,
-                ActiveGames = activeGames,
-                TotalPlays = totalPlays,
-                TodayPlays = todayPlays,
-                ThisMonthPlays = thisMonthPlays,
-                RecentGames = recentGames,
-                TopPlayers = topPlayers
-            };
+                await UpdateGameRuleAsync(rule);
+                return Json(new { success = true, message = "遊戲規則更新成功！" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
+        // 獲取用戶遊戲紀錄
+        [HttpGet]
+        public async Task<IActionResult> GetUserGameRecords(int userId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.Id, u.UserName, u.Email })
+                    .FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的用戶" });
+                }
+
+                var records = await GetUserGameRecordsAsync(userId, startDate, endDate);
+                var stats = await GetUserGameStatsAsync(userId, startDate, endDate);
+
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        User = user, 
+                        Records = records, 
+                        Stats = stats 
+                    } 
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 導出遊戲紀錄
+        [HttpGet]
+        public async Task<IActionResult> ExportGameRecords(GameRecordQueryModel query)
+        {
+            try
+            {
+                var records = await GetAllGameRecordsAsync(query);
+                var csv = GenerateGameRecordsCSV(records);
+                
+                var fileName = $"遊戲紀錄_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"導出遊戲紀錄時發生錯誤：{ex.Message}";
+                return RedirectToAction(nameof(GameRecords));
+            }
+        }
+
+        // 重置用戶每日遊戲次數
+        [HttpPost]
+        public async Task<IActionResult> ResetUserDailyGames(int userId)
+        {
+            try
+            {
+                await ResetUserDailyGameCountAsync(userId);
+                return Json(new { success = true, message = "用戶每日遊戲次數已重置！" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 私有方法：獲取遊戲規則
         private async Task<List<GameRuleModel>> GetGameRulesAsync()
         {
             var rules = await _context.GameRules
-                .Include(g => g.Game)
+                .OrderBy(r => r.RuleType)
+                .ThenBy(r => r.Level)
                 .Select(r => new GameRuleModel
                 {
-                    RuleId = r.RuleId,
-                    GameId = r.GameId,
-                    GameName = r.Game.GameName,
-                    PointsReward = r.PointsReward,
-                    ExpReward = r.ExpReward,
-                    DailyLimit = r.DailyLimit,
+                    Id = r.Id,
+                    RuleType = r.RuleType,
+                    Level = r.Level,
+                    Value = r.Value,
+                    Description = r.Description,
                     IsActive = r.IsActive
                 })
                 .ToListAsync();
 
-            // 如果沒有規則，創建預設規則
-            if (!rules.Any())
-            {
-                rules = CreateDefaultGameRules();
-                await SaveDefaultGameRulesAsync(rules);
-            }
-
             return rules;
         }
 
+        // 私有方法：更新遊戲規則
         private async Task UpdateGameRulesAsync(List<GameRuleModel> rules)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -382,11 +271,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 {
                     var gameRule = new GameRule
                     {
-                        GameId = rule.GameId,
-                        PointsReward = rule.PointsReward,
-                        ExpReward = rule.ExpReward,
-                        DailyLimit = rule.DailyLimit,
-                        IsActive = rule.IsActive
+                        RuleType = rule.RuleType,
+                        Level = rule.Level,
+                        Value = rule.Value,
+                        Description = rule.Description,
+                        IsActive = rule.IsActive,
+                        CreateTime = DateTime.Now,
+                        LastUpdateTime = DateTime.Now
                     };
                     _context.GameRules.Add(gameRule);
                 }
@@ -401,30 +292,72 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 私有方法：更新單個遊戲規則
+        private async Task UpdateGameRuleAsync(GameRuleModel rule)
+        {
+            var existingRule = await _context.GameRules
+                .FirstOrDefaultAsync(r => r.Id == rule.Id);
+
+            if (existingRule != null)
+            {
+                existingRule.RuleType = rule.RuleType;
+                existingRule.Level = rule.Level;
+                existingRule.Value = rule.Value;
+                existingRule.Description = rule.Description;
+                existingRule.IsActive = rule.IsActive;
+                existingRule.LastUpdateTime = DateTime.Now;
+            }
+            else
+            {
+                var newRule = new GameRule
+                {
+                    RuleType = rule.RuleType,
+                    Level = rule.Level,
+                    Value = rule.Value,
+                    Description = rule.Description,
+                    IsActive = rule.IsActive,
+                    CreateTime = DateTime.Now,
+                    LastUpdateTime = DateTime.Now
+                };
+                _context.GameRules.Add(newRule);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // 私有方法：查詢遊戲紀錄
         private async Task<PagedResult<GameRecordModel>> QueryGameRecordsAsync(GameRecordQueryModel query)
         {
-            var queryable = _context.GameRecords
+            var queryable = _context.MiniGames
                 .Include(g => g.User)
-                .Include(g => g.Game)
                 .AsQueryable();
 
             if (query.UserId.HasValue)
+            {
                 queryable = queryable.Where(g => g.UserId == query.UserId.Value);
+            }
 
-            if (!string.IsNullOrEmpty(query.UserName))
-                queryable = queryable.Where(g => g.User.UserName.Contains(query.UserName));
-
-            if (query.GameId.HasValue)
-                queryable = queryable.Where(g => g.GameId == query.GameId.Value);
-
-            if (!string.IsNullOrEmpty(query.Result))
-                queryable = queryable.Where(g => g.Result == query.Result);
+            if (!string.IsNullOrEmpty(query.SearchTerm))
+            {
+                queryable = queryable.Where(g => 
+                    g.User.UserName.Contains(query.SearchTerm) || 
+                    g.User.Email.Contains(query.SearchTerm));
+            }
 
             if (query.StartDate.HasValue)
+            {
                 queryable = queryable.Where(g => g.StartTime >= query.StartDate.Value);
+            }
 
             if (query.EndDate.HasValue)
+            {
                 queryable = queryable.Where(g => g.StartTime <= query.EndDate.Value);
+            }
+
+            if (!string.IsNullOrEmpty(query.Result))
+            {
+                queryable = queryable.Where(g => g.Result == query.Result);
+            }
 
             var totalCount = await queryable.CountAsync();
 
@@ -434,328 +367,266 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Take(query.PageSize)
                 .Select(g => new GameRecordModel
                 {
-                    PlayId = g.PlayId,
+                    Id = g.Id,
                     UserId = g.UserId,
                     UserName = g.User.UserName,
-                    GameName = g.Game.GameName,
-                    Level = g.Level,
+                    Email = g.User.Email,
+                    StartTime = g.StartTime,
+                    EndTime = g.EndTime,
                     Result = g.Result,
-                    PointsGained = g.PointsGained,
-                    ExpGained = g.ExpGained,
-                    StartTime = g.StartTime
+                    Score = g.Score,
+                    Duration = g.Duration,
+                    Rewards = g.Rewards
                 })
                 .ToListAsync();
 
             return new PagedResult<GameRecordModel>
             {
                 Items = items,
-                TotalCount = totalCount,
-                PageNumber = query.PageNumber,
-                PageSize = query.PageSize
+                TotalCount = totalCount
             };
         }
 
-        private async Task<PagedResult<GameModel>> QueryGamesAsync(GameQueryModel query)
+        // 私有方法：獲取遊戲紀錄詳情
+        private async Task<GameRecordModel> GetGameRecordDetailsAsync(int recordId)
         {
-            var queryable = _context.MiniGames.AsQueryable();
-
-            if (!string.IsNullOrEmpty(query.GameName))
-                queryable = queryable.Where(g => g.GameName.Contains(query.GameName));
-
-            if (!string.IsNullOrEmpty(query.Difficulty))
-                queryable = queryable.Where(g => g.Difficulty == query.Difficulty);
-
-            if (query.IsActive.HasValue)
-                queryable = queryable.Where(g => g.IsActive == query.IsActive.Value);
-
-            var totalCount = await queryable.CountAsync();
-
-            var items = await queryable
-                .OrderByDescending(g => g.CreatedTime)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .Select(g => new GameModel
+            var record = await _context.MiniGames
+                .Include(g => g.User)
+                .Where(g => g.Id == recordId)
+                .Select(g => new GameRecordModel
                 {
-                    GameId = g.GameId,
-                    GameName = g.GameName,
-                    Description = g.Description,
-                    IsActive = g.IsActive,
-                    PointsReward = g.PointsReward,
-                    ExpReward = g.ExpReward,
-                    Difficulty = g.Difficulty,
-                    CreatedTime = g.CreatedTime
+                    Id = g.Id,
+                    UserId = g.UserId,
+                    UserName = g.User.UserName,
+                    Email = g.User.Email,
+                    StartTime = g.StartTime,
+                    EndTime = g.EndTime,
+                    Result = g.Result,
+                    Score = g.Score,
+                    Duration = g.Duration,
+                    Rewards = g.Rewards,
+                    SessionId = g.SessionId,
+                    GameData = g.GameData
+                })
+                .FirstOrDefaultAsync();
+
+            return record;
+        }
+
+        // 私有方法：獲取遊戲紀錄獎勵
+        private async Task<List<GameRewardModel>> GetGameRecordRewardsAsync(int recordId)
+        {
+            var rewards = await _context.GameRewards
+                .Where(r => r.GameId == recordId)
+                .Select(r => new GameRewardModel
+                {
+                    Id = r.Id,
+                    GameId = r.GameId,
+                    RewardType = r.RewardType,
+                    RewardValue = r.RewardValue,
+                    Description = r.Description
                 })
                 .ToListAsync();
 
-            return new PagedResult<GameModel>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = query.PageNumber,
-                PageSize = query.PageSize
-            };
+            return rewards;
         }
 
-        private async Task CreateGameAsync(CreateGameViewModel model)
-        {
-            var game = new MiniGame
-            {
-                GameName = model.GameName,
-                Description = model.Description,
-                IsActive = model.IsActive,
-                PointsReward = model.PointsReward,
-                ExpReward = model.ExpReward,
-                Difficulty = model.Difficulty,
-                CreatedTime = DateTime.Now
-            };
-
-            _context.MiniGames.Add(game);
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task UpdateGameAsync(EditGameViewModel model)
-        {
-            var game = await _context.MiniGames.FindAsync(model.GameId);
-            if (game != null)
-            {
-                game.GameName = model.GameName;
-                game.Description = model.Description;
-                game.IsActive = model.IsActive;
-                game.PointsReward = model.PointsReward;
-                game.ExpReward = model.ExpReward;
-                game.Difficulty = model.Difficulty;
-
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        private async Task DeleteGameAsync(int id)
-        {
-            var game = await _context.MiniGames.FindAsync(id);
-            if (game != null)
-            {
-                _context.MiniGames.Remove(game);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        private async Task<GameStatisticsModel> GetGameStatisticsAsync(string period)
+        // 私有方法：獲取遊戲統計
+        private async Task<GameStatsModel> GetGameStatisticsAsync(string period)
         {
             var today = DateTime.Today;
-            var startDate = period switch
+            var thisMonth = new DateTime(today.Year, today.Month, 1);
+            var thisWeek = today.AddDays(-(int)today.DayOfWeek);
+
+            var queryable = _context.MiniGames.AsQueryable();
+
+            switch (period.ToLower())
             {
-                "today" => today,
-                "week" => today.AddDays(-7),
-                "month" => new DateTime(today.Year, today.Month, 1),
-                "year" => new DateTime(today.Year, 1, 1),
-                _ => today
-            };
+                case "today":
+                    queryable = queryable.Where(g => g.StartTime.Date == today);
+                    break;
+                case "week":
+                    queryable = queryable.Where(g => g.StartTime >= thisWeek);
+                    break;
+                case "month":
+                    queryable = queryable.Where(g => g.StartTime >= thisMonth);
+                    break;
+            }
 
-            var totalPlays = await _context.GameRecords
-                .Where(g => g.StartTime >= startDate)
-                .CountAsync();
-
-            var uniquePlayers = await _context.GameRecords
-                .Where(g => g.StartTime >= startDate)
-                .Select(g => g.UserId)
-                .Distinct()
-                .CountAsync();
-
-            var totalPointsAwarded = await _context.GameRecords
-                .Where(g => g.StartTime >= startDate)
-                .SumAsync(g => g.PointsGained);
-
-            var totalExpAwarded = await _context.GameRecords
-                .Where(g => g.StartTime >= startDate)
-                .SumAsync(g => g.ExpGained);
-
-            return new GameStatisticsModel
+            var stats = new GameStatsModel
             {
                 Period = period,
-                TotalPlays = totalPlays,
-                UniquePlayers = uniquePlayers,
-                TotalPointsAwarded = totalPointsAwarded,
-                TotalExpAwarded = totalExpAwarded
+                TotalGames = await queryable.CountAsync(),
+                UniquePlayers = await queryable.Select(g => g.UserId).Distinct().CountAsync(),
+                WinGames = await queryable.Where(g => g.Result == "win").CountAsync(),
+                LoseGames = await queryable.Where(g => g.Result == "lose").CountAsync(),
+                AbortGames = await queryable.Where(g => g.Result == "abort").CountAsync(),
+                AverageScore = await queryable.AverageAsync(g => g.Score),
+                AverageDuration = await queryable.AverageAsync(g => g.Duration),
+                TotalRewards = await queryable.SumAsync(g => g.Rewards)
             };
+
+            return stats;
         }
 
-        private List<GameRuleModel> CreateDefaultGameRules()
+        // 私有方法：獲取用戶遊戲紀錄
+        private async Task<List<GameRecordModel>> GetUserGameRecordsAsync(int userId, DateTime? startDate, DateTime? endDate)
         {
-            return new List<GameRuleModel>
-            {
-                new GameRuleModel
-                {
-                    GameId = 1,
-                    GameName = "冒險遊戲",
-                    PointsReward = 100,
-                    ExpReward = 50,
-                    DailyLimit = 3,
-                    IsActive = true
-                }
-            };
-        }
+            var queryable = _context.MiniGames
+                .Include(g => g.User)
+                .Where(g => g.UserId == userId);
 
-        private async Task SaveDefaultGameRulesAsync(List<GameRuleModel> rules)
-        {
-            foreach (var rule in rules)
+            if (startDate.HasValue)
             {
-                var gameRule = new GameRule
-                {
-                    GameId = rule.GameId,
-                    PointsReward = rule.PointsReward,
-                    ExpReward = rule.ExpReward,
-                    DailyLimit = rule.DailyLimit,
-                    IsActive = rule.IsActive
-                };
-                _context.GameRules.Add(gameRule);
+                queryable = queryable.Where(g => g.StartTime >= startDate.Value);
             }
+
+            if (endDate.HasValue)
+            {
+                queryable = queryable.Where(g => g.StartTime <= endDate.Value);
+            }
+
+            return await queryable
+                .OrderByDescending(g => g.StartTime)
+                .Select(g => new GameRecordModel
+                {
+                    Id = g.Id,
+                    UserId = g.UserId,
+                    UserName = g.User.UserName,
+                    Email = g.User.Email,
+                    StartTime = g.StartTime,
+                    EndTime = g.EndTime,
+                    Result = g.Result,
+                    Score = g.Score,
+                    Duration = g.Duration,
+                    Rewards = g.Rewards
+                })
+                .ToListAsync();
+        }
+
+        // 私有方法：獲取用戶遊戲統計
+        private async Task<UserGameStatsModel> GetUserGameStatsAsync(int userId, DateTime? startDate, DateTime? endDate)
+        {
+            var queryable = _context.MiniGames
+                .Where(g => g.UserId == userId);
+
+            if (startDate.HasValue)
+            {
+                queryable = queryable.Where(g => g.StartTime >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                queryable = queryable.Where(g => g.StartTime <= endDate.Value);
+            }
+
+            var games = await queryable.ToListAsync();
+
+            return new UserGameStatsModel
+            {
+                TotalGames = games.Count,
+                WinGames = games.Count(g => g.Result == "win"),
+                LoseGames = games.Count(g => g.Result == "lose"),
+                AbortGames = games.Count(g => g.Result == "abort"),
+                WinRate = games.Count > 0 ? (double)games.Count(g => g.Result == "win") / games.Count * 100 : 0,
+                AverageScore = games.Count > 0 ? games.Average(g => g.Score) : 0,
+                AverageDuration = games.Count > 0 ? games.Average(g => g.Duration) : 0,
+                TotalRewards = games.Sum(g => g.Rewards),
+                LastGameTime = games.OrderByDescending(g => g.StartTime).Select(g => g.StartTime).FirstOrDefault()
+            };
+        }
+
+        // 私有方法：獲取所有遊戲紀錄（用於導出）
+        private async Task<List<GameRecordModel>> GetAllGameRecordsAsync(GameRecordQueryModel query)
+        {
+            var queryable = _context.MiniGames
+                .Include(g => g.User)
+                .AsQueryable();
+
+            if (query.UserId.HasValue)
+            {
+                queryable = queryable.Where(g => g.UserId == query.UserId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(query.SearchTerm))
+            {
+                queryable = queryable.Where(g => 
+                    g.User.UserName.Contains(query.SearchTerm) || 
+                    g.User.Email.Contains(query.SearchTerm));
+            }
+
+            if (query.StartDate.HasValue)
+            {
+                queryable = queryable.Where(g => g.StartTime >= query.StartDate.Value);
+            }
+
+            if (query.EndDate.HasValue)
+            {
+                queryable = queryable.Where(g => g.StartTime <= query.EndDate.Value);
+            }
+
+            if (!string.IsNullOrEmpty(query.Result))
+            {
+                queryable = queryable.Where(g => g.Result == query.Result);
+            }
+
+            return await queryable
+                .OrderByDescending(g => g.StartTime)
+                .Select(g => new GameRecordModel
+                {
+                    Id = g.Id,
+                    UserId = g.UserId,
+                    UserName = g.User.UserName,
+                    Email = g.User.Email,
+                    StartTime = g.StartTime,
+                    EndTime = g.EndTime,
+                    Result = g.Result,
+                    Score = g.Score,
+                    Duration = g.Duration,
+                    Rewards = g.Rewards
+                })
+                .ToListAsync();
+        }
+
+        // 私有方法：生成遊戲紀錄CSV
+        private string GenerateGameRecordsCSV(List<GameRecordModel> records)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("遊戲ID,用戶ID,用戶名稱,開始時間,結束時間,結果,分數,持續時間,獎勵");
+
+            foreach (var record in records)
+            {
+                csv.AppendLine($"{record.Id},{record.UserId},{record.UserName},{record.StartTime:yyyy-MM-dd HH:mm:ss},{record.EndTime:yyyy-MM-dd HH:mm:ss},{record.Result},{record.Score},{record.Duration},{record.Rewards}");
+            }
+
+            return csv.ToString();
+        }
+
+        // 私有方法：重置用戶每日遊戲次數
+        private async Task ResetUserDailyGameCountAsync(int userId)
+        {
+            var userDailyGames = await _context.UserDailyGames
+                .FirstOrDefaultAsync(udg => udg.UserId == userId && udg.GameDate.Date == DateTime.Today);
+
+            if (userDailyGames != null)
+            {
+                userDailyGames.GameCount = 0;
+                userDailyGames.LastUpdateTime = DateTime.Now;
+            }
+            else
+            {
+                var newDailyGame = new UserDailyGame
+                {
+                    UserId = userId,
+                    GameDate = DateTime.Today,
+                    GameCount = 0,
+                    CreateTime = DateTime.Now,
+                    LastUpdateTime = DateTime.Now
+                };
+                _context.UserDailyGames.Add(newDailyGame);
+            }
+
             await _context.SaveChangesAsync();
         }
-    }
-
-    // ViewModels
-    public class MiniGameDashboardViewModel
-    {
-        public int TotalGames { get; set; }
-        public int ActiveGames { get; set; }
-        public int TotalPlays { get; set; }
-        public int TodayPlays { get; set; }
-        public int ThisMonthPlays { get; set; }
-        public List<RecentGameModel> RecentGames { get; set; } = new();
-        public List<TopPlayerModel> TopPlayers { get; set; } = new();
-    }
-
-    public class AdminGameListViewModel
-    {
-        public List<GameModel> Games { get; set; } = new();
-        public GameQueryModel Query { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-    }
-
-    public class AdminGameRecordsViewModel
-    {
-        public List<GameRecordModel> GameRecords { get; set; } = new();
-        public List<User> Users { get; set; } = new();
-        public List<MiniGame> Games { get; set; } = new();
-        public GameRecordQueryModel Query { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-    }
-
-    public class AdminMiniGameRulesViewModel
-    {
-        public List<GameRuleModel> Rules { get; set; } = new();
-    }
-
-    public class CreateGameViewModel
-    {
-        public string GameName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
-        public int PointsReward { get; set; }
-        public int ExpReward { get; set; }
-        public string Difficulty { get; set; } = string.Empty;
-    }
-
-    public class EditGameViewModel
-    {
-        public int GameId { get; set; }
-        public string GameName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public int PointsReward { get; set; }
-        public int ExpReward { get; set; }
-        public string Difficulty { get; set; } = string.Empty;
-    }
-
-    public class GameModel
-    {
-        public int GameId { get; set; }
-        public string GameName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public int PointsReward { get; set; }
-        public int ExpReward { get; set; }
-        public string Difficulty { get; set; } = string.Empty;
-        public DateTime CreatedTime { get; set; }
-    }
-
-    public class GameRecordModel
-    {
-        public int PlayId { get; set; }
-        public int UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public string GameName { get; set; } = string.Empty;
-        public int Level { get; set; }
-        public string Result { get; set; } = string.Empty;
-        public int PointsGained { get; set; }
-        public int ExpGained { get; set; }
-        public DateTime StartTime { get; set; }
-    }
-
-    public class GameRuleModel
-    {
-        public int RuleId { get; set; }
-        public int GameId { get; set; }
-        public string GameName { get; set; } = string.Empty;
-        public int PointsReward { get; set; }
-        public int ExpReward { get; set; }
-        public int DailyLimit { get; set; }
-        public bool IsActive { get; set; }
-    }
-
-    public class RecentGameModel
-    {
-        public int PlayId { get; set; }
-        public int UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public string GameName { get; set; } = string.Empty;
-        public int Level { get; set; }
-        public string Result { get; set; } = string.Empty;
-        public int PointsGained { get; set; }
-        public int ExpGained { get; set; }
-        public DateTime StartTime { get; set; }
-    }
-
-    public class TopPlayerModel
-    {
-        public int UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public int TotalPlays { get; set; }
-        public int TotalPoints { get; set; }
-        public int TotalExp { get; set; }
-    }
-
-    public class GameStatisticsModel
-    {
-        public string Period { get; set; } = string.Empty;
-        public int TotalPlays { get; set; }
-        public int UniquePlayers { get; set; }
-        public int TotalPointsAwarded { get; set; }
-        public int TotalExpAwarded { get; set; }
-    }
-
-    public class GameQueryModel
-    {
-        public string GameName { get; set; } = string.Empty;
-        public string Difficulty { get; set; } = string.Empty;
-        public bool? IsActive { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
-
-    public class GameRecordQueryModel
-    {
-        public int? UserId { get; set; }
-        public string UserName { get; set; } = string.Empty;
-        public int? GameId { get; set; }
-        public string Result { get; set; } = string.Empty;
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
     }
 }
