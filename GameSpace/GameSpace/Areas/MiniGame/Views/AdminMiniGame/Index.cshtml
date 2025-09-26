@@ -7,10 +7,10 @@
     <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-gamepad mr-2 text-primary"></i>小遊戲系統管理
+            <i class="fas fa-gamepad me-2 text-primary"></i>小遊戲系統管理
         </h1>
         <div class="d-flex">
-            <a href="@Url.Action("GameRules")" class="btn btn-primary mr-2 shadow-sm">
+            <a href="@Url.Action("GameRules")" class="btn btn-primary me-2 shadow-sm">
                 <i class="fas fa-cog"></i> 遊戲規則設定
             </a>
             <a href="@Url.Action("QueryRecords")" class="btn btn-success shadow-sm">
@@ -22,12 +22,12 @@
     <!-- 統計卡片 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 hover-card">
+            <div class="card border-start border-primary shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日遊戲次數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGames">載入中...</div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">今日遊戲次數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="todayGames">載入中...</div>
                             <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
                         </div>
                         <div class="col-auto">
@@ -39,12 +39,12 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2 hover-card">
+            <div class="card border-start border-success shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">勝利次數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="wins">載入中...</div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">勝利次數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="wins">載入中...</div>
                             <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
                         </div>
                         <div class="col-auto">
@@ -56,16 +56,16 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2 hover-card">
+            <div class="card border-start border-info shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均分數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="avgScore">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-info">+8</span></div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">平均分數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="avgScore">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+8.5</span></div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-star fa-2x text-gray-300"></i>
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -73,13 +73,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2 hover-card">
+            <div class="card border-start border-warning shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">活躍玩家</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activePlayers">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-warning">+23</span></div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">活躍玩家</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="activePlayers">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+15</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -90,100 +90,94 @@
         </div>
     </div>
 
-    <!-- 快速操作 -->
+    <!-- 搜尋和篩選區域 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-bolt"></i> 快速操作
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-search"></i> 搜尋與篩選
                     </h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                            <div class="dropdown-header">操作選項</div>
-                            <a class="dropdown-item" href="@Url.Action("QueryRecords")">
-                                <i class="fas fa-search fa-sm fa-fw mr-2 text-gray-400"></i>
-                                查詢遊戲紀錄
-                            </a>
-                            <a class="dropdown-item" href="@Url.Action("GameRules")">
-                                <i class="fas fa-cog fa-sm fa-fw mr-2 text-gray-400"></i>
-                                規則設定
-                            </a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("GameRules")" class="btn btn-outline-primary btn-block btn-hover">
-                                <i class="fas fa-cog"></i> 遊戲規則設定
-                                <small class="d-block text-muted">設定獎勵規則與每日限制</small>
-                            </a>
+                    <form id="searchForm" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="searchType" class="form-label">搜尋類型</label>
+                            <select class="form-select" id="searchType" name="searchType">
+                                <option value="all">全部記錄</option>
+                                <option value="wins">勝利記錄</option>
+                                <option value="losses">失敗記錄</option>
+                                <option value="highScore">高分記錄</option>
+                            </select>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("QueryRecords")" class="btn btn-outline-success btn-block btn-hover">
-                                <i class="fas fa-history"></i> 查看遊戲紀錄
-                                <small class="d-block text-muted">查看所有會員遊戲記錄</small>
-                            </a>
+                        <div class="col-md-3">
+                            <label for="userId" class="form-label">會員ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("QueryRecords")" class="btn btn-outline-info btn-block btn-hover">
-                                <i class="fas fa-chart-line"></i> 遊戲統計
-                                <small class="d-block text-muted">查看遊戲數據分析</small>
-                            </a>
+                        <div class="col-md-3">
+                            <label for="dateFrom" class="form-label">開始日期</label>
+                            <input type="date" class="form-control" id="dateFrom" name="dateFrom">
                         </div>
-                    </div>
+                        <div class="col-md-3">
+                            <label for="dateTo" class="form-label">結束日期</label>
+                            <input type="date" class="form-control" id="dateTo" name="dateTo">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> 搜尋
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resetSearch">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 最近活動 -->
+    <!-- 資料表格 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-clock"></i> 最近遊戲活動
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-table"></i> 遊戲記錄
                     </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">操作選項</div>
+                            <a class="dropdown-item" href="#" id="exportData">
+                                <i class="fas fa-download fa-sm fa-fw me-2 text-gray-400"></i>
+                                匯出資料
+                            </a>
+                            <a class="dropdown-item" href="#" id="refreshData">
+                                <i class="fas fa-sync fa-sm fa-fw me-2 text-gray-400"></i>
+                                重新整理
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="recentActivityTable">
+                        <table class="table table-bordered" id="gameTable" width="100%" cellspacing="0">
                             <thead>
                                 <tr>
-                                    <th>時間</th>
-                                    <th>會員</th>
-                                    <th>關卡</th>
+                                    <th>記錄ID</th>
+                                    <th>會員ID</th>
+                                    <th>遊戲類型</th>
+                                    <th>分數</th>
                                     <th>結果</th>
-                                    <th>獲得獎勵</th>
+                                    <th>獎勵點數</th>
+                                    <th>遊戲時間</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2024-01-15 14:30</td>
-                                    <td>user001</td>
-                                    <td>第2關</td>
-                                    <td><span class="badge badge-success">勝利</span></td>
-                                    <td><span class="badge badge-primary">+20點數</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:25</td>
-                                    <td>user002</td>
-                                    <td>第1關</td>
-                                    <td><span class="badge badge-danger">失敗</span></td>
-                                    <td><span class="badge badge-secondary">無</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:20</td>
-                                    <td>user003</td>
-                                    <td>第3關</td>
-                                    <td><span class="badge badge-success">勝利</span></td>
-                                    <td><span class="badge badge-primary">+30點數</span></td>
-                                </tr>
+                            <tbody id="gameTableBody">
+                                <!-- 動態載入資料 -->
                             </tbody>
                         </table>
                     </div>
@@ -193,91 +187,69 @@
     </div>
 </div>
 
-<style>
-    .hover-card {
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
 
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .btn-hover {
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    .btn-hover::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-hover:hover::before {
-        left: 100%;
-    }
-
-    .card-header {
-        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        font-weight: 600;
-    }
-
-    .badge {
-        font-size: 0.75em;
-        padding: 0.5em 0.8em;
-    }
-
-    .text-xs {
-        font-size: 0.7rem;
-    }
-</style>
 
 <script>
     $(document).ready(function() {
-        // 模擬載入數據
-        setTimeout(function() {
-            $("#todayGames").text("1,234");
-            $("#wins").text("89");
-            $("#avgScore").text("156");
-            $("#activePlayers").text("234");
-        }, 1000);
-
         // 初始化 DataTable
-        $("#recentActivityTable").DataTable({
+        var table = $("#gameTable").DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
-            "pageLength": 10,
-            "order": [[0, "desc"]],
+            "pageLength": 25,
+            "order": [[6, "desc"]],
             "columnDefs": [
-                { "orderable": false, "targets": 4 }
-            ]
+                { "orderable": false, "targets": 7 }
+            ],
+            "processing": true,
+            "serverSide": false,
+            "ajax": {
+                "url": "@Url.Action("GetGameData")",
+                "type": "POST"
+            }
         });
-
-        // 添加載入動畫
-        $(".card").each(function(index) {
-            $(this).css("animation-delay", (index * 0.1) + "s");
-            $(this).addClass("fade-in");
+        
+        // 載入統計數據
+        loadStatistics();
+        
+        // 搜尋表單提交
+        $("#searchForm").on("submit", function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            // 執行搜尋邏輯
+            console.log("搜尋條件:", formData);
+        });
+        
+        // 重置搜尋
+        $("#resetSearch").on("click", function() {
+            $("#searchForm")[0].reset();
+            table.search("").draw();
+        });
+        
+        // 匯出資料
+        $("#exportData").on("click", function() {
+            // 執行匯出邏輯
+            console.log("匯出資料");
+        });
+        
+        // 重新整理
+        $("#refreshData").on("click", function() {
+            table.ajax.reload();
+            loadStatistics();
         });
     });
+    
+    function loadStatistics() {
+        // 模擬載入統計數據
+        setTimeout(function() {
+            $("#todayGames").text("234");
+            $("#wins").text("156");
+            $("#avgScore").text("1,234");
+            $("#activePlayers").text("89");
+        }, 1000);
+    }
 </script>
+
+
+
+

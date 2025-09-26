@@ -7,13 +7,13 @@
     <!-- Page Header -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-gamepad mr-2 text-primary"></i>小遊戲管理系統
+            <i class="fas fa-gamepad me-2 text-primary"></i>小遊戲管理系統
         </h1>
         <div class="d-flex">
-            <span class="badge badge-success mr-2 shadow-sm" id="systemStatus">
+            <span class="badge bg-success me-2 shadow-sm" id="systemStatus">
                 <i class="fas fa-circle text-success"></i> 系統正常
             </span>
-            <span class="badge badge-info shadow-sm" id="currentTime">
+            <span class="badge bg-info shadow-sm" id="currentTime">
                 <i class="fas fa-clock"></i> @DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             </span>
         </div>
@@ -23,14 +23,14 @@
     <div class="row">
         <!-- 會員點數系統 -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 card-hover">
+            <div class="card border-start border-primary shadow h-100 py-2 card-hover">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
                                 會員點數系統
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <div class="h5 mb-0 fw-bold text-gray-800">
                                 管理會員點數與優惠券
                             </div>
                             <div class="text-xs text-muted mt-1">
@@ -52,14 +52,14 @@
 
         <!-- 會員簽到系統 -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2 card-hover">
+            <div class="card border-start border-success shadow h-100 py-2 card-hover">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
                                 會員簽到系統
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <div class="h5 mb-0 fw-bold text-gray-800">
                                 管理簽到規則與紀錄
                             </div>
                             <div class="text-xs text-muted mt-1">
@@ -81,14 +81,14 @@
 
         <!-- 寵物系統 -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2 card-hover">
+            <div class="card border-start border-info shadow h-100 py-2 card-hover">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
                                 寵物系統
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <div class="h5 mb-0 fw-bold text-gray-800">
                                 管理寵物規則與資料
                             </div>
                             <div class="text-xs text-muted mt-1">
@@ -110,14 +110,14 @@
 
         <!-- 小遊戲系統 -->
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2 card-hover">
+            <div class="card border-start border-warning shadow h-100 py-2 card-hover">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
                                 小遊戲系統
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <div class="h5 mb-0 fw-bold text-gray-800">
                                 管理遊戲規則與紀錄
                             </div>
                             <div class="text-xs text-muted mt-1">
@@ -143,21 +143,21 @@
         <div class="col-lg-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
+                    <h6 class="m-0 fw-bold text-primary">
                         <i class="fas fa-bolt"></i> 快速操作
                     </h6>
                     <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
                             <div class="dropdown-header">操作選項</div>
                             <a class="dropdown-item" href="@Url.Action("ViewHistory", "AdminWallet")">
-                                <i class="fas fa-history fa-sm fa-fw mr-2 text-gray-400"></i>
+                                <i class="fas fa-history fa-sm fa-fw me-2 text-gray-400"></i>
                                 查看完整記錄
                             </a>
                             <a class="dropdown-item" href="@Url.Action("QueryRecords", "AdminSignInStats")">
-                                <i class="fas fa-search fa-sm fa-fw mr-2 text-gray-400"></i>
+                                <i class="fas fa-search fa-sm fa-fw me-2 text-gray-400"></i>
                                 查詢簽到記錄
                             </a>
                         </div>
@@ -200,42 +200,42 @@
         <div class="col-lg-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
+                    <h6 class="m-0 fw-bold text-primary">
                         <i class="fas fa-chart-line"></i> 系統統計
                     </h6>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總會員數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalMembers">載入中...</div>
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總會員數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="totalMembers">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +12</div>
                         </div>
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日簽到</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todaySignIns">載入中...</div>
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">今日簽到</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="todaySignIns">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +8.5%</div>
                         </div>
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">活躍寵物</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activePets">載入中...</div>
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">活躍寵物</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="activePets">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +15</div>
                         </div>
                     </div>
                     <div class="row text-center">
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日遊戲</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGames">載入中...</div>
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">今日遊戲</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="todayGames">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +23</div>
                         </div>
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">總點數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPoints">載入中...</div>
+                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">總點數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="totalPoints">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +1,234</div>
                         </div>
                         <div class="col-4 mb-3">
-                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">在線用戶</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="onlineUsers">載入中...</div>
+                            <div class="text-xs fw-bold text-dark text-uppercase mb-1">在線用戶</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="onlineUsers">載入中...</div>
                             <div class="text-xs text-muted">較昨日 +5</div>
                         </div>
                     </div>
@@ -245,7 +245,7 @@
         <div class="col-lg-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
+                    <h6 class="m-0 fw-bold text-primary">
                         <i class="fas fa-exclamation-triangle"></i> 系統通知
                     </h6>
                 </div>
@@ -269,7 +269,7 @@
         <div class="col-lg-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
+                    <h6 class="m-0 fw-bold text-primary">
                         <i class="fas fa-history"></i> 最近活動
                     </h6>
                 </div>
@@ -288,31 +288,31 @@
                             <tbody id="recentActivity">
                                 <tr>
                                     <td>2024-01-15 14:30</td>
-                                    <td><span class="badge badge-primary">點數</span></td>
+                                    <td><span class="badge bg-primary">點數</span></td>
                                     <td>發放點數給會員 U001</td>
                                     <td>管理員</td>
-                                    <td><span class="badge badge-success">成功</span></td>
+                                    <td><span class="badge bg-success">成功</span></td>
                                 </tr>
                                 <tr>
                                     <td>2024-01-15 14:25</td>
-                                    <td><span class="badge badge-success">簽到</span></td>
+                                    <td><span class="badge bg-success">簽到</span></td>
                                     <td>會員 U002 完成每日簽到</td>
                                     <td>U002</td>
-                                    <td><span class="badge badge-success">成功</span></td>
+                                    <td><span class="badge bg-success">成功</span></td>
                                 </tr>
                                 <tr>
                                     <td>2024-01-15 14:20</td>
-                                    <td><span class="badge badge-info">寵物</span></td>
+                                    <td><span class="badge bg-info">寵物</span></td>
                                     <td>寵物等級提升</td>
                                     <td>U003</td>
-                                    <td><span class="badge badge-success">成功</span></td>
+                                    <td><span class="badge bg-success">成功</span></td>
                                 </tr>
                                 <tr>
                                     <td>2024-01-15 14:15</td>
-                                    <td><span class="badge badge-warning">遊戲</span></td>
+                                    <td><span class="badge bg-warning">遊戲</span></td>
                                     <td>完成冒險遊戲</td>
                                     <td>U004</td>
-                                    <td><span class="badge badge-success">成功</span></td>
+                                    <td><span class="badge bg-success">成功</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -323,159 +323,37 @@
     </div>
 </div>
 
-<style>
-    .card-hover {
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    
-    .card-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
-    
-    .btn-hover {
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .btn-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .btn-hover::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-    }
-    
-    .btn-hover:hover::before {
-        left: 100%;
-    }
-    
-    .quick-action-btn {
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .quick-action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
-    }
-    
-    .quick-action-btn::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-    }
-    
-    .quick-action-btn:hover::before {
-        left: 100%;
-    }
-    
-    .badge {
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-    
-    .card-header {
-        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
-        border-bottom: 1px solid #e3e6f0;
-    }
-    
-    .table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        font-weight: 600;
-    }
-    
-    .alert {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-</style>
-
-<script>
-    // 頁面載入完成後的初始化
-    $(document).ready(function() {
-        // 更新時間顯示
-        setInterval(function() {
-            var now = new Date();
-            var timeString = now.getFullYear() + "-" + 
-                           String(now.getMonth() + 1).padStart(2, "0") + "-" + 
-                           String(now.getDate()).padStart(2, "0") + " " + 
-                           String(now.getHours()).padStart(2, "0") + ":" + 
-                           String(now.getMinutes()).padStart(2, "0");
-            $("#currentTime").html("<i class=\"fas fa-clock\"></i> " + timeString);
-        }, 1000);
-        
-        // 載入實時統計數據
-        loadRealTimeStats();
-        
-        // 載入最近活動
-        loadRecentActivity();
-        
-        // 每30秒更新一次數據
-        setInterval(function() {
-            loadRealTimeStats();
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // 更新時間顯示
+            setInterval(function() {
+                updateTimeDisplay();
+            }, 1000);
+            
+            // 載入實時統計數據
+            loadStatistics();
+            
+            // 載入最近活動
             loadRecentActivity();
-        }, 30000);
-        
-        // 初始化 DataTable
-        $("#recentActivityTable").DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-            },
-            "pageLength": 10,
-            "order": [[0, "desc"]],
-            "columnDefs": [
-                { "orderable": false, "targets": 4 }
-            ]
+            
+            // 每30秒更新一次數據
+            setInterval(function() {
+                loadStatistics();
+                loadRecentActivity();
+            }, 30000);
+            
+            // 初始化 DataTable
+            $("#recentActivityTable").DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+                },
+                "pageLength": 10,
+                "order": [[0, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": 4 }
+                ]
+            });
         });
-        
-        // 添加載入動畫
-        $(".card").each(function(index) {
-            $(this).css("animation-delay", (index * 0.1) + "s");
-            $(this).addClass("fade-in");
-        });
-    });
-    
-    // 載入實時統計數據
-    function loadRealTimeStats() {
-        // 模擬載入數據
-        setTimeout(function() {
-            $("#totalMembers").text("1,234");
-            $("#todaySignIns").text("567");
-            $("#activePets").text("890");
-            $("#todayGames").text("234");
-            $("#totalPoints").text("1,234,567");
-            $("#onlineUsers").text("45");
-        }, 1000);
-    }
-    
-    // 載入最近活動
-    function loadRecentActivity() {
-        // 模擬載入活動數據
-        console.log("載入最近活動數據");
-    }
-</script>
+    </script>
+}

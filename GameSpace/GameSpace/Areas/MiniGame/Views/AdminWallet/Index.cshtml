@@ -7,10 +7,10 @@
     <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-wallet mr-2 text-primary"></i>會員錢包管理
+            <i class="fas fa-wallet me-2 text-primary"></i>會員錢包管理
         </h1>
         <div class="d-flex">
-            <a href="@Url.Action("GrantPoints")" class="btn btn-primary mr-2 shadow-sm">
+            <a href="@Url.Action("GrantPoints")" class="btn btn-primary me-2 shadow-sm">
                 <i class="fas fa-plus-circle"></i> 發放點數
             </a>
             <a href="@Url.Action("GrantCoupons")" class="btn btn-success shadow-sm">
@@ -22,12 +22,12 @@
     <!-- 統計卡片 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 hover-card">
+            <div class="card border-start border-primary shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總點數餘額</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPoints">載入中...</div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總點數餘額</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="totalPoints">載入中...</div>
                             <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
                         </div>
                         <div class="col-auto">
@@ -39,12 +39,12 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2 hover-card">
+            <div class="card border-start border-success shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活躍優惠券</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeCoupons">載入中...</div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">活躍優惠券</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="activeCoupons">載入中...</div>
                             <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
                         </div>
                         <div class="col-auto">
@@ -56,13 +56,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2 hover-card">
+            <div class="card border-start border-info shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">電子券數量</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="eVouchers">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-info">+8</span></div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">電子券數量</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="eVouchers">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+8</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-gift fa-2x text-gray-300"></i>
@@ -73,13 +73,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2 hover-card">
+            <div class="card border-start border-warning shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日交易</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayTransactions">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-warning">+23</span></div>
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">今日交易</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800" id="todayTransactions">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+15</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
@@ -90,122 +90,94 @@
         </div>
     </div>
 
-    <!-- 快速操作 -->
+    <!-- 搜尋和篩選區域 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-bolt"></i> 快速操作
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-search"></i> 搜尋與篩選
                     </h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                            <div class="dropdown-header">操作選項</div>
-                            <a class="dropdown-item" href="@Url.Action("ViewHistory")">
-                                <i class="fas fa-history fa-sm fa-fw mr-2 text-gray-400"></i>
-                                查看完整記錄
-                            </a>
-                            <a class="dropdown-item" href="@Url.Action("AdjustEVouchers")">
-                                <i class="fas fa-edit fa-sm fa-fw mr-2 text-gray-400"></i>
-                                調整電子券
-                            </a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryPoints")" class="btn btn-outline-primary btn-block btn-hover">
-                                <i class="fas fa-search"></i> 查詢點數
-                                <small class="d-block text-muted">查看會員點數餘額</small>
-                            </a>
+                    <form id="searchForm" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="searchType" class="form-label">搜尋類型</label>
+                            <select class="form-select" id="searchType" name="searchType">
+                                <option value="all">全部</option>
+                                <option value="points">點數記錄</option>
+                                <option value="coupons">優惠券</option>
+                                <option value="vouchers">電子券</option>
+                            </select>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryCoupons")" class="btn btn-outline-success btn-block btn-hover">
-                                <i class="fas fa-ticket-alt"></i> 查詢優惠券
-                                <small class="d-block text-muted">管理優惠券狀態</small>
-                            </a>
+                        <div class="col-md-3">
+                            <label for="userId" class="form-label">會員ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("QueryEVouchers")" class="btn btn-outline-info btn-block btn-hover">
-                                <i class="fas fa-gift"></i> 查詢電子券
-                                <small class="d-block text-muted">查看電子券使用情況</small>
-                            </a>
+                        <div class="col-md-3">
+                            <label for="dateFrom" class="form-label">開始日期</label>
+                            <input type="date" class="form-control" id="dateFrom" name="dateFrom">
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="@Url.Action("ViewHistory")" class="btn btn-outline-warning btn-block btn-hover">
-                                <i class="fas fa-history"></i> 查看記錄
-                                <small class="d-block text-muted">交易歷史記錄</small>
-                            </a>
+                        <div class="col-md-3">
+                            <label for="dateTo" class="form-label">結束日期</label>
+                            <input type="date" class="form-control" id="dateTo" name="dateTo">
                         </div>
-                    </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> 搜尋
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resetSearch">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 最近活動 -->
+    <!-- 資料表格 -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-clock"></i> 最近活動
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-table"></i> 錢包記錄
                     </h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">操作選項</div>
+                            <a class="dropdown-item" href="#" id="exportData">
+                                <i class="fas fa-download fa-sm fa-fw me-2 text-gray-400"></i>
+                                匯出資料
+                            </a>
+                            <a class="dropdown-item" href="#" id="refreshData">
+                                <i class="fas fa-sync fa-sm fa-fw me-2 text-gray-400"></i>
+                                重新整理
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="recentActivityTable">
-                            <thead class="thead-light">
+                        <table class="table table-bordered" id="walletTable" width="100%" cellspacing="0">
+                            <thead>
                                 <tr>
-                                    <th>時間</th>
-                                    <th>會員</th>
+                                    <th>記錄ID</th>
+                                    <th>會員ID</th>
                                     <th>類型</th>
                                     <th>金額/數量</th>
+                                    <th>描述</th>
+                                    <th>時間</th>
                                     <th>狀態</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2024-01-15 14:30</td>
-                                    <td>user001</td>
-                                    <td><span class="badge badge-primary">點數發放</span></td>
-                                    <td>+1000</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(1)">
-                                            <i class="fas fa-eye"></i> 查看
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:25</td>
-                                    <td>user002</td>
-                                    <td><span class="badge badge-info">優惠券發放</span></td>
-                                    <td>+1</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(2)">
-                                            <i class="fas fa-eye"></i> 查看
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:20</td>
-                                    <td>user003</td>
-                                    <td><span class="badge badge-warning">電子券使用</span></td>       
-                                    <td>-1</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(3)">
-                                            <i class="fas fa-eye"></i> 查看
-                                        </button>
-                                    </td>
-                                </tr>
+                            <tbody id="walletTableBody">
+                                <!-- 動態載入資料 -->
                             </tbody>
                         </table>
                     </div>
@@ -215,164 +187,68 @@
     </div>
 </div>
 
-<!-- 活動詳情 Modal -->
-<div class="modal fade" id="activityDetailModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">活動詳情</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="activityDetailContent">
-                    <!-- 活動詳情內容將在這裡顯示 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<style>
-    .hover-card {
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .btn-hover {
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    .btn-hover::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-hover:hover::before {
-        left: 100%;
-    }
-
-    .card-header {
-        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        font-weight: 600;
-    }
-
-    .badge {
-        font-size: 0.75em;
-        padding: 0.5em 0.8em;
-    }
-
-    .text-xs {
-        font-size: 0.7rem;
-    }
-</style>
 
 <script>
     $(document).ready(function() {
-        // 載入統計數據
-        loadStatistics();
-
         // 初始化 DataTable
-        $("#recentActivityTable").DataTable({
+        var table = $("#walletTable").DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
-            "pageLength": 10,
-            "order": [[0, "desc"]],
+            "pageLength": 25,
+            "order": [[5, "desc"]],
             "columnDefs": [
-                { "orderable": false, "targets": 5 }
-            ]
+                { "orderable": false, "targets": 7 }
+            ],
+            "processing": true,
+            "serverSide": false,
+            "ajax": {
+                "url": "@Url.Action("GetWalletData")",
+                "type": "POST"
+            }
         });
-
-        // 添加載入動畫
-        $(".card").each(function(index) {
-            $(this).css("animation-delay", (index * 0.1) + "s");
-            $(this).addClass("fade-in");
+        
+        // 載入統計數據
+        loadStatistics();
+        
+        // 搜尋表單提交
+        $("#searchForm").on("submit", function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            // 執行搜尋邏輯
+            console.log("搜尋條件:", formData);
+        });
+        
+        // 重置搜尋
+        $("#resetSearch").on("click", function() {
+            $("#searchForm")[0].reset();
+            table.search("").draw();
+        });
+        
+        // 匯出資料
+        $("#exportData").on("click", function() {
+            // 執行匯出邏輯
+            console.log("匯出資料");
+        });
+        
+        // 重新整理
+        $("#refreshData").on("click", function() {
+            table.ajax.reload();
+            loadStatistics();
         });
     });
-
+    
     function loadStatistics() {
-        $.ajax({
-            url: "@Url.Action("GetStatistics", "AdminWallet")",
-            type: "GET",
-            success: function(response) {
-                if (response.success) {
-                    $("#totalPoints").text(response.data.totalPoints.toLocaleString());
-                    $("#activeCoupons").text(response.data.activeCoupons);
-                    $("#eVouchers").text(response.data.eVouchers);
-                    $("#todayTransactions").text(response.data.todayTransactions);
-                } else {
-                    // 使用模擬數據
-                    $("#totalPoints").text("1,234,567");
-                    $("#activeCoupons").text("89");
-                    $("#eVouchers").text("156");
-                    $("#todayTransactions").text("234");
-                }
-            },
-            error: function() {
-                // 使用模擬數據
-                $("#totalPoints").text("1,234,567");
-                $("#activeCoupons").text("89");
-                $("#eVouchers").text("156");
-                $("#todayTransactions").text("234");
-            }
-        });
-    }
-
-    function viewActivityDetail(activityId) {
-        $.ajax({
-            url: "@Url.Action("GetActivityDetail", "AdminWallet")",
-            type: "GET",
-            data: { activityId: activityId },
-            success: function(response) {
-                if (response.success) {
-                    var detailHtml = "<h6>活動詳情</h6>";
-                    detailHtml += "<p><strong>活動ID:</strong> " + response.data.activityId + "</p>";
-                    detailHtml += "<p><strong>時間:</strong> " + response.data.time + "</p>";
-                    detailHtml += "<p><strong>會員:</strong> " + response.data.member + "</p>";
-                    detailHtml += "<p><strong>類型:</strong> " + response.data.type + "</p>";
-                    detailHtml += "<p><strong>金額/數量:</strong> " + response.data.amount + "</p>";
-                    detailHtml += "<p><strong>狀態:</strong> " + response.data.status + "</p>";
-                    detailHtml += "<p><strong>描述:</strong> " + response.data.description + "</p>";
-
-                    $("#activityDetailContent").html(detailHtml);
-                    $("#activityDetailModal").modal("show");
-                } else {
-                    alert("獲取活動詳情失敗: " + response.message);
-                }
-            },
-            error: function() {
-                alert("獲取活動詳情失敗，請稍後再試");
-            }
-        });
+        // 模擬載入統計數據
+        setTimeout(function() {
+            $("#totalPoints").text("1,234,567");
+            $("#activeCoupons").text("89");
+            $("#eVouchers").text("156");
+            $("#todayTransactions").text("23");
+        }, 1000);
     }
 </script>
+
+
+

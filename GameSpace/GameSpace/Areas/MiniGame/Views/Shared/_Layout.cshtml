@@ -1,245 +1,74 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - GameSpace MiniGame</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GamiPort - MiniGame Area</title>
+
+    <link rel="icon" type="image/x-icon" href="~/icon/ImageToStl.com_Gamiport.ico" asp-append-version="true" />
     
-    <!-- CSS 樣式 -->
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/sb-admin/css/sb-admin-2.min.css" />
-    <link rel="stylesheet" href="~/lib/fontawesome-free/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css" />
+    <!-- Bootstrap 5 & FontAwesome -->
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/font-awesome/css/all.min.css" rel="stylesheet" />
     
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
+    <!-- 全域樣式（與其他區域保持一致） --><link href="~/css/stylecol.css" rel="stylesheet" />
+    
+    <!-- Minigame Area 特有樣式（最後載入，覆蓋全域樣式） -->
+    <link href="~/Areas/MiniGame/wwwroot/css/site.css" rel="stylesheet" />
 
-        .sidebar {
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            min-height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            transition: all 0.3s ease;
-            min-height: 100vh;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-        }
-
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn {
-            border-radius: 10px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            font-weight: 600;
-        }
-
-        .badge {
-            border-radius: 20px;
-            padding: 0.5em 1em;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.6s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hover-card {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .hover-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .btn-hover {
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-hover::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn-hover:hover::before {
-            left: 100%;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
-            border-bottom: 1px solid #e3e6f0;
-        }
-
-        .text-xs {
-            font-size: 0.7rem;
-        }
-
-        /* 響應式設計 */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
+    @RenderSection("Styles", required: false)
 </head>
-<body>
-    <div class="d-flex">
-        <!-- 側邊欄 -->
-        <div class="sidebar" style="width: 250px;">
-            <div class="p-3">
-                <h4 class="text-white text-center mb-4">
-                    <i class="fas fa-gamepad me-2"></i>
-                    MiniGame 管理
-                </h4>
-                @await Html.PartialAsync("_Sidebar")
+<body id="top" class="d-flex flex-column vh-100">
+
+    <!-- 第一層 Topbar -->
+    @Html.Partial("_TopbarLevel1")
+
+    <div class="d-flex flex-grow-1 position-relative">
+        <!-- Sidebar -->
+        <div id="sidebar" class="bg-dark text-white d-flex flex-column">
+            <div class="p-3 flex-grow-1 d-flex flex-column">
+                @Html.Partial("_Sidebar")
             </div>
         </div>
 
-        <!-- 主要內容區域 -->
-        <div class="main-content flex-grow-1">
-            <!-- 頂部導航欄 -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-                <div class="container-fluid">
-                    <button class="btn btn-link d-md-none" type="button" id="sidebarToggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    
-                    <div class="navbar-nav ms-auto">
-                        <div class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle me-2"></i>
-                                管理員
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>個人資料</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>設定</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="/Logout"><i class="fas fa-sign-out-alt me-2"></i>登出</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- 頁面內容 -->
-            <main class="p-4">
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="flex-grow-1 d-flex flex-column overflow-hidden ms-0">
+            <!-- Main Content -->
+            <div class="flex-grow-1 overflow-auto p-3">
                 @RenderBody()
-            </main>
+            </div>
+
+            <!-- Footer -->
+            @Html.Partial("_Footer")
         </div>
     </div>
 
-    <!-- JavaScript 腳本 -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Toggle Button 左下固定 -->
+    <button id="sidebarToggle" class="btn btn-primary position-fixed bottom-0 start-0 m-3">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Scroll to Top Button 右下固定 -->
+    <a class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3" href="#top"
+       style="width:45px;height:45px;">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- jQuery（AJAX 功能需要） -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-3fpdp4Z6xNn2c2JfUQw7vOxI0w6YJmq9hw3rro3At2c="
+            crossorigin="anonymous"></script>
+
+    <!-- Bootstrap 5 JS -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/font-awesome/js/all.min.js"></script>
+    <script src="~/js/test.js"></script>
+    
+    <!-- Minigame Area 特有 JavaScript -->
+    <script src="~/Areas/MiniGame/wwwroot/js/site.js"></script>
 
-    <script>
-        $(document).ready(function() {
-            // 側邊欄切換
-            $("#sidebarToggle").click(function() {
-                $(".sidebar").toggleClass("show");
-            });
-
-            // 點擊外部關閉側邊欄（手機版）
-            $(document).click(function(e) {
-                if ($(window).width() <= 768) {
-                    if (!$(e.target).closest(".sidebar, #sidebarToggle").length) {
-                        $(".sidebar").removeClass("show");
-                    }
-                }
-            });
-
-            // 添加載入動畫
-            $(".card").each(function(index) {
-                $(this).css("animation-delay", (index * 0.1) + "s");
-                $(this).addClass("fade-in");
-            });
-
-            // 初始化 DataTable 的通用設定
-            if ($.fn.DataTable) {
-                $(".table").DataTable({
-                    "language": {
-                        "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-                    },
-                    "pageLength": 25,
-                    "order": [[0, "desc"]],
-                    "responsive": true,
-                    "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-                           "<'row'<'col-sm-12'tr>>" +
-                           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
-                });
-            }
-        });
-    </script>
-
-    @await RenderSectionAsync("Scripts", required: false)
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
+
