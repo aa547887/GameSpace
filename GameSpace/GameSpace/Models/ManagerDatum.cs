@@ -25,6 +25,12 @@ public partial class ManagerDatum
 
     public DateTime? ManagerLockoutEnd { get; set; }
 
+    public virtual ICollection<CsAgent> CsAgentCreatedByManagerNavigations { get; set; } = new List<CsAgent>();
+
+    public virtual CsAgent? CsAgentManager { get; set; }
+
+    public virtual ICollection<CsAgent> CsAgentUpdatedByManagerNavigations { get; set; } = new List<CsAgent>();
+
     public virtual ICollection<Mute> Mutes { get; set; } = new List<Mute>();
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();

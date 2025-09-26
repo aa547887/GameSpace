@@ -1,6 +1,10 @@
 ﻿@model GameSpace.Areas.social_hub.Models.ViewModels.AssignmentConversationVM
+@inject GameSpace.Infrastructure.Time.IAppClock Clock
+
 @{
-    ViewData["Title"] = $"對話（指派於 {Model.AssignedAt:yyyy/MM/dd HH:mm}） - 工單 #{Model.TicketId}";
+    // Title 也用 App 時區
+    var assignedText = Clock.ToAppTime(Model.AssignedAt).ToString("yyyy/MM/dd HH:mm");
+    ViewData["Title"] = $"對話（指派於 {assignedText}） - 工單 #{Model.TicketId}";
 }
 
 @section Styles {
@@ -39,16 +43,15 @@
                     <dd class="col-7">@((Model.AssignedByManagerId?.ToString()) ?? "—")</dd>
 
                     <dt class="col-5">轉單時間</dt>
-                    <dd class="col-7">@Model.AssignedAt.ToString("yyyy/MM/dd HH:mm")</dd>
+                    <dd class="col-7">@Html.AppTime(Model.AssignedAt, "yyyy/MM/dd HH:mm")</dd>
 
                     <dt class="col-5">結束時間</dt>
-                    <dd class="col-7">@((Model.NextAssignedAt?.ToString("yyyy/MM/dd HH:mm")) ?? "—")</dd>
+                    <dd class="col-7">@Html.AppTime(Model.NextAssignedAt, "yyyy/MM/dd HH:mm", empty: "—")</dd>
 
-                    <!-- ★ 新增「備註」 -->
+                    <!-- 備註 -->
                     <dt class="col-5">備註</dt>
                     <dd class="col-7 text-break">@(!string.IsNullOrWhiteSpace(Model.Note) ? Model.Note : "—")</dd>
                 </dl>
-
 
                 <hr />
                 <div class="d-flex gap-2 flex-wrap">
@@ -71,10 +74,10 @@
             <div class="card-header">
                 <strong>對話紀錄</strong>
                 <div class="small text-muted">
-                    指派時間：@Model.AssignedAt.ToString("yyyy/MM/dd HH:mm")
+                    指派時間：@Html.AppTime(Model.AssignedAt, "yyyy/MM/dd HH:mm")
                     @if (Model.NextAssignedAt != null)
                     {
-                        <text> ～ @Model.NextAssignedAt?.ToString("yyyy/MM/dd HH:mm")</text>
+                        <text> ～ @Html.AppTime(Model.NextAssignedAt, "yyyy/MM/dd HH:mm")</text>
                     }
                     ，指派至：@Model.ToManagerId
                 </div>
@@ -107,7 +110,7 @@
                                             {
                                                 <span class="badge bg-dark">系統</span>
                                             }
-                                            <span>@m.SentAt.ToString("yyyy/MM/dd HH:mm")</span>
+                                            <span>@Html.AppTime(m.SentAt, "yyyy/MM/dd HH:mm")</span>
                                         </div>
                                         <div class="msg-bubble">@m.MessageText</div>
                                     </div>
