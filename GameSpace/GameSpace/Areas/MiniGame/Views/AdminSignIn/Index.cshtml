@@ -197,14 +197,9 @@
 
 <script>
     $(document).ready(function() {
-        // 模擬載入數據
-        setTimeout(function() {
-            $("#todaySignIns").text("1,234");
-            $("#continuousSignIns").text("89");
-            $("#monthlyPerfect").text("156");
-            $("#avgSignInRate").text("78.5%");
-        }, 1000);
-
+        // 實際載入數據
+        loadStatistics();
+        
         // 初始化 DataTable
         $("#recentActivityTable").DataTable({
             "language": {
@@ -214,7 +209,11 @@
             "order": [[0, "desc"]],
             "columnDefs": [
                 { "orderable": false, "targets": 4 }
-            ]
+            ],
+            "ajax": {
+                "url": "@Url.Action("GetSignInData")",
+                "type": "POST"
+            }
         });
 
         // 添加載入動畫
@@ -223,6 +222,59 @@
             $(this).addClass("fade-in");
         });
     });
+    
+    function loadStatistics() {
+        // 實際載入統計數據
+        $.ajax({
+            url: "@Url.Action("GetSignInStats")",
+            type: "GET",
+            data: { period: "today" },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    $("#todaySignIns").text(data.todaySignIns.toLocaleString());
+                    $("#continuousSignIns").text(data.consecutiveSignIns);
+                    $("#monthlyPerfect").text(data.monthlyPerfect);
+                    $("#avgSignInRate").text(data.avgSignInRate.toFixed(1) + "%");
+                    
+                    // 計算變化百分比
+                    var signInsChange = data.todaySignIns - data.yesterdaySignIns;
+                    var continuousChange = data.consecutiveSignIns - data.yesterdayConsecutiveSignIns;
+                    var perfectChange = data.monthlyPerfect - data.yesterdayMonthlyPerfect;
+                    var rateChange = (data.avgSignInRate - data.yesterdayAvgSignInRate).toFixed(1);
+                    
+                    $("#signInsChange").html("較昨日 <span class='text-" + (signInsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (signInsChange >= 0 ? "+" : "") + signInsChange + "</span>");
+                    $("#continuousChange").html("較昨日 <span class='text-" + (continuousChange >= 0 ? "success" : "danger") + "'>" + 
+                        (continuousChange >= 0 ? "+" : "") + continuousChange + "</span>");
+                    $("#perfectChange").html("較昨日 <span class='text-" + (perfectChange >= 0 ? "success" : "danger") + "'>" + 
+                        (perfectChange >= 0 ? "+" : "") + perfectChange + "</span>");
+                    $("#rateChange").html("較昨日 <span class='text-" + (rateChange >= 0 ? "success" : "danger") + "'>" + 
+                        (rateChange >= 0 ? "+" : "") + rateChange + "%</span>");
+                } else {
+                    showError("載入統計數據失敗：" + response.message);
+                }
+            },
+            error: function() {
+                showError("載入統計數據時發生錯誤");
+            }
+        });
+    }
+    
+    // 添加錯誤處理函數
+    function showError(message) {
+        // 使用 Bootstrap Toast 顯示錯誤
+        var toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        $("#toastContainer").html(toastHtml);
+        $('.toast').toast('show');
+    }
 </script>
 
 

@@ -28,7 +28,7 @@
                         <div class="col me-2">
                             <div class="text-xs fw-bold text-primary text-uppercase mb-1">總點數餘額</div>
                             <div class="h5 mb-0 fw-bold text-gray-800" id="totalPoints">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
+                            <div class="text-xs text-muted" id="pointsChange">較昨日 <span class="text-success">+5.2%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-coins fa-2x text-gray-300"></i>
@@ -240,13 +240,46 @@
     });
     
     function loadStatistics() {
-        // 模擬載入統計數據
-        setTimeout(function() {
-            $("#totalPoints").text("1,234,567");
-            $("#activeCoupons").text("89");
-            $("#eVouchers").text("156");
-            $("#todayTransactions").text("23");
-        }, 1000);
+        // 實際載入統計數據
+        $.ajax({
+            url: "@Url.Action("GetWalletStats")",
+            type: "GET",
+            data: { period: "today" },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    $("#totalPoints").text(data.totalPoints.toLocaleString());
+                    $("#activeCoupons").text(data.totalCoupons);
+                    $("#eVouchers").text(data.totalEVouchers);
+                    $("#todayTransactions").text(data.todayTransactions);
+                    
+                    // 計算變化百分比
+                    var pointsChange = ((data.totalPoints - data.yesterdayPoints) / data.yesterdayPoints * 100).toFixed(1);
+                    $("#pointsChange").html("較昨日 <span class='text-" + (pointsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (pointsChange >= 0 ? "+" : "") + pointsChange + "%</span>");
+                } else {
+                    showError("載入統計數據失敗：" + response.message);
+                }
+            },
+            error: function() {
+                showError("載入統計數據時發生錯誤");
+            }
+        });
+    }
+    
+    // 添加錯誤處理函數
+    function showError(message) {
+        // 使用 Bootstrap Toast 顯示錯誤
+        var toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        $("#toastContainer").html(toastHtml);
+        $('.toast').toast('show');
     }
 </script>
 

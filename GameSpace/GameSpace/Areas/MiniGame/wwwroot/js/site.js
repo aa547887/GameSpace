@@ -293,3 +293,200 @@ function showWarning(message) {
 function showInfo(message) {
     showAlert('資訊', message, 'info');
 }
+
+// 載入狀態管理
+function showLoading(element) {
+    if (element) {
+        $(element).find('.skeleton-loader').show();
+    } else {
+        $('#loadingSpinner').show();
+    }
+}
+
+function hideLoading(element) {
+    if (element) {
+        $(element).find('.skeleton-loader').hide();
+    } else {
+        $('#loadingSpinner').hide();
+    }
+}
+
+// 錯誤處理增強
+function showError(message, retryCallback) {
+    var toastHtml = `
+        <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    $("#toastContainer").html(toastHtml);
+    $('.toast').toast('show');
+    
+    if (retryCallback) {
+        window.retryLoad = retryCallback;
+        $('#errorRetry').show();
+    }
+}
+
+function showSuccess(message) {
+    var toastHtml = `
+        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    $("#toastContainer").html(toastHtml);
+    $('.toast').toast('show');
+}
+
+// AJAX 請求增強
+function makeAjaxRequest(url, data, successCallback, errorCallback) {
+    showLoading();
+    
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: data,
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                successCallback(response);
+            } else {
+                showError(response.message || '操作失敗');
+                if (errorCallback) errorCallback(response);
+            }
+        },
+        error: function(xhr, status, error) {
+            hideLoading();
+            showError('網路錯誤：' + error, function() {
+                makeAjaxRequest(url, data, successCallback, errorCallback);
+            });
+            if (errorCallback) errorCallback(xhr, status, error);
+        }
+    });
+}
+
+// 表單驗證增強
+function validateForm(form) {
+    var isValid = true;
+    var errors = [];
+    
+    // 檢查必填欄位
+    form.find('[required]').each(function() {
+        if (!$(this).val().trim()) {
+            isValid = false;
+            errors.push($(this).attr('name') + ' 為必填欄位');
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // 檢查電子郵件格式
+    form.find('input[type="email"]').each(function() {
+        var email = $(this).val();
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && !emailRegex.test(email)) {
+            isValid = false;
+            errors.push('電子郵件格式不正確');
+            $(this).addClass('is-invalid');
+        }
+    });
+    
+    // 檢查數字格式
+    form.find('input[type="number"]').each(function() {
+        var value = $(this).val();
+        var min = $(this).attr('min');
+        var max = $(this).attr('max');
+        
+        if (value && (min && parseFloat(value) < parseFloat(min))) {
+            isValid = false;
+            errors.push($(this).attr('name') + ' 不能小於 ' + min);
+            $(this).addClass('is-invalid');
+        }
+        
+        if (value && (max && parseFloat(value) > parseFloat(max))) {
+            isValid = false;
+            errors.push($(this).attr('name') + ' 不能大於 ' + max);
+            $(this).addClass('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        showError('表單驗證失敗：' + errors.join(', '));
+    }
+    
+    return isValid;
+}
+
+// 搜尋功能增強
+function initializeSearch() {
+    // 即時搜尋
+    $('.search-input').on('input', function() {
+        var searchTerm = $(this).val();
+        var table = $(this).closest('.card').find('.table');
+        
+        if (table.length) {
+            table.DataTable().search(searchTerm).draw();
+        }
+    });
+    
+    // 搜尋建議
+    $('.search-input').on('focus', function() {
+        $(this).closest('.search-container').addClass('search-focused');
+    });
+    
+    $('.search-input').on('blur', function() {
+        $(this).closest('.search-container').removeClass('search-focused');
+    });
+}
+
+// 鍵盤快捷鍵
+function initializeKeyboardShortcuts() {
+    $(document).on('keydown', function(e) {
+        // Ctrl + F 聚焦搜尋框
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            $('.search-input').focus();
+        }
+        
+        // Ctrl + R 重新載入
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            location.reload();
+        }
+        
+        // Esc 關閉模態框
+        if (e.key === 'Escape') {
+            $('.modal').modal('hide');
+        }
+    });
+}
+
+// 離線狀態檢測
+function initializeOfflineDetection() {
+    window.addEventListener('online', function() {
+        showSuccess('網路連接已恢復');
+        $('#offlineIndicator').hide();
+    });
+    
+    window.addEventListener('offline', function() {
+        showError('網路連接已斷開，部分功能可能無法使用');
+        $('#offlineIndicator').show();
+    });
+}
+
+// 初始化所有功能
+$(document).ready(function() {
+    initializeCommonFeatures();
+    initializeTables();
+    initializeModals();
+    initializeSearch();
+    initializeLoading();
+    initializeKeyboardShortcuts();
+    initializeOfflineDetection();
+});

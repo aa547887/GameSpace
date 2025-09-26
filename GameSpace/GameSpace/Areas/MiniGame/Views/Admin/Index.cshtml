@@ -266,14 +266,9 @@
 
 <script>
     $(document).ready(function() {
-        // 模擬載入數據
-        setTimeout(function() {
-            $("#totalUsers").text("1,234");
-            $("#todaySignIns").text("89");
-            $("#activePets").text("156");
-            $("#todayGames").text("234");
-        }, 1000);
-
+        // 實際載入數據
+        loadStatistics();
+        
         // 初始化 DataTable
         $("#recentActivityTable").DataTable({
             "language": {
@@ -283,7 +278,11 @@
             "order": [[0, "desc"]],
             "columnDefs": [
                 { "orderable": false, "targets": 4 }
-            ]
+            ],
+            "ajax": {
+                "url": "@Url.Action("GetActivityData")",
+                "type": "POST"
+            }
         });
 
         // 添加載入動畫
@@ -292,6 +291,59 @@
             $(this).addClass("fade-in");
         });
     });
+    
+    function loadStatistics() {
+        // 實際載入統計數據
+        $.ajax({
+            url: "@Url.Action("GetDashboardStats")",
+            type: "GET",
+            data: { period: "today" },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    $("#totalUsers").text(data.totalUsers.toLocaleString());
+                    $("#todaySignIns").text(data.todaySignIns);
+                    $("#activePets").text(data.activePets);
+                    $("#todayGames").text(data.todayGames);
+                    
+                    // 計算變化百分比
+                    var usersChange = data.totalUsers - data.yesterdayTotalUsers;
+                    var signInsChange = data.todaySignIns - data.yesterdaySignIns;
+                    var petsChange = data.activePets - data.yesterdayActivePets;
+                    var gamesChange = data.todayGames - data.yesterdayGames;
+                    
+                    $("#usersChange").html("較昨日 <span class='text-" + (usersChange >= 0 ? "success" : "danger") + "'>" + 
+                        (usersChange >= 0 ? "+" : "") + usersChange + "</span>");
+                    $("#signInsChange").html("較昨日 <span class='text-" + (signInsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (signInsChange >= 0 ? "+" : "") + signInsChange + "</span>");
+                    $("#petsChange").html("較昨日 <span class='text-" + (petsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (petsChange >= 0 ? "+" : "") + petsChange + "</span>");
+                    $("#gamesChange").html("較昨日 <span class='text-" + (gamesChange >= 0 ? "success" : "danger") + "'>" + 
+                        (gamesChange >= 0 ? "+" : "") + gamesChange + "</span>");
+                } else {
+                    showError("載入統計數據失敗：" + response.message);
+                }
+            },
+            error: function() {
+                showError("載入統計數據時發生錯誤");
+            }
+        });
+    }
+    
+    // 添加錯誤處理函數
+    function showError(message) {
+        // 使用 Bootstrap Toast 顯示錯誤
+        var toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        $("#toastContainer").html(toastHtml);
+        $('.toast').toast('show');
+    }
 </script>
 
 

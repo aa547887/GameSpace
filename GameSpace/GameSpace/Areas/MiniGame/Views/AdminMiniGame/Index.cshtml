@@ -240,13 +240,56 @@
     });
     
     function loadStatistics() {
-        // 模擬載入統計數據
-        setTimeout(function() {
-            $("#todayGames").text("234");
-            $("#wins").text("156");
-            $("#avgScore").text("1,234");
-            $("#activePlayers").text("89");
-        }, 1000);
+        // 實際載入統計數據
+        $.ajax({
+            url: "@Url.Action("GetGameStats")",
+            type: "GET",
+            data: { period: "today" },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    $("#todayGames").text(data.todayGames);
+                    $("#wins").text(data.wins);
+                    $("#avgScore").text(data.avgScore.toLocaleString());
+                    $("#activePlayers").text(data.activePlayers);
+                    
+                    // 計算變化百分比
+                    var gamesChange = data.todayGames - data.yesterdayGames;
+                    var winsChange = data.wins - data.yesterdayWins;
+                    var scoreChange = ((data.avgScore - data.yesterdayAvgScore) / data.yesterdayAvgScore * 100).toFixed(1);
+                    var playersChange = data.activePlayers - data.yesterdayActivePlayers;
+                    
+                    $("#gamesChange").html("較昨日 <span class='text-" + (gamesChange >= 0 ? "success" : "danger") + "'>" + 
+                        (gamesChange >= 0 ? "+" : "") + gamesChange + "</span>");
+                    $("#winsChange").html("較昨日 <span class='text-" + (winsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (winsChange >= 0 ? "+" : "") + winsChange + "</span>");
+                    $("#scoreChange").html("較昨日 <span class='text-" + (scoreChange >= 0 ? "success" : "danger") + "'>" + 
+                        (scoreChange >= 0 ? "+" : "") + scoreChange + "%</span>");
+                    $("#playersChange").html("較昨日 <span class='text-" + (playersChange >= 0 ? "success" : "danger") + "'>" + 
+                        (playersChange >= 0 ? "+" : "") + playersChange + "</span>");
+                } else {
+                    showError("載入統計數據失敗：" + response.message);
+                }
+            },
+            error: function() {
+                showError("載入統計數據時發生錯誤");
+            }
+        });
+    }
+    
+    // 添加錯誤處理函數
+    function showError(message) {
+        // 使用 Bootstrap Toast 顯示錯誤
+        var toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        $("#toastContainer").html(toastHtml);
+        $('.toast').toast('show');
     }
 </script>
 

@@ -28,7 +28,7 @@
                         <div class="col me-2">
                             <div class="text-xs fw-bold text-primary text-uppercase mb-1">總寵物數量</div>
                             <div class="h5 mb-0 fw-bold text-gray-800" id="totalPets">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
+                            <div class="text-xs text-muted" id="petsChange">較昨日 <span class="text-success">+5.2%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-paw fa-2x text-gray-300"></i>
@@ -45,7 +45,7 @@
                         <div class="col me-2">
                             <div class="text-xs fw-bold text-success text-uppercase mb-1">活躍寵物</div>
                             <div class="h5 mb-0 fw-bold text-gray-800" id="activePets">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
+                            <div class="text-xs text-muted" id="activeChange">較昨日 <span class="text-success">+12</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-heart fa-2x text-gray-300"></i>
@@ -62,7 +62,7 @@
                         <div class="col me-2">
                             <div class="text-xs fw-bold text-info text-uppercase mb-1">平均等級</div>
                             <div class="h5 mb-0 fw-bold text-gray-800" id="avgLevel">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+0.3</span></div>
+                            <div class="text-xs text-muted" id="levelChange">較昨日 <span class="text-success">+0.3</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-star fa-2x text-gray-300"></i>
@@ -79,7 +79,7 @@
                         <div class="col me-2">
                             <div class="text-xs fw-bold text-warning text-uppercase mb-1">今日升級</div>
                             <div class="h5 mb-0 fw-bold text-gray-800" id="todayUpgrades">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+8</span></div>
+                            <div class="text-xs text-muted" id="upgradesChange">較昨日 <span class="text-success">+8</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
@@ -241,13 +241,56 @@
     });
     
     function loadStatistics() {
-        // 模擬載入統計數據
-        setTimeout(function() {
-            $("#totalPets").text("1,234");
-            $("#activePets").text("890");
-            $("#avgLevel").text("15.6");
-            $("#todayUpgrades").text("23");
-        }, 1000);
+        // 實際載入統計數據
+        $.ajax({
+            url: "@Url.Action("GetPetStats")",
+            type: "GET",
+            data: { period: "today" },
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    $("#totalPets").text(data.totalPets);
+                    $("#activePets").text(data.activePets);
+                    $("#avgLevel").text(data.avgLevel.toFixed(1));
+                    $("#todayUpgrades").text(data.todayUpgrades);
+                    
+                    // 計算變化百分比
+                    var petsChange = data.totalPets - data.yesterdayPets;
+                    var activeChange = data.activePets - data.yesterdayActivePets;
+                    var levelChange = (data.avgLevel - data.yesterdayAvgLevel).toFixed(1);
+                    var upgradesChange = data.todayUpgrades - data.yesterdayUpgrades;
+                    
+                    $("#petsChange").html("較昨日 <span class='text-" + (petsChange >= 0 ? "success" : "danger") + "'>" + 
+                        (petsChange >= 0 ? "+" : "") + petsChange + "</span>");
+                    $("#activeChange").html("較昨日 <span class='text-" + (activeChange >= 0 ? "success" : "danger") + "'>" + 
+                        (activeChange >= 0 ? "+" : "") + activeChange + "</span>");
+                    $("#levelChange").html("較昨日 <span class='text-" + (levelChange >= 0 ? "success" : "danger") + "'>" + 
+                        (levelChange >= 0 ? "+" : "") + levelChange + "</span>");
+                    $("#upgradesChange").html("較昨日 <span class='text-" + (upgradesChange >= 0 ? "success" : "danger") + "'>" + 
+                        (upgradesChange >= 0 ? "+" : "") + upgradesChange + "</span>");
+                } else {
+                    showError("載入統計數據失敗：" + response.message);
+                }
+            },
+            error: function() {
+                showError("載入統計數據時發生錯誤");
+            }
+        });
+    }
+    
+    // 添加錯誤處理函數
+    function showError(message) {
+        // 使用 Bootstrap Toast 顯示錯誤
+        var toastHtml = `
+            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        $("#toastContainer").html(toastHtml);
+        $('.toast').toast('show');
     }
 </script>
 
