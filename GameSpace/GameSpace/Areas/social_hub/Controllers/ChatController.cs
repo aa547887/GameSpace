@@ -1,26 +1,24 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-
+﻿using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Areas.social_hub.Hubs;
+using GameSpace.Areas.social_hub.Models.ViewModels;
+using GameSpace.Data;
+using GameSpace.Infrastructure.Login;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-
-using GameSpace.Data;
-using GameSpace.Models;
-
-using GameSpace.Areas.social_hub.Hubs;
-using GameSpace.Areas.social_hub.Models.ViewModels;
-using GameSpace.Infrastructure.Login;
-
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 // 顯示端遮罩服務（只影響送到前端的內容）
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
+	[SocialHubAuth]
 	public class ChatController : Controller
 	{
 		private readonly GameSpacedatabaseContext _db;

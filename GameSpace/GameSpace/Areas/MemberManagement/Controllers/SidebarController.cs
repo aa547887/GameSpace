@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-
-using Microsoft.AspNetCore.Mvc;
-
 namespace GameSpace.Areas.MemberManagement.Controllers
 {
 	[Area("MemberManagement")]

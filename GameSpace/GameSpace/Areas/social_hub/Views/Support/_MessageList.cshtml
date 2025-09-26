@@ -20,15 +20,14 @@
                             }
                             else if (m.SenderManagerId != null)
                             {
-
                                 <span class="badge bg-warning text-dark">客服@(mine ? "(我)" : "")</span>
                             }
                             else
                             {
-
                                 <span class="badge bg-dark">系統</span>
                             }
-                            <span>@m.SentAt.ToString("yyyy/MM/dd HH:mm")</span>
+                            <!-- ★ 用 App 時區顯示（台灣），DB 仍存 UTC -->
+                            <span>@Html.AppTime(m.SentAt, "yyyy/MM/dd HH:mm")</span>
                         </div>
                         <div class="msg-bubble">@m.MessageText</div>
                     </div>

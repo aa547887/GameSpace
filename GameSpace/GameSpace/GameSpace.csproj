@@ -37,6 +37,7 @@
     <Folder Include="Areas\OnlineStore\Data\" />
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
+    <Folder Include="wwwroot\images\" />
     <Folder Include="wwwroot\lib\image\" />
     <Folder Include="wwwroot\icon\" />
     <Folder Include="wwwroot\NewFolder\" />

@@ -1,12 +1,14 @@
 ﻿@model GameSpace.Models.Mute
 @{
     ViewData["Title"] = "編輯詞彙";
+
     bool canManage = (bool)(ViewBag.CanManageMutes ?? false);
     bool canAdminAll = (bool)(ViewBag.CanAdminAll ?? false);
     int currentMid = (int)(ViewBag.ManagerId ?? 0);
     bool isOwner = Model?.ManagerId.HasValue == true && Model.ManagerId.Value == currentMid;
     string managerName = ViewBag.ManagerName as string ?? "-";
 }
+
 <div class="mutes-header">
     <h2 class="mutes-title">
         <span>@ViewData["Title"]</span>
@@ -20,7 +22,8 @@
         }
     </h2>
     <div class="mutes-subtle">
-        <i class="far fa-id-badge me-1"></i>建立者：@managerName (@Model?.ManagerId)
+        <span class="me-3"><i class="far fa-clock me-1"></i>@Html.AppTime(Model?.CreatedAt, "yyyy/MM/dd HH:mm")</span>
+        <span><i class="far fa-id-badge me-1"></i>建立者：@managerName (@Model?.ManagerId)</span>
     </div>
 </div>
 

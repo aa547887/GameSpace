@@ -1,25 +1,23 @@
 ﻿// Areas/social_hub/Controllers/MessageCenterController.cs
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Areas.social_hub.Models.ViewModels;
+using GameSpace.Areas.social_hub.Services;
+using GameSpace.Infrastructure.Login;
+using GameSpace.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
-
-using GameSpace.Models;
-using GameSpace.Areas.social_hub.Services;
-using GameSpace.Areas.social_hub.Models.ViewModels;
-using GameSpace.Infrastructure.Login;
-using GameSpace.Areas.social_hub.Filters;
-
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
-	[SocialHubAuth(RequireAuthenticated = false)]
+	[SocialHubAuth]
 	public class MessageCenterController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
@@ -334,7 +332,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 							.Select(m => m.ManagerId)
 							.ToListAsync();
 						break;
-					}
+					} 
 				case "none":
 				default:
 					managerRecipients = Enumerable.Empty<int>();
@@ -362,6 +360,9 @@ namespace GameSpace.Areas.social_hub.Controllers
 			TempData["Msg"] = $"✅ 已建立通知 #{input.NotificationId}，成功寄給 {added} 位收件人。";
 			return RedirectToAction(nameof(Index));
 		}
+
+
+
 
 		// 明細（自動已讀）
 		[HttpGet]
@@ -442,7 +443,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 		// 管理端：通知清單
 		[HttpGet]
-		[RequireManagerPermissions(Admin = true)]
+		//[RequireManagerPermissions(Admin = true)]
 		public async Task<IActionResult> Admin()
 		{
 			var list = await _context.Notifications
@@ -456,7 +457,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 		// 管理端：依角色群發（管理員收件）
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		[RequireManagerPermissions(Admin = true)]
+		//[RequireManagerPermissions(Admin = true)]
 		public async Task<IActionResult> BroadcastToRole(
 			int roleId,
 			[Bind("Title,Message,SourceId,ActionId")] Notification template)

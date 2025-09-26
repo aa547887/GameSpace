@@ -81,6 +81,28 @@
             // 或者如果你的專案是這個路徑，改為：
             // document.write('<script src="@Url.Content("~/lib/jquery/jquery.min.js")"><\/script>');
         }
+
+        // 回報內容高度，父頁會依此調整 iframe 高度避免捲軸
+        (function(){
+          function report(){
+            // 取得文件完整高度（含內距）
+            const h = Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 600);
+            window.parent?.postMessage({ type:'modal:height', height: h }, '*');
+          }
+          new ResizeObserver(report).observe(document.body);
+          window.addEventListener('load', report);
+          document.addEventListener('DOMContentLoaded', report);
+          setTimeout(report, 0);
+        })();
+
+        // 任何帶 data-parent-close 的按鈕都能通知父頁關閉
+        document.addEventListener('click', (e)=>{
+          const btn = e.target.closest('[data-parent-close]');
+          if(!btn) return;
+          e.preventDefault();
+          window.parent?.postMessage({ type:'modal:cancel' }, '*');
+        });
+
     </script>
 
     @* 2) Bootstrap（不依賴 jQuery，但放後面無妨） *@
@@ -97,5 +119,9 @@
 
     @* 4) View 的 Scripts（Create 會在這裡載 _ValidationScriptsPartial） *@
     @RenderSection("Scripts", required: false)
+    @* 5) 全站通用 iframe Modal Host *@
+    @await Html.PartialAsync("_ActionModalHost")
+
 </body>
+
 </html>

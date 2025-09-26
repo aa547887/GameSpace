@@ -1,21 +1,20 @@
 ﻿// Areas/social_hub/Controllers/HomeController.cs
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Infrastructure.Login;        // ILoginIdentity
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;             // ⬅ CookieOptions
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Http;             // ⬅ CookieOptions
-using GameSpace.Infrastructure.Login;        // ILoginIdentity
-using GameSpace.Areas.social_hub.Filters;    // SocialHubAuthAttribute
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
 	[Area("social_hub")]
-	// 不強制登入；每次請求仍會由 SocialHubAuth 把 Claims → Items["gs_*"]
-	[SocialHubAuth(RequireAuthenticated = false)]
+	[SocialHubAuth]
 	public class HomeController : Controller
 	{
 		private readonly ILoginIdentity _login;
