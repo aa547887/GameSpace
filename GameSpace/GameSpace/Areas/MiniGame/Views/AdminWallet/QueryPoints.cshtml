@@ -98,7 +98,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- 數據將通過 AJAX 加載 -->
+                                <!-- 會員點數數據將通過 AJAX 動態載入 -->
                             </tbody>
                         </table>
                     </div>
@@ -132,7 +132,7 @@
                     <div class="col-md-6">
                         <h6>最近交易</h6>
                         <div id="recentTransactions">
-                            <!-- 最近交易記錄 -->
+                            <!-- 最近交易記錄將通過 AJAX 動態載入 -->
                         </div>
                     </div>
                 </div>
@@ -146,9 +146,9 @@
 </div>
 
 <script>
-    $(document).ready(function() {
+    .ready(function() {
         // 初始化 DataTable
-        var table = $("#pointsTable").DataTable({
+        var table = #pointsTable.DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
@@ -160,9 +160,9 @@
         });
 
         // 搜尋功能
-        $("#searchBtn").click(function() {
-            var formData = $("#searchForm").serialize();
-            // 發送 AJAX 請求到後端
+        #searchBtn.click(function() {
+            var formData = #searchForm.serialize();
+            // 發送 AJAX 請求到後端搜尋會員點數
             $.ajax({
                 url: "@Url.Action("SearchPoints", "AdminWallet")",
                 type: "POST",
@@ -181,15 +181,15 @@
         });
 
         // 重置功能
-        $("#resetBtn").click(function() {
-            $("#searchForm")[0].reset();
+        #resetBtn.click(function() {
+            #searchForm[0].reset();
             table.clear().draw();
-            $("#resultCount").text("共 0 筆資料");
+            #resultCount.text("共 0 筆資料");
         });
 
         // 匯出功能
-        $("#exportBtn").click(function() {
-            var formData = $("#searchForm").serialize();
+        #exportBtn.click(function() {
+            var formData = #searchForm.serialize();
             window.open("@Url.Action("ExportPoints", "AdminWallet")?" + formData, "_blank");
         });
 
@@ -198,10 +198,8 @@
             table.clear();
             data.forEach(function(row) {
                 var statusBadge = row.status === "正常" ? "badge-success" : "badge-danger";
-                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(\
- + row.userId + 
-\)\">查看</button> " +
-                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustPoints(\ + row.userId + \)\">調整</button>";
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.userId + ")\">查看</button> " +
+                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustPoints(" + row.userId + ")\">調整</button>";
                 
                 table.row.add([
                     row.userId,
@@ -214,7 +212,7 @@
                 ]);
             });
             table.draw();
-            $("#resultCount").text("共 " + data.length + " 筆資料");
+            #resultCount.text("共 " + data.length + " 筆資料");
         }
 
         // 查看詳細資訊
@@ -225,11 +223,11 @@
                 data: { userId: userId },
                 success: function(response) {
                     if (response.success) {
-                        $("#detailUserId").text(response.data.userId);
-                        $("#detailUserName").text(response.data.userName);
-                        $("#detailEmail").text(response.data.email);
-                        $("#detailPoints").text(response.data.points.toLocaleString());
-                        $("#detailModal").modal("show");
+                        #detailUserId.text(response.data.userId);
+                        #detailUserName.text(response.data.userName);
+                        #detailEmail.text(response.data.email);
+                        #detailPoints.text(response.data.points.toLocaleString());
+                        #detailModal.modal("show");
                     } else {
                         alert("獲取詳細資訊失敗: " + response.message);
                     }
@@ -251,7 +249,7 @@
                     success: function(response) {
                         if (response.success) {
                             alert("點數調整成功");
-                            $("#searchBtn").click(); // 重新搜尋
+                            #searchBtn.click(); // 重新搜尋
                         } else {
                             alert("點數調整失敗: " + response.message);
                         }
@@ -264,9 +262,9 @@
         };
 
         // 調整點數按鈕
-        $("#adjustPointsBtn").click(function() {
-            var userId = $("#detailUserId").text();
-            var currentPoints = $("#detailPoints").text().replace(/,/g, "");
+        #adjustPointsBtn.click(function() {
+            var userId = #detailUserId.text();
+            var currentPoints = #detailPoints.text().replace(/,/g, "");
             var newPoints = prompt("請輸入新的點數餘額:", currentPoints);
             if (newPoints !== null && !isNaN(newPoints)) {
                 $.ajax({
@@ -276,8 +274,8 @@
                     success: function(response) {
                         if (response.success) {
                             alert("點數調整成功");
-                            $("#detailModal").modal("hide");
-                            $("#searchBtn").click(); // 重新搜尋
+                            #detailModal.modal("hide");
+                            #searchBtn.click(); // 重新搜尋
                         } else {
                             alert("點數調整失敗: " + response.message);
                         }

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Filters
 {
@@ -30,8 +32,44 @@ namespace GameSpace.Areas.MiniGame.Filters
                 return;
             }
 
-            // 這裡應該檢查權限，暫時允許所有已認證的用戶
-            // 實際實現時應該查詢資料庫檢查用戶權限
+            // 檢查管理員權限
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<GameSpacedatabaseContext>();
+            var manager = dbContext.Managers.Find(managerId);
+            if (manager == null || !manager.IsActive)
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Home", new { area = "" });
+                return;
+            }
+
+            // 檢查特定模組權限
+            var hasPermission = CheckModulePermission(manager, _requiredPermission);
+            if (!hasPermission)
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Home", new { area = "" });
+                return;
+            }
+        }
+
+        private bool CheckModulePermission(Manager manager, string requiredPermission)
+        {
+            // 根據管理員角色和權限檢查
+            return manager.Role switch
+            {
+                "SuperAdmin" => true,
+                "Admin" => requiredPermission switch
+                {
+                    "MiniGame.View" => true,
+                    "MiniGame.Edit" => true,
+                    "MiniGame.Delete" => true,
+                    _ => false
+                },
+                "Manager" => requiredPermission switch
+                {
+                    "MiniGame.View" => true,
+                    _ => false
+                },
+                _ => false
+            };
         }
     }
 }

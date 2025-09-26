@@ -1,240 +1,117 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Models;
-using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Areas.MiniGame.Services;
+using System.Security.Claims;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    public class MiniGameBaseController : Controller
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
+    public abstract class MiniGameBaseController : Controller
     {
         protected readonly GameSpacedatabaseContext _context;
         protected readonly IMiniGameAdminService _adminService;
 
-        public MiniGameBaseController(GameSpacedatabaseContext context)
+        protected MiniGameBaseController(GameSpacedatabaseContext context)
         {
             _context = context;
         }
 
-        public MiniGameBaseController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : this(context)
+        protected MiniGameBaseController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : this(context)
         {
             _adminService = adminService;
         }
 
-        // 獲取當前用戶ID
-        protected int GetCurrentUserId()
+        // 獲取當前管理員ID
+        protected int? GetCurrentManagerId()
         {
-            var userIdClaim = User.FindFirst("UserId");
-            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            var managerIdClaim = User.FindFirst("ManagerId");
+            if (managerIdClaim != null && int.TryParse(managerIdClaim.Value, out int managerId))
             {
-                return userId;
+                return managerId;
             }
-            return 0;
+            return null;
         }
 
-        // 獲取當前用戶
-        protected async Task<GameSpace.Models.User> GetCurrentUserAsync()
+        // 獲取當前管理員信息
+        protected async Task<Manager> GetCurrentManagerAsync()
         {
-            var userId = GetCurrentUserId();
-            if (userId == 0) return null;
-
-            return await _context.Users.FindAsync(userId);
+            var managerId = GetCurrentManagerId();
+            if (managerId.HasValue)
+            {
+                return await _context.Managers.FindAsync(managerId.Value);
+            }
+            return null;
         }
 
-        // 獲取用戶錢包
-        protected async Task<UserWallet> GetUserWalletAsync(int userId)
+        // 檢查管理員權限
+        protected async Task<bool> HasPermissionAsync(string permission)
         {
-            return await _context.UserWallets
-                .FirstOrDefaultAsync(w => w.UserId == userId);
+            var manager = await GetCurrentManagerAsync();
+            if (manager == null) return false;
+
+            return manager.Role switch
+            {
+                "SuperAdmin" => true,
+                "Admin" => permission switch
+                {
+                    "MiniGame.View" => true,
+                    "MiniGame.Edit" => true,
+                    "MiniGame.Delete" => true,
+                    "User.View" => true,
+                    "User.Edit" => true,
+                    "Wallet.View" => true,
+                    "Wallet.Edit" => true,
+                    "Pet.View" => true,
+                    "Pet.Edit" => true,
+                    "Game.View" => true,
+                    "Game.Edit" => true,
+                    "Coupon.View" => true,
+                    "Coupon.Edit" => true,
+                    "EVoucher.View" => true,
+                    "EVoucher.Edit" => true,
+                    _ => false
+                },
+                "Manager" => permission switch
+                {
+                    "MiniGame.View" => true,
+                    "User.View" => true,
+                    "Wallet.View" => true,
+                    "Pet.View" => true,
+                    "Game.View" => true,
+                    "Coupon.View" => true,
+                    "EVoucher.View" => true,
+                    _ => false
+                },
+                _ => false
+            };
         }
 
-        // 獲取用戶寵物
-        protected async Task<GameSpace.Models.Pet> GetUserPetAsync(int userId)
+        // 記錄操作日誌
+        protected async Task LogOperationAsync(string operation, string details, int? targetUserId = null)
         {
-            return await _context.Pets
-                .FirstOrDefaultAsync(p => p.UserId == userId);
-        }
-
-        // 檢查是否可以玩遊戲
-        protected async Task<bool> CanPlayGameAsync(int userId)
-        {
-            var pet = await GetUserPetAsync(userId);
-            if (pet == null) return false;
-
-            // 檢查寵物健康狀態
-            return pet.Health > 0 && pet.Hunger > 0 && pet.Happiness > 0 && pet.Energy > 0;
-        }
-
-        // 更新用戶點數
-        protected async Task UpdateUserPointsAsync(int userId, int points)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var wallet = await GetUserWalletAsync(userId);
-                if (wallet == null)
+                var managerId = GetCurrentManagerId();
+                var log = new AdminOperationLog
                 {
-                    wallet = new UserWallet { UserId = userId, UserPoint = 0 };
-                    _context.UserWallets.Add(wallet);
-                }
-
-                wallet.UserPoint = Math.Max(0, wallet.UserPoint + points);
-
-                // 記錄交易歷史
-                var history = new WalletHistory
-                {
-                    UserId = userId,
-                    ChangeType = "Point",
-                    PointsChanged = points,
-                    Description = points > 0 ? $"獲得 {points} 點" : $"消耗 {Math.Abs(points)} 點",
-                    ChangeTime = DateTime.Now
-                };
-                _context.WalletHistories.Add(history);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 更新寵物經驗
-        protected async Task UpdatePetExperienceAsync(int petId, int exp)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var pet = await _context.Pets.FindAsync(petId);
-                if (pet != null)
-                {
-                    pet.Experience += exp;
-                    
-                    // 檢查是否升級
-                    var requiredExp = CalculateRequiredExp(pet.Level);
-                    if (pet.Experience >= requiredExp)
-                    {
-                        pet.Level++;
-                        pet.Experience -= requiredExp;
-                        
-                        // 升級獎勵
-                        var levelUpReward = pet.Level * 50;
-                        await UpdateUserPointsAsync(pet.UserId, levelUpReward);
-                    }
-                    
-                    await _context.SaveChangesAsync();
-                }
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 記錄遊戲遊玩
-        protected async Task LogGamePlayAsync(int userId, int miniGameId, bool isWin, int pointsGained, int expGained)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var gameRecord = new MiniGame
-                {
-                    UserId = userId,
-                    PetId = await GetUserPetIdAsync(userId),
-                    Level = 1, // 預設關卡等級
-                    MonsterCount = 3, // 預設怪物數量
-                    SpeedMultiplier = 1.0m, // 預設速度倍率
-                    Result = isWin ? "Win" : "Lose",
-                    ExpGained = expGained,
-                    PointsGained = pointsGained,
-                    StartTime = DateTime.Now.AddMinutes(-5), // 假設遊戲進行5分鐘
-                    EndTime = DateTime.Now,
-                    Aborted = false
+                    ManagerId = managerId,
+                    Operation = operation,
+                    Details = details,
+                    TargetUserId = targetUserId,
+                    OperationTime = DateTime.Now,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
                 };
 
-                _context.MiniGames.Add(gameRecord);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 檢查是否為管理員
-        protected bool IsAdmin()
-        {
-            return User.IsInRole("Admin") || User.HasClaim("Role", "Admin");
-        }
-
-        // 返回404錯誤
-        protected IActionResult Return404()
-        {
-            return NotFound();
-        }
-
-        // 返回JSON成功響應
-        protected IActionResult JsonSuccess(object data = null, string message = "操作成功")
-        {
-            return Json(new { success = true, data = data, message = message });
-        }
-
-        // 返回JSON錯誤響應
-        protected IActionResult JsonError(string message = "操作失敗")
-        {
-            return Json(new { success = false, message = message });
-        }
-
-        // 記錄錯誤日誌
-        protected async Task LogErrorAsync(string message, Exception exception = null)
-        {
-            try
-            {
-                var errorLog = new ErrorLog
-                {
-                    Level = "Error",
-                    Message = message,
-                    Exception = exception?.ToString(),
-                    Timestamp = DateTime.Now,
-                    Source = "MiniGameArea"
-                };
-
-                _context.ErrorLogs.Add(errorLog);
+                _context.AdminOperationLogs.Add(log);
                 await _context.SaveChangesAsync();
             }
             catch
             {
-                // 如果記錄錯誤日誌失敗，不拋出異常
-            }
-        }
-
-        // 記錄資訊日誌
-        protected async Task LogInfoAsync(string message)
-        {
-            try
-            {
-                var infoLog = new ErrorLog
-                {
-                    Level = "Information",
-                    Message = message,
-                    Timestamp = DateTime.Now,
-                    Source = "MiniGameArea"
-                };
-
-                _context.ErrorLogs.Add(infoLog);
-                await _context.SaveChangesAsync();
-            }
-            catch
-            {
-                // 如果記錄資訊日誌失敗，不拋出異常
+                // 記錄日誌失敗不影響主要功能
             }
         }
 
@@ -246,7 +123,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null) return false;
 
-                // 這裡可以添加更複雜的權限驗證邏輯
+                // 檢查用戶狀態
+                if (!user.IsActive) return false;
+
+                // 檢查管理員權限
+                var hasPermission = await HasPermissionAsync(permission);
+                if (!hasPermission) return false;
+
                 return true;
             }
             catch
@@ -267,73 +150,209 @@ namespace GameSpace.Areas.MiniGame.Controllers
             };
         }
 
-        // 計算分頁偏移量
-        protected int CalculateSkip(int pageNumber, int pageSize)
+        // 計算分頁信息
+        protected (int totalPages, int startPage, int endPage) CalculatePagination(int totalCount, int pageNumber, int pageSize)
         {
-            return (pageNumber - 1) * pageSize;
-        }
-
-        // 驗證分頁參數
-        protected void ValidatePagination(ref int pageNumber, ref int pageSize)
-        {
-            if (pageNumber <= 0) pageNumber = 1;
-            if (pageSize <= 0) pageSize = 10;
-            if (pageSize > 100) pageSize = 100; // 限制最大頁面大小
-        }
-
-        // 格式化日期時間
-        protected string FormatDateTime(DateTime? dateTime)
-        {
-            return dateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
-        }
-
-        // 格式化金額
-        protected string FormatAmount(decimal amount)
-        {
-            return amount.ToString("N2");
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            var startPage = Math.Max(1, pageNumber - 2);
+            var endPage = Math.Min(totalPages, pageNumber + 2);
+            
+            return (totalPages, startPage, endPage);
         }
 
         // 生成隨機代碼
         protected string GenerateRandomCode(string prefix, int length = 8)
         {
             var random = new Random();
-            var code = prefix + random.Next(10000000, 99999999).ToString();
-            return code;
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var code = new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+            return $"{prefix}{code}";
         }
 
-        // 檢查字串是否為空或空白
+        // 驗證日期範圍
+        protected bool IsValidDateRange(DateTime? startDate, DateTime? endDate)
+        {
+            if (!startDate.HasValue || !endDate.HasValue) return true;
+            return startDate.Value <= endDate.Value;
+        }
+
+        // 格式化日期顯示
+        protected string FormatDate(DateTime? date)
+        {
+            return date?.ToString("yyyy-MM-dd HH:mm:ss") ?? "未設定";
+        }
+
+        // 檢查字符串是否為空或空白
         protected bool IsNullOrWhiteSpace(string value)
         {
             return string.IsNullOrWhiteSpace(value);
         }
 
-        // 安全地轉換字串為整數
-        protected int SafeParseInt(string value, int defaultValue = 0)
+        // 安全地轉換字符串為整數
+        protected int? SafeParseInt(string value)
         {
             if (int.TryParse(value, out int result))
                 return result;
-            return defaultValue;
+            return null;
         }
 
-        // 安全地轉換字串為小數
-        protected decimal SafeParseDecimal(string value, decimal defaultValue = 0)
+        // 安全地轉換字符串為布爾值
+        protected bool? SafeParseBool(string value)
         {
-            if (decimal.TryParse(value, out decimal result))
+            if (bool.TryParse(value, out bool result))
                 return result;
-            return defaultValue;
+            return null;
         }
 
-        // 私有方法
-        private async Task<int> GetUserPetIdAsync(int userId)
+        // 獲取客戶端IP地址
+        protected string GetClientIpAddress()
         {
-            var pet = await GetUserPetAsync(userId);
-            return pet?.PetId ?? 0;
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrEmpty(ipAddress))
+            {
+                var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (!string.IsNullOrEmpty(forwardedFor))
+                {
+                    ipAddress = forwardedFor.Split(',')[0].Trim();
+                }
+            }
+            return ipAddress ?? "Unknown";
         }
 
-        private int CalculateRequiredExp(int level)
+        // 驗證文件上傳
+        protected bool IsValidImageFile(IFormFile file)
         {
-            // 簡單的經驗值計算公式：每級需要 level * 100 經驗
-            return level * 100;
+            if (file == null || file.Length == 0) return false;
+            
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            
+            return allowedExtensions.Contains(extension);
+        }
+
+        // 獲取文件大小描述
+        protected string GetFileSizeDescription(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return $"{len:0.##} {sizes[order]}";
+        }
+
+        // 驗證電子郵件格式
+        protected bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // 驗證手機號碼格式
+        protected bool IsValidPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber)) return false;
+            
+            // 簡單的手機號碼驗證（台灣格式）
+            var cleanNumber = phoneNumber.Replace("-", "").Replace(" ", "");
+            return System.Text.RegularExpressions.Regex.IsMatch(cleanNumber, @"^09\d{8}$");
+        }
+
+        // 生成QR碼內容
+        protected string GenerateQRCodeContent(string type, string code)
+        {
+            return $"{type}:{code}:{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        // 驗證QR碼內容
+        protected (bool isValid, string type, string code, DateTime? timestamp) ValidateQRCodeContent(string content)
+        {
+            try
+            {
+                var parts = content.Split(':');
+                if (parts.Length != 3) return (false, null, null, null);
+                
+                var type = parts[0];
+                var code = parts[1];
+                var timestampStr = parts[2];
+                
+                if (DateTime.TryParseExact(timestampStr, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out DateTime timestamp))
+                {
+                    return (true, type, code, timestamp);
+                }
+                
+                return (false, null, null, null);
+            }
+            catch
+            {
+                return (false, null, null, null);
+            }
+        }
+
+        // 檢查操作是否在允許的時間範圍內
+        protected bool IsOperationAllowed(DateTime? operationTime, int maxHours = 24)
+        {
+            if (!operationTime.HasValue) return false;
+            return DateTime.Now.Subtract(operationTime.Value).TotalHours <= maxHours;
+        }
+
+        // 獲取系統設定值
+        protected async Task<string> GetSystemSettingAsync(string key, string defaultValue = "")
+        {
+            try
+            {
+                var setting = await _context.SystemSettings
+                    .FirstOrDefaultAsync(s => s.Key == key);
+                return setting?.Value ?? defaultValue;
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        // 設定系統設定值
+        protected async Task<bool> SetSystemSettingAsync(string key, string value)
+        {
+            try
+            {
+                var setting = await _context.SystemSettings
+                    .FirstOrDefaultAsync(s => s.Key == key);
+                
+                if (setting == null)
+                {
+                    setting = new SystemSetting
+                    {
+                        Key = key,
+                        Value = value,
+                        CreatedTime = DateTime.Now
+                    };
+                    _context.SystemSettings.Add(setting);
+                }
+                else
+                {
+                    setting.Value = value;
+                    setting.UpdatedTime = DateTime.Now;
+                }
+                
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
