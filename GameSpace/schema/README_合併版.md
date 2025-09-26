@@ -3,7 +3,7 @@
 > 說明語言：**zh-TW**（程式識別符、檔名、路徑、SQL/CLI 關鍵字不可翻譯）  
 > 編碼：**UTF-8 with BOM**  
 > 本檔為你提供：**單一文件就能讓 AI/開發者理解整個 MiniGame Area 的後台規格、資料庫覆蓋清單、權限/登入整合、檔案落點與驗收清單**。
-
+> **請一律用powershell寫檔案** 
 ---
 
 ## 0. 來源與權威層級（Single Source of Truth）
