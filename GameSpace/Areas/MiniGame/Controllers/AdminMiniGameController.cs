@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Route("MiniGame/[controller]")]
     public class AdminMiniGameController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,41 +17,151 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _context = context;
         }
 
+        // GET: MiniGame/AdminMiniGame
         public async Task<IActionResult> Index()
         {
-            var viewModel = new AdminMiniGameViewModel
+            var viewModel = new MiniGameOverviewViewModel();
+
+            // 統計數據
+            viewModel.TotalGamesPlayed = await _context.MiniGames.CountAsync();
+            viewModel.TodayGamesPlayed = await _context.MiniGames
+                .Where(mg => mg.StartTime.Date == DateTime.Today)
+                .CountAsync();
+            viewModel.WeeklyGamesPlayed = await _context.MiniGames
+                .Where(mg => mg.StartTime >= DateTime.Today.AddDays(-7))
+                .CountAsync();
+            viewModel.MonthlyGamesPlayed = await _context.MiniGames
+                .Where(mg => mg.StartTime >= DateTime.Today.AddDays(-30))
+                .CountAsync();
+
+            var totalGames = viewModel.TotalGamesPlayed;
+            if (totalGames > 0)
             {
-                TotalGamesPlayed = await _context.MiniGame.CountAsync(),
-                TodayGamesPlayed = await _context.MiniGame
-                    .Where(g => g.StartTime.Date == DateTime.Today)
-                    .CountAsync(),
-                WinRate = await CalculateWinRateAsync(),
-                AverageGameDuration = await CalculateAverageGameDurationAsync()
-            };
+                viewModel.TotalWins = await _context.MiniGames
+                    .Where(mg => mg.Result == "Win")
+                    .CountAsync();
+                viewModel.TotalLosses = await _context.MiniGames
+                    .Where(mg => mg.Result == "Lose")
+                    .CountAsync();
+                viewModel.TotalAborted = await _context.MiniGames
+                    .Where(mg => mg.Aborted == true)
+                    .CountAsync();
+
+                viewModel.WinRate = (decimal)viewModel.TotalWins / totalGames * 100;
+            }
+
+            // 遊戲統計
+            viewModel.GameStats = await _context.MiniGames
+                .Include(mg => mg.User)
+                .Include(mg => mg.Pet)
+                .OrderByDescending(mg => mg.StartTime)
+                .Take(100)
+                .Select(mg => new GameStatsViewModel
+                {
+                    PlayId = mg.PlayID,
+                    UserId = mg.UserID,
+                    UserName = mg.User.User_name,
+                    PetId = mg.PetID,
+                    PetName = mg.Pet.PetName,
+                    Level = mg.Level,
+                    MonsterCount = mg.MonsterCount,
+                    SpeedMultiplier = mg.SpeedMultiplier,
+                    Result = mg.Result,
+                    ExpGained = mg.ExpGained,
+                    PointsGained = mg.PointsGained,
+                    CouponGained = mg.CouponGained,
+                    StartTime = mg.StartTime,
+                    EndTime = mg.EndTime,
+                    Aborted = mg.Aborted
+                })
+                .ToListAsync();
+
+            // 用戶遊戲統計
+            viewModel.UserGames = await _context.Users
+                .Include(u => u.MiniGames)
+                .Include(u => u.UserIntroduce)
+                .Where(u => u.MiniGames.Any())
+                .Select(u => new UserGameViewModel
+                {
+                    UserId = u.User_ID,
+                    UserName = u.User_name,
+                    NickName = u.UserIntroduce.User_NickName,
+                    TotalGamesPlayed = u.MiniGames.Count(),
+                    TotalWins = u.MiniGames.Count(mg => mg.Result == "Win"),
+                    TotalLosses = u.MiniGames.Count(mg => mg.Result == "Lose"),
+                    TotalAborted = u.MiniGames.Count(mg => mg.Aborted == true),
+                    WinRate = u.MiniGames.Any() ? 
+                        (decimal)u.MiniGames.Count(mg => mg.Result == "Win") / u.MiniGames.Count() * 100 : 0,
+                    TotalPointsGained = u.MiniGames.Sum(mg => mg.PointsGained),
+                    TotalExpGained = u.MiniGames.Sum(mg => mg.ExpGained),
+                    LastGamePlayed = u.MiniGames.Max(mg => mg.StartTime)
+                })
+                .OrderByDescending(u => u.TotalGamesPlayed)
+                .ToListAsync();
 
             return View(viewModel);
         }
 
+        // GET: MiniGame/AdminMiniGame/GetMiniGameOverview
         [HttpGet]
-        public async Task<JsonResult> GetGameOverview()
+        public async Task<IActionResult> GetMiniGameOverview()
         {
             try
             {
+                var totalGames = await _context.MiniGames.CountAsync();
+                var totalWins = await _context.MiniGames
+                    .Where(mg => mg.Result == "Win")
+                    .CountAsync();
+                var totalLosses = await _context.MiniGames
+                    .Where(mg => mg.Result == "Lose")
+                    .CountAsync();
+                var totalAborted = await _context.MiniGames
+                    .Where(mg => mg.Aborted == true)
+                    .CountAsync();
+
                 var data = new
                 {
-                    totalGamesPlayed = await _context.MiniGame.CountAsync(),
-                    todayGamesPlayed = await _context.MiniGame
-                        .Where(g => g.StartTime.Date == DateTime.Today)
+                    totalGamesPlayed = totalGames,
+                    todayGamesPlayed = await _context.MiniGames
+                        .Where(mg => mg.StartTime.Date == DateTime.Today)
                         .CountAsync(),
-                    winRate = await CalculateWinRateAsync(),
-                    abortRate = await CalculateAbortRateAsync(),
-                    averageLevel = await _context.MiniGame.AverageAsync(g => (double)g.Level),
-                    totalExpAwarded = await _context.MiniGame.SumAsync(g => g.ExpGained),
-                    totalPointsAwarded = await _context.MiniGame.SumAsync(g => g.PointsGained),
-                    gameRecords = await GetGameRecordsAsync()
+                    weeklyGamesPlayed = await _context.MiniGames
+                        .Where(mg => mg.StartTime >= DateTime.Today.AddDays(-7))
+                        .CountAsync(),
+                    monthlyGamesPlayed = await _context.MiniGames
+                        .Where(mg => mg.StartTime >= DateTime.Today.AddDays(-30))
+                        .CountAsync(),
+                    totalWins = totalWins,
+                    totalLosses = totalLosses,
+                    totalAborted = totalAborted,
+                    winRate = totalGames > 0 ? (decimal)totalWins / totalGames * 100 : 0,
+                    gameStats = await _context.MiniGames
+                        .Include(mg => mg.User)
+                        .Include(mg => mg.Pet)
+                        .OrderByDescending(mg => mg.StartTime)
+                        .Take(50)
+                        .Select(mg => new
+                        {
+                            playId = mg.PlayID,
+                            userId = mg.UserID,
+                            userName = mg.User.User_name,
+                            petId = mg.PetID,
+                            petName = mg.Pet.PetName,
+                            level = mg.Level,
+                            monsterCount = mg.MonsterCount,
+                            speedMultiplier = mg.SpeedMultiplier,
+                            result = mg.Result,
+                            expGained = mg.ExpGained,
+                            pointsGained = mg.PointsGained,
+                            couponGained = mg.CouponGained,
+                            startTime = mg.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                            endTime = mg.EndTime.HasValue ? mg.EndTime.Value.ToString("yyyy-MM-dd HH:mm:ss") : null,
+                            aborted = mg.Aborted
+                        })
+                        .ToListAsync()
                 };
 
-                return Json(new { success = true, data });
+                return Json(new { success = true, data = data });
             }
             catch (Exception ex)
             {
@@ -58,277 +169,130 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<JsonResult> GetGameRecords(int page = 1, int pageSize = 50)
+        // GET: MiniGame/AdminMiniGame/Details/5
+        public async Task<IActionResult> Details(int? id)
         {
-            try
+            if (id == null)
             {
-                var games = await _context.MiniGame
-                    .Include(g => g.User)
-                    .Include(g => g.Pet)
-                    .OrderByDescending(g => g.StartTime)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(g => new
-                    {
-                        playId = g.PlayID,
-                        userId = g.UserID,
-                        userName = g.User.User_name,
-                        petId = g.PetID,
-                        petName = g.Pet.PetName,
-                        level = g.Level,
-                        monsterCount = g.MonsterCount,
-                        speedMultiplier = g.SpeedMultiplier,
-                        result = g.Result,
-                        expGained = g.ExpGained,
-                        pointsGained = g.PointsGained,
-                        couponGained = g.CouponGained,
-                        startTime = g.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        endTime = g.EndTime?.ToString("yyyy-MM-dd HH:mm:ss"),
-                        duration = g.EndTime.HasValue 
-                            ? (g.EndTime.Value - g.StartTime).TotalMinutes.ToString("F1") + " 分鐘"
-                            : "未完成",
-                        aborted = g.Aborted,
-                        petEffects = new
-                        {
-                            hungerDelta = g.HungerDelta,
-                            moodDelta = g.MoodDelta,
-                            staminaDelta = g.StaminaDelta,
-                            cleanlinessDelta = g.CleanlinessDelta
-                        }
-                    })
-                    .ToListAsync();
+                return NotFound();
+            }
 
-                return Json(new { success = true, data = games });
-            }
-            catch (Exception ex)
+            var miniGame = await _context.MiniGames
+                .Include(mg => mg.User)
+                .Include(mg => mg.Pet)
+                .FirstOrDefaultAsync(m => m.PlayID == id);
+
+            if (miniGame == null)
             {
-                return Json(new { success = false, message = ex.Message });
+                return NotFound();
             }
+
+            return View(miniGame);
         }
 
-        [HttpGet]
-        public async Task<JsonResult> GetGameStatistics()
-        {
-            try
-            {
-                var totalGames = await _context.MiniGame.CountAsync();
-                var winCount = await _context.MiniGame.Where(g => g.Result == "Win").CountAsync();
-                var loseCount = await _context.MiniGame.Where(g => g.Result == "Lose").CountAsync();
-                var abortCount = await _context.MiniGame.Where(g => g.Aborted).CountAsync();
-
-                // Level distribution
-                var levelDistribution = await _context.MiniGame
-                    .GroupBy(g => g.Level)
-                    .Select(group => new
-                    {
-                        level = group.Key,
-                        count = group.Count(),
-                        winRate = group.Count(g => g.Result == "Win") * 100.0 / group.Count()
-                    })
-                    .OrderBy(x => x.level)
-                    .ToListAsync();
-
-                // Daily play statistics for the last 30 days
-                var thirtyDaysAgo = DateTime.Today.AddDays(-30);
-                var dailyStats = await _context.MiniGame
-                    .Where(g => g.StartTime.Date >= thirtyDaysAgo)
-                    .GroupBy(g => g.StartTime.Date)
-                    .Select(group => new
-                    {
-                        date = group.Key.ToString("yyyy-MM-dd"),
-                        totalGames = group.Count(),
-                        winCount = group.Count(g => g.Result == "Win"),
-                        loseCount = group.Count(g => g.Result == "Lose"),
-                        abortCount = group.Count(g => g.Aborted)
-                    })
-                    .OrderBy(x => x.date)
-                    .ToListAsync();
-
-                // Top performing players
-                var topPlayers = await _context.MiniGame
-                    .Include(g => g.User)
-                    .GroupBy(g => new { g.UserID, g.User.User_name })
-                    .Select(group => new
-                    {
-                        userId = group.Key.UserID,
-                        userName = group.Key.User_name,
-                        totalGames = group.Count(),
-                        winCount = group.Count(g => g.Result == "Win"),
-                        winRate = group.Count(g => g.Result == "Win") * 100.0 / group.Count(),
-                        totalExp = group.Sum(g => g.ExpGained),
-                        totalPoints = group.Sum(g => g.PointsGained)
-                    })
-                    .OrderByDescending(x => x.winRate)
-                    .ThenByDescending(x => x.totalGames)
-                    .Take(10)
-                    .ToListAsync();
-
-                var data = new
-                {
-                    overview = new
-                    {
-                        totalGames = totalGames,
-                        winCount = winCount,
-                        loseCount = loseCount,
-                        abortCount = abortCount,
-                        winRate = totalGames > 0 ? winCount * 100.0 / totalGames : 0,
-                        abortRate = totalGames > 0 ? abortCount * 100.0 / totalGames : 0
-                    },
-                    levelDistribution = levelDistribution,
-                    dailyStats = dailyStats,
-                    topPlayers = topPlayers
-                };
-
-                return Json(new { success = true, data });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetGameDetails(int playId)
-        {
-            try
-            {
-                var game = await _context.MiniGame
-                    .Include(g => g.User)
-                    .Include(g => g.Pet)
-                    .FirstOrDefaultAsync(g => g.PlayID == playId);
-
-                if (game == null)
-                {
-                    return Json(new { success = false, message = "遊戲記錄不存在" });
-                }
-
-                var data = new
-                {
-                    playId = game.PlayID,
-                    user = new
-                    {
-                        userId = game.UserID,
-                        userName = game.User.User_name
-                    },
-                    pet = new
-                    {
-                        petId = game.PetID,
-                        petName = game.Pet.PetName,
-                        level = game.Pet.Level,
-                        beforeGame = new
-                        {
-                            hunger = game.Pet.Hunger + game.HungerDelta,
-                            mood = game.Pet.Mood + game.MoodDelta,
-                            stamina = game.Pet.Stamina + game.StaminaDelta,
-                            cleanliness = game.Pet.Cleanliness + game.CleanlinessDelta
-                        },
-                        afterGame = new
-                        {
-                            hunger = game.Pet.Hunger,
-                            mood = game.Pet.Mood,
-                            stamina = game.Pet.Stamina,
-                            cleanliness = game.Pet.Cleanliness
-                        }
-                    },
-                    gameSettings = new
-                    {
-                        level = game.Level,
-                        monsterCount = game.MonsterCount,
-                        speedMultiplier = game.SpeedMultiplier
-                    },
-                    result = new
-                    {
-                        outcome = game.Result,
-                        aborted = game.Aborted,
-                        expGained = game.ExpGained,
-                        pointsGained = game.PointsGained,
-                        couponGained = game.CouponGained != "0" ? game.CouponGained : null
-                    },
-                    timing = new
-                    {
-                        startTime = game.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        endTime = game.EndTime?.ToString("yyyy-MM-dd HH:mm:ss"),
-                        duration = game.EndTime.HasValue 
-                            ? (game.EndTime.Value - game.StartTime).TotalSeconds.ToString("F1") + " 秒"
-                            : "未完成"
-                    },
-                    petEffects = new
-                    {
-                        hungerDelta = game.HungerDelta,
-                        moodDelta = game.MoodDelta,
-                        staminaDelta = game.StaminaDelta,
-                        cleanlinessDelta = game.CleanlinessDelta
-                    }
-                };
-
-                return Json(new { success = true, data });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
+        // POST: MiniGame/AdminMiniGame/AdjustGameResult
         [HttpPost]
-        public async Task<JsonResult> UpdateGameRewards(int playId, int expGained, int pointsGained)
+        public async Task<IActionResult> AdjustGameResult(int playId, string result, int pointsGained, int expGained, string couponGained)
         {
             try
             {
-                var game = await _context.MiniGame
-                    .Include(g => g.User)
-                    .Include(g => g.Pet)
-                    .FirstOrDefaultAsync(g => g.PlayID == playId);
+                var miniGame = await _context.MiniGames
+                    .Include(mg => mg.User)
+                    .Include(mg => mg.User.UserWallet)
+                    .Include(mg => mg.Pet)
+                    .FirstOrDefaultAsync(mg => mg.PlayID == playId);
 
-                if (game == null)
+                if (miniGame == null)
                 {
-                    return Json(new { success = false, message = "遊戲記錄不存在" });
+                    return Json(new { success = false, message = "找不到遊戲記錄" });
                 }
 
-                if (expGained < 0 || pointsGained < 0)
+                // 記錄原始值
+                var originalPoints = miniGame.PointsGained;
+                var originalExp = miniGame.ExpGained;
+                var originalCoupon = miniGame.CouponGained;
+
+                // 更新遊戲結果
+                miniGame.Result = result;
+                miniGame.PointsGained = pointsGained;
+                miniGame.ExpGained = expGained;
+                miniGame.CouponGained = couponGained ?? "0";
+                miniGame.EndTime = DateTime.Now;
+
+                // 調整用戶點數
+                var pointDifference = pointsGained - originalPoints;
+                if (pointDifference != 0)
                 {
-                    return Json(new { success = false, message = "獎勵值不能為負數" });
-                }
+                    miniGame.User.UserWallet.User_Point += pointDifference;
 
-                var oldExp = game.ExpGained;
-                var oldPoints = game.PointsGained;
-
-                game.ExpGained = expGained;
-                game.PointsGained = pointsGained;
-
-                // Update pet experience
-                if (expGained != oldExp)
-                {
-                    game.Pet.Experience += (expGained - oldExp);
-                    if (game.Pet.Experience < 0) game.Pet.Experience = 0;
-                }
-
-                // Update user wallet
-                if (pointsGained != oldPoints)
-                {
-                    var wallet = await _context.User_Wallet.FirstOrDefaultAsync(w => w.User_Id == game.UserID);
-                    if (wallet != null)
+                    var walletHistory = new WalletHistory
                     {
-                        var pointsDiff = pointsGained - oldPoints;
-                        wallet.User_Point += pointsDiff;
-                        if (wallet.User_Point < 0) wallet.User_Point = 0;
+                        UserID = miniGame.UserID,
+                        ChangeType = "管理員調整遊戲結果",
+                        PointsChanged = pointDifference,
+                        Description = $"調整遊戲 {miniGame.PlayID} 的點數獎勵",
+                        ChangeTime = DateTime.Now
+                    };
 
-                        // Add wallet history
-                        var history = new WalletHistory
+                    _context.WalletHistories.Add(walletHistory);
+                }
+
+                // 調整寵物經驗
+                var expDifference = expGained - originalExp;
+                if (expDifference != 0 && miniGame.Pet != null)
+                {
+                    miniGame.Pet.Experience += expDifference;
+
+                    // 檢查是否升級
+                    var requiredExp = CalculateRequiredExp(miniGame.Pet.Level);
+                    if (miniGame.Pet.Experience >= requiredExp)
+                    {
+                        miniGame.Pet.Level++;
+                        miniGame.Pet.Experience -= requiredExp;
+                        miniGame.Pet.LevelUpTime = DateTime.Now;
+                        miniGame.Pet.PointsGained_LevelUp = 50;
+                        miniGame.Pet.PointsGainedTime_LevelUp = DateTime.Now;
+
+                        // 升級獎勵點數
+                        miniGame.User.UserWallet.User_Point += 50;
+
+                        var levelUpHistory = new WalletHistory
                         {
-                            UserID = game.UserID,
-                            ChangeType = "Game",
-                            PointsChanged = pointsDiff,
-                            Description = $"遊戲獎勵調整 (PlayID: {playId})",
-                            ChangeTime = DateTime.UtcNow
+                            UserID = miniGame.UserID,
+                            ChangeType = "寵物升級獎勵",
+                            PointsChanged = 50,
+                            Description = $"寵物 {miniGame.Pet.PetName} 升級到 {miniGame.Pet.Level} 級",
+                            ChangeTime = DateTime.Now
                         };
-                        _context.WalletHistory.Add(history);
+
+                        _context.WalletHistories.Add(levelUpHistory);
+                    }
+                }
+
+                // 處理優惠券變更
+                if (couponGained != originalCoupon && !string.IsNullOrEmpty(couponGained) && couponGained != "0")
+                {
+                    var couponType = await _context.CouponTypes
+                        .FirstOrDefaultAsync(ct => ct.Name.Contains(couponGained));
+
+                    if (couponType != null)
+                    {
+                        var coupon = new Coupon
+                        {
+                            CouponCode = GenerateCouponCode(),
+                            CouponTypeID = couponType.CouponTypeID,
+                            UserID = miniGame.UserID,
+                            IsUsed = false,
+                            AcquiredTime = DateTime.Now
+                        };
+
+                        _context.Coupons.Add(coupon);
                     }
                 }
 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "遊戲獎勵更新成功" });
+                return Json(new { success = true, message = "遊戲結果調整成功" });
             }
             catch (Exception ex)
             {
@@ -336,59 +300,173 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        private async Task<double> CalculateWinRateAsync()
+        // POST: MiniGame/AdminMiniGame/DeleteGame
+        [HttpPost]
+        public async Task<IActionResult> DeleteGame(int playId)
         {
-            var totalGames = await _context.MiniGame.CountAsync();
-            if (totalGames == 0) return 0;
+            try
+            {
+                var miniGame = await _context.MiniGames
+                    .Include(mg => mg.User)
+                    .Include(mg => mg.User.UserWallet)
+                    .Include(mg => mg.Pet)
+                    .FirstOrDefaultAsync(mg => mg.PlayID == playId);
 
-            var winCount = await _context.MiniGame.Where(g => g.Result == "Win").CountAsync();
-            return (double)winCount / totalGames * 100;
-        }
-
-        private async Task<double> CalculateAbortRateAsync()
-        {
-            var totalGames = await _context.MiniGame.CountAsync();
-            if (totalGames == 0) return 0;
-
-            var abortCount = await _context.MiniGame.Where(g => g.Aborted).CountAsync();
-            return (double)abortCount / totalGames * 100;
-        }
-
-        private async Task<double> CalculateAverageGameDurationAsync()
-        {
-            var completedGames = await _context.MiniGame
-                .Where(g => g.EndTime.HasValue && !g.Aborted)
-                .ToListAsync();
-
-            if (!completedGames.Any()) return 0;
-
-            var totalMinutes = completedGames
-                .Sum(g => (g.EndTime.Value - g.StartTime).TotalMinutes);
-
-            return totalMinutes / completedGames.Count;
-        }
-
-        private async Task<List<object>> GetGameRecordsAsync()
-        {
-            return await _context.MiniGame
-                .Include(g => g.User)
-                .Include(g => g.Pet)
-                .OrderByDescending(g => g.StartTime)
-                .Take(20)
-                .Select(g => new
+                if (miniGame == null)
                 {
-                    playId = g.PlayID,
-                    userName = g.User.User_name,
-                    petName = g.Pet.PetName,
-                    level = g.Level,
-                    result = g.Result,
-                    expGained = g.ExpGained,
-                    pointsGained = g.PointsGained,
-                    startTime = g.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                    aborted = g.Aborted
-                })
-                .Cast<object>()
-                .ToListAsync();
+                    return Json(new { success = false, message = "找不到遊戲記錄" });
+                }
+
+                // 扣除用戶點數
+                if (miniGame.PointsGained > 0)
+                {
+                    miniGame.User.UserWallet.User_Point -= miniGame.PointsGained;
+
+                    var walletHistory = new WalletHistory
+                    {
+                        UserID = miniGame.UserID,
+                        ChangeType = "管理員刪除遊戲記錄",
+                        PointsChanged = -miniGame.PointsGained,
+                        Description = $"刪除遊戲 {miniGame.PlayID} 的點數獎勵",
+                        ChangeTime = DateTime.Now
+                    };
+
+                    _context.WalletHistories.Add(walletHistory);
+                }
+
+                // 扣除寵物經驗
+                if (miniGame.ExpGained > 0 && miniGame.Pet != null)
+                {
+                    miniGame.Pet.Experience -= miniGame.ExpGained;
+                    if (miniGame.Pet.Experience < 0)
+                    {
+                        miniGame.Pet.Experience = 0;
+                    }
+                }
+
+                _context.MiniGames.Remove(miniGame);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "遊戲記錄已刪除" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: MiniGame/AdminMiniGame/CreateTestGame
+        [HttpPost]
+        public async Task<IActionResult> CreateTestGame(int userId, int petId, int level, int monsterCount, decimal speedMultiplier)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.UserWallet)
+                    .Include(u => u.Pet)
+                    .FirstOrDefaultAsync(u => u.User_ID == userId);
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "找不到用戶" });
+                }
+
+                var pet = await _context.Pets
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
+
+                if (pet == null)
+                {
+                    return Json(new { success = false, message = "找不到寵物" });
+                }
+
+                // 創建測試遊戲記錄
+                var miniGame = new MiniGame
+                {
+                    UserID = userId,
+                    PetID = petId,
+                    Level = level,
+                    MonsterCount = monsterCount,
+                    SpeedMultiplier = speedMultiplier,
+                    Result = "Win",
+                    ExpGained = level * 10,
+                    ExpGainedTime = DateTime.Now,
+                    PointsGained = level * monsterCount * 10,
+                    PointsGainedTime = DateTime.Now,
+                    CouponGained = "0",
+                    CouponGainedTime = DateTime.Now,
+                    HungerDelta = -10,
+                    MoodDelta = 5,
+                    StaminaDelta = -15,
+                    CleanlinessDelta = -5,
+                    StartTime = DateTime.Now,
+                    EndTime = DateTime.Now.AddMinutes(5),
+                    Aborted = false
+                };
+
+                _context.MiniGames.Add(miniGame);
+
+                // 更新用戶點數
+                user.UserWallet.User_Point += miniGame.PointsGained;
+
+                // 記錄錢包異動
+                var walletHistory = new WalletHistory
+                {
+                    UserID = userId,
+                    ChangeType = "測試遊戲獎勵",
+                    PointsChanged = miniGame.PointsGained,
+                    Description = $"測試遊戲獎勵: Level {level}, Monsters {monsterCount}",
+                    ChangeTime = DateTime.Now
+                };
+
+                _context.WalletHistories.Add(walletHistory);
+
+                // 更新寵物經驗
+                pet.Experience += miniGame.ExpGained;
+
+                // 檢查是否升級
+                var requiredExp = CalculateRequiredExp(pet.Level);
+                if (pet.Experience >= requiredExp)
+                {
+                    pet.Level++;
+                    pet.Experience -= requiredExp;
+                    pet.LevelUpTime = DateTime.Now;
+                    pet.PointsGained_LevelUp = 50;
+                    pet.PointsGainedTime_LevelUp = DateTime.Now;
+
+                    // 升級獎勵點數
+                    user.UserWallet.User_Point += 50;
+
+                    var levelUpHistory = new WalletHistory
+                    {
+                        UserID = userId,
+                        ChangeType = "寵物升級獎勵",
+                        PointsChanged = 50,
+                        Description = $"寵物 {pet.PetName} 升級到 {pet.Level} 級",
+                        ChangeTime = DateTime.Now
+                    };
+
+                    _context.WalletHistories.Add(levelUpHistory);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "測試遊戲創建成功", playId = miniGame.PlayID });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private int CalculateRequiredExp(int level)
+        {
+            // 簡單的經驗值計算公式
+            return level * 100;
+        }
+
+        private string GenerateCouponCode()
+        {
+            return "COUPON" + DateTime.Now.Ticks.ToString().Substring(10);
         }
     }
 }

@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Route("MiniGame/[controller]")]
     public class AdminPetController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,38 +17,117 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _context = context;
         }
 
+        // GET: MiniGame/AdminPet
         public async Task<IActionResult> Index()
         {
-            var viewModel = new AdminPetViewModel
-            {
-                TotalPets = await _context.Pet.CountAsync(),
-                ActivePets = await _context.Pet.Where(p => p.Health > 0).CountAsync(),
-                HighLevelPets = await _context.Pet.Where(p => p.Level >= 10).CountAsync(),
-                PetsNeedingCare = await _context.Pet
-                    .Where(p => p.Hunger > 80 || p.Health < 20)
-                    .CountAsync()
-            };
+            var viewModel = new PetOverviewViewModel();
+
+            // 統計數據
+            viewModel.TotalPets = await _context.Pets.CountAsync();
+            viewModel.ActivePets = await _context.Pets
+                .Where(p => p.Health > 0)
+                .CountAsync();
+            viewModel.AverageLevel = await _context.Pets
+                .AverageAsync(p => p.Level);
+            viewModel.HighestLevel = await _context.Pets
+                .MaxAsync(p => p.Level);
+            viewModel.TotalExperience = await _context.Pets
+                .SumAsync(p => p.Experience);
+
+            // 寵物統計
+            viewModel.PetStats = await _context.Pets
+                .Include(p => p.User)
+                .Include(p => p.User.UserIntroduce)
+                .OrderByDescending(p => p.Level)
+                .ThenByDescending(p => p.Experience)
+                .Select(p => new PetStatsViewModel
+                {
+                    PetId = p.PetID,
+                    UserId = p.UserID,
+                    UserName = p.User.User_name,
+                    PetName = p.PetName,
+                    Level = p.Level,
+                    Experience = p.Experience,
+                    Hunger = p.Hunger,
+                    Mood = p.Mood,
+                    Stamina = p.Stamina,
+                    Cleanliness = p.Cleanliness,
+                    Health = p.Health,
+                    SkinColor = p.SkinColor,
+                    BackgroundColor = p.BackgroundColor,
+                    LastActivity = p.LevelUpTime
+                })
+                .ToListAsync();
+
+            // 用戶寵物列表
+            viewModel.UserPets = await _context.Users
+                .Include(u => u.Pet)
+                .Include(u => u.UserIntroduce)
+                .Where(u => u.Pet != null)
+                .OrderByDescending(u => u.Pet.Level)
+                .ThenByDescending(u => u.Pet.Experience)
+                .Select(u => new UserPetViewModel
+                {
+                    UserId = u.User_ID,
+                    UserName = u.User_name,
+                    NickName = u.UserIntroduce.User_NickName,
+                    PetId = u.Pet.PetID,
+                    PetName = u.Pet.PetName,
+                    PetLevel = u.Pet.Level,
+                    PetExperience = u.Pet.Experience,
+                    PetCreated = u.Pet.LevelUpTime,
+                    LastActivity = u.Pet.LevelUpTime
+                })
+                .ToListAsync();
 
             return View(viewModel);
         }
 
+        // GET: MiniGame/AdminPet/GetPetOverview
         [HttpGet]
-        public async Task<JsonResult> GetPetOverview()
+        public async Task<IActionResult> GetPetOverview()
         {
             try
             {
                 var data = new
                 {
-                    totalPets = await _context.Pet.CountAsync(),
-                    activePets = await _context.Pet.Where(p => p.Health > 0).CountAsync(),
-                    averageLevel = await _context.Pet.AverageAsync(p => (double)p.Level),
-                    petsNeedingCare = await _context.Pet
-                        .Where(p => p.Hunger > 80 || p.Health < 20)
+                    totalPets = await _context.Pets.CountAsync(),
+                    activePets = await _context.Pets
+                        .Where(p => p.Health > 0)
                         .CountAsync(),
-                    petData = await GetPetDataAsync()
+                    averageLevel = await _context.Pets
+                        .AverageAsync(p => p.Level),
+                    highestLevel = await _context.Pets
+                        .MaxAsync(p => p.Level),
+                    totalExperience = await _context.Pets
+                        .SumAsync(p => p.Experience),
+                    petStats = await _context.Pets
+                        .Include(p => p.User)
+                        .Include(p => p.User.UserIntroduce)
+                        .OrderByDescending(p => p.Level)
+                        .ThenByDescending(p => p.Experience)
+                        .Take(50)
+                        .Select(p => new
+                        {
+                            petId = p.PetID,
+                            userId = p.UserID,
+                            userName = p.User.User_name,
+                            petName = p.PetName,
+                            level = p.Level,
+                            experience = p.Experience,
+                            hunger = p.Hunger,
+                            mood = p.Mood,
+                            stamina = p.Stamina,
+                            cleanliness = p.Cleanliness,
+                            health = p.Health,
+                            skinColor = p.SkinColor,
+                            backgroundColor = p.BackgroundColor,
+                            lastActivity = p.LevelUpTime.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                        .ToListAsync()
                 };
 
-                return Json(new { success = true, data });
+                return Json(new { success = true, data = data });
             }
             catch (Exception ex)
             {
@@ -55,73 +135,52 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<JsonResult> GetPetData(int page = 1, int pageSize = 50)
+        // GET: MiniGame/AdminPet/Details/5
+        public async Task<IActionResult> Details(int? id)
         {
-            try
+            if (id == null)
             {
-                var pets = await _context.Pet
-                    .Include(p => p.User)
-                    .OrderByDescending(p => p.Level)
-                    .ThenByDescending(p => p.Experience)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(p => new
-                    {
-                        petId = p.PetID,
-                        petName = p.PetName,
-                        userId = p.UserID,
-                        userName = p.User.User_name,
-                        level = p.Level,
-                        experience = p.Experience,
-                        hunger = p.Hunger,
-                        mood = p.Mood,
-                        stamina = p.Stamina,
-                        cleanliness = p.Cleanliness,
-                        health = p.Health,
-                        skinColor = p.SkinColor,
-                        backgroundColor = p.BackgroundColor,
-                        lastLevelUp = p.LevelUpTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        status = p.Health > 0 ? "健康" : "需要照護"
-                    })
-                    .ToListAsync();
+                return NotFound();
+            }
 
-                return Json(new { success = true, data = pets });
-            }
-            catch (Exception ex)
+            var pet = await _context.Pets
+                .Include(p => p.User)
+                .Include(p => p.User.UserIntroduce)
+                .Include(p => p.MiniGames)
+                .FirstOrDefaultAsync(m => m.PetID == id);
+
+            if (pet == null)
             {
-                return Json(new { success = false, message = ex.Message });
+                return NotFound();
             }
+
+            return View(pet);
         }
 
+        // POST: MiniGame/AdminPet/AdjustPetAttributes
         [HttpPost]
-        public async Task<JsonResult> UpdatePetAttributes(int petId, int hunger, int mood, int stamina, int cleanliness, int health)
+        public async Task<IActionResult> AdjustPetAttributes(int petId, int hunger, int mood, int stamina, int cleanliness, int health)
         {
             try
             {
-                var pet = await _context.Pet.FindAsync(petId);
+                var pet = await _context.Pets
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
+
                 if (pet == null)
                 {
-                    return Json(new { success = false, message = "寵物不存在" });
+                    return Json(new { success = false, message = "找不到寵物" });
                 }
 
-                // Validate attribute ranges (0-100)
-                if (hunger < 0 || hunger > 100 || mood < 0 || mood > 100 || 
-                    stamina < 0 || stamina > 100 || cleanliness < 0 || cleanliness > 100 || 
-                    health < 0 || health > 100)
-                {
-                    return Json(new { success = false, message = "屬性值必須在 0-100 之間" });
-                }
-
-                pet.Hunger = hunger;
-                pet.Mood = mood;
-                pet.Stamina = stamina;
-                pet.Cleanliness = cleanliness;
-                pet.Health = health;
+                // 調整屬性值
+                pet.Hunger = Math.Max(0, Math.Min(100, hunger));
+                pet.Mood = Math.Max(0, Math.Min(100, mood));
+                pet.Stamina = Math.Max(0, Math.Min(100, stamina));
+                pet.Cleanliness = Math.Max(0, Math.Min(100, cleanliness));
+                pet.Health = Math.Max(0, Math.Min(100, health));
 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "寵物屬性更新成功" });
+                return Json(new { success = true, message = "寵物屬性調整成功" });
             }
             catch (Exception ex)
             {
@@ -129,55 +188,103 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // POST: MiniGame/AdminPet/LevelUpPet
         [HttpPost]
-        public async Task<JsonResult> AdjustPetLevel(int petId, int newLevel)
+        public async Task<IActionResult> LevelUpPet(int petId)
         {
             try
             {
-                var pet = await _context.Pet.Include(p => p.User).FirstOrDefaultAsync(p => p.PetID == petId);
+                var pet = await _context.Pets
+                    .Include(p => p.User)
+                    .Include(p => p.User.UserWallet)
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
+
                 if (pet == null)
                 {
-                    return Json(new { success = false, message = "寵物不存在" });
+                    return Json(new { success = false, message = "找不到寵物" });
                 }
 
-                if (newLevel < 1 || newLevel > 100)
+                // 升級寵物
+                pet.Level++;
+                pet.LevelUpTime = DateTime.Now;
+                pet.PointsGained_LevelUp = 50;
+                pet.PointsGainedTime_LevelUp = DateTime.Now;
+
+                // 給用戶獎勵點數
+                pet.User.UserWallet.User_Point += 50;
+
+                // 記錄錢包異動
+                var walletHistory = new WalletHistory
                 {
-                    return Json(new { success = false, message = "等級必須在 1-100 之間" });
+                    UserID = pet.UserID,
+                    ChangeType = "寵物升級獎勵",
+                    PointsChanged = 50,
+                    Description = $"寵物 {pet.PetName} 升級到 {pet.Level} 級",
+                    ChangeTime = DateTime.Now
+                };
+
+                _context.WalletHistories.Add(walletHistory);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物升級成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: MiniGame/AdminPet/AddExperience
+        [HttpPost]
+        public async Task<IActionResult> AddExperience(int petId, int experience)
+        {
+            try
+            {
+                var pet = await _context.Pets
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
+
+                if (pet == null)
+                {
+                    return Json(new { success = false, message = "找不到寵物" });
                 }
 
-                var oldLevel = pet.Level;
-                pet.Level = newLevel;
-                pet.LevelUpTime = DateTime.UtcNow;
+                pet.Experience += experience;
 
-                // Award points for level up if increasing
-                if (newLevel > oldLevel)
+                // 檢查是否升級
+                var requiredExp = CalculateRequiredExp(pet.Level);
+                if (pet.Experience >= requiredExp)
                 {
-                    var pointsAwarded = (newLevel - oldLevel) * 50; // 50 points per level
-                    pet.PointsGained_LevelUp = pointsAwarded;
-                    pet.PointsGainedTime_LevelUp = DateTime.UtcNow;
+                    pet.Level++;
+                    pet.Experience -= requiredExp;
+                    pet.LevelUpTime = DateTime.Now;
+                    pet.PointsGained_LevelUp = 50;
+                    pet.PointsGainedTime_LevelUp = DateTime.Now;
 
-                    // Update user wallet
-                    var wallet = await _context.User_Wallet.FirstOrDefaultAsync(w => w.User_Id == pet.UserID);
-                    if (wallet != null)
+                    // 給用戶獎勵點數
+                    var user = await _context.Users
+                        .Include(u => u.UserWallet)
+                        .FirstOrDefaultAsync(u => u.User_ID == pet.UserID);
+
+                    if (user != null)
                     {
-                        wallet.User_Point += pointsAwarded;
+                        user.UserWallet.User_Point += 50;
 
-                        // Add wallet history
-                        var history = new WalletHistory
+                        var walletHistory = new WalletHistory
                         {
                             UserID = pet.UserID,
-                            ChangeType = "Pet",
-                            PointsChanged = pointsAwarded,
-                            Description = $"寵物 {pet.PetName} 升級獎勵 (Lv.{oldLevel} → Lv.{newLevel})",
-                            ChangeTime = DateTime.UtcNow
+                            ChangeType = "寵物升級獎勵",
+                            PointsChanged = 50,
+                            Description = $"寵物 {pet.PetName} 升級到 {pet.Level} 級",
+                            ChangeTime = DateTime.Now
                         };
-                        _context.WalletHistory.Add(history);
+
+                        _context.WalletHistories.Add(walletHistory);
                     }
                 }
 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"寵物等級調整成功 (Lv.{oldLevel} → Lv.{newLevel})" });
+                return Json(new { success = true, message = "經驗值增加成功" });
             }
             catch (Exception ex)
             {
@@ -185,98 +292,28 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<JsonResult> GetPetDetails(int petId)
+        // POST: MiniGame/AdminPet/ChangePetSkin
+        [HttpPost]
+        public async Task<IActionResult> ChangePetSkin(int petId, string skinColor, string backgroundColor)
         {
             try
             {
-                var pet = await _context.Pet
-                    .Include(p => p.User)
+                var pet = await _context.Pets
                     .FirstOrDefaultAsync(p => p.PetID == petId);
 
                 if (pet == null)
                 {
-                    return Json(new { success = false, message = "寵物不存在" });
+                    return Json(new { success = false, message = "找不到寵物" });
                 }
 
-                // Get recent games played by this pet
-                var recentGames = await _context.MiniGame
-                    .Where(g => g.PetID == petId)
-                    .OrderByDescending(g => g.StartTime)
-                    .Take(10)
-                    .Select(g => new
-                    {
-                        playId = g.PlayID,
-                        level = g.Level,
-                        result = g.Result,
-                        expGained = g.ExpGained,
-                        pointsGained = g.PointsGained,
-                        startTime = g.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
-                    })
-                    .ToListAsync();
-
-                var data = new
-                {
-                    petId = pet.PetID,
-                    petName = pet.PetName,
-                    userId = pet.UserID,
-                    userName = pet.User.User_name,
-                    level = pet.Level,
-                    experience = pet.Experience,
-                    attributes = new
-                    {
-                        hunger = pet.Hunger,
-                        mood = pet.Mood,
-                        stamina = pet.Stamina,
-                        cleanliness = pet.Cleanliness,
-                        health = pet.Health
-                    },
-                    appearance = new
-                    {
-                        skinColor = pet.SkinColor,
-                        backgroundColor = pet.BackgroundColor,
-                        lastSkinChange = pet.SkinColorChangedTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        lastBackgroundChange = pet.BackgroundColorChangedTime.ToString("yyyy-MM-dd HH:mm:ss")
-                    },
-                    stats = new
-                    {
-                        lastLevelUp = pet.LevelUpTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        pointsFromLevelUp = pet.PointsGained_LevelUp,
-                        pointsSpentOnSkin = pet.PointsChanged_SkinColor,
-                        pointsSpentOnBackground = pet.PointsChanged_BackgroundColor
-                    },
-                    recentGames = recentGames
-                };
-
-                return Json(new { success = true, data });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<JsonResult> ResetPetAttributes(int petId)
-        {
-            try
-            {
-                var pet = await _context.Pet.FindAsync(petId);
-                if (pet == null)
-                {
-                    return Json(new { success = false, message = "寵物不存在" });
-                }
-
-                // Reset to healthy defaults
-                pet.Hunger = 50;
-                pet.Mood = 70;
-                pet.Stamina = 80;
-                pet.Cleanliness = 90;
-                pet.Health = 100;
+                pet.SkinColor = skinColor;
+                pet.SkinColorChangedTime = DateTime.Now;
+                pet.BackgroundColor = backgroundColor;
+                pet.BackgroundColorChangedTime = DateTime.Now;
 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "寵物屬性已重置為健康狀態" });
+                return Json(new { success = true, message = "寵物外觀更新成功" });
             }
             catch (Exception ex)
             {
@@ -284,29 +321,52 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        private async Task<List<object>> GetPetDataAsync()
+        // POST: MiniGame/AdminPet/ResetPet
+        [HttpPost]
+        public async Task<IActionResult> ResetPet(int petId)
         {
-            return await _context.Pet
-                .Include(p => p.User)
-                .OrderByDescending(p => p.Level)
-                .Take(20)
-                .Select(p => new
+            try
+            {
+                var pet = await _context.Pets
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
+
+                if (pet == null)
                 {
-                    petId = p.PetID,
-                    petName = p.PetName,
-                    userId = p.UserID,
-                    userName = p.User.User_name,
-                    level = p.Level,
-                    experience = p.Experience,
-                    hunger = p.Hunger,
-                    mood = p.Mood,
-                    stamina = p.Stamina,
-                    cleanliness = p.Cleanliness,
-                    health = p.Health,
-                    status = p.Health > 0 ? "健康" : "需要照護"
-                })
-                .Cast<object>()
-                .ToListAsync();
+                    return Json(new { success = false, message = "找不到寵物" });
+                }
+
+                // 重置寵物屬性
+                pet.Level = 1;
+                pet.Experience = 0;
+                pet.Hunger = 50;
+                pet.Mood = 50;
+                pet.Stamina = 50;
+                pet.Cleanliness = 50;
+                pet.Health = 100;
+                pet.LevelUpTime = DateTime.Now;
+                pet.SkinColor = "#00FF00";
+                pet.SkinColorChangedTime = DateTime.Now;
+                pet.BackgroundColor = "default";
+                pet.BackgroundColorChangedTime = DateTime.Now;
+                pet.PointsChanged_SkinColor = 0;
+                pet.PointsChanged_BackgroundColor = 0;
+                pet.PointsGained_LevelUp = 0;
+                pet.PointsGainedTime_LevelUp = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物重置成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private int CalculateRequiredExp(int level)
+        {
+            // 簡單的經驗值計算公式
+            return level * 100;
         }
     }
 }
