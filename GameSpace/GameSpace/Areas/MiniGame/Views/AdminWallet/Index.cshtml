@@ -158,14 +158,15 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="recentActivityTable">
-                            <thead>
+                        <table class="table table-bordered table-hover" id="recentActivityTable">
+                            <thead class="thead-light">
                                 <tr>
                                     <th>時間</th>
                                     <th>會員</th>
                                     <th>類型</th>
                                     <th>金額/數量</th>
                                     <th>狀態</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -175,6 +176,11 @@
                                     <td><span class="badge badge-primary">點數發放</span></td>
                                     <td>+1000</td>
                                     <td><span class="badge badge-success">成功</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(1)">
+                                            <i class="fas fa-eye"></i> 查看
+                                        </button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>2024-01-15 14:25</td>
@@ -182,13 +188,23 @@
                                     <td><span class="badge badge-info">優惠券發放</span></td>
                                     <td>+1</td>
                                     <td><span class="badge badge-success">成功</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(2)">
+                                            <i class="fas fa-eye"></i> 查看
+                                        </button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>2024-01-15 14:20</td>
                                     <td>user003</td>
-                                    <td><span class="badge badge-warning">電子券使用</span></td>
+                                    <td><span class="badge badge-warning">電子券使用</span></td>       
                                     <td>-1</td>
                                     <td><span class="badge badge-success">成功</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="viewActivityDetail(3)">
+                                            <i class="fas fa-eye"></i> 查看
+                                        </button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -199,28 +215,50 @@
     </div>
 </div>
 
+<!-- 活動詳情 Modal -->
+<div class="modal fade" id="activityDetailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">活動詳情</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="activityDetailContent">
+                    <!-- 活動詳情內容將在這裡顯示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .hover-card {
         transition: all 0.3s ease;
         cursor: pointer;
     }
-    
+
     .hover-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
     }
-    
+
     .btn-hover {
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
-    
+
     .btn-hover:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
-    
+
     .btn-hover::before {
         content: "";
         position: absolute;
@@ -231,28 +269,28 @@
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s;
     }
-    
+
     .btn-hover:hover::before {
         left: 100%;
     }
-    
+
     .card-header {
         background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
         border-bottom: 1px solid #e3e6f0;
     }
-    
+
     .table th {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
         font-weight: 600;
     }
-    
+
     .badge {
         font-size: 0.75em;
         padding: 0.5em 0.8em;
     }
-    
+
     .text-xs {
         font-size: 0.7rem;
     }
@@ -260,14 +298,9 @@
 
 <script>
     $(document).ready(function() {
-        // 模擬載入數據
-        setTimeout(function() {
-            $("#totalPoints").text("1,234,567");
-            $("#activeCoupons").text("89");
-            $("#eVouchers").text("156");
-            $("#todayTransactions").text("234");
-        }, 1000);
-        
+        // 載入統計數據
+        loadStatistics();
+
         // 初始化 DataTable
         $("#recentActivityTable").DataTable({
             "language": {
@@ -276,14 +309,70 @@
             "pageLength": 10,
             "order": [[0, "desc"]],
             "columnDefs": [
-                { "orderable": false, "targets": 4 }
+                { "orderable": false, "targets": 5 }
             ]
         });
-        
+
         // 添加載入動畫
         $(".card").each(function(index) {
             $(this).css("animation-delay", (index * 0.1) + "s");
             $(this).addClass("fade-in");
         });
     });
+
+    function loadStatistics() {
+        $.ajax({
+            url: "@Url.Action("GetStatistics", "AdminWallet")",
+            type: "GET",
+            success: function(response) {
+                if (response.success) {
+                    $("#totalPoints").text(response.data.totalPoints.toLocaleString());
+                    $("#activeCoupons").text(response.data.activeCoupons);
+                    $("#eVouchers").text(response.data.eVouchers);
+                    $("#todayTransactions").text(response.data.todayTransactions);
+                } else {
+                    // 使用模擬數據
+                    $("#totalPoints").text("1,234,567");
+                    $("#activeCoupons").text("89");
+                    $("#eVouchers").text("156");
+                    $("#todayTransactions").text("234");
+                }
+            },
+            error: function() {
+                // 使用模擬數據
+                $("#totalPoints").text("1,234,567");
+                $("#activeCoupons").text("89");
+                $("#eVouchers").text("156");
+                $("#todayTransactions").text("234");
+            }
+        });
+    }
+
+    function viewActivityDetail(activityId) {
+        $.ajax({
+            url: "@Url.Action("GetActivityDetail", "AdminWallet")",
+            type: "GET",
+            data: { activityId: activityId },
+            success: function(response) {
+                if (response.success) {
+                    var detailHtml = "<h6>活動詳情</h6>";
+                    detailHtml += "<p><strong>活動ID:</strong> " + response.data.activityId + "</p>";
+                    detailHtml += "<p><strong>時間:</strong> " + response.data.time + "</p>";
+                    detailHtml += "<p><strong>會員:</strong> " + response.data.member + "</p>";
+                    detailHtml += "<p><strong>類型:</strong> " + response.data.type + "</p>";
+                    detailHtml += "<p><strong>金額/數量:</strong> " + response.data.amount + "</p>";
+                    detailHtml += "<p><strong>狀態:</strong> " + response.data.status + "</p>";
+                    detailHtml += "<p><strong>描述:</strong> " + response.data.description + "</p>";
+
+                    $("#activityDetailContent").html(detailHtml);
+                    $("#activityDetailModal").modal("show");
+                } else {
+                    alert("獲取活動詳情失敗: " + response.message);
+                }
+            },
+            error: function() {
+                alert("獲取活動詳情失敗，請稍後再試");
+            }
+        });
+    }
 </script>

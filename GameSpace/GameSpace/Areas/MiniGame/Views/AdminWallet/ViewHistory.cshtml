@@ -7,13 +7,22 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">查看會員收支明細</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line mr-2"></i>查看會員收支明細
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
     <!-- 搜尋表單 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">搜尋條件</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter"></i> 搜尋條件
+            </h6>
         </div>
         <div class="card-body">
             <form method="get" id="searchForm">
@@ -147,13 +156,15 @@
     <!-- 交易記錄 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">交易記錄</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list"></i> 交易記錄
+            </h6>
             <span class="badge badge-info" id="resultCount">共 0 筆記錄</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" id="transactionsTable" width="100%" cellspacing="0">
+                    <thead class="thead-light">
                         <tr>
                             <th>交易時間</th>
                             <th>用戶ID</th>
@@ -177,13 +188,13 @@
                                         @switch (transaction.TransactionType)
                                         {
                                             case "Points":
-                                                <span class="badge badge-primary">會員點數</span>
+                                                <span class="badge badge-primary">會員點數</span>      
                                                 break;
                                             case "Coupon":
-                                                <span class="badge badge-success">商城優惠券</span>
+                                                <span class="badge badge-success">商城優惠券</span>    
                                                 break;
                                             case "EVoucher":
-                                                <span class="badge badge-warning">電子禮券</span>
+                                                <span class="badge badge-warning">電子禮券</span>      
                                                 break;
                                             default:
                                                 <span class="badge badge-secondary">@transaction.TransactionType</span>
@@ -237,7 +248,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center">請輸入搜尋條件進行查詢</td>
+                                <td colspan="8" class="text-center">請輸入搜尋條件進行查詢</td>        
                             </tr>
                         }
                     </tbody>
@@ -247,19 +258,99 @@
     </div>
 </div>
 
+<!-- 交易詳情 Modal -->
+<div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">交易詳情</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>交易ID:</td><td id="detailTransactionId"></td></tr>
+                            <tr><td>交易時間:</td><td id="detailTransactionTime"></td></tr>
+                            <tr><td>交易類型:</td><td id="detailTransactionType"></td></tr>
+                            <tr><td>操作類型:</td><td id="detailActionType"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>金額資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>金額/數量:</td><td id="detailAmount"></td></tr>
+                            <tr><td>交易後餘額:</td><td id="detailBalance"></td></tr>
+                            <tr><td>描述:</td><td id="detailDescription"></td></tr>
+                            <tr><td>備註:</td><td id="detailRemark"></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+$(document).ready(function() {
+    // 初始化 DataTable
+    var table = $("#transactionsTable").DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+        },
+        "pageLength": 25,
+        "order": [[ 0, "desc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": 7 }
+        ]
+    });
+
+    // 更新統計資訊
+    updateStatistics();
+    updateResultCount();
+});
+
 function resetForm() {
     document.getElementById("searchForm").reset();
+    $("#transactionsTable").DataTable().clear().draw();
+    updateResultCount();
 }
 
 function exportHistory() {
-    // 匯出交易記錄
-    alert("匯出功能開發中...");
+    var formData = $("#searchForm").serialize();
+    window.open("@Url.Action("ExportHistory", "AdminWallet")?" + formData, "_blank");
 }
 
 function viewTransactionDetails(transactionId) {
-    // 查看交易詳情
-    alert("查看交易詳情: " + transactionId);
+    $.ajax({
+        url: "@Url.Action("GetTransactionDetail", "AdminWallet")",
+        type: "GET",
+        data: { transactionId: transactionId },
+        success: function(response) {
+            if (response.success) {
+                $("#detailTransactionId").text(response.data.transactionId);
+                $("#detailTransactionTime").text(response.data.transactionTime);
+                $("#detailTransactionType").text(response.data.transactionType);
+                $("#detailActionType").text(response.data.actionType);
+                $("#detailAmount").text(response.data.amount);
+                $("#detailBalance").text(response.data.balance);
+                $("#detailDescription").text(response.data.description);
+                $("#detailRemark").text(response.data.remark || "無");
+                $("#transactionDetailModal").modal("show");
+            } else {
+                alert("獲取交易詳情失敗: " + response.message);
+            }
+        },
+        error: function() {
+            alert("獲取交易詳情失敗，請稍後再試");
+        }
+    });
 }
 
 // 更新統計資訊
@@ -277,10 +368,4 @@ function updateResultCount() {
     const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
     document.getElementById("resultCount").textContent = `共 ${count} 筆記錄`;
 }
-
-// 頁面載入時執行
-document.addEventListener("DOMContentLoaded", function() {
-    updateStatistics();
-    updateResultCount();
-});
 </script>

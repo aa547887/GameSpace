@@ -7,13 +7,22 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">查詢會員擁有電子禮券</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-gift-card mr-2"></i>查詢會員擁有電子禮券
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
     <!-- 搜尋表單 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">搜尋條件</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter"></i> 搜尋條件
+            </h6>
         </div>
         <div class="card-body">
             <form method="get" id="searchForm">
@@ -62,6 +71,9 @@
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                         <i class="fas fa-undo"></i> 重置
                     </button>
+                    <button type="button" class="btn btn-success" onclick="exportData()">
+                        <i class="fas fa-download"></i> 匯出
+                    </button>
                 </div>
             </form>
         </div>
@@ -70,13 +82,15 @@
     <!-- 搜尋結果 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">搜尋結果</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list"></i> 搜尋結果
+            </h6>
             <span class="badge badge-info" id="resultCount">共 0 筆記錄</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" id="evouchersTable">
+                    <thead class="thead-light">
                         <tr>
                             <th>用戶ID</th>
                             <th>用戶名稱</th>
@@ -128,7 +142,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="10" class="text-center">請輸入搜尋條件進行查詢</td>
+                                <td colspan="10" class="text-center">請輸入搜尋條件進行查詢</td>       
                             </tr>
                         }
                     </tbody>
@@ -138,26 +152,152 @@
     </div>
 </div>
 
+<!-- 電子禮券詳情 Modal -->
+<div class="modal fade" id="evoucherDetailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">電子禮券詳情</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>用戶ID:</td><td id="detailUserId"></td></tr>
+                            <tr><td>用戶名稱:</td><td id="detailUserName"></td></tr>
+                            <tr><td>禮券代碼:</td><td id="detailEVoucherCode"></td></tr>
+                            <tr><td>禮券類型:</td><td id="detailEVoucherType"></td></tr>
+                            <tr><td>面額:</td><td id="detailValue"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>使用資訊</h6>
+                        <table class="table table-sm">
+                            <tr><td>獲得日期:</td><td id="detailCreatedAt"></td></tr>
+                            <tr><td>到期日期:</td><td id="detailExpiryDate"></td></tr>
+                            <tr><td>使用狀態:</td><td id="detailIsUsed"></td></tr>
+                            <tr><td>使用日期:</td><td id="detailUsedDate"></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-warning" id="generateQRBtn">生成QR碼</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR碼 Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">電子禮券QR碼</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeContainer"></div>
+                <p class="mt-3" id="qrCodeText"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" onclick="printQRCode()">列印</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+$(document).ready(function() {
+    // 初始化 DataTable
+    var table = $("#evouchersTable").DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+        },
+        "pageLength": 25,
+        "order": [[ 0, "asc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": 9 }
+        ]
+    });
+
+    // 更新結果計數
+    updateResultCount();
+});
+
 function resetForm() {
     document.getElementById("searchForm").reset();
+    $("#evouchersTable").DataTable().clear().draw();
+    updateResultCount();
+}
+
+function exportData() {
+    var formData = $("#searchForm").serialize();
+    window.open("@Url.Action("ExportEVouchers", "AdminWallet")?" + formData, "_blank");
 }
 
 function viewEVoucherDetails(evoucherId) {
-    // 顯示電子禮券詳情
-    alert("查看電子禮券詳情: " + evoucherId);
+    $.ajax({
+        url: "@Url.Action("GetEVoucherDetail", "AdminWallet")",
+        type: "GET",
+        data: { evoucherId: evoucherId },
+        success: function(response) {
+            if (response.success) {
+                $("#detailUserId").text(response.data.userId);
+                $("#detailUserName").text(response.data.userName);
+                $("#detailEVoucherCode").text(response.data.eVoucherCode);
+                $("#detailEVoucherType").text(response.data.eVoucherTypeName);
+                $("#detailValue").text(response.data.value);
+                $("#detailCreatedAt").text(response.data.createdAt);
+                $("#detailExpiryDate").text(response.data.expiryDate);
+                $("#detailIsUsed").text(response.data.isUsed ? "已使用" : "未使用");
+                $("#detailUsedDate").text(response.data.usedDate || "未使用");
+                $("#evoucherDetailModal").modal("show");
+            } else {
+                alert("獲取詳情失敗: " + response.message);
+            }
+        },
+        error: function() {
+            alert("獲取詳情失敗，請稍後再試");
+        }
+    });
 }
 
 function generateQRCode(evoucherId) {
-    // 生成QR碼
-    alert("生成QR碼: " + evoucherId);
+    $.ajax({
+        url: "@Url.Action("GenerateQRCode", "AdminWallet")",
+        type: "GET",
+        data: { evoucherId: evoucherId },
+        success: function(response) {
+            if (response.success) {
+                $("#qrCodeContainer").html("<img src='" + response.data.qrCodeUrl + "' class='img-fluid' alt='QR Code'>");
+                $("#qrCodeText").text("禮券代碼: " + response.data.eVoucherCode);
+                $("#qrCodeModal").modal("show");
+            } else {
+                alert("生成QR碼失敗: " + response.message);
+            }
+        },
+        error: function() {
+            alert("生成QR碼失敗，請稍後再試");
+        }
+    });
 }
 
-// 更新結果計數
-document.addEventListener("DOMContentLoaded", function() {
+function printQRCode() {
+    window.print();
+}
+
+function updateResultCount() {
     const rows = document.querySelectorAll("tbody tr");
     const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
     document.getElementById("resultCount").textContent = `共 ${count} 筆記錄`;
-});
+}
 </script>
-

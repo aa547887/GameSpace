@@ -351,7 +351,8 @@
         // 模擬刷新數據
         setTimeout(function() {
             $("#loadingSpinner").removeClass("show");
-            // 這裡可以添加實際的數據刷新邏輯
+            // 重新載入簽到數據
+            loadSignInData();
             console.log("簽到數據已刷新");
         }, 1000);
     }

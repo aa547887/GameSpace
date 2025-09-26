@@ -1,12 +1,12 @@
 @{
-    ViewData["Title"] = "查詢會員優惠券";
+    ViewData["Title"] = "查詢會員點數";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-ticket-alt mr-2"></i>查詢會員優惠券
+            <i class="fas fa-search mr-2"></i>查詢會員點數
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
@@ -27,32 +27,31 @@
                 <div class="card-body">
                     <form id="searchForm">
                         <div class="row">
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label for="userId" class="form-label">會員ID</label>
                                 <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="couponType" class="form-label">優惠券類型</label>
-                                <select class="form-control" id="couponType" name="couponType">
-                                    <option value="">全部類型</option>
-                                    <option value="discount">折扣券</option>
-                                    <option value="cash">現金券</option>
-                                    <option value="free">免運券</option>
-                                    <option value="gift">贈品券</option>
-                                </select>
+                            <div class="col-md-4 mb-3">
+                                <label for="userName" class="form-label">會員名稱</label>
+                                <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱">
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="status" class="form-label">使用狀態</label>
-                                <select class="form-control" id="status" name="status">
-                                    <option value="">全部狀態</option>
-                                    <option value="unused">未使用</option>
-                                    <option value="used">已使用</option>
-                                    <option value="expired">已過期</option>
-                                </select>
+                            <div class="col-md-4 mb-3">
+                                <label for="email" class="form-label">電子郵件</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="輸入電子郵件">
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="expireDate" class="form-label">到期日期</label>
-                                <input type="date" class="form-control" id="expireDate" name="expireDate">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="minPoints" class="form-label">最小點數</label>
+                                <input type="number" class="form-control" id="minPoints" name="minPoints" placeholder="0">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="maxPoints" class="form-label">最大點數</label>
+                                <input type="number" class="form-control" id="maxPoints" name="maxPoints" placeholder="999999">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="dateRange" class="form-label">最後更新時間</label>
+                                <input type="date" class="form-control" id="dateRange" name="dateRange">
                             </div>
                         </div>
                         <div class="row">
@@ -86,16 +85,15 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="couponsTable">
+                        <table class="table table-bordered table-hover" id="pointsTable">
                             <thead class="thead-light">
                                 <tr>
                                     <th>會員ID</th>
-                                    <th>優惠券名稱</th>
-                                    <th>類型</th>
-                                    <th>折扣/面額</th>
+                                    <th>會員名稱</th>
+                                    <th>電子郵件</th>
+                                    <th>點數餘額</th>
+                                    <th>最後更新</th>
                                     <th>狀態</th>
-                                    <th>獲得日期</th>
-                                    <th>到期日期</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
@@ -115,7 +113,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">優惠券詳細資訊</h5>
+                <h5 class="modal-title">會員點數詳細資訊</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -126,26 +124,22 @@
                         <h6>基本資訊</h6>
                         <table class="table table-sm">
                             <tr><td>會員ID:</td><td id="detailUserId"></td></tr>
-                            <tr><td>優惠券名稱:</td><td id="detailCouponName"></td></tr>
-                            <tr><td>類型:</td><td id="detailCouponType"></td></tr>
-                            <tr><td>折扣/面額:</td><td id="detailDiscount"></td></tr>
-                            <tr><td>狀態:</td><td id="detailStatus"></td></tr>
+                            <tr><td>會員名稱:</td><td id="detailUserName"></td></tr>
+                            <tr><td>電子郵件:</td><td id="detailEmail"></td></tr>
+                            <tr><td>點數餘額:</td><td id="detailPoints"></td></tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6>使用資訊</h6>
-                        <table class="table table-sm">
-                            <tr><td>獲得日期:</td><td id="detailGetDate"></td></tr>
-                            <tr><td>到期日期:</td><td id="detailExpireDate"></td></tr>
-                            <tr><td>使用日期:</td><td id="detailUseDate"></td></tr>
-                            <tr><td>使用訂單:</td><td id="detailOrderId"></td></tr>
-                        </table>
+                        <h6>最近交易</h6>
+                        <div id="recentTransactions">
+                            <!-- 最近交易記錄 -->
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>     
-                <button type="button" class="btn btn-warning" id="revokeCouponBtn">撤銷優惠券</button> 
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" id="adjustPointsBtn">調整點數</button>
             </div>
         </div>
     </div>
@@ -154,22 +148,23 @@
 <script>
     $(document).ready(function() {
         // 初始化 DataTable
-        var table = $("#couponsTable").DataTable({
+        var table = $("#pointsTable").DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
             "pageLength": 25,
             "order": [[ 0, "asc" ]],
             "columnDefs": [
-                { "orderable": false, "targets": 7 }
+                { "orderable": false, "targets": 6 }
             ]
         });
 
         // 搜尋功能
         $("#searchBtn").click(function() {
             var formData = $("#searchForm").serialize();
+            // 發送 AJAX 請求到後端
             $.ajax({
-                url: "@Url.Action("SearchCoupons", "AdminWallet")",
+                url: "@Url.Action("SearchPoints", "AdminWallet")",
                 type: "POST",
                 data: formData,
                 success: function(response) {
@@ -195,33 +190,24 @@
         // 匯出功能
         $("#exportBtn").click(function() {
             var formData = $("#searchForm").serialize();
-            window.open("@Url.Action("ExportCoupons", "AdminWallet")?" + formData, "_blank");
+            window.open("@Url.Action("ExportPoints", "AdminWallet")?" + formData, "_blank");
         });
 
         // 載入數據到表格
         function loadDataToTable(data) {
             table.clear();
             data.forEach(function(row) {
-                var statusClass = "";
-                switch(row.status) {
-                    case "未使用": statusClass = "badge-success"; break;
-                    case "已使用": statusClass = "badge-info"; break;
-                    case "已過期": statusClass = "badge-danger"; break;
-                }
-
-                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.couponId + ")\">查看</button>";
-                if (row.status === "未使用") {
-                    actionButtons += " <button class=\"btn btn-sm btn-warning\" onclick=\"revokeCoupon(" + row.couponId + ")\">撤銷</button>";
-                }
-
+                var statusBadge = row.status === "正常" ? "badge-success" : "badge-danger";
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.userId + ")\">查看</button> " +
+                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustPoints(" + row.userId + ")\">調整</button>";
+                
                 table.row.add([
                     row.userId,
-                    row.couponName,
-                    row.couponType,
-                    row.discount,
-                    "<span class=\"badge " + statusClass + "\">" + row.status + "</span>",
-                    row.getDate,
-                    row.expireDate,
+                    row.userName,
+                    row.email,
+                    row.points.toLocaleString(),
+                    row.lastUpdate,
+                    "<span class=\"badge " + statusBadge + "\">" + row.status + "</span>",
                     actionButtons
                 ]);
             });
@@ -230,22 +216,17 @@
         }
 
         // 查看詳細資訊
-        window.viewDetail = function(couponId) {
+        window.viewDetail = function(userId) {
             $.ajax({
-                url: "@Url.Action("GetCouponDetail", "AdminWallet")",
+                url: "@Url.Action("GetUserDetail", "AdminWallet")",
                 type: "GET",
-                data: { couponId: couponId },
+                data: { userId: userId },
                 success: function(response) {
                     if (response.success) {
                         $("#detailUserId").text(response.data.userId);
-                        $("#detailCouponName").text(response.data.couponName);
-                        $("#detailCouponType").text(response.data.couponType);
-                        $("#detailDiscount").text(response.data.discount);
-                        $("#detailStatus").text(response.data.status);
-                        $("#detailGetDate").text(response.data.getDate);
-                        $("#detailExpireDate").text(response.data.expireDate);
-                        $("#detailUseDate").text(response.data.useDate || "未使用");
-                        $("#detailOrderId").text(response.data.orderId || "無");
+                        $("#detailUserName").text(response.data.userName);
+                        $("#detailEmail").text(response.data.email);
+                        $("#detailPoints").text(response.data.points.toLocaleString());
                         $("#detailModal").modal("show");
                     } else {
                         alert("獲取詳細資訊失敗: " + response.message);
@@ -257,47 +238,50 @@
             });
         };
 
-        // 撤銷優惠券
-        window.revokeCoupon = function(couponId) {
-            if (confirm("確定要撤銷此優惠券嗎？")) {
+        // 調整點數
+        window.adjustPoints = function(userId) {
+            var newPoints = prompt("請輸入新的點數餘額:", "");
+            if (newPoints !== null && !isNaN(newPoints)) {
                 $.ajax({
-                    url: "@Url.Action("RevokeCoupon", "AdminWallet")",
+                    url: "@Url.Action("AdjustPoints", "AdminWallet")",
                     type: "POST",
-                    data: { couponId: couponId },
+                    data: { userId: userId, newPoints: newPoints },
                     success: function(response) {
                         if (response.success) {
-                            alert("優惠券撤銷成功");
+                            alert("點數調整成功");
                             $("#searchBtn").click(); // 重新搜尋
                         } else {
-                            alert("優惠券撤銷失敗: " + response.message);
+                            alert("點數調整失敗: " + response.message);
                         }
                     },
                     error: function() {
-                        alert("優惠券撤銷失敗，請稍後再試");
+                        alert("點數調整失敗，請稍後再試");
                     }
                 });
             }
         };
 
-        // 撤銷優惠券按鈕
-        $("#revokeCouponBtn").click(function() {
-            var couponId = $("#detailCouponName").text();
-            if (confirm("確定要撤銷此優惠券嗎？")) {
+        // 調整點數按鈕
+        $("#adjustPointsBtn").click(function() {
+            var userId = $("#detailUserId").text();
+            var currentPoints = $("#detailPoints").text().replace(/,/g, "");
+            var newPoints = prompt("請輸入新的點數餘額:", currentPoints);
+            if (newPoints !== null && !isNaN(newPoints)) {
                 $.ajax({
-                    url: "@Url.Action("RevokeCoupon", "AdminWallet")",
+                    url: "@Url.Action("AdjustPoints", "AdminWallet")",
                     type: "POST",
-                    data: { couponId: couponId },
+                    data: { userId: userId, newPoints: newPoints },
                     success: function(response) {
                         if (response.success) {
-                            alert("優惠券撤銷成功");
+                            alert("點數調整成功");
                             $("#detailModal").modal("hide");
                             $("#searchBtn").click(); // 重新搜尋
                         } else {
-                            alert("優惠券撤銷失敗: " + response.message);
+                            alert("點數調整失敗: " + response.message);
                         }
                     },
                     error: function() {
-                        alert("優惠券撤銷失敗，請稍後再試");
+                        alert("點數調整失敗，請稍後再試");
                     }
                 });
             }

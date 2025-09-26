@@ -7,13 +7,22 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">發放會員擁有商城優惠券</h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-gift mr-2"></i>發放會員擁有商城優惠券
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
     </div>
 
     <!-- 發放表單 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">優惠券發放資訊</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-gift"></i> 優惠券發放資訊
+            </h6>
         </div>
         <div class="card-body">
             <form asp-action="GrantCoupons" method="post" id="grantForm">
@@ -27,7 +36,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="CouponTypeId" class="control-label">優惠券類型 *</label>
+                            <label asp-for="CouponTypeId" class="control-label">優惠券類型 *</label>   
                             <select asp-for="CouponTypeId" class="form-control" required>
                                 <option value="">請選擇優惠券類型</option>
                                 <option value="1">新用戶優惠券</option>
@@ -50,7 +59,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="ExpiryDate" class="control-label">到期日期 *</label>
+                            <label asp-for="ExpiryDate" class="control-label">到期日期 *</label>       
                             <input asp-for="ExpiryDate" class="form-control" type="date" required />
                             <span asp-validation-for="ExpiryDate" class="text-danger"></span>
                         </div>
@@ -74,10 +83,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="CustomValue" class="control-label">自訂面額</label>
+                            <label asp-for="CustomValue" class="control-label">自訂面額</label>        
                             <input asp-for="CustomValue" class="form-control" type="number" step="0.01" min="0" placeholder="留空使用預設面額" />
                             <span asp-validation-for="CustomValue" class="text-danger"></span>
-                            <small class="form-text text-muted">留空將使用優惠券類型的預設面額</small>
+                            <small class="form-text text-muted">留空將使用優惠券類型的預設面額</small> 
                         </div>
                     </div>
                 </div>
@@ -95,6 +104,9 @@
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                         <i class="fas fa-undo"></i> 重置
                     </button>
+                    <button type="button" class="btn btn-info" onclick="previewGrant()">
+                        <i class="fas fa-eye"></i> 預覽
+                    </button>
                 </div>
             </form>
         </div>
@@ -103,12 +115,14 @@
     <!-- 優惠券類型資訊 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">可用優惠券類型</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-info-circle"></i> 可用優惠券類型
+            </h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" id="couponTypesTable" width="100%" cellspacing="0">
+                    <thead class="thead-light">
                         <tr>
                             <th>類型ID</th>
                             <th>類型名稱</th>
@@ -155,12 +169,14 @@
     <!-- 最近發放記錄 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">最近發放記錄</h6>
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-history"></i> 最近發放記錄
+            </h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-bordered table-hover" id="recentGrantsTable" width="100%" cellspacing="0">
+                    <thead class="thead-light">
                         <tr>
                             <th>發放時間</th>
                             <th>用戶ID</th>
@@ -206,15 +222,92 @@
     </div>
 </div>
 
+<!-- 預覽 Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">發放預覽</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <!-- 預覽內容將在這裡顯示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" onclick="confirmGrant()">確認發放</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+$(document).ready(function() {
+    // 初始化 DataTable
+    $("#couponTypesTable, #recentGrantsTable").DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+        },
+        "pageLength": 10,
+        "order": [[ 0, "asc" ]]
+    });
+});
+
 function resetForm() {
     if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
         document.getElementById("grantForm").reset();
     }
 }
 
+function previewGrant() {
+    var formData = $("#grantForm").serialize();
+    var isValid = validateForm();
+
+    if (!isValid) {
+        return;
+    }
+
+    $.ajax({
+        url: "@Url.Action("PreviewGrantCoupons", "AdminWallet")",
+        type: "POST",
+        data: formData,
+        success: function(response) {
+            if (response.success) {
+                showPreview(response.data);
+            } else {
+                alert("預覽失敗: " + response.message);
+            }
+        },
+        error: function() {
+            alert("預覽請求失敗，請稍後再試");
+        }
+    });
+}
+
+function showPreview(data) {
+    var previewHtml = "<h6>發放設定預覽</h6>";
+    previewHtml += "<p><strong>用戶ID:</strong> " + data.userId + "</p>";
+    previewHtml += "<p><strong>優惠券類型:</strong> " + data.couponTypeName + "</p>";
+    previewHtml += "<p><strong>發放數量:</strong> " + data.quantity + "</p>";
+    previewHtml += "<p><strong>到期日期:</strong> " + data.expiryDate + "</p>";
+    previewHtml += "<p><strong>發放原因:</strong> " + data.reason + "</p>";
+    previewHtml += "<p><strong>面額:</strong> " + data.value + "</p>";
+
+    $("#previewContent").html(previewHtml);
+    $("#previewModal").modal("show");
+}
+
+function confirmGrant() {
+    $("#previewModal").modal("hide");
+    $("#grantForm").submit();
+}
+
 // 表單驗證
-document.getElementById("grantForm").addEventListener("submit", function(e) {
+function validateForm() {
     const userId = document.getElementById("UserId").value.trim();
     const couponTypeId = document.getElementById("CouponTypeId").value;
     const quantity = document.getElementById("Quantity").value;
@@ -223,33 +316,41 @@ document.getElementById("grantForm").addEventListener("submit", function(e) {
 
     if (!userId) {
         alert("請輸入用戶ID");
-        e.preventDefault();
-        return;
+        return false;
     }
 
     if (!couponTypeId) {
         alert("請選擇優惠券類型");
-        e.preventDefault();
-        return;
+        return false;
     }
 
     if (!quantity || quantity <= 0) {
         alert("請輸入有效的發放數量");
-        e.preventDefault();
-        return;
+        return false;
     }
 
     if (!expiryDate) {
         alert("請選擇到期日期");
-        e.preventDefault();
-        return;
+        return false;
     }
 
     if (!reason) {
         alert("請選擇發放原因");
+        return false;
+    }
+
+    return true;
+}
+
+// 表單提交驗證
+document.getElementById("grantForm").addEventListener("submit", function(e) {
+    if (!validateForm()) {
         e.preventDefault();
         return;
     }
+
+    const userId = document.getElementById("UserId").value.trim();
+    const quantity = document.getElementById("Quantity").value;
 
     if (!confirm(`確定要發放 ${quantity} 張優惠券給用戶 ${userId} 嗎？`)) {
         e.preventDefault();

@@ -1,0 +1,117 @@
+@{
+    ViewData["Title"] = "用戶簽到歷史";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-history mr-2"></i>用戶簽到歷史 - @Model.UserName
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> 簽到記錄
+                    </h6>
+                    <div>
+                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#addSignInModal">
+                            <i class="fas fa-plus"></i> 新增簽到記錄
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="signInTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>簽到日期</th>
+                                    <th>簽到時間</th>
+                                    <th>連續天數</th>
+                                    <th>獲得點數</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var record in Model.SignInHistory)
+                                {
+                                    <tr>
+                                        <td>@record.SignInDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@record.SignInDate.ToString("HH:mm:ss")</td>
+                                        <td>@record.ConsecutiveDays</td>
+                                        <td>@record.PointsEarned</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick="removeSignInRecord('@record.SignInDate.ToString("yyyy-MM-dd")')">
+                                                <i class="fas fa-trash"></i> 移除
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增簽到記錄 Modal -->
+<div class="modal fade" id="addSignInModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增簽到記錄</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form asp-action="AddSignInRecord" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="userId" value="@Model.UserId" />
+                    <div class="form-group">
+                        <label for="signInDate" class="form-label">簽到日期</label>
+                        <input type="date" class="form-control" id="signInDate" name="signInDate" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function removeSignInRecord(signInDate) {
+        if (confirm('確定要移除這筆簽到記錄嗎？')) {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("RemoveSignInRecord")';
+            
+            var userIdInput = document.createElement('input');
+            userIdInput.type = 'hidden';
+            userIdInput.name = 'userId';
+            userIdInput.value = '@Model.UserId';
+            
+            var signInDateInput = document.createElement('input');
+            signInDateInput.type = 'hidden';
+            signInDateInput.name = 'signInDate';
+            signInDateInput.value = signInDate;
+            
+            form.appendChild(userIdInput);
+            form.appendChild(signInDateInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>

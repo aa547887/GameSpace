@@ -1,0 +1,949 @@
+@model GameSpace.Areas.MiniGame.Models.GrantEVouchersModel
+@{
+    ViewData["Title"] = "發放會員電子券";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-gift-card mr-2"></i>發放會員電子券
+        </h1>
+        <div class="d-flex">
+            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
+    </div>
+
+    <!-- 統計卡片 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 hover-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日發放</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGrants">載入中...</div>
+                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12.5%</span></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-gift-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 hover-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">本月發放</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthGrants">載入中...</div>
+                            <div class="text-xs text-muted">較上月 <span class="text-success">+8.3%</span></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 hover-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">活躍券種</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeTypes">載入中...</div>
+                            <div class="text-xs text-muted">共 4 種類型</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tags fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 hover-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">待審核</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingGrants">載入中...</div>
+                            <div class="text-xs text-muted">需要處理</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 發放表單 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-gift-card"></i> 電子券發放設定
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="grantEVouchersForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="grantType" class="form-label">發放類型 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="grantType" name="grantType" required>
+                                    <option value="">請選擇發放類型</option>
+                                    <option value="single">單一會員</option>
+                                    <option value="multiple">多個會員</option>
+                                    <option value="all">全體會員</option>
+                                    <option value="condition">條件發放</option>
+                                </select>
+                                <div class="invalid-feedback" id="grantTypeError"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="evoucherTypeId" class="form-label">電子券類型 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="evoucherTypeId" name="evoucherTypeId" required>
+                                    <option value="">請選擇電子券類型</option>
+                                    <option value="1" data-value="500">現金券 (NT$ 500)</option>
+                                    <option value="2" data-value="300">商品券 (NT$ 300)</option>
+                                    <option value="3" data-value="200">服務券 (NT$ 200)</option>
+                                    <option value="4" data-value="1000">節日券 (NT$ 1000)</option>
+                                </select>
+                                <div class="invalid-feedback" id="evoucherTypeError"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="quantity" class="form-label">發放數量 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" placeholder="輸入數量" required min="1" max="100">
+                                <div class="invalid-feedback" id="quantityError"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="customValue" class="form-label">自訂面額</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">NT$</span>
+                                    </div>
+                                    <input type="number" class="form-control" id="customValue" name="customValue" step="0.01" min="0" placeholder="留空使用預設面額">
+                                </div>
+                                <small class="form-text text-muted">留空將使用電子券類型的預設面額</small>
+                            </div>
+                        </div>
+
+                        <div class="row" id="singleUserRow" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="userId" class="form-label">會員ID <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="searchUserBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="invalid-feedback" id="userIdError"></div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="multipleUsersRow" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="userIds" class="form-label">會員ID列表 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="userIds" name="userIds" rows="5" placeholder="輸入會員ID，每行一個"></textarea>
+                                <div class="invalid-feedback" id="userIdsError"></div>
+                                <small class="form-text text-muted">每行輸入一個會員ID，最多支援100個會員</small>
+                            </div>
+                        </div>
+
+                        <div class="row" id="conditionRow" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="conditionType" class="form-label">條件類型 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="conditionType" name="conditionType">
+                                    <option value="">請選擇條件類型</option>
+                                    <option value="level">等級條件</option>
+                                    <option value="points">點數條件</option>
+                                    <option value="signin">簽到條件</option>
+                                    <option value="game">遊戲條件</option>
+                                </select>
+                                <div class="invalid-feedback" id="conditionTypeError"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="conditionValue" class="form-label">條件值 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="conditionValue" name="conditionValue" placeholder="輸入條件值">
+                                <div class="invalid-feedback" id="conditionValueError"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="expireDate" class="form-label">有效期限 <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="expireDate" name="expireDate" required>
+                                <div class="invalid-feedback" id="expireDateError"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="reason" class="form-label">發放原因 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="reason" name="reason" required>
+                                    <option value="">請選擇發放原因</option>
+                                    <option value="活動獎勵">活動獎勵</option>
+                                    <option value="補償">補償</option>
+                                    <option value="客服處理">客服處理</option>
+                                    <option value="生日禮物">生日禮物</option>
+                                    <option value="節日禮物">節日禮物</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                                <div class="invalid-feedback" id="reasonError"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">詳細說明</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="輸入詳細說明"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="notifyUser" name="notifyUser" checked>
+                                    <label class="form-check-label" for="notifyUser">
+                                        <i class="fas fa-bell"></i> 發送通知給受影響的會員
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="generateQR" name="generateQR" checked>
+                                    <label class="form-check-label" for="generateQR">
+                                        <i class="fas fa-qrcode"></i> 自動生成QR碼
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 text-right">
+                                <button type="button" class="btn btn-primary btn-hover" id="previewBtn">
+                                    <i class="fas fa-eye"></i> 預覽
+                                </button>
+                                <button type="submit" class="btn btn-success btn-hover" id="submitBtn">
+                                    <i class="fas fa-check"></i> 確認發放
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-hover" id="resetBtn">
+                                    <i class="fas fa-undo"></i> 重置
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i> 發放須知
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> 電子券發放後立即生效</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> 系統會自動記錄發放記錄</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> 可選擇是否通知會員</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> 支援批次發放功能</li>
+                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> 請確認發放條件正確</li>
+                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> 大量發放前請先預覽</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 電子券類型資訊 -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> 可用電子券類型
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>類型</th>
+                                    <th>預設面額</th>
+                                    <th>使用範圍</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><i class="fas fa-money-bill-wave text-success"></i> 現金券</td>
+                                    <td><span class="badge badge-success">NT$ 500</span></td>
+                                    <td>全站通用</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-shopping-bag text-primary"></i> 商品券</td>
+                                    <td><span class="badge badge-primary">NT$ 300</span></td>
+                                    <td>指定商品</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-concierge-bell text-info"></i> 服務券</td>
+                                    <td><span class="badge badge-info">NT$ 200</span></td>
+                                    <td>指定服務</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-gift text-warning"></i> 節日券</td>
+                                    <td><span class="badge badge-warning">NT$ 1000</span></td>
+                                    <td>節日限定</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 預覽結果 -->
+            <div class="card shadow mb-4" id="previewCard" style="display: none;">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-eye"></i> 預覽結果
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="previewContent">
+                        <!-- 預覽內容將在這裡顯示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近發放記錄 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> 最近發放記錄
+                    </h6>
+                    <div class="d-flex">
+                        <button class="btn btn-sm btn-info mr-2" onclick="refreshRecords()">
+                            <i class="fas fa-sync"></i> 刷新
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="exportRecords()">
+                            <i class="fas fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="recentGrantsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>發放時間</th>
+                                    <th>會員ID</th>
+                                    <th>電子券類型</th>
+                                    <th>發放數量</th>
+                                    <th>面額</th>
+                                    <th>發放原因</th>
+                                    <th>操作者</th>
+                                    <th>狀態</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 加載 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細資訊 Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle"></i> 發放記錄詳情
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="detailContent">
+                    <!-- 詳細內容將在這裡顯示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" id="printDetailBtn">
+                    <i class="fas fa-print"></i> 列印
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR碼 Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-qrcode"></i> 電子券QR碼
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeContainer"></div>
+                <p class="mt-3" id="qrCodeText"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" onclick="printQRCode()">列印</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn-hover {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-hover::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-hover:hover::before {
+        left: 100%;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+
+    .badge {
+        font-size: 0.75em;
+        padding: 0.5em 0.8em;
+    }
+
+    .text-xs {
+        font-size: 0.7rem;
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // 初始化統計數據
+        loadStatistics();
+
+        // 初始化 DataTable
+        var table = $("#recentGrantsTable").DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+            },
+            "pageLength": 25,
+            "order": [[ 0, "desc" ]],
+            "columnDefs": [
+                { "orderable": false, "targets": 8 }
+            ],
+            "ajax": {
+                "url": "@Url.Action("GetRecentEVoucherGrants", "AdminWallet")",
+                "type": "GET",
+                "dataSrc": "data"
+            },
+            "columns": [
+                { "data": "grantTime" },
+                { "data": "userId" },
+                { "data": "eVoucherTypeName" },
+                { "data": "quantity" },
+                { "data": "value" },
+                { "data": "reason" },
+                { "data": "operator" },
+                { 
+                    "data": "status",
+                    "render": function(data, type, row) {
+                        var statusClass = data === "成功" ? "badge-success" : "badge-danger";
+                        return "<span class=\"badge " + statusClass + "\">" + data + "</span>";
+                    }
+                },
+                {
+                    "data": null,
+                    "render": function(data, type, row) {
+                        return "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.id + ")\">" +
+                               "<i class=\"fas fa-eye\"></i> 查看</button> " +
+                               "<button class=\"btn btn-sm btn-warning\" onclick=\"generateQR(" + row.id + ")\">" +
+                               "<i class=\"fas fa-qrcode\"></i> QR碼</button>";
+                    }
+                }
+            ]
+        });
+
+        // 發放類型變更處理
+        $("#grantType").change(function() {
+            var type = $(this).val();
+            $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
+            clearValidation();
+
+            switch(type) {
+                case "single":
+                    $("#singleUserRow").show();
+                    break;
+                case "multiple":
+                    $("#multipleUsersRow").show();
+                    break;
+                case "condition":
+                    $("#conditionRow").show();
+                    break;
+            }
+        });
+
+        // 電子券類型變更處理
+        $("#evoucherTypeId").change(function() {
+            var selectedOption = $(this).find("option:selected");
+            var defaultValue = selectedOption.data("value");
+            if (defaultValue) {
+                $("#customValue").attr("placeholder", "預設面額: NT$ " + defaultValue);
+            }
+        });
+
+        // 搜尋用戶按鈕
+        $("#searchUserBtn").click(function() {
+            var userId = $("#userId").val();
+            if (userId) {
+                searchUser(userId);
+            } else {
+                showAlert("請先輸入會員ID", "warning");
+            }
+        });
+
+        // 預覽功能
+        $("#previewBtn").click(function() {
+            var formData = $("#grantEVouchersForm").serialize();
+            var isValid = validateForm();
+
+            if (!isValid) {
+                return;
+            }
+
+            showLoading(true);
+            $.ajax({
+                url: "@Url.Action("PreviewGrantEVouchers", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        showPreview(response.data);
+                    } else {
+                        showAlert("預覽失敗: " + response.message, "error");
+                    }
+                },
+                error: function() {
+                    showAlert("預覽請求失敗，請稍後再試", "error");
+                },
+                complete: function() {
+                    showLoading(false);
+                }
+            });
+        });
+
+        // 表單提交
+        $("#grantEVouchersForm").submit(function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            var isValid = validateForm();
+
+            if (!isValid) {
+                return;
+            }
+
+            if (!confirm("確定要發放電子券嗎？此操作無法撤銷。")) {
+                return;
+            }
+
+            showLoading(true);
+            $.ajax({
+                url: "@Url.Action("GrantEVouchers", "AdminWallet")",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        showAlert("電子券發放成功！影響 " + response.affectedUsers + " 位會員", "success");
+                        $("#grantEVouchersForm")[0].reset();
+                        $("#previewCard").hide();
+                        $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
+                        table.ajax.reload();
+                        loadStatistics();
+                    } else {
+                        showAlert("電子券發放失敗: " + response.message, "error");
+                    }
+                },
+                error: function() {
+                    showAlert("電子券發放失敗，請稍後再試", "error");
+                },
+                complete: function() {
+                    showLoading(false);
+                }
+            });
+        });
+
+        // 重置功能
+        $("#resetBtn").click(function() {
+            if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
+                $("#grantEVouchersForm")[0].reset();
+                $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
+                $("#previewCard").hide();
+                clearValidation();
+            }
+        });
+
+        // 列印詳情
+        $("#printDetailBtn").click(function() {
+            window.print();
+        });
+
+        // 添加載入動畫
+        $(".card").each(function(index) {
+            $(this).css("animation-delay", (index * 0.1) + "s");
+            $(this).addClass("fade-in");
+        });
+    });
+
+    // 載入統計數據
+    function loadStatistics() {
+        $.ajax({
+            url: "@Url.Action("GetEVoucherStatistics", "AdminWallet")",
+            type: "GET",
+            success: function(response) {
+                if (response.success) {
+                    $("#todayGrants").text(response.data.todayGrants);
+                    $("#monthGrants").text(response.data.monthGrants);
+                    $("#activeTypes").text(response.data.activeTypes);
+                    $("#pendingGrants").text(response.data.pendingGrants);
+                }
+            },
+            error: function() {
+                $("#todayGrants").text("載入失敗");
+                $("#monthGrants").text("載入失敗");
+                $("#activeTypes").text("載入失敗");
+                $("#pendingGrants").text("載入失敗");
+            }
+        });
+    }
+
+    // 搜尋用戶
+    function searchUser(userId) {
+        $.ajax({
+            url: "@Url.Action("SearchUser", "AdminWallet")",
+            type: "GET",
+            data: { userId: userId },
+            success: function(response) {
+                if (response.success) {
+                    showAlert("找到用戶: " + response.data.userName, "success");
+                } else {
+                    showAlert("找不到該用戶", "warning");
+                }
+            },
+            error: function() {
+                showAlert("搜尋用戶失敗", "error");
+            }
+        });
+    }
+
+    // 表單驗證
+    function validateForm() {
+        var isValid = true;
+        clearValidation();
+
+        var grantType = $("#grantType").val();
+        var evoucherTypeId = $("#evoucherTypeId").val();
+        var quantity = $("#quantity").val();
+        var expireDate = $("#expireDate").val();
+        var reason = $("#reason").val();
+
+        if (!grantType) {
+            showFieldError("grantType", "請選擇發放類型");
+            isValid = false;
+        }
+
+        if (!evoucherTypeId) {
+            showFieldError("evoucherTypeId", "請選擇電子券類型");
+            isValid = false;
+        }
+
+        if (!quantity || quantity <= 0) {
+            showFieldError("quantity", "請輸入有效的發放數量");
+            isValid = false;
+        }
+
+        if (!expireDate) {
+            showFieldError("expireDate", "請選擇有效期限");
+            isValid = false;
+        }
+
+        if (!reason) {
+            showFieldError("reason", "請選擇發放原因");
+            isValid = false;
+        }
+
+        if (grantType === "single" && !$("#userId").val()) {
+            showFieldError("userId", "請輸入會員ID");
+            isValid = false;
+        }
+
+        if (grantType === "multiple" && !$("#userIds").val()) {
+            showFieldError("userIds", "請輸入會員ID列表");
+            isValid = false;
+        }
+
+        if (grantType === "condition") {
+            if (!$("#conditionType").val()) {
+                showFieldError("conditionType", "請選擇條件類型");
+                isValid = false;
+            }
+            if (!$("#conditionValue").val()) {
+                showFieldError("conditionValue", "請輸入條件值");
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    // 顯示欄位錯誤
+    function showFieldError(fieldId, message) {
+        $("#" + fieldId).addClass("is-invalid");
+        $("#" + fieldId + "Error").text(message).show();
+    }
+
+    // 清除驗證
+    function clearValidation() {
+        $(".form-control").removeClass("is-invalid");
+        $(".invalid-feedback").hide();
+    }
+
+    // 顯示預覽結果
+    function showPreview(data) {
+        var previewHtml = "<div class=\"alert alert-info\">";
+        previewHtml += "<h6><i class=\"fas fa-eye\"></i> 發放設定預覽</h6>";
+        previewHtml += "<div class=\"row\">";
+        previewHtml += "<div class=\"col-md-6\">";
+        previewHtml += "<p><strong>發放類型:</strong> " + data.grantType + "</p>";
+        previewHtml += "<p><strong>電子券類型:</strong> " + data.eVoucherTypeName + "</p>";
+        previewHtml += "<p><strong>發放數量:</strong> " + data.quantity + "</p>";
+        previewHtml += "<p><strong>面額:</strong> " + data.value + "</p>";
+        previewHtml += "</div>";
+        previewHtml += "<div class=\"col-md-6\">";
+        previewHtml += "<p><strong>有效期限:</strong> " + data.expireDate + "</p>";
+        previewHtml += "<p><strong>發放原因:</strong> " + data.reason + "</p>";
+        previewHtml += "<p><strong>影響會員數:</strong> " + data.affectedUsers + "</p>";
+        previewHtml += "</div></div>";
+
+        if (data.userList && data.userList.length > 0) {
+            previewHtml += "<h6>影響的會員:</h6>";
+            previewHtml += "<div class=\"table-responsive\">";
+            previewHtml += "<table class=\"table table-sm\">";
+            previewHtml += "<thead><tr><th>會員ID</th><th>會員名稱</th></tr></thead>";
+            previewHtml += "<tbody>";
+            data.userList.forEach(function(user) {
+                previewHtml += "<tr><td>" + user.userId + "</td><td>" + user.userName + "</td></tr>";
+            });
+            previewHtml += "</tbody></table></div>";
+        }
+        previewHtml += "</div>";
+
+        $("#previewContent").html(previewHtml);
+        $("#previewCard").show();
+    }
+
+    // 刷新記錄
+    function refreshRecords() {
+        $("#recentGrantsTable").DataTable().ajax.reload();
+    }
+
+    // 匯出記錄
+    function exportRecords() {
+        window.open("@Url.Action("ExportEVoucherGrants", "AdminWallet")", "_blank");
+    }
+
+    // 查看詳細資訊
+    function viewDetail(recordId) {
+        $.ajax({
+            url: "@Url.Action("GetEVoucherGrantDetail", "AdminWallet")",
+            type: "GET",
+            data: { recordId: recordId },
+            success: function(response) {
+                if (response.success) {
+                    showDetailModal(response.data);
+                } else {
+                    showAlert("獲取詳細資訊失敗: " + response.message, "error");
+                }
+            },
+            error: function() {
+                showAlert("獲取詳細資訊失敗，請稍後再試", "error");
+            }
+        });
+    }
+
+    // 生成QR碼
+    function generateQR(recordId) {
+        $.ajax({
+            url: "@Url.Action("GenerateEVoucherQR", "AdminWallet")",
+            type: "GET",
+            data: { recordId: recordId },
+            success: function(response) {
+                if (response.success) {
+                    $("#qrCodeContainer").html("<img src='" + response.data.qrCodeUrl + "' class='img-fluid' alt='QR Code'>");
+                    $("#qrCodeText").text("電子券代碼: " + response.data.eVoucherCode);
+                    $("#qrCodeModal").modal("show");
+                } else {
+                    showAlert("生成QR碼失敗: " + response.message, "error");
+                }
+            },
+            error: function() {
+                showAlert("生成QR碼失敗，請稍後再試", "error");
+            }
+        });
+    }
+
+    // 列印QR碼
+    function printQRCode() {
+        window.print();
+    }
+
+    // 顯示詳細資訊模態框
+    function showDetailModal(data) {
+        var detailHtml = "<div class=\"row\">";
+        detailHtml += "<div class=\"col-md-6\">";
+        detailHtml += "<h6><i class=\"fas fa-info-circle\"></i> 基本資訊</h6>";
+        detailHtml += "<table class=\"table table-sm\">";
+        detailHtml += "<tr><td>發放時間:</td><td>" + data.grantTime + "</td></tr>";
+        detailHtml += "<tr><td>會員ID:</td><td>" + data.userId + "</td></tr>";
+        detailHtml += "<tr><td>電子券類型:</td><td>" + data.eVoucherTypeName + "</td></tr>";
+        detailHtml += "<tr><td>發放數量:</td><td>" + data.quantity + "</td></tr>";
+        detailHtml += "</table></div>";
+        detailHtml += "<div class=\"col-md-6\">";
+        detailHtml += "<h6><i class=\"fas fa-gift-card\"></i> 發放資訊</h6>";
+        detailHtml += "<table class=\"table table-sm\">";
+        detailHtml += "<tr><td>面額:</td><td>" + data.value + "</td></tr>";
+        detailHtml += "<tr><td>有效期限:</td><td>" + data.expireDate + "</td></tr>";
+        detailHtml += "<tr><td>發放原因:</td><td>" + data.reason + "</td></tr>";
+        detailHtml += "<tr><td>操作者:</td><td>" + data.operator + "</td></tr>";
+        detailHtml += "</table></div></div>";
+
+        if (data.description) {
+            detailHtml += "<div class=\"row mt-3\">";
+            detailHtml += "<div class=\"col-12\">";
+            detailHtml += "<h6><i class=\"fas fa-align-left\"></i> 詳細說明</h6>";
+            detailHtml += "<p class=\"text-muted\">" + data.description + "</p>";
+            detailHtml += "</div></div>";
+        }
+
+        $("#detailContent").html(detailHtml);
+        $("#detailModal").modal("show");
+    }
+
+    // 顯示載入狀態
+    function showLoading(show) {
+        if (show) {
+            $("body").addClass("loading");
+        } else {
+            $("body").removeClass("loading");
+        }
+    }
+
+    // 顯示提示訊息
+    function showAlert(message, type) {
+        var alertClass = "alert-info";
+        switch(type) {
+            case "success": alertClass = "alert-success"; break;
+            case "error": alertClass = "alert-danger"; break;
+            case "warning": alertClass = "alert-warning"; break;
+        }
+
+        var alertHtml = "<div class=\"alert " + alertClass + " alert-dismissible fade show\" role=\"alert\">";
+        alertHtml += message;
+        alertHtml += "<button type=\"button\" class=\"close\" data-dismiss=\"alert\">";
+        alertHtml += "<span>&times;</span></button></div>";
+
+        $("body").prepend(alertHtml);
+
+        setTimeout(function() {
+            $(".alert").fadeOut();
+        }, 5000);
+    }
+</script>

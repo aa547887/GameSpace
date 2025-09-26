@@ -22,7 +22,7 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form id="petRulesForm">
+                    <form>
                         <div class="form-group">
                             <label for="maxLevel">最大等級</label>
                             <input type="number" class="form-control" id="maxLevel" value="100" min="1" max="999">
@@ -66,7 +66,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> 儲存設定
                             </button>
-                            <button type="button" class="btn btn-secondary ml-2" onclick="resetForm()">
+                            <button type="button" class="btn btn-secondary ml-2">
                                 <i class="fas fa-undo"></i> 重置
                             </button>
                         </div>
@@ -94,132 +94,3 @@
         </div>
     </div>
 </div>
-
-<script>
-$(document).ready(function() {
-    // 載入現有設定
-    loadCurrentSettings();
-    
-    // 表單提交處理
-    $("#petRulesForm").on("submit", function(e) {
-        e.preventDefault();
-        saveSettings();
-    });
-});
-
-function loadCurrentSettings() {
-    $.ajax({
-        url: "@Url.Action("GetPetRules", "AdminPet")",
-        type: "GET",
-        success: function(response) {
-            if (response.success) {
-                var rules = response.data;
-                $("#maxLevel").val(rules.maxLevel);
-                $("#expPerLevel").val(rules.expPerLevel);
-                $("#maxHunger").val(rules.maxHunger);
-                $("#maxHappiness").val(rules.maxHappiness);
-                $("#hungerDecay").val(rules.hungerDecay);
-                $("#happinessDecay").val(rules.happinessDecay);
-                $("#enableEvolution").prop("checked", rules.enableEvolution);
-            }
-        },
-        error: function() {
-            console.log("載入設定失敗，使用預設值");
-        }
-    });
-}
-
-function saveSettings() {
-    var formData = {
-        maxLevel: $("#maxLevel").val(),
-        expPerLevel: $("#expPerLevel").val(),
-        maxHunger: $("#maxHunger").val(),
-        maxHappiness: $("#maxHappiness").val(),
-        hungerDecay: $("#hungerDecay").val(),
-        happinessDecay: $("#happinessDecay").val(),
-        enableEvolution: $("#enableEvolution").is(":checked")
-    };
-    
-    // 驗證表單
-    if (!validateForm(formData)) {
-        return;
-    }
-    
-    if (!confirm("確定要儲存寵物系統規則嗎？此操作將影響所有寵物。")) {
-        return;
-    }
-    
-    $.ajax({
-        url: "@Url.Action("UpdatePetRules", "AdminPet")",
-        type: "POST",
-        data: formData,
-        success: function(response) {
-            if (response.success) {
-                alert("寵物系統規則已成功更新！");
-                showSuccessMessage("設定已儲存");
-            } else {
-                alert("儲存失敗: " + response.message);
-            }
-        },
-        error: function() {
-            alert("儲存失敗，請稍後再試");
-        }
-    });
-}
-
-function validateForm(data) {
-    if (data.maxLevel < 1 || data.maxLevel > 999) {
-        alert("最大等級必須在 1-999 之間");
-        return false;
-    }
-    
-    if (data.expPerLevel < 1) {
-        alert("每級所需經驗值必須大於 0");
-        return false;
-    }
-    
-    if (data.maxHunger < 1 || data.maxHappiness < 1) {
-        alert("飢餓值和快樂值必須大於 0");
-        return false;
-    }
-    
-    if (data.hungerDecay < 0 || data.hungerDecay > 100) {
-        alert("飢餓值衰減率必須在 0-100 之間");
-        return false;
-    }
-    
-    if (data.happinessDecay < 0 || data.happinessDecay > 100) {
-        alert("快樂值衰減率必須在 0-100 之間");
-        return false;
-    }
-    
-    return true;
-}
-
-function resetForm() {
-    if (confirm("確定要重置為預設值嗎？")) {
-        $("#maxLevel").val(100);
-        $("#expPerLevel").val(100);
-        $("#maxHunger").val(100);
-        $("#maxHappiness").val(100);
-        $("#hungerDecay").val(5);
-        $("#happinessDecay").val(3);
-        $("#enableEvolution").prop("checked", true);
-    }
-}
-
-function showSuccessMessage(message) {
-    // 顯示成功訊息
-    var alertHtml = "<div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">" +
-                   "<i class=\"fas fa-check-circle\"></i> " + message +
-                   "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">" +
-                   "<span aria-hidden=\"true\">&times;</span></button></div>";
-    
-    $(".container-fluid").prepend(alertHtml);
-    
-    // 3秒後自動隱藏
-    setTimeout(function() {
-        $(".alert").fadeOut();
-    }, 3000);
-}
-</script>

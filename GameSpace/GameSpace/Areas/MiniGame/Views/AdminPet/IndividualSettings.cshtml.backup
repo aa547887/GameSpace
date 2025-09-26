@@ -224,13 +224,13 @@ function resetForm() {
 function editPet(petId) {
     // 載入寵物資料並顯示編輯模態框
     document.getElementById("editPetId").value = petId;
-    document.getElementById("editPetName").value = "載入中...";
+    document.getElementById("editPetName").value = "示例寵物";
     document.getElementById("editPetLevel").value = "5";
     document.getElementById("editPetExperience").value = "250";
     document.getElementById("editPetSkinColor").value = "藍色";
     document.getElementById("editPetBackground").value = "森林";
     document.getElementById("editPetStatus").value = "true";
-    document.getElementById("editPetDescription").value = "載入中...";
+    document.getElementById("editPetDescription").value = "這是一隻可愛的寵物";
     
     $("#editPetModal").modal("show");
 }

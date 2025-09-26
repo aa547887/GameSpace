@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-plus-circle mr-2"></i>發放會員點數
+            <i class="fas fa-gift mr-2"></i>發放會員點數
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
@@ -28,7 +28,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="grantType" class="form-label">發放類型</label>
-                                <select class="form-control" id="grantType" name="grantType" required>
+                                <select class="form-control" id="grantType" name="grantType" required> 
                                     <option value="">請選擇發放類型</option>
                                     <option value="single">單一會員</option>
                                     <option value="multiple">多個會員</option>
@@ -41,21 +41,21 @@
                                 <input type="number" class="form-control" id="pointsAmount" name="pointsAmount" placeholder="輸入點數" required min="1">
                             </div>
                         </div>
-                        
+
                         <div class="row" id="singleUserRow" style="display: none;">
                             <div class="col-md-12 mb-3">
                                 <label for="userId" class="form-label">會員ID</label>
                                 <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
                             </div>
                         </div>
-                        
+
                         <div class="row" id="multipleUsersRow" style="display: none;">
                             <div class="col-md-12 mb-3">
-                                <label for="userIds" class="form-label">會員ID列表 (每行一個)</label>
+                                <label for="userIds" class="form-label">會員ID列表 (每行一個)</label>  
                                 <textarea class="form-control" id="userIds" name="userIds" rows="5" placeholder="輸入會員ID，每行一個"></textarea>
                             </div>
                         </div>
-                        
+
                         <div class="row" id="conditionRow" style="display: none;">
                             <div class="col-md-6 mb-3">
                                 <label for="conditionType" class="form-label">條件類型</label>
@@ -71,14 +71,14 @@
                                 <input type="text" class="form-control" id="conditionValue" name="conditionValue" placeholder="輸入條件值">
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label for="reason" class="form-label">發放原因</label>
                                 <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="請輸入發放原因" required></textarea>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="expireDate" class="form-label">有效期限</label>
@@ -94,7 +94,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-12 text-right">
                                 <button type="button" class="btn btn-primary" id="previewBtn">
@@ -109,7 +109,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
@@ -128,7 +128,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <!-- 預覽結果 -->
             <div class="card shadow mb-4" id="previewCard" style="display: none;">
                 <div class="card-header py-3">
@@ -152,7 +152,7 @@
         $("#grantType").change(function() {
             var type = $(this).val();
             $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
-            
+
             switch(type) {
                 case "single":
                     $("#singleUserRow").show();
@@ -165,16 +165,16 @@
                     break;
             }
         });
-        
+
         // 預覽功能
         $("#previewBtn").click(function() {
             var formData = $("#grantPointsForm").serialize();
             var isValid = validateForm();
-            
+
             if (!isValid) {
                 return;
             }
-            
+
             $.ajax({
                 url: "@Url.Action("PreviewGrantPoints", "AdminWallet")",
                 type: "POST",
@@ -191,21 +191,21 @@
                 }
             });
         });
-        
+
         // 表單提交
         $("#grantPointsForm").submit(function(e) {
             e.preventDefault();
             var formData = $(this).serialize();
             var isValid = validateForm();
-            
+
             if (!isValid) {
                 return;
             }
-            
+
             if (!confirm("確定要發放點數嗎？此操作無法撤銷。")) {
                 return;
             }
-            
+
             $.ajax({
                 url: "@Url.Action("GrantPoints", "AdminWallet")",
                 type: "POST",
@@ -224,46 +224,46 @@
                 }
             });
         });
-        
+
         // 表單驗證
         function validateForm() {
             var grantType = $("#grantType").val();
             var pointsAmount = $("#pointsAmount").val();
             var reason = $("#reason").val();
-            
+
             if (!grantType) {
                 alert("請選擇發放類型");
                 return false;
             }
-            
+
             if (!pointsAmount || pointsAmount <= 0) {
                 alert("請輸入有效的點數金額");
                 return false;
             }
-            
+
             if (!reason.trim()) {
                 alert("請輸入發放原因");
                 return false;
             }
-            
+
             if (grantType === "single" && !$("#userId").val()) {
                 alert("請輸入會員ID");
                 return false;
             }
-            
+
             if (grantType === "multiple" && !$("#userIds").val()) {
                 alert("請輸入會員ID列表");
                 return false;
             }
-            
+
             if (grantType === "condition" && !$("#conditionValue").val()) {
                 alert("請輸入條件值");
                 return false;
             }
-            
+
             return true;
         }
-        
+
         // 顯示預覽結果
         function showPreview(data) {
             var previewHtml = "<h6>發放設定預覽</h6>";
@@ -271,7 +271,7 @@
             previewHtml += "<p><strong>點數金額:</strong> " + data.pointsAmount + "</p>";
             previewHtml += "<p><strong>發放原因:</strong> " + data.reason + "</p>";
             previewHtml += "<p><strong>影響會員數:</strong> " + data.affectedUsers + "</p>";
-            
+
             if (data.userList && data.userList.length > 0) {
                 previewHtml += "<h6>影響的會員:</h6>";
                 previewHtml += "<ul>";
@@ -280,7 +280,7 @@
                 });
                 previewHtml += "</ul>";
             }
-            
+
             $("#previewContent").html(previewHtml);
             $("#previewCard").show();
         }
