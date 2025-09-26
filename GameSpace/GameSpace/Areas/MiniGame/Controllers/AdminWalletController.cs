@@ -33,17 +33,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .Select(u => new { u.Id, u.UserName, u.Email })
                     .ToListAsync();
 
-                var viewModel = new AdminWalletIndexViewModel
-                {
+            var viewModel = new AdminWalletIndexViewModel
+            {
                     UserPoints = result.Items,
-                    Users = users,
-                    Query = query,
+                Users = users,
+                Query = query,
                     TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -66,17 +66,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .Select(u => new { u.Id, u.UserName, u.Email })
                     .ToListAsync();
 
-                var viewModel = new AdminCouponIndexViewModel
-                {
-                    Coupons = result.Items,
-                    Users = users,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+            var viewModel = new AdminCouponIndexViewModel
+            {
+                Coupons = result.Items,
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -99,17 +99,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .Select(u => new { u.Id, u.UserName, u.Email })
                     .ToListAsync();
 
-                var viewModel = new AdminEVoucherIndexViewModel
-                {
-                    EVouchers = result.Items,
-                    Users = users,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+            var viewModel = new AdminEVoucherIndexViewModel
+            {
+                EVouchers = result.Items,
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -129,11 +129,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .ToListAsync();
 
                 var viewModel = new GrantPointsModel
-                {
-                    Users = users
-                };
+            {
+                Users = users
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -185,12 +185,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .ToListAsync();
 
                 var viewModel = new GrantCouponsModel
-                {
-                    Users = users,
-                    CouponTypes = couponTypes
-                };
+            {
+                Users = users,
+                CouponTypes = couponTypes
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -250,12 +250,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .ToListAsync();
 
                 var viewModel = new GrantEVouchersModel
-                {
-                    Users = users,
-                    EVoucherTypes = eVoucherTypes
-                };
+            {
+                Users = users,
+                EVoucherTypes = eVoucherTypes
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -313,17 +313,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     .Select(u => new { u.Id, u.UserName, u.Email })
                     .ToListAsync();
 
-                var viewModel = new AdminWalletHistoryViewModel
-                {
+            var viewModel = new AdminWalletHistoryViewModel
+            {
                     WalletHistory = result.Items,
-                    Users = users,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+                Users = users,
+                Query = query,
+                TotalCount = result.TotalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
 
-                return View(viewModel);
+            return View(viewModel);
             }
             catch (Exception ex)
             {
