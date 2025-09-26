@@ -53,4 +53,71 @@ namespace GameSpace.Areas.MiniGame.Models
         public int TotalExp { get; set; }
         public int SenderID { get; set; }
     }
+
+    // 管理員小遊戲管理相關 ViewModels
+    public class AdminMiniGameManagementViewModel
+    {
+        public List<MiniGame> GameRecords { get; set; } = new();
+        public List<User> Users { get; set; } = new();
+        public MiniGameRecordQueryModel Query { get; set; } = new();
+        public GameStatisticsReadModel Statistics { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+    }
+
+    public class MiniGameRuleManagementViewModel
+    {
+        public GameRuleReadModel CurrentRule { get; set; } = new();
+        public MiniGameRulesUpdateModel UpdateModel { get; set; } = new();
+        public List<GameRule> RuleHistory { get; set; } = new();
+    }
+
+    public class MiniGameSessionViewModel
+    {
+        [Required(ErrorMessage = "請選擇難度")]
+        [Range(1, 5, ErrorMessage = "難度必須在1-5之間")]
+        public int Difficulty { get; set; } = 1;
+        
+        public string SessionId { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public int MaxPlayTime { get; set; }
+        public int RemainingTime { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class MiniGameLeaderboardViewModel
+    {
+        public List<MiniGameLeaderboardEntry> TopPlayers { get; set; } = new();
+        public List<MiniGameLeaderboardEntry> RecentGames { get; set; } = new();
+        public MiniGameLeaderboardEntry? UserRank { get; set; }
+        public int TotalPlayers { get; set; }
+        public int UserRank { get; set; }
+    }
+
+    public class MiniGameLeaderboardEntry
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int TotalGames { get; set; }
+        public int WinCount { get; set; }
+        public double WinRate { get; set; }
+        public int TotalPoints { get; set; }
+        public int TotalExperience { get; set; }
+        public int Rank { get; set; }
+        public DateTime LastPlayed { get; set; }
+    }
+
+    public class MiniGameRewardViewModel
+    {
+        public int GameId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string GameResult { get; set; } = string.Empty;
+        public int PointsEarned { get; set; }
+        public int ExperienceEarned { get; set; }
+        public List<string> BonusRewards { get; set; } = new();
+        public DateTime AwardedDate { get; set; }
+    }
 }
