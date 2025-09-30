@@ -1,26 +1,56 @@
-@model GameSpace.Areas.MiniGame.Models.WalletOverviewViewModel
+@model GameSpace.Areas.MiniGame.Models.MemberWalletDetailViewModel
 @{
-    ViewData["Title"] = "會員錢包管理";
+    ViewData["Title"] = "會員錢包詳情";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
     <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">會員錢包管理</h1>
+        <h1 class="h3 mb-0 text-gray-800">會員錢包詳情</h1>
+        <a href="@Url.Action("Index", "AdminWallet")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
     </div>
 
-    <!-- 統計卡片 -->
-    <div class="row">
+    <!-- 用戶基本信息 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">用戶基本信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>用戶ID:</strong> @Model.UserID
+                        </div>
+                        <div class="col-md-3">
+                            <strong>用戶名稱:</strong> @Model.UserName
+                        </div>
+                        <div class="col-md-3">
+                            <strong>暱稱:</strong> @Model.NickName
+                        </div>
+                        <div class="col-md-3">
+                            <strong>最後活動:</strong> @Model.LastActivity.ToString("yyyy-MM-dd HH:mm")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 錢包統計 -->
+    <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                總點數餘額
+                                當前點數
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalPoints.ToString("N0")</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CurrentPoints.ToString("N0")</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-coins fa-2x text-gray-300"></i>
@@ -36,24 +66,6 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                今日點數異動
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayPointChanges.ToString("N0")</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 活躍優惠券
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ActiveCoupons</div>
@@ -67,11 +79,11 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 活躍電子禮券
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ActiveEVouchers</div>
@@ -83,9 +95,27 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                總優惠券
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalCoupons</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 功能按鈕 -->
+    <!-- 快速操作 -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow">
@@ -110,8 +140,8 @@
                             </button>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <button class="btn btn-warning btn-block" onclick="showSearchModal()">
-                                <i class="fas fa-search"></i> 查詢會員
+                            <button class="btn btn-warning btn-block" onclick="refreshData()">
+                                <i class="fas fa-sync"></i> 刷新數據
                             </button>
                         </div>
                     </div>
@@ -120,43 +150,39 @@
         </div>
     </div>
 
-    <!-- 用戶錢包列表 -->
-    <div class="row">
+    <!-- 錢包異動記錄 -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow mb-4">
+            <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">用戶錢包列表</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">錢包異動記錄</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="userWalletTable" width="100%" cellspacing="0">
+                        <table class="table table-bordered" id="walletHistoryTable" width="100%" cellspacing="0">
                             <thead>
                                 <tr>
-                                    <th>用戶ID</th>
-                                    <th>用戶名稱</th>
-                                    <th>暱稱</th>
-                                    <th>當前點數</th>
-                                    <th>優惠券數量</th>
-                                    <th>電子禮券數量</th>
-                                    <th>最後活動</th>
-                                    <th>操作</th>
+                                    <th>記錄ID</th>
+                                    <th>異動類型</th>
+                                    <th>金額</th>
+                                    <th>物品代碼</th>
+                                    <th>描述</th>
+                                    <th>時間</th>
+                                    <th>狀態</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var wallet in Model.UserWallets)
+                                @foreach (var history in Model.RecentWalletHistory)
                                 {
                                     <tr>
-                                        <td>@wallet.UserId</td>
-                                        <td>@wallet.UserName</td>
-                                        <td>@wallet.NickName</td>
-                                        <td class="text-right">@wallet.CurrentPoints.ToString("N0")</td>
-                                        <td class="text-center">@wallet.TotalCoupons</td>
-                                        <td class="text-center">@wallet.TotalEVouchers</td>
-                                        <td>@wallet.LastActivity.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>@history.LogID</td>
+                                        <td>@history.ChangeType</td>
+                                        <td class="text-right">@history.PointsChanged.ToString("N0")</td>
+                                        <td>@history.ItemCode</td>
+                                        <td>@history.Description</td>
+                                        <td>@history.ChangeTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
                                         <td>
-                                            <button class="btn btn-sm btn-info" onclick="viewMemberDetail(@wallet.UserId)">
-                                                <i class="fas fa-eye"></i> 查看詳情
-                                            </button>
+                                            <span class="badge badge-success">@history.Status</span>
                                         </td>
                                     </tr>
                                 }
@@ -168,42 +194,110 @@
         </div>
     </div>
 
-    <!-- 錢包異動記錄 -->
-    <div class="row">
+    <!-- 優惠券列表 -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow mb-4">
+            <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">最近錢包異動記錄</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">優惠券列表</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="walletHistoryTable" width="100%" cellspacing="0">
+                        <table class="table table-bordered" id="couponTable" width="100%" cellspacing="0">
                             <thead>
                                 <tr>
-                                    <th>記錄ID</th>
-                                    <th>用戶ID</th>
-                                    <th>用戶名稱</th>
-                                    <th>異動類型</th>
-                                    <th>金額</th>
-                                    <th>描述</th>
-                                    <th>時間</th>
+                                    <th>優惠券ID</th>
+                                    <th>優惠券代碼</th>
+                                    <th>類型名稱</th>
+                                    <th>折扣類型</th>
+                                    <th>折扣值</th>
+                                    <th>最低消費</th>
                                     <th>狀態</th>
+                                    <th>獲得時間</th>
+                                    <th>使用時間</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var history in Model.WalletHistory)
+                                @foreach (var coupon in Model.UserCoupons)
                                 {
                                     <tr>
-                                        <td>@history.LogId</td>
-                                        <td>@history.UserId</td>
-                                        <td>@history.UserName</td>
-                                        <td>@history.ChangeType</td>
-                                        <td class="text-right">@history.Amount.ToString("N0")</td>
-                                        <td>@history.Description</td>
-                                        <td>@history.ChangeTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@coupon.CouponID</td>
+                                        <td>@coupon.CouponCode</td>
+                                        <td>@coupon.CouponTypeName</td>
+                                        <td>@coupon.DiscountType</td>
+                                        <td class="text-right">@coupon.DiscountValue.ToString("N0")</td>
+                                        <td class="text-right">@coupon.MinSpend.ToString("N0")</td>
                                         <td>
-                                            <span class="badge badge-success">@history.Status</span>
+                                            @if (coupon.IsUsed)
+                                            {
+                                                <span class="badge badge-secondary">已使用</span>
+                                            }
+                                            else if (coupon.IsExpired)
+                                            {
+                                                <span class="badge badge-danger">已過期</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-success">可用</span>
+                                            }
                                         </td>
+                                        <td>@coupon.AcquiredTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>@(coupon.UsedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 電子禮券列表 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">電子禮券列表</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="evoucherTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>電子禮券ID</th>
+                                    <th>電子禮券代碼</th>
+                                    <th>類型名稱</th>
+                                    <th>面額</th>
+                                    <th>狀態</th>
+                                    <th>獲得時間</th>
+                                    <th>使用時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var evoucher in Model.UserEVouchers)
+                                {
+                                    <tr>
+                                        <td>@evoucher.EVoucherID</td>
+                                        <td>@evoucher.EVoucherCode</td>
+                                        <td>@evoucher.EVoucherTypeName</td>
+                                        <td class="text-right">@evoucher.ValueAmount.ToString("N0")</td>
+                                        <td>
+                                            @if (evoucher.IsUsed)
+                                            {
+                                                <span class="badge badge-secondary">已使用</span>
+                                            }
+                                            else if (evoucher.IsExpired)
+                                            {
+                                                <span class="badge badge-danger">已過期</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-success">可用</span>
+                                            }
+                                        </td>
+                                        <td>@evoucher.AcquiredTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>@(evoucher.UsedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -229,7 +323,7 @@
                 <form id="issuePointsForm">
                     <div class="form-group">
                         <label for="userId">用戶ID</label>
-                        <input type="number" class="form-control" id="userId" name="userId" required>
+                        <input type="number" class="form-control" id="userId" name="userId" value="@Model.UserID" readonly>
                     </div>
                     <div class="form-group">
                         <label for="amount">點數金額</label>
@@ -263,7 +357,7 @@
                 <form id="issueCouponForm">
                     <div class="form-group">
                         <label for="couponUserId">用戶ID</label>
-                        <input type="number" class="form-control" id="couponUserId" name="userId" required>
+                        <input type="number" class="form-control" id="couponUserId" name="userId" value="@Model.UserID" readonly>
                     </div>
                     <div class="form-group">
                         <label for="couponTypeId">優惠券類型</label>
@@ -296,7 +390,7 @@
                 <form id="issueEVoucherForm">
                     <div class="form-group">
                         <label for="evoucherUserId">用戶ID</label>
-                        <input type="number" class="form-control" id="evoucherUserId" name="userId" required>
+                        <input type="number" class="form-control" id="evoucherUserId" name="userId" value="@Model.UserID" readonly>
                     </div>
                     <div class="form-group">
                         <label for="evoucherTypeId">電子禮券類型</label>
@@ -332,10 +426,9 @@
             #issueEVoucherModal.modal('show');
         }
 
-        // 顯示搜尋模態框
-        function showSearchModal() {
-            // 這裡可以實現搜尋功能
-            alert('搜尋功能待實現');
+        // 刷新數據
+        function refreshData() {
+            location.reload();
         }
 
         // 發放點數
@@ -420,27 +513,30 @@
             });
         }
 
-        // 查看會員詳情
-        function viewMemberDetail(userId) {
-            window.location.href = '@Url.Action("MemberWalletDetail", "AdminWallet")' + '/' + userId;
-        }
-
         // 初始化DataTable
         .ready(function() {
-            #userWalletTable.DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-                },
-                "pageLength": 25,
-                "order": [[3, "desc"]]
-            });
-
             #walletHistoryTable.DataTable({
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
                 },
                 "pageLength": 25,
-                "order": [[6, "desc"]]
+                "order": [[5, "desc"]]
+            });
+
+            #couponTable.DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+                },
+                "pageLength": 25,
+                "order": [[7, "desc"]]
+            });
+
+            #evoucherTable.DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+                },
+                "pageLength": 25,
+                "order": [[5, "desc"]]
             });
         });
     </script>

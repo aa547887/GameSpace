@@ -10,19 +10,9 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int User_ID { get; set; }
-        
-        [Required]
-        [StringLength(30)]
         public string User_name { get; set; }
-        
-        [Required]
-        [StringLength(30)]
         public string User_Account { get; set; }
-        
-        [Required]
-        [StringLength(30)]
         public string User_Password { get; set; }
-        
         public bool User_EmailConfirmed { get; set; }
         public bool User_PhoneNumberConfirmed { get; set; }
         public bool User_TwoFactorEnabled { get; set; }
@@ -34,7 +24,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public virtual UserIntroduce UserIntroduce { get; set; }
         public virtual UserRights UserRights { get; set; }
         public virtual UserWallet UserWallet { get; set; }
-        public virtual ICollection<UserSignInStats> UserSignInStats { get; set; }
+        public virtual UserSignInStats UserSignInStats { get; set; }
         public virtual Pet Pet { get; set; }
         public virtual ICollection<MiniGame> MiniGames { get; set; }
         public virtual ICollection<WalletHistory> WalletHistories { get; set; }
@@ -47,36 +37,15 @@ namespace GameSpace.Areas.MiniGame.Models
         [Key]
         [ForeignKey("User")]
         public int User_ID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string User_NickName { get; set; }
-        
-        [Required]
-        [StringLength(1)]
         public string Gender { get; set; }
-        
-        [Required]
-        [StringLength(30)]
         public string IdNumber { get; set; }
-        
-        [Required]
-        [StringLength(30)]
         public string Cellphone { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string Email { get; set; }
-        
-        [Required]
-        [StringLength(100)]
         public string Address { get; set; }
-        
         public DateTime DateOfBirth { get; set; }
         public DateTime Create_Account { get; set; }
         public byte[] User_Picture { get; set; }
-        
-        [StringLength(200)]
         public string User_Introduce { get; set; }
 
         public virtual User User { get; set; }
@@ -110,22 +79,11 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int LogID { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
-        [Required]
-        [StringLength(20)]
         public string ChangeType { get; set; }
-        
         public int PointsChanged { get; set; }
-        
-        [StringLength(50)]
         public string ItemCode { get; set; }
-        
-        [StringLength(200)]
         public string Description { get; set; }
-        
         public DateTime ChangeTime { get; set; }
 
         [ForeignKey("UserID")]
@@ -137,19 +95,12 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int LogID { get; set; }
-        
         public DateTime SignTime { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
         public int PointsGained { get; set; }
         public DateTime PointsGainedTime { get; set; }
         public int ExpGained { get; set; }
         public DateTime ExpGainedTime { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string CouponGained { get; set; }
         public DateTime CouponGainedTime { get; set; }
 
@@ -162,14 +113,8 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int PetID { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string PetName { get; set; }
-        
         public int Level { get; set; }
         public DateTime LevelUpTime { get; set; }
         public int Experience { get; set; }
@@ -178,14 +123,8 @@ namespace GameSpace.Areas.MiniGame.Models
         public int Stamina { get; set; }
         public int Cleanliness { get; set; }
         public int Health { get; set; }
-        
-        [Required]
-        [StringLength(10)]
         public string SkinColor { get; set; }
         public DateTime SkinColorChangedTime { get; set; }
-        
-        [Required]
-        [StringLength(20)]
         public string BackgroundColor { get; set; }
         public DateTime BackgroundColorChangedTime { get; set; }
         public int PointsChanged_SkinColor { get; set; }
@@ -196,7 +135,6 @@ namespace GameSpace.Areas.MiniGame.Models
         [ForeignKey("UserID")]
         public virtual User User { get; set; }
         public virtual ICollection<MiniGame> MiniGames { get; set; }
-        public virtual ICollection<PetAppearanceChangeLog> PetAppearanceChangeLogs { get; set; }
     }
 
     // 小遊戲相關模型
@@ -204,30 +142,16 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int PlayID { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
-        [Required]
         public int PetID { get; set; }
-        
         public int Level { get; set; }
         public int MonsterCount { get; set; }
-        
-        [Column(TypeName = "decimal(5,2)")]
         public decimal SpeedMultiplier { get; set; }
-        
-        [Required]
-        [StringLength(20)]
         public string Result { get; set; }
-        
         public int ExpGained { get; set; }
         public DateTime ExpGainedTime { get; set; }
         public int PointsGained { get; set; }
         public DateTime PointsGainedTime { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string CouponGained { get; set; }
         public DateTime CouponGainedTime { get; set; }
         public int HungerDelta { get; set; }
@@ -249,26 +173,13 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int CouponTypeID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string Name { get; set; }
-        
-        [Required]
-        [StringLength(20)]
         public string DiscountType { get; set; }
-        
-        [Column(TypeName = "decimal(18,2)")]
         public decimal DiscountValue { get; set; }
-        
-        [Column(TypeName = "decimal(18,2)")]
         public decimal MinSpend { get; set; }
-        
         public DateTime ValidFrom { get; set; }
         public DateTime ValidTo { get; set; }
         public int PointsCost { get; set; }
-        
-        [StringLength(600)]
         public string Description { get; set; }
 
         public virtual ICollection<Coupon> Coupons { get; set; }
@@ -278,17 +189,9 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int CouponID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string CouponCode { get; set; }
-        
-        [Required]
         public int CouponTypeID { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
         public bool IsUsed { get; set; }
         public DateTime AcquiredTime { get; set; }
         public DateTime? UsedTime { get; set; }
@@ -305,20 +208,12 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int EVoucherTypeID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string Name { get; set; }
-        
-        [Column(TypeName = "decimal(18,2)")]
         public decimal ValueAmount { get; set; }
-        
         public DateTime ValidFrom { get; set; }
         public DateTime ValidTo { get; set; }
         public int PointsCost { get; set; }
         public int TotalAvailable { get; set; }
-        
-        [StringLength(600)]
         public string Description { get; set; }
 
         public virtual ICollection<EVoucher> EVouchers { get; set; }
@@ -328,74 +223,15 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int EVoucherID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string EVoucherCode { get; set; }
-        
-        [Required]
         public int EVoucherTypeID { get; set; }
-        
-        [Required]
         public int UserID { get; set; }
-        
         public bool IsUsed { get; set; }
         public DateTime AcquiredTime { get; set; }
         public DateTime? UsedTime { get; set; }
 
         [ForeignKey("EVoucherTypeID")]
         public virtual EVoucherType EVoucherType { get; set; }
-        [ForeignKey("UserID")]
-        public virtual User User { get; set; }
-        public virtual ICollection<EVoucherToken> EVoucherTokens { get; set; }
-        public virtual ICollection<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; }
-    }
-
-    // 電子禮券Token模型 (新增)
-    public class EVoucherToken
-    {
-        [Key]
-        public int TokenID { get; set; }
-        
-        [Required]
-        public int EVoucherID { get; set; }
-        
-        [Required]
-        [StringLength(64)]
-        public string Token { get; set; }
-        
-        public DateTime ExpiresAt { get; set; }
-        public bool IsRevoked { get; set; }
-
-        [ForeignKey("EVoucherID")]
-        public virtual EVoucher EVoucher { get; set; }
-        public virtual ICollection<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; }
-    }
-
-    // 電子禮券核銷記錄模型 (新增)
-    public class EVoucherRedeemLog
-    {
-        [Key]
-        public int RedeemID { get; set; }
-        
-        [Required]
-        public int EVoucherID { get; set; }
-        
-        public int? TokenID { get; set; }
-        
-        [Required]
-        public int UserID { get; set; }
-        
-        public DateTime ScannedAt { get; set; }
-        
-        [Required]
-        [StringLength(20)]
-        public string Status { get; set; }
-
-        [ForeignKey("EVoucherID")]
-        public virtual EVoucher EVoucher { get; set; }
-        [ForeignKey("TokenID")]
-        public virtual EVoucherToken EVoucherToken { get; set; }
         [ForeignKey("UserID")]
         public virtual User User { get; set; }
     }
@@ -405,22 +241,11 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int Manager_Id { get; set; }
-        
-        [StringLength(30)]
         public string Manager_Name { get; set; }
-        
-        [StringLength(30)]
         public string Manager_Account { get; set; }
-        
-        [StringLength(200)]
         public string Manager_Password { get; set; }
-        
         public DateTime? Administrator_registration_date { get; set; }
-        
-        [Required]
-        [StringLength(255)]
         public string Manager_Email { get; set; }
-        
         public bool Manager_EmailConfirmed { get; set; }
         public int Manager_AccessFailedCount { get; set; }
         public bool Manager_LockoutEnabled { get; set; }
@@ -433,11 +258,7 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         [Key]
         public int ManagerRole_Id { get; set; }
-        
-        [Required]
-        [StringLength(50)]
         public string role_name { get; set; }
-        
         public bool? AdministratorPrivilegesManagement { get; set; }
         public bool? UserStatusManagement { get; set; }
         public bool? ShoppingPermissionManagement { get; set; }
@@ -461,107 +282,5 @@ namespace GameSpace.Areas.MiniGame.Models
         public virtual ManagerData ManagerData { get; set; }
         [ForeignKey("ManagerRole_Id")]
         public virtual ManagerRolePermission ManagerRolePermission { get; set; }
-    }
-
-    // 業務邏輯相關模型 (新增)
-    
-    // 簽到規則設定模型
-    public class SignInRuleSettings
-    {
-        [Key]
-        public int SettingID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
-        public string SettingName { get; set; }
-        
-        [Required]
-        [StringLength(200)]
-        public string SettingValue { get; set; }
-        
-        [StringLength(500)]
-        public string Description { get; set; }
-        
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public int CreatedByManagerId { get; set; }
-        public int? UpdatedByManagerId { get; set; }
-    }
-
-    // 寵物系統規則設定模型
-    public class PetSystemRuleSettings
-    {
-        [Key]
-        public int SettingID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
-        public string SettingName { get; set; }
-        
-        [Required]
-        [StringLength(200)]
-        public string SettingValue { get; set; }
-        
-        [StringLength(500)]
-        public string Description { get; set; }
-        
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public int CreatedByManagerId { get; set; }
-        public int? UpdatedByManagerId { get; set; }
-    }
-
-    // 小遊戲規則設定模型
-    public class MiniGameRuleSettings
-    {
-        [Key]
-        public int SettingID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
-        public string SettingName { get; set; }
-        
-        [Required]
-        [StringLength(200)]
-        public string SettingValue { get; set; }
-        
-        [StringLength(500)]
-        public string Description { get; set; }
-        
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public int CreatedByManagerId { get; set; }
-        public int? UpdatedByManagerId { get; set; }
-    }
-
-    // 寵物換膚/換背景記錄模型
-    public class PetAppearanceChangeLog
-    {
-        [Key]
-        public int LogID { get; set; }
-        
-        [Required]
-        public int PetID { get; set; }
-        
-        [Required]
-        public int UserID { get; set; }
-        
-        [Required]
-        [StringLength(20)]
-        public string ChangeType { get; set; } // "SkinColor" or "BackgroundColor"
-        
-        [StringLength(50)]
-        public string OldValue { get; set; }
-        
-        [StringLength(50)]
-        public string NewValue { get; set; }
-        
-        public int PointsCost { get; set; }
-        public DateTime ChangeTime { get; set; }
-        
-        [ForeignKey("PetID")]
-        public virtual Pet Pet { get; set; }
-        [ForeignKey("UserID")]
-        public virtual User User { get; set; }
     }
 }

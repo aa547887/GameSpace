@@ -22,9 +22,17 @@ namespace GameSpace.Areas.MiniGame.Models
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<EVoucherType> EVoucherTypes { get; set; }
         public DbSet<EVoucher> EVouchers { get; set; }
+        public DbSet<EVoucherToken> EVoucherTokens { get; set; }
+        public DbSet<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; }
         public DbSet<ManagerData> ManagerData { get; set; }
         public DbSet<ManagerRolePermission> ManagerRolePermissions { get; set; }
         public DbSet<ManagerRole> ManagerRoles { get; set; }
+        
+        // 新增的業務邏輯模型
+        public DbSet<SignInRuleSettings> SignInRuleSettings { get; set; }
+        public DbSet<PetSystemRuleSettings> PetSystemRuleSettings { get; set; }
+        public DbSet<MiniGameRuleSettings> MiniGameRuleSettings { get; set; }
+        public DbSet<PetAppearanceChangeLog> PetAppearanceChangeLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -89,6 +97,32 @@ namespace GameSpace.Areas.MiniGame.Models
                 .WithOne(ev => ev.EVoucherType)
                 .HasForeignKey(ev => ev.EVoucherTypeID);
 
+            // 新增的關係配置
+            modelBuilder.Entity<EVoucher>()
+                .HasMany(ev => ev.EVoucherTokens)
+                .WithOne(evt => evt.EVoucher)
+                .HasForeignKey(evt => evt.EVoucherID);
+
+            modelBuilder.Entity<EVoucher>()
+                .HasMany(ev => ev.EVoucherRedeemLogs)
+                .WithOne(evrl => evrl.EVoucher)
+                .HasForeignKey(evrl => evrl.EVoucherID);
+
+            modelBuilder.Entity<EVoucherToken>()
+                .HasMany(evt => evt.EVoucherRedeemLogs)
+                .WithOne(evrl => evrl.EVoucherToken)
+                .HasForeignKey(evrl => evrl.TokenID);
+
+            modelBuilder.Entity<Pet>()
+                .HasMany(p => p.PetAppearanceChangeLogs)
+                .WithOne(pacl => pacl.Pet)
+                .HasForeignKey(pacl => pacl.PetID);
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.PetAppearanceChangeLogs)
+                .WithOne(pacl => pacl.User)
+                .HasForeignKey(pacl => pacl.UserID);
+
             modelBuilder.Entity<ManagerData>()
                 .HasMany(md => md.ManagerRoles)
                 .WithOne(mr => mr.ManagerData)
@@ -110,6 +144,7 @@ namespace GameSpace.Areas.MiniGame.Models
             modelBuilder.Entity<UserIntroduce>().HasIndex(ui => ui.User_NickName).IsUnique();
             modelBuilder.Entity<Coupon>().HasIndex(c => c.CouponCode).IsUnique();
             modelBuilder.Entity<EVoucher>().HasIndex(ev => ev.EVoucherCode).IsUnique();
+            modelBuilder.Entity<EVoucherToken>().HasIndex(evt => evt.Token).IsUnique();
 
             // Default values (as per schema, some are handled by C# defaults or database defaults)
             modelBuilder.Entity<UserWallet>().Property(uw => uw.User_Point).HasDefaultValue(0);
@@ -121,6 +156,16 @@ namespace GameSpace.Areas.MiniGame.Models
             modelBuilder.Entity<ManagerData>().Property(md => md.Manager_EmailConfirmed).HasDefaultValue(false);
             modelBuilder.Entity<ManagerData>().Property(md => md.Manager_AccessFailedCount).HasDefaultValue(0);
             modelBuilder.Entity<ManagerData>().Property(md => md.Manager_LockoutEnabled).HasDefaultValue(true);
+            
+            // 新增的預設值
+            modelBuilder.Entity<EVoucherToken>().Property(evt => evt.IsRevoked).HasDefaultValue(false);
+            modelBuilder.Entity<PetAppearanceChangeLog>().Property(pacl => pacl.ChangeTime).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<SignInRuleSettings>().Property(sirs => sirs.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<SignInRuleSettings>().Property(sirs => sirs.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<PetSystemRuleSettings>().Property(psrs => psrs.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<PetSystemRuleSettings>().Property(psrs => psrs.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<MiniGameRuleSettings>().Property(mgrs => mgrs.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<MiniGameRuleSettings>().Property(mgrs => mgrs.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
         }
     }
 }

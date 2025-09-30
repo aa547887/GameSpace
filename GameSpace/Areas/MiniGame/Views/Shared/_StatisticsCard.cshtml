@@ -1,0 +1,39 @@
+@model dynamic
+@{
+    var title = ViewBag.Title ?? "統計";
+    var value = ViewBag.Value ?? "0";
+    var icon = ViewBag.Icon ?? "fas fa-chart-bar";
+    var color = ViewBag.Color ?? "primary";
+    var change = ViewBag.Change ?? 0;
+    var changeType = ViewBag.ChangeType ?? "neutral";
+}
+
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-@color shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-@color text-uppercase mb-1">
+                        @title
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        @value
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="@icon fa-2x text-gray-300"></i>
+                </div>
+            </div>
+            @if (change != 0)
+            {
+                <div class="mt-2">
+                    <span class="text-@(changeType == "positive" ? "success" : changeType == "negative" ? "danger" : "info") text-xs">
+                        <i class="fas fa-arrow-@(changeType == "positive" ? "up" : changeType == "negative" ? "down" : "right")"></i>
+                        @Math.Abs(change)%
+                    </span>
+                    <span class="text-gray-600 text-xs">較上期</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,64 @@
+@model dynamic
+@{
+    var tableId = ViewBag.TableId ?? "dataTable";
+    var columns = ViewBag.Columns ?? new List<dynamic>();
+    var dataUrl = ViewBag.DataUrl ?? "";
+    var exportEnabled = ViewBag.ExportEnabled ?? true;
+    var searchEnabled = ViewBag.SearchEnabled ?? true;
+    var pageSize = ViewBag.PageSize ?? 10;
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">@(ViewBag.Title ?? "數據列表")</h6>
+        <div class="btn-group" role="group">
+            @if (exportEnabled)
+            {
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportTable()">
+                    <i class="fas fa-download"></i> 匯出
+                </button>
+            }
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="refreshTable()">
+                <i class="fas fa-sync-alt"></i> 重新整理
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (searchEnabled)
+        {
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="搜尋...">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" onclick="searchTable()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-bordered" id="@tableId" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        @foreach (var column in columns)
+                        {
+                            <th>@column.Title</th>
+                        }
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 數據將通過 JavaScript 動態載入 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // 初始化 DataTable
+    var table = $(

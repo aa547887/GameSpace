@@ -4,6 +4,7 @@ using GameSpace.Areas.MiniGame.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -25,395 +26,309 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 統計數據
             viewModel.TotalSignIns = await _context.UserSignInStats.CountAsync();
             viewModel.TodaySignIns = await _context.UserSignInStats
-                .Where(s => s.LastSignInTime.Date == DateTime.Today)
+                .Where(s => s.LastSignInDate.Date == DateTime.Today)
                 .CountAsync();
-            viewModel.WeeklySignIns = await _context.UserSignInStats
-                .Where(s => s.LastSignInTime >= DateTime.Today.AddDays(-7))
+            viewModel.ConsecutiveSignIns = await _context.UserSignInStats
+                .Where(s => s.ConsecutiveDays > 0)
                 .CountAsync();
-            viewModel.MonthlySignIns = await _context.UserSignInStats
-                .Where(s => s.LastSignInTime >= DateTime.Today.AddDays(-30))
-                .CountAsync();
-
-            // 連續簽到統計
-            viewModel.AverageConsecutiveDays = await _context.UserSignInStats
-                .AverageAsync(s => s.ConsecutiveDays);
             viewModel.MaxConsecutiveDays = await _context.UserSignInStats
-                .MaxAsync(s => s.ConsecutiveDays);
-            viewModel.TotalConsecutiveDays = await _context.UserSignInStats
-                .SumAsync(s => s.ConsecutiveDays);
+                .MaxAsync(s => (int?)s.ConsecutiveDays) ?? 0;
 
-            // 簽到統計
-            viewModel.SignInStats = await _context.UserSignInStats
-                .Include(s => s.User)
-                .Include(s => s.User.UserIntroduce)
-                .OrderByDescending(s => s.ConsecutiveDays)
-                .ThenByDescending(s => s.LastSignInTime)
-                .Select(s => new SignInStatsViewModel
+            // 簽到規則設定
+            viewModel.SignInRuleSettings = await _context.SignInRuleSettings
+                .OrderBy(s => s.SettingID)
+                .Select(s => new SignInRuleSettingsViewModel
                 {
-                    UserId = s.UserID,
-                    UserName = s.User.User_name,
-                    NickName = s.UserIntroduce.User_NickName,
-                    ConsecutiveDays = s.ConsecutiveDays,
-                    TotalSignIns = s.TotalSignIns,
-                    LastSignInTime = s.LastSignInTime,
-                    LastSignInPoints = s.LastSignInPoints,
-                    LastSignInCoupon = s.LastSignInCoupon,
-                    LastSignInEVoucher = s.LastSignInEVoucher,
-                    TotalPointsEarned = s.TotalPointsEarned,
-                    TotalCouponsEarned = s.TotalCouponsEarned,
-                    TotalEVouchersEarned = s.TotalEVouchersEarned
+                    SettingID = s.SettingID,
+                    SettingName = s.SettingName,
+                    SettingValue = s.SettingValue,
+                    Description = s.Description,
+                    CreatedAt = s.CreatedAt,
+                    UpdatedAt = s.UpdatedAt,
+                    CreatedByManagerId = s.CreatedByManagerId,
+                    UpdatedByManagerId = s.UpdatedByManagerId
                 })
                 .ToListAsync();
 
-            // 每日簽到統計
-            viewModel.DailySignInStats = await _context.UserSignInStats
-                .GroupBy(s => s.LastSignInTime.Date)
-                .Select(g => new DailySignInStatsViewModel
+            // 最近簽到記錄
+            viewModel.RecentSignIns = await _context.UserSignInStats
+                .Include(s => s.User)
+                .Where(s => s.LastSignInDate.Date >= DateTime.Today.AddDays(-7))
+                .OrderByDescending(s => s.LastSignInDate)
+                .Take(50)
+                .Select(s => new UserSignInStatsViewModel
                 {
-                    Date = g.Key,
-                    SignInCount = g.Count(),
-                    TotalPointsEarned = g.Sum(s => s.LastSignInPoints),
-                    TotalCouponsEarned = g.Sum(s => s.TotalCouponsEarned),
-                    TotalEVouchersEarned = g.Sum(s => s.TotalEVouchersEarned)
+                    UserID = s.UserID,
+                    UserName = s.User.User_name,
+                    LastSignInDate = s.LastSignInDate,
+                    ConsecutiveDays = s.ConsecutiveDays,
+                    TotalSignInDays = s.TotalSignInDays,
+                    LastRewardType = s.LastRewardType,
+                    LastRewardAmount = s.LastRewardAmount
                 })
-                .OrderByDescending(s => s.Date)
-                .Take(30)
                 .ToListAsync();
 
             return View(viewModel);
         }
 
-        // GET: MiniGame/AdminSignIn/GetSignInOverview
-        [HttpGet]
-        public async Task<IActionResult> GetSignInOverview()
+        // GET: MiniGame/AdminSignIn/SignInRuleSettings
+        public async Task<IActionResult> SignInRuleSettings()
+        {
+            var settings = await _context.SignInRuleSettings
+                .OrderBy(s => s.SettingID)
+                .ToListAsync();
+
+            return View(settings);
+        }
+
+        // POST: MiniGame/AdminSignIn/UpdateSignInRule
+        [HttpPost]
+        public async Task<IActionResult> UpdateSignInRule([FromBody] UpdateSignInRuleRequest request)
         {
             try
             {
-                var data = new
+                var setting = await _context.SignInRuleSettings
+                    .FirstOrDefaultAsync(s => s.SettingID == request.SettingID);
+
+                if (setting == null)
                 {
-                    totalSignIns = await _context.UserSignInStats.CountAsync(),
-                    todaySignIns = await _context.UserSignInStats
-                        .Where(s => s.LastSignInTime.Date == DateTime.Today)
-                        .CountAsync(),
-                    weeklySignIns = await _context.UserSignInStats
-                        .Where(s => s.LastSignInTime >= DateTime.Today.AddDays(-7))
-                        .CountAsync(),
-                    monthlySignIns = await _context.UserSignInStats
-                        .Where(s => s.LastSignInTime >= DateTime.Today.AddDays(-30))
-                        .CountAsync(),
-                    averageConsecutiveDays = await _context.UserSignInStats
-                        .AverageAsync(s => s.ConsecutiveDays),
-                    maxConsecutiveDays = await _context.UserSignInStats
-                        .MaxAsync(s => s.ConsecutiveDays),
-                    totalConsecutiveDays = await _context.UserSignInStats
-                        .SumAsync(s => s.ConsecutiveDays),
-                    signInStats = await _context.UserSignInStats
-                        .Include(s => s.User)
-                        .Include(s => s.User.UserIntroduce)
-                        .OrderByDescending(s => s.ConsecutiveDays)
-                        .ThenByDescending(s => s.LastSignInTime)
-                        .Take(50)
-                        .Select(s => new
-                        {
-                            userId = s.UserID,
-                            userName = s.User.User_name,
-                            nickName = s.UserIntroduce.User_NickName,
-                            consecutiveDays = s.ConsecutiveDays,
-                            totalSignIns = s.TotalSignIns,
-                            lastSignInTime = s.LastSignInTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                            lastSignInPoints = s.LastSignInPoints,
-                            lastSignInCoupon = s.LastSignInCoupon,
-                            lastSignInEVoucher = s.LastSignInEVoucher,
-                            totalPointsEarned = s.TotalPointsEarned,
-                            totalCouponsEarned = s.TotalCouponsEarned,
-                            totalEVouchersEarned = s.TotalEVouchersEarned
-                        })
-                        .ToListAsync(),
-                    dailySignInStats = await _context.UserSignInStats
-                        .GroupBy(s => s.LastSignInTime.Date)
-                        .Select(g => new
-                        {
-                            date = g.Key.ToString("yyyy-MM-dd"),
-                            signInCount = g.Count(),
-                            totalPointsEarned = g.Sum(s => s.LastSignInPoints),
-                            totalCouponsEarned = g.Sum(s => s.TotalCouponsEarned),
-                            totalEVouchersEarned = g.Sum(s => s.TotalEVouchersEarned)
-                        })
-                        .OrderByDescending(s => s.date)
-                        .Take(30)
-                        .ToListAsync()
+                    return Json(new { success = false, message = "設定不存在" });
+                }
+
+                setting.SettingValue = request.SettingValue;
+                setting.Description = request.Description;
+                setting.UpdatedAt = DateTime.UtcNow;
+                setting.UpdatedByManagerId = GetCurrentManagerId();
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "簽到規則更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"更新失敗: {ex.Message}" });
+            }
+        }
+
+        // POST: MiniGame/AdminSignIn/CreateSignInRule
+        [HttpPost]
+        public async Task<IActionResult> CreateSignInRule([FromBody] CreateSignInRuleRequest request)
+        {
+            try
+            {
+                var setting = new SignInRuleSettings
+                {
+                    SettingName = request.SettingName,
+                    SettingValue = request.SettingValue,
+                    Description = request.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    CreatedByManagerId = GetCurrentManagerId()
                 };
 
-                return Json(new { success = true, data = data });
+                _context.SignInRuleSettings.Add(setting);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "簽到規則創建成功" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = $"創建失敗: {ex.Message}" });
             }
         }
 
-        // GET: MiniGame/AdminSignIn/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // GET: MiniGame/AdminSignIn/MemberSignInRecords
+        public async Task<IActionResult> MemberSignInRecords(int? page, string searchTerm)
         {
-            if (id == null)
+            var pageSize = 20;
+            var pageNumber = page ?? 1;
+
+            var query = _context.UserSignInStats
+                .Include(s => s.User)
+                .AsQueryable();
+
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(s => s.User.User_name.Contains(searchTerm) ||
+                                       s.User.User_Account.Contains(searchTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+            var signInRecords = await query
+                .OrderByDescending(s => s.LastSignInDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => new UserSignInStatsViewModel
+                {
+                    UserID = s.UserID,
+                    UserName = s.User.User_name,
+                    UserAccount = s.User.User_Account,
+                    LastSignInDate = s.LastSignInDate,
+                    ConsecutiveDays = s.ConsecutiveDays,
+                    TotalSignInDays = s.TotalSignInDays,
+                    LastRewardType = s.LastRewardType,
+                    LastRewardAmount = s.LastRewardAmount,
+                    LastSignInTime = s.LastSignInDate
+                })
+                .ToListAsync();
+
+            var viewModel = new MemberSignInRecordsViewModel
+            {
+                SignInRecords = signInRecords,
+                CurrentPage = pageNumber,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = totalCount,
+                SearchTerm = searchTerm
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: MiniGame/AdminSignIn/MemberSignInDetail/{userId}
+        public async Task<IActionResult> MemberSignInDetail(int userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.UserSignInStats)
+                .Include(u => u.UserIntroduce)
+                .FirstOrDefaultAsync(u => u.User_ID == userId);
+
+            if (user == null)
             {
                 return NotFound();
             }
 
-            var signInStats = await _context.UserSignInStats
-                .Include(s => s.User)
-                .Include(s => s.User.UserIntroduce)
-                .Include(s => s.User.UserWallet)
-                .FirstOrDefaultAsync(m => m.UserID == id);
-
+            var signInStats = user.UserSignInStats?.FirstOrDefault();
             if (signInStats == null)
             {
-                return NotFound();
+                return NotFound("用戶簽到統計不存在");
             }
 
-            return View(signInStats);
+            var viewModel = new MemberSignInDetailViewModel
+            {
+                UserID = user.User_ID,
+                UserName = user.User_name,
+                UserAccount = user.User_Account,
+                NickName = user.UserIntroduce?.User_NickName ?? "",
+                LastSignInDate = signInStats.LastSignInDate,
+                ConsecutiveDays = signInStats.ConsecutiveDays,
+                TotalSignInDays = signInStats.TotalSignInDays,
+                LastRewardType = signInStats.LastRewardType,
+                LastRewardAmount = signInStats.LastRewardAmount,
+                SignInHistory = await GetSignInHistory(userId)
+            };
+
+            return View(viewModel);
         }
 
-        // POST: MiniGame/AdminSignIn/ManualSignIn
-        [HttpPost]
-        public async Task<IActionResult> ManualSignIn(int userId)
+        // GET: MiniGame/AdminSignIn/SignInStatistics
+        public async Task<IActionResult> SignInStatistics()
         {
-            try
-            {
-                var user = await _context.Users
-                    .Include(u => u.UserWallet)
-                    .Include(u => u.UserSignInStats)
-                    .FirstOrDefaultAsync(u => u.User_ID == userId);
+            var viewModel = new SignInStatisticsViewModel();
 
-                if (user == null)
+            // 每日簽到統計
+            viewModel.DailySignInStats = await _context.UserSignInStats
+                .Where(s => s.LastSignInDate.Date >= DateTime.Today.AddDays(-30))
+                .GroupBy(s => s.LastSignInDate.Date)
+                .Select(g => new DailySignInStatViewModel
                 {
-                    return Json(new { success = false, message = "找不到用戶" });
-                }
+                    Date = g.Key,
+                    SignInCount = g.Count(),
+                    NewUsers = g.Count(s => s.TotalSignInDays == 1),
+                    ReturningUsers = g.Count(s => s.TotalSignInDays > 1)
+                })
+                .OrderBy(s => s.Date)
+                .ToListAsync();
 
-                var signInStats = user.UserSignInStats.FirstOrDefault();
-                if (signInStats == null)
+            // 連續簽到統計
+            viewModel.ConsecutiveSignInStats = await _context.UserSignInStats
+                .Where(s => s.ConsecutiveDays > 0)
+                .GroupBy(s => s.ConsecutiveDays)
+                .Select(g => new ConsecutiveSignInStatViewModel
                 {
-                    // 創建新的簽到統計記錄
-                    signInStats = new UserSignInStats
-                    {
-                        UserID = userId,
-                        ConsecutiveDays = 1,
-                        TotalSignIns = 1,
-                        LastSignInTime = DateTime.Now,
-                        LastSignInPoints = 10,
-                        LastSignInCoupon = "0",
-                        LastSignInEVoucher = "0",
-                        TotalPointsEarned = 10,
-                        TotalCouponsEarned = 0,
-                        TotalEVouchersEarned = 0
-                    };
+                    ConsecutiveDays = g.Key,
+                    UserCount = g.Count()
+                })
+                .OrderByDescending(s => s.ConsecutiveDays)
+                .ToListAsync();
 
-                    _context.UserSignInStats.Add(signInStats);
-                }
-                else
+            // 獎勵統計
+            viewModel.RewardStats = await _context.UserSignInStats
+                .Where(s => !string.IsNullOrEmpty(s.LastRewardType))
+                .GroupBy(s => s.LastRewardType)
+                .Select(g => new RewardStatViewModel
                 {
-                    // 檢查是否已經簽到
-                    if (signInStats.LastSignInTime.Date == DateTime.Today)
-                    {
-                        return Json(new { success = false, message = "用戶今天已經簽到過了" });
-                    }
+                    RewardType = g.Key,
+                    TotalAmount = g.Sum(s => s.LastRewardAmount ?? 0),
+                    UserCount = g.Count()
+                })
+                .ToListAsync();
 
-                    // 檢查連續簽到
-                    if (signInStats.LastSignInTime.Date == DateTime.Today.AddDays(-1))
-                    {
-                        signInStats.ConsecutiveDays++;
-                    }
-                    else
-                    {
-                        signInStats.ConsecutiveDays = 1;
-                    }
-
-                    // 計算獎勵
-                    var pointsReward = CalculateSignInPoints(signInStats.ConsecutiveDays);
-                    var couponReward = CalculateSignInCoupon(signInStats.ConsecutiveDays);
-                    var eVoucherReward = CalculateSignInEVoucher(signInStats.ConsecutiveDays);
-
-                    // 更新簽到統計
-                    signInStats.TotalSignIns++;
-                    signInStats.LastSignInTime = DateTime.Now;
-                    signInStats.LastSignInPoints = pointsReward;
-                    signInStats.LastSignInCoupon = couponReward;
-                    signInStats.LastSignInEVoucher = eVoucherReward;
-                    signInStats.TotalPointsEarned += pointsReward;
-                    signInStats.TotalCouponsEarned += couponReward != "0" ? 1 : 0;
-                    signInStats.TotalEVouchersEarned += eVoucherReward != "0" ? 1 : 0;
-
-                    // 更新用戶點數
-                    user.UserWallet.User_Point += pointsReward;
-
-                    // 記錄錢包異動
-                    var walletHistory = new WalletHistory
-                    {
-                        UserID = userId,
-                        ChangeType = "每日簽到獎勵",
-                        PointsChanged = pointsReward,
-                        Description = $"連續簽到 {signInStats.ConsecutiveDays} 天獎勵",
-                        ChangeTime = DateTime.Now
-                    };
-
-                    _context.WalletHistories.Add(walletHistory);
-
-                    // 處理優惠券獎勵
-                    if (couponReward != "0")
-                    {
-                        var couponType = await _context.CouponTypes
-                            .FirstOrDefaultAsync(ct => ct.Name.Contains(couponReward));
-
-                        if (couponType != null)
-                        {
-                            var coupon = new Coupon
-                            {
-                                CouponCode = GenerateCouponCode(),
-                                CouponTypeID = couponType.CouponTypeID,
-                                UserID = userId,
-                                IsUsed = false,
-                                AcquiredTime = DateTime.Now
-                            };
-
-                            _context.Coupons.Add(coupon);
-                        }
-                    }
-
-                    // 處理電子券獎勵
-                    if (eVoucherReward != "0")
-                    {
-                        var eVoucherType = await _context.EVoucherTypes
-                            .FirstOrDefaultAsync(evt => evt.Name.Contains(eVoucherReward));
-
-                        if (eVoucherType != null)
-                        {
-                            var eVoucher = new EVoucher
-                            {
-                                EVoucherCode = GenerateEVoucherCode(),
-                                EVoucherTypeID = eVoucherType.EVoucherTypeID,
-                                UserID = userId,
-                                IsUsed = false,
-                                AcquiredTime = DateTime.Now
-                            };
-
-                            _context.EVouchers.Add(eVoucher);
-                        }
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-
-                return Json(new { 
-                    success = true, 
-                    message = "手動簽到成功",
-                    consecutiveDays = signInStats.ConsecutiveDays,
-                    pointsReward = signInStats.LastSignInPoints,
-                    couponReward = signInStats.LastSignInCoupon,
-                    eVoucherReward = signInStats.LastSignInEVoucher
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            return View(viewModel);
         }
 
-        // POST: MiniGame/AdminSignIn/ResetSignInStats
+        // POST: MiniGame/AdminSignIn/ResetUserSignIn
         [HttpPost]
-        public async Task<IActionResult> ResetSignInStats(int userId)
+        public async Task<IActionResult> ResetUserSignIn([FromBody] ResetUserSignInRequest request)
         {
             try
             {
                 var signInStats = await _context.UserSignInStats
-                    .FirstOrDefaultAsync(s => s.UserID == userId);
+                    .FirstOrDefaultAsync(s => s.UserID == request.UserId);
 
                 if (signInStats == null)
                 {
-                    return Json(new { success = false, message = "找不到簽到統計記錄" });
+                    return Json(new { success = false, message = "用戶簽到統計不存在" });
                 }
 
-                // 重置簽到統計
                 signInStats.ConsecutiveDays = 0;
-                signInStats.TotalSignIns = 0;
-                signInStats.LastSignInTime = DateTime.MinValue;
-                signInStats.LastSignInPoints = 0;
-                signInStats.LastSignInCoupon = "0";
-                signInStats.LastSignInEVoucher = "0";
-                signInStats.TotalPointsEarned = 0;
-                signInStats.TotalCouponsEarned = 0;
-                signInStats.TotalEVouchersEarned = 0;
+                signInStats.LastSignInDate = DateTime.MinValue;
+                signInStats.LastRewardType = null;
+                signInStats.LastRewardAmount = null;
 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "簽到統計已重置" });
+                return Json(new { success = true, message = "用戶簽到記錄已重置" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = $"重置失敗: {ex.Message}" });
             }
         }
 
-        // POST: MiniGame/AdminSignIn/AdjustConsecutiveDays
-        [HttpPost]
-        public async Task<IActionResult> AdjustConsecutiveDays(int userId, int consecutiveDays)
+        // 輔助方法
+        private async Task<List<SignInHistoryViewModel>> GetSignInHistory(int userId)
         {
-            try
-            {
-                var signInStats = await _context.UserSignInStats
-                    .FirstOrDefaultAsync(s => s.UserID == userId);
-
-                if (signInStats == null)
-                {
-                    return Json(new { success = false, message = "找不到簽到統計記錄" });
-                }
-
-                signInStats.ConsecutiveDays = Math.Max(0, consecutiveDays);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "連續簽到天數已調整" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            // 這裡可以根據實際需求實現簽到歷史記錄
+            // 目前返回空列表，實際應用中可能需要從日誌表或其他地方獲取
+            return new List<SignInHistoryViewModel>();
         }
 
-        private int CalculateSignInPoints(int consecutiveDays)
+        private int GetCurrentManagerId()
         {
-            // 基礎點數 + 連續簽到獎勵
-            var basePoints = 10;
-            var bonusPoints = consecutiveDays * 2;
-            return Math.Min(basePoints + bonusPoints, 100); // 最高100點
+            // 這裡應該從當前登入的管理員中獲取ID
+            // 實際應用中需要從Claims或Session中獲取
+            return 1; // 暫時返回1，實際應用中需要修改
         }
+    }
 
-        private string CalculateSignInCoupon(int consecutiveDays)
-        {
-            // 每7天給一次優惠券
-            if (consecutiveDays % 7 == 0 && consecutiveDays > 0)
-            {
-                return "7天簽到優惠券";
-            }
-            return "0";
-        }
+    // 請求模型
+    public class UpdateSignInRuleRequest
+    {
+        public int SettingID { get; set; }
+        public string SettingValue { get; set; }
+        public string Description { get; set; }
+    }
 
-        private string CalculateSignInEVoucher(int consecutiveDays)
-        {
-            // 每30天給一次電子券
-            if (consecutiveDays % 30 == 0 && consecutiveDays > 0)
-            {
-                return "30天簽到電子券";
-            }
-            return "0";
-        }
+    public class CreateSignInRuleRequest
+    {
+        public string SettingName { get; set; }
+        public string SettingValue { get; set; }
+        public string Description { get; set; }
+    }
 
-        private string GenerateCouponCode()
-        {
-            return "COUPON" + DateTime.Now.Ticks.ToString().Substring(10);
-        }
-
-        private string GenerateEVoucherCode()
-        {
-            return "EVOUCHER" + DateTime.Now.Ticks.ToString().Substring(10);
-        }
+    public class ResetUserSignInRequest
+    {
+        public int UserId { get; set; }
     }
 }
