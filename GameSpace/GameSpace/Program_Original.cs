@@ -23,9 +23,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-// ---- MiniGame Area 相關服務 ----
-using GameSpace.Areas.MiniGame.Data;
-
 // ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
@@ -52,10 +49,6 @@ builder.Configuration.GetConnectionString("GameSpace")
 // ========== 2) DbContexts ==========
 builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
 builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
-
-// MiniGame Area DbContext 註冊
-builder.Services.AddDbContext<GameSpace.Areas.MiniGame.Data.ApplicationDbContext>(opt => opt.UseSqlServer(gameSpaceConn));
-
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ========== 3) Identity ==========
@@ -185,7 +178,7 @@ options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
 options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
 options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
 options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
-// MiniGame Area 權限政策
+// MiniGame Area 權限
 options.AddPolicy("CanMiniGameAdmin", p => p.RequireClaim("perm:MiniGame", "true"));
 });
 
