@@ -1,0 +1,209 @@
+@{
+    ViewData["Title"] = "會員個別寵物設定";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">會員個別寵物設定</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">寵物設定</h6>
+                </div>
+                <div class="card-body">
+                    <form id="petSettingsForm">
+                        <div class="form-group">
+                            <label for="userId">會員ID</label>
+                            <input type="number" class="form-control" id="userId" required>
+                            <button type="button" class="btn btn-sm btn-info mt-2" id="loadPetBtn">
+                                <i class="fas fa-search"></i> 載入寵物資料
+                            </button>
+                        </div>
+                        <div id="petData" style="display: none;">
+                            <input type="hidden" id="petId">
+                            <div class="form-group">
+                                <label for="petName">寵物名稱</label>
+                                <input type="text" class="form-control" id="petName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petSkin">寵物膚色</label>
+                                <input type="text" class="form-control" id="petSkin" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petBackground">寵物背景</label>
+                                <input type="text" class="form-control" id="petBackground" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petExp">寵物經驗</label>
+                                <input type="number" class="form-control" id="petExp" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petLevel">寵物等級</label>
+                                <input type="number" class="form-control" id="petLevel" min="1" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="hunger">飢餓度</label>
+                                        <input type="number" class="form-control" id="hunger" min="0" max="100" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="happiness">快樂度</label>
+                                        <input type="number" class="form-control" id="happiness" min="0" max="100" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="health">健康度</label>
+                                        <input type="number" class="form-control" id="health" min="0" max="100" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="energy">精力</label>
+                                        <input type="number" class="form-control" id="energy" min="0" max="100" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="cleanliness">清潔度</label>
+                                <input type="number" class="form-control" id="cleanliness" min="0" max="100" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 儲存設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">寵物狀態</h6>
+                </div>
+                <div class="card-body">
+                    <div id="petStatus">
+                        <p class="text-muted">請先載入寵物資料</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        .ready(function() {
+            #loadPetBtn.click(function() {
+                var userId = #userId.val();
+                if (!userId) {
+                    alert('請輸入會員ID');
+                    return;
+                }
+                loadPetData(userId);
+            });
+
+            #petSettingsForm.submit(function(e) {
+                e.preventDefault();
+                
+                var petId = #petId.val();
+                var petName = #petName.val();
+                var petSkin = #petSkin.val();
+                var petBackground = #petBackground.val();
+                var petExp = #petExp.val();
+                var petLevel = #petLevel.val();
+                var hunger = #hunger.val();
+                var happiness = #happiness.val();
+                var health = #health.val();
+                var energy = #energy.val();
+                var cleanliness = #cleanliness.val();
+                
+                if (!petId || !petName || !petSkin || !petBackground) {
+                    alert('請填寫所有必要欄位');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '@Url.Action("UpdateIndividualMemberPetSettings", "AdminPet")',
+                    type: 'POST',
+                    data: {
+                        petId: petId,
+                        petName: petName,
+                        petSkin: petSkin,
+                        petBackground: petBackground,
+                        petExp: petExp,
+                        petLevel: petLevel,
+                        hunger: hunger,
+                        happiness: happiness,
+                        health: health,
+                        energy: energy,
+                        cleanliness: cleanliness
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('寵物設定更新成功！');
+                            loadPetData(#userId.val());
+                        } else {
+                            alert('更新失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('更新寵物設定時發生錯誤');
+                    }
+                });
+            });
+
+            function loadPetData(userId) {
+                $.ajax({
+                    url: '@Url.Action("GetIndividualMemberPetSettings", "AdminPet")',
+                    type: 'GET',
+                    data: { userId: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            var pet = response.data;
+                            #petId.val(pet.petID);
+                            #petName.val(pet.petName);
+                            #petSkin.val(pet.petSkin);
+                            #petBackground.val(pet.petBackground);
+                            #petExp.val(pet.petExp);
+                            #petLevel.val(pet.petLevel);
+                            #hunger.val(pet.hunger);
+                            #happiness.val(pet.happiness);
+                            #health.val(pet.health);
+                            #energy.val(pet.energy);
+                            #cleanliness.val(pet.cleanliness);
+                            
+                            #petData.show();
+                            
+                            // 更新寵物狀態顯示
+                            var statusHtml = '<div class="row">' +
+                                '<div class="col-6"><strong>寵物名稱:</strong></div><div class="col-6">' + pet.petName + '</div>' +
+                                '<div class="col-6"><strong>等級:</strong></div><div class="col-6">' + pet.petLevel + '</div>' +
+                                '<div class="col-6"><strong>經驗:</strong></div><div class="col-6">' + pet.petExp + '</div>' +
+                                '<div class="col-6"><strong>膚色:</strong></div><div class="col-6">' + pet.petSkin + '</div>' +
+                                '<div class="col-6"><strong>背景:</strong></div><div class="col-6">' + pet.petBackground + '</div>' +
+                            '</div>';
+                            #petStatus.html(statusHtml);
+                        } else {
+                            alert('載入寵物資料失敗：' + response.message);
+                            #petData.hide();
+                        }
+                    },
+                    error: function() {
+                        alert('載入寵物資料時發生錯誤');
+                        #petData.hide();
+                    }
+                });
+            }
+        });
+    </script>
+}

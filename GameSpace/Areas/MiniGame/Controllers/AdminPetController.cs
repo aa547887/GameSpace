@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Data;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,83 +19,48 @@ namespace GameSpace.Areas.MiniGame.Controllers
             _context = context;
         }
 
-        // GET: MiniGame/AdminPet
-        public async Task<IActionResult> Index()
-        {
-            var viewModel = new PetOverviewViewModel();
-
-            // 統計數據
-            viewModel.TotalPets = await _context.Pets.CountAsync();
-            viewModel.ActivePets = await _context.Pets
-                .Where(p => p.Pet_Status == "Active")
-                .CountAsync();
-            viewModel.MaxLevelPets = await _context.Pets
-                .Where(p => p.Pet_Level >= 10)
-                .CountAsync();
-            viewModel.TotalAppearanceChanges = await _context.PetAppearanceChangeLogs.CountAsync();
-
-            // 寵物等級分布
-            viewModel.LevelDistribution = await _context.Pets
-                .GroupBy(p => p.Pet_Level)
-                .Select(g => new PetLevelDistributionViewModel
-                {
-                    Level = g.Key,
-                    Count = g.Count()
-                })
-                .OrderBy(d => d.Level)
-                .ToListAsync();
-
-            // 最近創建的寵物
-            viewModel.RecentPets = await _context.Pets
-                .Include(p => p.User)
-                .OrderByDescending(p => p.Pet_CreatedAt)
-                .Take(20)
-                .Select(p => new PetViewModel
-                {
-                    PetID = p.PetID,
-                    UserID = p.UserID,
-                    UserName = p.User.User_name,
-                    Pet_Name = p.Pet_Name,
-                    Pet_Level = p.Pet_Level,
-                    Pet_Exp = p.Pet_Exp,
-                    Pet_Status = p.Pet_Status,
-                    Pet_Skin = p.Pet_Skin,
-                    Pet_Background = p.Pet_Background,
-                    Pet_CreatedAt = p.Pet_CreatedAt
-                })
-                .ToListAsync();
-
-            return View(viewModel);
-        }
-
         // GET: MiniGame/AdminPet/PetSystemRuleSettings
-        public async Task<IActionResult> PetSystemRuleSettings()
+        public IActionResult PetSystemRuleSettings()
         {
-            var settings = await _context.PetSystemRuleSettings
-                .OrderBy(s => s.SettingID)
-                .ToListAsync();
-
-            return View(settings);
+            return View();
         }
 
-        // POST: MiniGame/AdminPet/UpdatePetSystemRule
+        // AJAX endpoint for pet system rule settings
+        [HttpGet]
+        public async Task<IActionResult> GetPetSystemRuleSettings()
+        {
+            try
+            {
+                var settings = await _context.PetSystemRuleSettings
+                    .OrderBy(s => s.SettingName)
+                    .ToListAsync();
+
+                return Json(new { success = true, data = settings });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: MiniGame/AdminPet/UpdatePetSystemRuleSettings
         [HttpPost]
-        public async Task<IActionResult> UpdatePetSystemRule([FromBody] UpdatePetSystemRuleRequest request)
+        public async Task<IActionResult> UpdatePetSystemRuleSettings(int settingId, string settingValue, string description)
         {
             try
             {
                 var setting = await _context.PetSystemRuleSettings
-                    .FirstOrDefaultAsync(s => s.SettingID == request.SettingID);
+                    .FirstOrDefaultAsync(s => s.SettingID == settingId);
 
                 if (setting == null)
                 {
-                    return Json(new { success = false, message = "設定不存在" });
+                    return Json(new { success = false, message = "找不到該設定" });
                 }
 
-                setting.SettingValue = request.SettingValue;
-                setting.Description = request.Description;
-                setting.UpdatedAt = DateTime.UtcNow;
-                setting.UpdatedByManagerId = GetCurrentManagerId();
+                setting.SettingValue = settingValue;
+                setting.Description = description;
+                setting.UpdatedAt = DateTime.Now;
+                setting.UpdatedByManagerId = 1; // TODO: 從認證中獲取管理員ID
 
                 await _context.SaveChangesAsync();
 
@@ -102,368 +68,199 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"更新失敗: {ex.Message}" });
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // POST: MiniGame/AdminPet/CreatePetSystemRule
-        [HttpPost]
-        public async Task<IActionResult> CreatePetSystemRule([FromBody] CreatePetSystemRuleRequest request)
+        // GET: MiniGame/AdminPet/IndividualMemberPetSettings
+        public IActionResult IndividualMemberPetSettings()
         {
-            try
-            {
-                var setting = new PetSystemRuleSettings
-                {
-                    SettingName = request.SettingName,
-                    SettingValue = request.SettingValue,
-                    Description = request.Description,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    CreatedByManagerId = GetCurrentManagerId()
-                };
-
-                _context.PetSystemRuleSettings.Add(setting);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "寵物系統規則創建成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"創建失敗: {ex.Message}" });
-            }
+            return View();
         }
 
-        // GET: MiniGame/AdminPet/MemberPetSettings
-        public async Task<IActionResult> MemberPetSettings(int? page, string searchTerm)
-        {
-            var pageSize = 20;
-            var pageNumber = page ?? 1;
-
-            var query = _context.Pets
-                .Include(p => p.User)
-                .AsQueryable();
-
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                query = query.Where(p => p.User.User_name.Contains(searchTerm) ||
-                                       p.User.User_Account.Contains(searchTerm) ||
-                                       p.Pet_Name.Contains(searchTerm));
-            }
-
-            var totalCount = await query.CountAsync();
-            var pets = await query
-                .OrderByDescending(p => p.Pet_CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PetViewModel
-                {
-                    PetID = p.PetID,
-                    UserID = p.UserID,
-                    UserName = p.User.User_name,
-                    UserAccount = p.User.User_Account,
-                    Pet_Name = p.Pet_Name,
-                    Pet_Level = p.Pet_Level,
-                    Pet_Exp = p.Pet_Exp,
-                    Pet_Status = p.Pet_Status,
-                    Pet_Skin = p.Pet_Skin,
-                    Pet_Background = p.Pet_Background,
-                    Pet_CreatedAt = p.Pet_CreatedAt,
-                    Pet_Hunger = p.Pet_Hunger,
-                    Pet_Happiness = p.Pet_Happiness,
-                    Pet_Health = p.Pet_Health,
-                    Pet_Sleepiness = p.Pet_Sleepiness,
-                    Pet_Cleanliness = p.Pet_Cleanliness
-                })
-                .ToListAsync();
-
-            var viewModel = new MemberPetSettingsViewModel
-            {
-                Pets = pets,
-                CurrentPage = pageNumber,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SearchTerm = searchTerm
-            };
-
-            return View(viewModel);
-        }
-
-        // GET: MiniGame/AdminPet/MemberPetDetail/{petId}
-        public async Task<IActionResult> MemberPetDetail(int petId)
-        {
-            var pet = await _context.Pets
-                .Include(p => p.User)
-                .Include(p => p.User.UserIntroduce)
-                .Include(p => p.PetAppearanceChangeLogs)
-                .FirstOrDefaultAsync(p => p.PetID == petId);
-
-            if (pet == null)
-            {
-                return NotFound();
-            }
-
-            var viewModel = new MemberPetDetailViewModel
-            {
-                PetID = pet.PetID,
-                UserID = pet.UserID,
-                UserName = pet.User.User_name,
-                UserAccount = pet.User.User_Account,
-                NickName = pet.User.UserIntroduce?.User_NickName ?? "",
-                Pet_Name = pet.Pet_Name,
-                Pet_Level = pet.Pet_Level,
-                Pet_Exp = pet.Pet_Exp,
-                Pet_Status = pet.Pet_Status,
-                Pet_Skin = pet.Pet_Skin,
-                Pet_Background = pet.Pet_Background,
-                Pet_CreatedAt = pet.Pet_CreatedAt,
-                Pet_Hunger = pet.Pet_Hunger,
-                Pet_Happiness = pet.Pet_Happiness,
-                Pet_Health = pet.Pet_Health,
-                Pet_Sleepiness = pet.Pet_Sleepiness,
-                Pet_Cleanliness = pet.Pet_Cleanliness,
-                AppearanceChangeLogs = pet.PetAppearanceChangeLogs?
-                    .OrderByDescending(log => log.ChangeTime)
-                    .Select(log => new PetAppearanceChangeLogViewModel
-                    {
-                        LogID = log.LogID,
-                        PetID = log.PetID,
-                        ChangeType = log.ChangeType,
-                        OldValue = log.OldValue,
-                        NewValue = log.NewValue,
-                        ChangeTime = log.ChangeTime,
-                        Cost = log.Cost
-                    })
-                    .ToList() ?? new List<PetAppearanceChangeLogViewModel>()
-            };
-
-            return View(viewModel);
-        }
-
-        // POST: MiniGame/AdminPet/UpdatePetSettings
-        [HttpPost]
-        public async Task<IActionResult> UpdatePetSettings([FromBody] UpdatePetSettingsRequest request)
+        // AJAX endpoint for individual member pet settings
+        [HttpGet]
+        public async Task<IActionResult> GetIndividualMemberPetSettings(int userId)
         {
             try
             {
                 var pet = await _context.Pets
-                    .FirstOrDefaultAsync(p => p.PetID == request.PetID);
+                    .Include(p => p.User)
+                    .FirstOrDefaultAsync(p => p.User_ID == userId);
 
                 if (pet == null)
                 {
-                    return Json(new { success = false, message = "寵物不存在" });
+                    return Json(new { success = false, message = "該會員沒有寵物" });
                 }
 
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
+                var petData = new
                 {
-                    // 記錄變更
-                    var hasChanges = false;
-                    var changeLogs = new List<PetAppearanceChangeLog>();
+                    pet.PetID,
+                    pet.User_ID,
+                    pet.User.User_name,
+                    pet.User.User_Account,
+                    pet.PetName,
+                    pet.PetSkin,
+                    pet.PetBackground,
+                    pet.PetExp,
+                    pet.PetLevel,
+                    pet.Hunger,
+                    pet.Happiness,
+                    pet.Health,
+                    pet.Energy,
+                    pet.Cleanliness,
+                    pet.CreatedAt,
+                    pet.UpdatedAt
+                };
 
-                    if (pet.Pet_Name != request.Pet_Name)
-                    {
-                        changeLogs.Add(new PetAppearanceChangeLog
-                        {
-                            PetID = pet.PetID,
-                            ChangeType = "Name",
-                            OldValue = pet.Pet_Name,
-                            NewValue = request.Pet_Name,
-                            ChangeTime = DateTime.UtcNow,
-                            Cost = 0
-                        });
-                        pet.Pet_Name = request.Pet_Name;
-                        hasChanges = true;
-                    }
-
-                    if (pet.Pet_Skin != request.Pet_Skin)
-                    {
-                        changeLogs.Add(new PetAppearanceChangeLog
-                        {
-                            PetID = pet.PetID,
-                            ChangeType = "Skin",
-                            OldValue = pet.Pet_Skin,
-                            NewValue = request.Pet_Skin,
-                            ChangeTime = DateTime.UtcNow,
-                            Cost = 0 // 管理員調整不扣點數
-                        });
-                        pet.Pet_Skin = request.Pet_Skin;
-                        hasChanges = true;
-                    }
-
-                    if (pet.Pet_Background != request.Pet_Background)
-                    {
-                        changeLogs.Add(new PetAppearanceChangeLog
-                        {
-                            PetID = pet.PetID,
-                            ChangeType = "Background",
-                            OldValue = pet.Pet_Background,
-                            NewValue = request.Pet_Background,
-                            ChangeTime = DateTime.UtcNow,
-                            Cost = 0 // 管理員調整不扣點數
-                        });
-                        pet.Pet_Background = request.Pet_Background;
-                        hasChanges = true;
-                    }
-
-                    if (hasChanges)
-                    {
-                        _context.PetAppearanceChangeLogs.AddRange(changeLogs);
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    return Json(new { success = true, message = "寵物設定更新成功" });
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                return Json(new { success = true, data = petData });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"更新失敗: {ex.Message}" });
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // GET: MiniGame/AdminPet/PetAppearanceChangeLogs
-        public async Task<IActionResult> PetAppearanceChangeLogs(int? page, string searchTerm, string changeType)
+        // POST: MiniGame/AdminPet/UpdateIndividualMemberPetSettings
+        [HttpPost]
+        public async Task<IActionResult> UpdateIndividualMemberPetSettings(int petId, string petName, string petSkin, string petBackground, int petExp, int petLevel, int hunger, int happiness, int health, int energy, int cleanliness)
         {
-            var pageSize = 20;
-            var pageNumber = page ?? 1;
+            try
+            {
+                var pet = await _context.Pets
+                    .FirstOrDefaultAsync(p => p.PetID == petId);
 
-            var query = _context.PetAppearanceChangeLogs
-                .Include(log => log.Pet)
+                if (pet == null)
+                {
+                    return Json(new { success = false, message = "找不到該寵物" });
+                }
+
+                pet.PetName = petName;
+                pet.PetSkin = petSkin;
+                pet.PetBackground = petBackground;
+                pet.PetExp = petExp;
+                pet.PetLevel = petLevel;
+                pet.Hunger = hunger;
+                pet.Happiness = happiness;
+                pet.Health = health;
+                pet.Energy = energy;
+                pet.Cleanliness = cleanliness;
+                pet.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物設定更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: MiniGame/AdminPet/MemberIndividualPetList
+        public IActionResult MemberIndividualPetList()
+        {
+            return View();
+        }
+
+        // AJAX endpoint for member individual pet list
+        [HttpGet]
+        public async Task<IActionResult> GetMemberIndividualPetList(string searchTerm = "")
+        {
+            try
+            {
+                var query = _context.Pets
+                    .Include(p => p.User)
+                    .AsQueryable();
+
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    query = query.Where(p => 
+                        p.User.User_name.Contains(searchTerm) || 
+                        p.User.User_Account.Contains(searchTerm) ||
+                        p.PetName.Contains(searchTerm));
+                }
+
+                var pets = await query
+                    .Select(p => new
+                    {
+                        p.PetID,
+                        p.User_ID,
+                        p.User.User_name,
+                        p.User.User_Account,
+                        p.PetName,
+                        p.PetSkin,
+                        p.PetBackground,
+                        p.PetExp,
+                        p.PetLevel,
+                        p.Hunger,
+                        p.Happiness,
+                        p.Health,
+                        p.Energy,
+                        p.Cleanliness,
+                        p.CreatedAt,
+                        p.UpdatedAt
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, data = pets });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: MiniGame/AdminPet/PetAppearanceChangeRecords
+        public IActionResult PetAppearanceChangeRecords()
+        {
+            return View();
+        }
+
+        // AJAX endpoint for pet appearance change records
+        [HttpGet]
+        public async Task<IActionResult> GetPetAppearanceChangeRecords(int? petId = null, string changeType = "")
+        {
+            try
+            {
+                var query = _context.PetAppearanceChangeLogs
+                    .Include(pacl => pacl.Pet)
                     .ThenInclude(p => p.User)
-                .AsQueryable();
+                    .AsQueryable();
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                query = query.Where(log => log.Pet.User.User_name.Contains(searchTerm) ||
-                                          log.Pet.User.User_Account.Contains(searchTerm) ||
-                                          log.Pet.Pet_Name.Contains(searchTerm));
+                if (petId.HasValue)
+                {
+                    query = query.Where(pacl => pacl.PetID == petId.Value);
+                }
+
+                if (!string.IsNullOrEmpty(changeType))
+                {
+                    query = query.Where(pacl => pacl.ChangeType == changeType);
+                }
+
+                var records = await query
+                    .OrderByDescending(pacl => pacl.ChangeDate)
+                    .Select(pacl => new
+                    {
+                        pacl.LogID,
+                        pacl.PetID,
+                        pacl.Pet.User.User_name,
+                        pacl.Pet.User.User_Account,
+                        pacl.Pet.PetName,
+                        pacl.ChangeType,
+                        pacl.OldValue,
+                        pacl.NewValue,
+                        pacl.PointsCost,
+                        pacl.ChangeDate
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, data = records });
             }
-
-            // 變更類型篩選
-            if (!string.IsNullOrEmpty(changeType))
+            catch (Exception ex)
             {
-                query = query.Where(log => log.ChangeType == changeType);
+                return Json(new { success = false, message = ex.Message });
             }
-
-            var totalCount = await query.CountAsync();
-            var logs = await query
-                .OrderByDescending(log => log.ChangeTime)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(log => new PetAppearanceChangeLogViewModel
-                {
-                    LogID = log.LogID,
-                    PetID = log.PetID,
-                    PetName = log.Pet.Pet_Name,
-                    UserID = log.Pet.UserID,
-                    UserName = log.Pet.User.User_name,
-                    ChangeType = log.ChangeType,
-                    OldValue = log.OldValue,
-                    NewValue = log.NewValue,
-                    ChangeTime = log.ChangeTime,
-                    Cost = log.Cost
-                })
-                .ToListAsync();
-
-            var viewModel = new PetAppearanceChangeLogsViewModel
-            {
-                ChangeLogs = logs,
-                CurrentPage = pageNumber,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SearchTerm = searchTerm,
-                ChangeType = changeType
-            };
-
-            return View(viewModel);
         }
-
-        // GET: MiniGame/AdminPet/PetStatistics
-        public async Task<IActionResult> PetStatistics()
-        {
-            var viewModel = new PetStatisticsViewModel();
-
-            // 寵物狀態統計
-            viewModel.StatusStats = await _context.Pets
-                .GroupBy(p => p.Pet_Status)
-                .Select(g => new PetStatusStatViewModel
-                {
-                    Status = g.Key,
-                    Count = g.Count()
-                })
-                .ToListAsync();
-
-            // 膚色統計
-            viewModel.SkinStats = await _context.Pets
-                .GroupBy(p => p.Pet_Skin)
-                .Select(g => new PetSkinStatViewModel
-                {
-                    Skin = g.Key,
-                    Count = g.Count()
-                })
-                .ToListAsync();
-
-            // 背景統計
-            viewModel.BackgroundStats = await _context.Pets
-                .GroupBy(p => p.Pet_Background)
-                .Select(g => new PetBackgroundStatViewModel
-                {
-                    Background = g.Key,
-                    Count = g.Count()
-                })
-                .ToListAsync();
-
-            // 變更記錄統計
-            viewModel.ChangeLogStats = await _context.PetAppearanceChangeLogs
-                .GroupBy(log => log.ChangeType)
-                .Select(g => new PetChangeLogStatViewModel
-                {
-                    ChangeType = g.Key,
-                    Count = g.Count(),
-                    TotalCost = g.Sum(log => log.Cost)
-                })
-                .ToListAsync();
-
-            return View(viewModel);
-        }
-
-        // 輔助方法
-        private int GetCurrentManagerId()
-        {
-            // 這裡應該從當前登入的管理員中獲取ID
-            // 實際應用中需要從Claims或Session中獲取
-            return 1; // 暫時返回1，實際應用中需要修改
-        }
-    }
-
-    // 請求模型
-    public class UpdatePetSystemRuleRequest
-    {
-        public int SettingID { get; set; }
-        public string SettingValue { get; set; }
-        public string Description { get; set; }
-    }
-
-    public class CreatePetSystemRuleRequest
-    {
-        public string SettingName { get; set; }
-        public string SettingValue { get; set; }
-        public string Description { get; set; }
-    }
-
-    public class UpdatePetSettingsRequest
-    {
-        public int PetID { get; set; }
-        public string Pet_Name { get; set; }
-        public string Pet_Skin { get; set; }
-        public string Pet_Background { get; set; }
     }
 }

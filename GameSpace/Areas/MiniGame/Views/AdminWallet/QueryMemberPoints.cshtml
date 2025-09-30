@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "查詢會員點數";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">查詢會員點數</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">會員點數查詢</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="refreshData">
+                            <i class="fas fa-sync-alt"></i> 重新整理
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="exportData">
+                            <i class="fas fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchTerm" placeholder="搜尋會員名稱或帳號...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" id="searchBtn">
+                                        <i class="fas fa-search"></i> 搜尋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="memberPointsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th>會員帳號</th>
+                                    <th>點數餘額</th>
+                                    <th>創建時間</th>
+                                    <th>最後更新</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 載入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        .ready(function() {
+            loadMemberPoints();
+
+            #searchBtn.click(function() {
+                loadMemberPoints();
+            });
+
+            #searchTerm.keypress(function(e) {
+                if (e.which == 13) {
+                    loadMemberPoints();
+                }
+            });
+
+            #refreshData.click(function() {
+                loadMemberPoints();
+            });
+
+            function loadMemberPoints() {
+                var searchTerm = #searchTerm.val();
+                
+                $.ajax({
+                    url: '@Url.Action("GetMemberPoints", "AdminWallet")',
+                    type: 'GET',
+                    data: { searchTerm: searchTerm },
+                    success: function(response) {
+                        if (response.success) {
+                            var tbody = #memberPointsTable tbody;
+                            tbody.empty();
+                            
+                            if (response.data.length > 0) {
+                                response.data.forEach(function(item) {
+                                    var row = '<tr>' +
+                                        '<td>' + item.user_ID + '</td>' +
+                                        '<td>' + item.user_name + '</td>' +
+                                        '<td>' + item.user_Account + '</td>' +
+                                        '<td><span class="badge badge-success">' + item.points + '</span></td>' +
+                                        '<td>' + new Date(item.createdAt).toLocaleString() + '</td>' +
+                                        '<td>' + new Date(item.updatedAt).toLocaleString() + '</td>' +
+                                        '<td>' +
+                                            '<button class="btn btn-sm btn-info" onclick="viewMemberDetail(' + item.user_ID + ')">' +
+                                                '<i class="fas fa-eye"></i> 查看詳情' +
+                                            '</button>' +
+                                        '</td>' +
+                                    '</tr>';
+                                    tbody.append(row);
+                                });
+                            } else {
+                                tbody.append('<tr><td colspan="7" class="text-center">沒有找到相關資料</td></tr>');
+                            }
+                        } else {
+                            alert('載入資料失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('載入資料時發生錯誤');
+                    }
+                });
+            }
+
+            window.viewMemberDetail = function(userId) {
+                // 這裡可以添加查看會員詳情的功能
+                alert('查看會員 ' + userId + ' 的詳情');
+            };
+        });
+    </script>
+}

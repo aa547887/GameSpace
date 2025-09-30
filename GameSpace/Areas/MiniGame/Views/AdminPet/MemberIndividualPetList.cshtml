@@ -1,0 +1,155 @@
+@{
+    ViewData["Title"] = "會員個別寵物清單";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">會員個別寵物清單</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">寵物清單查詢</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="refreshData">
+                            <i class="fas fa-sync-alt"></i> 重新整理
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="exportData">
+                            <i class="fas fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchTerm" placeholder="搜尋會員名稱、帳號或寵物名稱...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" id="searchBtn">
+                                        <i class="fas fa-search"></i> 搜尋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="petListTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>寵物ID</th>
+                                    <th>會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th>會員帳號</th>
+                                    <th>寵物名稱</th>
+                                    <th>膚色</th>
+                                    <th>背景</th>
+                                    <th>經驗</th>
+                                    <th>等級</th>
+                                    <th>飢餓度</th>
+                                    <th>快樂度</th>
+                                    <th>健康度</th>
+                                    <th>精力</th>
+                                    <th>清潔度</th>
+                                    <th>創建時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 載入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        .ready(function() {
+            loadPetList();
+
+            #searchBtn.click(function() {
+                loadPetList();
+            });
+
+            #searchTerm.keypress(function(e) {
+                if (e.which == 13) {
+                    loadPetList();
+                }
+            });
+
+            #refreshData.click(function() {
+                loadPetList();
+            });
+
+            function loadPetList() {
+                var searchTerm = #searchTerm.val();
+                
+                $.ajax({
+                    url: '@Url.Action("GetMemberIndividualPetList", "AdminPet")',
+                    type: 'GET',
+                    data: { searchTerm: searchTerm },
+                    success: function(response) {
+                        if (response.success) {
+                            var tbody = #petListTable tbody;
+                            tbody.empty();
+                            
+                            if (response.data.length > 0) {
+                                response.data.forEach(function(item) {
+                                    var row = '<tr>' +
+                                        '<td>' + item.petID + '</td>' +
+                                        '<td>' + item.user_ID + '</td>' +
+                                        '<td>' + item.user_name + '</td>' +
+                                        '<td>' + item.user_Account + '</td>' +
+                                        '<td>' + item.petName + '</td>' +
+                                        '<td><span class="badge badge-info">' + item.petSkin + '</span></td>' +
+                                        '<td><span class="badge badge-secondary">' + item.petBackground + '</span></td>' +
+                                        '<td>' + item.petExp + '</td>' +
+                                        '<td><span class="badge badge-success">' + item.petLevel + '</span></td>' +
+                                        '<td>' + item.hunger + '</td>' +
+                                        '<td>' + item.happiness + '</td>' +
+                                        '<td>' + item.health + '</td>' +
+                                        '<td>' + item.energy + '</td>' +
+                                        '<td>' + item.cleanliness + '</td>' +
+                                        '<td>' + new Date(item.createdAt).toLocaleString() + '</td>' +
+                                        '<td>' +
+                                            '<button class="btn btn-sm btn-info" onclick="viewPetDetail(' + item.petID + ')">' +
+                                                '<i class="fas fa-eye"></i> 查看' +
+                                            '</button>' +
+                                            '<button class="btn btn-sm btn-warning" onclick="editPet(' + item.petID + ')">' +
+                                                '<i class="fas fa-edit"></i> 編輯' +
+                                            '</button>' +
+                                        '</td>' +
+                                    '</tr>';
+                                    tbody.append(row);
+                                });
+                            } else {
+                                tbody.append('<tr><td colspan="16" class="text-center">沒有找到相關資料</td></tr>');
+                            }
+                        } else {
+                            alert('載入資料失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('載入資料時發生錯誤');
+                    }
+                });
+            }
+
+            window.viewPetDetail = function(petId) {
+                // 這裡可以添加查看寵物詳情的功能
+                alert('查看寵物 ' + petId + ' 的詳情');
+            };
+
+            window.editPet = function(petId) {
+                // 這裡可以添加編輯寵物的功能
+                alert('編輯寵物 ' + petId);
+            };
+        });
+    </script>
+}

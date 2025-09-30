@@ -1,39 +1,51 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
+using System;
 
-namespace GameSpace.Data
+namespace GameSpace.Areas.MiniGame.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
-        // MiniGame Area Entities
+        // 使用者相關
         public DbSet<User> Users { get; set; }
         public DbSet<UserIntroduce> UserIntroduces { get; set; }
         public DbSet<UserRights> UserRights { get; set; }
         public DbSet<UserWallet> UserWallets { get; set; }
-        public DbSet<WalletHistory> WalletHistories { get; set; }
         public DbSet<UserSignInStats> UserSignInStats { get; set; }
+
+        // 寵物相關
         public DbSet<Pet> Pets { get; set; }
+        public DbSet<PetAppearanceChangeLog> PetAppearanceChangeLogs { get; set; }
+
+        // 小遊戲相關
         public DbSet<MiniGame> MiniGames { get; set; }
+
+        // 錢包歷史
+        public DbSet<WalletHistory> WalletHistories { get; set; }
+
+        // 優惠券相關
         public DbSet<Coupon> Coupons { get; set; }
+
+        // 電子禮券相關
         public DbSet<EVoucher> EVouchers { get; set; }
         public DbSet<EVoucherToken> EVoucherTokens { get; set; }
         public DbSet<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; }
+
+        // 系統設定
         public DbSet<SignInRuleSettings> SignInRuleSettings { get; set; }
         public DbSet<PetSystemRuleSettings> PetSystemRuleSettings { get; set; }
         public DbSet<MiniGameRuleSettings> MiniGameRuleSettings { get; set; }
-        public DbSet<PetAppearanceChangeLog> PetAppearanceChangeLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // User relationships
+            // User 關係設定
             modelBuilder.Entity<User>()
                 .HasOne(u => u.UserIntroduce)
                 .WithOne(ui => ui.User)
@@ -79,13 +91,13 @@ namespace GameSpace.Data
                 .WithOne(ev => ev.User)
                 .HasForeignKey(ev => ev.User_ID);
 
-            // Pet relationships
+            // Pet 關係設定
             modelBuilder.Entity<Pet>()
                 .HasMany(p => p.PetAppearanceChangeLogs)
                 .WithOne(pacl => pacl.Pet)
                 .HasForeignKey(pacl => pacl.PetID);
 
-            // EVoucher relationships
+            // EVoucher 關係設定
             modelBuilder.Entity<EVoucher>()
                 .HasMany(ev => ev.EVoucherTokens)
                 .WithOne(evt => evt.EVoucher)
@@ -101,23 +113,47 @@ namespace GameSpace.Data
                 .WithOne(evrl => evrl.EVoucherToken)
                 .HasForeignKey(evrl => evrl.TokenID);
 
-            // Configure table names to match database schema
-            modelBuilder.Entity<User>().ToTable("Users");
-            modelBuilder.Entity<UserIntroduce>().ToTable("UserIntroduces");
-            modelBuilder.Entity<UserRights>().ToTable("UserRights");
-            modelBuilder.Entity<UserWallet>().ToTable("UserWallets");
-            modelBuilder.Entity<WalletHistory>().ToTable("WalletHistories");
-            modelBuilder.Entity<UserSignInStats>().ToTable("UserSignInStats");
-            modelBuilder.Entity<Pet>().ToTable("Pets");
-            modelBuilder.Entity<MiniGame>().ToTable("MiniGames");
-            modelBuilder.Entity<Coupon>().ToTable("Coupons");
-            modelBuilder.Entity<EVoucher>().ToTable("EVouchers");
-            modelBuilder.Entity<EVoucherToken>().ToTable("EVoucherTokens");
-            modelBuilder.Entity<EVoucherRedeemLog>().ToTable("EVoucherRedeemLogs");
-            modelBuilder.Entity<SignInRuleSettings>().ToTable("SignInRuleSettings");
-            modelBuilder.Entity<PetSystemRuleSettings>().ToTable("PetSystemRuleSettings");
-            modelBuilder.Entity<MiniGameRuleSettings>().ToTable("MiniGameRuleSettings");
-            modelBuilder.Entity<PetAppearanceChangeLog>().ToTable("PetAppearanceChangeLogs");
+            // 設定索引
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.User_Account)
+                .IsUnique();
+
+            modelBuilder.Entity<EVoucherToken>()
+                .HasIndex(evt => evt.Token)
+                .IsUnique();
+
+            // 設定預設值
+            modelBuilder.Entity<UserWallet>()
+                .Property(uw => uw.Points)
+                .HasDefaultValue(0);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.PetExp)
+                .HasDefaultValue(0);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.PetLevel)
+                .HasDefaultValue(1);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.Hunger)
+                .HasDefaultValue(50);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.Happiness)
+                .HasDefaultValue(50);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.Health)
+                .HasDefaultValue(50);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.Energy)
+                .HasDefaultValue(50);
+
+            modelBuilder.Entity<Pet>()
+                .Property(p => p.Cleanliness)
+                .HasDefaultValue(50);
         }
     }
 }

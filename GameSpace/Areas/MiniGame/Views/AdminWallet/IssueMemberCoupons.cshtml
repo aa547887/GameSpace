@@ -1,0 +1,121 @@
+@{
+    ViewData["Title"] = "發放會員優惠券";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">發放會員優惠券</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">發放優惠券</h6>
+                </div>
+                <div class="card-body">
+                    <form id="issueCouponForm">
+                        <div class="form-group">
+                            <label for="userId">會員ID</label>
+                            <input type="number" class="form-control" id="userId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="couponName">優惠券名稱</label>
+                            <input type="text" class="form-control" id="couponName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="discountAmount">折扣金額</label>
+                            <input type="number" class="form-control" id="discountAmount" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="discountPercentage">折扣百分比</label>
+                            <input type="number" class="form-control" id="discountPercentage" step="0.01" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="minimumPurchaseAmount">最低消費金額</label>
+                            <input type="number" class="form-control" id="minimumPurchaseAmount" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="expiryDate">到期日期</label>
+                            <input type="date" class="form-control" id="expiryDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reason">發放原因</label>
+                            <textarea class="form-control" id="reason" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-ticket-alt"></i> 發放優惠券
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">發放記錄</h6>
+                </div>
+                <div class="card-body">
+                    <div id="issueHistory">
+                        <!-- 發放記錄將在這裡顯示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        .ready(function() {
+            #issueCouponForm.submit(function(e) {
+                e.preventDefault();
+                
+                var userId = #userId.val();
+                var couponName = #couponName.val();
+                var discountAmount = #discountAmount.val() || null;
+                var discountPercentage = #discountPercentage.val() || null;
+                var minimumPurchaseAmount = #minimumPurchaseAmount.val() || null;
+                var expiryDate = #expiryDate.val();
+                var reason = #reason.val();
+                
+                if (!userId || !couponName || !expiryDate || !reason) {
+                    alert('請填寫所有必要欄位');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '@Url.Action("IssueMemberCoupons", "AdminWallet")',
+                    type: 'POST',
+                    data: {
+                        userId: userId,
+                        couponName: couponName,
+                        discountAmount: discountAmount,
+                        discountPercentage: discountPercentage,
+                        minimumPurchaseAmount: minimumPurchaseAmount,
+                        expiryDate: expiryDate,
+                        reason: reason
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('優惠券發放成功！');
+                            #issueCouponForm[0].reset();
+                            loadIssueHistory();
+                        } else {
+                            alert('發放失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('發放優惠券時發生錯誤');
+                    }
+                });
+            });
+            
+            function loadIssueHistory() {
+                // 這裡可以添加載入發放記錄的功能
+                #issueHistory.html('<p class="text-muted">發放記錄載入中...</p>');
+            }
+        });
+    </script>
+}

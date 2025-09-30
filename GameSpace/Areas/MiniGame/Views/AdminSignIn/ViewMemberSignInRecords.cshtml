@@ -1,0 +1,145 @@
+@{
+    ViewData["Title"] = "查看會員簽到紀錄";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">查看會員簽到紀錄</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">會員簽到紀錄查詢</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="refreshData">
+                            <i class="fas fa-sync-alt"></i> 重新整理
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="exportData">
+                            <i class="fas fa-download"></i> 匯出
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchTerm" placeholder="搜尋會員名稱或帳號...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" id="searchBtn">
+                                        <i class="fas fa-search"></i> 搜尋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="startDate" placeholder="開始日期">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="endDate" placeholder="結束日期">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-info" type="button" id="filterBtn">
+                                <i class="fas fa-filter"></i> 篩選
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="signInRecordsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>簽到ID</th>
+                                    <th>會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th>會員帳號</th>
+                                    <th>簽到日期</th>
+                                    <th>獲得點數</th>
+                                    <th>獲得寵物經驗</th>
+                                    <th>獲得優惠券</th>
+                                    <th>創建時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 數據將通過 AJAX 載入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        .ready(function() {
+            loadSignInRecords();
+
+            #searchBtn.click(function() {
+                loadSignInRecords();
+            });
+
+            #filterBtn.click(function() {
+                loadSignInRecords();
+            });
+
+            #searchTerm.keypress(function(e) {
+                if (e.which == 13) {
+                    loadSignInRecords();
+                }
+            });
+
+            #refreshData.click(function() {
+                loadSignInRecords();
+            });
+
+            function loadSignInRecords() {
+                var searchTerm = #searchTerm.val();
+                var startDate = #startDate.val();
+                var endDate = #endDate.val();
+                
+                $.ajax({
+                    url: '@Url.Action("GetMemberSignInRecords", "AdminSignIn")',
+                    type: 'GET',
+                    data: {
+                        searchTerm: searchTerm,
+                        startDate: startDate,
+                        endDate: endDate
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var tbody = #signInRecordsTable tbody;
+                            tbody.empty();
+                            
+                            if (response.data.length > 0) {
+                                response.data.forEach(function(item) {
+                                    var row = '<tr>' +
+                                        '<td>' + item.signInID + '</td>' +
+                                        '<td>' + item.user_ID + '</td>' +
+                                        '<td>' + item.user_name + '</td>' +
+                                        '<td>' + item.user_Account + '</td>' +
+                                        '<td>' + new Date(item.signInDate).toLocaleDateString() + '</td>' +
+                                        '<td><span class="badge badge-success">' + item.pointsEarned + '</span></td>' +
+                                        '<td><span class="badge badge-info">' + item.petExpEarned + '</span></td>' +
+                                        '<td><span class="badge badge-warning">' + item.couponEarned + '</span></td>' +
+                                        '<td>' + new Date(item.createdAt).toLocaleString() + '</td>' +
+                                    '</tr>';
+                                    tbody.append(row);
+                                });
+                            } else {
+                                tbody.append('<tr><td colspan="9" class="text-center">沒有找到相關資料</td></tr>');
+                            }
+                        } else {
+                            alert('載入資料失敗：' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('載入資料時發生錯誤');
+                    }
+                });
+            }
+        });
+    </script>
+}
