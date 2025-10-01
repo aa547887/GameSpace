@@ -6,8 +6,8 @@
 
 #### 1.1 寵物換色/換背景所需點數設定
 - [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) (ID: P1-1.1-01, Commit: 941bc7e)
-- [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) (ID: P1-1.1-02, Commit: 待提交)
-- [ ] 建立點數設定管理介面 (ID: P1-1.1-03)
+- [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) (ID: P1-1.1-02, Commit: 254a866)
+- [x] 建立點數設定管理介面 (ID: P1-1.1-03) (ID: P1-1.1-03, Commit: 待提交)
 - [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
 
 #### 1.2 寵物顏色/背景選項管理
@@ -131,3 +131,17 @@
 **對應 URL/Route**：/MiniGame/PetBackgroundPointSetting
 **涉及的資料表/欄位/索引/檢核**：PetBackgroundPointSettings 表，包含 PetLevel、RequiredPoints、IsEnabled 等欄位
 **測試檔案清單**：PetBackgroundPointSettingService.cs, PetBackgroundPointSettingController.cs
+
+### P1-1.1-03: 建立點數設定管理介面
+**完成紀要**：
+- 建立 PointSettingManagementViewModels 統一管理 ViewModel
+- 建立 PointSettingManagementController 統一管理控制器
+- 建立 Index、Statistics、BatchOperation Views
+- 整合寵物換色和換背景點數設定的統一管理介面
+- 提供統計資料、批量操作、搜尋篩選功能
+- 完成完整的統一管理功能
+
+**權限名與 Policy 名稱**：PointSettingManagement
+**對應 URL/Route**：/MiniGame/PointSettingManagement
+**涉及的資料表/欄位/索引/檢核**：整合 PetSkinColorPointSettings 和 PetBackgroundPointSettings 表
+**測試檔案清單**：PointSettingManagementController.cs

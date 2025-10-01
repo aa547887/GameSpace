@@ -12,5 +12,12 @@
     "status": "done",
     "commits": ["feat(minigame-admin): [P1-1.1-02] 寵物換背景所需點數設定功能已完成"],
     "updatedAt": "2025-10-01T23:44:52.691Z"
+  },
+  {
+    "id": "P1-1.1-03",
+    "title": "建立點數設定管理介面",
+    "status": "done",
+    "commits": ["feat(minigame-admin): [P1-1.1-03] 點數設定管理介面已完成"],
+    "updatedAt": "2025-10-01T23:51:34.167Z"
   }
 ]
