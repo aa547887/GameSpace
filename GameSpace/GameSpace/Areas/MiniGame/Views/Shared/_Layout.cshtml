@@ -151,13 +151,20 @@
                                 管理員管理
                             </a>
                         </li>
+                                                </li>
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminPet" ? "active" : "")" 
-                               href="@Url.Action("Index", "AdminPet")">
-                                <i class="fas fa-paw me-2"></i>
-                                寵物管理
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PetOptionManagement" ? "active" : "")" 
+                               href="@Url.Action("Index", "PetOptionManagement")">
+                                <i class="fas fa-palette me-2"></i>
+                                選項管理
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminMiniGame" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminMiniGame")">
+                                <i class="fas fa-gamepad me-2"></i>
+                                小遊戲管理
+                            </a>
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminMiniGame" ? "active" : "")" 
                                href="@Url.Action("Index", "AdminMiniGame")">
@@ -339,3 +346,4 @@
     @RenderSection("Scripts", required: false)
 </body>
 </html>
+
