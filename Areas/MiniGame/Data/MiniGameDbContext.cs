@@ -17,6 +17,13 @@ namespace GameSpace.Areas.MiniGame.Data
         public DbSet<PetColorOption> PetColorOptions { get; set; } = null!;
         public DbSet<PetBackgroundOption> PetBackgroundOptions { get; set; } = null!;
 
+        // 寵物升級規則表
+        public DbSet<PetLevelUpRule> PetLevelUpRules { get; set; } = null!;
+        public DbSet<PetLevelExperienceSetting> PetLevelExperienceSettings { get; set; } = null!;
+
+        // 寵物互動狀態增益規則表
+        public DbSet<PetInteractionBonusRule> PetInteractionBonusRules { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -78,6 +85,63 @@ namespace GameSpace.Areas.MiniGame.Data
                 entity.HasIndex(p => p.Name).IsUnique();
                 entity.HasIndex(p => p.BackgroundColorCode).IsUnique();
                 entity.HasIndex(p => new { p.IsActive, p.SortOrder });
+            });
+
+            // 寵物升級規則表的配置
+            modelBuilder.Entity<PetLevelUpRule>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Level).IsRequired();
+                entity.Property(p => p.ExperienceRequired).IsRequired();
+                entity.Property(p => p.PointsReward).IsRequired();
+                entity.Property(p => p.ExpReward).IsRequired();
+                entity.Property(p => p.IsActive).HasDefaultValue(true);
+                entity.Property(p => p.Remarks).HasMaxLength(500);
+                entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // 建立索引
+                entity.HasIndex(p => p.Level).IsUnique();
+                entity.HasIndex(p => p.IsActive);
+            });
+
+            // 寵物等級經驗設定表的配置
+            modelBuilder.Entity<PetLevelExperienceSetting>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Level).IsRequired();
+                entity.Property(p => p.RequiredExperience).IsRequired();
+                entity.Property(p => p.LevelName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.Description).HasMaxLength(200);
+                entity.Property(p => p.IsEnabled).HasDefaultValue(true);
+                entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // 建立索引
+                entity.HasIndex(p => p.Level).IsUnique();
+                entity.HasIndex(p => p.IsEnabled);
+            });
+
+            // 寵物互動狀態增益規則表的配置
+            modelBuilder.Entity<PetInteractionBonusRule>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.InteractionType).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.InteractionName).HasMaxLength(100).IsRequired();
+                entity.Property(p => p.PointsCost).IsRequired();
+                entity.Property(p => p.HappinessGain).IsRequired();
+                entity.Property(p => p.ExpGain).IsRequired();
+                entity.Property(p => p.CooldownMinutes).IsRequired();
+                entity.Property(p => p.IsActive).HasDefaultValue(true);
+                entity.Property(p => p.Description).HasMaxLength(500);
+                entity.Property(p => p.CreatedBy).HasMaxLength(50);
+                entity.Property(p => p.UpdatedBy).HasMaxLength(50);
+                entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                
+                // 建立索引
+                entity.HasIndex(p => p.InteractionType).IsUnique();
+                entity.HasIndex(p => p.IsActive);
             });
         }
     }

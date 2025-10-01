@@ -1,0 +1,229 @@
+@model IEnumerable<GameSpace.Areas.MiniGame.Models.ViewModels.PetInteractionBonusRuleListViewModel>
+@{
+    ViewData["Title"] = "寵物互動狀態增益規則管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">寵物互動狀態增益規則管理</h1>
+        <a asp-action="Create" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> 新增規則
+        </a>
+    </div>
+
+    <!-- 訊息顯示 -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 搜尋表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">搜尋條件</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="InteractionType">互動類型</label>
+                            <input type="text" class="form-control" id="InteractionType" name="InteractionType" 
+                                   value="@ViewBag.SearchModel?.InteractionType" placeholder="請輸入互動類型">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="InteractionName">互動名稱</label>
+                            <input type="text" class="form-control" id="InteractionName" name="InteractionName" 
+                                   value="@ViewBag.SearchModel?.InteractionName" placeholder="請輸入互動名稱">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="IsActive">狀態</label>
+                            <select class="form-control" id="IsActive" name="IsActive">
+                                <option value="">全部</option>
+                                <option value="true" @(ViewBag.SearchModel?.IsActive == true ? "selected" : "")>啟用</option>
+                                <option value="false" @(ViewBag.SearchModel?.IsActive == false ? "selected" : "")>停用</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> 搜尋
+                                </button>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-undo"></i> 重置
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 統計資料 -->
+    @if (ViewBag.Statistics != null)
+    {
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總規則數</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Statistics.TotalCount</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-list fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">啟用規則</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Statistics.ActiveCount</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">平均點數成本</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Statistics.AveragePointsCost</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-coins fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">平均快樂度增益</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Statistics.AverageHappinessGain</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-smile fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- 資料表格 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">互動狀態增益規則列表</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>互動類型</th>
+                            <th>互動名稱</th>
+                            <th>所需點數</th>
+                            <th>快樂度增益</th>
+                            <th>經驗值增益</th>
+                            <th>冷卻時間</th>
+                            <th>狀態</th>
+                            <th>建立時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.InteractionType</td>
+                                    <td>@item.InteractionName</td>
+                                    <td>@item.PointsCost</td>
+                                    <td>@item.HappinessGain</td>
+                                    <td>@item.ExpGain</td>
+                                    <td>@item.CooldownMinutes 分鐘</td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge badge-success">啟用</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">停用</span>
+                                        }
+                                    </td>
+                                    <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                            <button type="submit" class="btn btn-@(item.IsActive ? "secondary" : "success") btn-sm" 
+                                                    onclick="return confirm('確定要切換此規則的狀態嗎？')">
+                                                <i class="fas fa-@(item.IsActive ? "pause" : "play")"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center">沒有找到任何資料</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

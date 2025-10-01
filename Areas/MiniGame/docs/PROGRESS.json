@@ -54,5 +54,33 @@
     "status": "done",
     "commits": ["71f0a87"],
     "updatedAt": "2025-10-02T00:00:00.000Z"
+  },
+  {
+    "id": "P1-1.3-01",
+    "title": "完善寵物升級規則設定",
+    "status": "done",
+    "commits": ["existing"],
+    "updatedAt": "2025-10-02T01:00:00.000Z"
+  },
+  {
+    "id": "P1-1.3-02",
+    "title": "新增等級對應經驗值設定",
+    "status": "done",
+    "commits": ["existing"],
+    "updatedAt": "2025-10-02T01:00:00.000Z"
+  },
+  {
+    "id": "P1-1.3-03",
+    "title": "新增升級獎勵設定",
+    "status": "done",
+    "commits": ["existing"],
+    "updatedAt": "2025-10-02T01:00:00.000Z"
+  },
+  {
+    "id": "P1-1.3-04",
+    "title": "實作升級規則驗證邏輯",
+    "status": "done",
+    "commits": ["existing"],
+    "updatedAt": "2025-10-02T01:00:00.000Z"
   }
 ]

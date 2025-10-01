@@ -25,10 +25,18 @@
 - 測試檔案：尚未建立（待 Phase 6）
 
 #### 1.3 升級規則詳細設定
-- [ ] 完善寵物升級規則設定 (ID: P1-1.3-01)
-- [ ] 新增等級對應經驗值設定 (ID: P1-1.3-02)
-- [ ] 新增升級獎勵設定 (ID: P1-1.3-03)
-- [ ] 實作升級規則驗證邏輯 (ID: P1-1.3-04)
+- [x] 完善寵物升級規則設定 (ID: P1-1.3-01, Commit: existing)
+- [x] 新增等級對應經驗值設定 (ID: P1-1.3-02, Commit: existing)
+- [x] 新增升級獎勵設定 (ID: P1-1.3-03, Commit: existing)
+- [x] 實作升級規則驗證邏輯 (ID: P1-1.3-04, Commit: existing)
+
+**完成紀要 (P1-1.3-01 至 P1-1.3-04)**:
+- 已實作完整的寵物升級規則管理系統，包含 PetLevelUpRule 和 PetLevelExperienceSetting 模型
+- 建立了對應的服務層：PetLevelUpRuleService 和 PetLevelExperienceSettingService
+- 實作了完整的 CRUD 控制器：PetLevelUpRuleController 和 PetLevelExperienceSettingController
+- 建立了完整的管理介面，包含列表、新增、編輯、刪除、詳情頁面
+- 涉及資料表：PetLevelUpRules、PetLevelExperienceSettings
+- 功能包含：等級設定、經驗值對應、升級獎勵、規則驗證邏輯
 
 #### 1.4 互動狀態增益規則設定
 - [ ] 新增互動狀態增益規則設定 (ID: P1-1.4-01)

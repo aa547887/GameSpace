@@ -1,0 +1,114 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetInteractionBonusRuleCreateViewModel
+@{
+    ViewData["Title"] = "新增互動狀態增益規則";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">新增互動狀態增益規則</h1>
+        <a asp-action="Index" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 訊息顯示 -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">規則資訊</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="InteractionType" class="control-label"></label>
+                            <input asp-for="InteractionType" class="form-control" placeholder="例如：feeding, playing, grooming" />
+                            <span asp-validation-for="InteractionType" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="InteractionName" class="control-label"></label>
+                            <input asp-for="InteractionName" class="form-control" placeholder="例如：餵食、玩耍、梳毛" />
+                            <span asp-validation-for="InteractionName" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="PointsCost" class="control-label"></label>
+                            <input asp-for="PointsCost" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="PointsCost" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="HappinessGain" class="control-label"></label>
+                            <input asp-for="HappinessGain" class="form-control" type="number" min="0" max="100" />
+                            <span asp-validation-for="HappinessGain" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="ExpGain" class="control-label"></label>
+                            <input asp-for="ExpGain" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="ExpGain" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="CooldownMinutes" class="control-label"></label>
+                            <input asp-for="CooldownMinutes" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="CooldownMinutes" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Description" class="control-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="請輸入規則描述"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 建立規則
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> 取消
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
