@@ -15,13 +15,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
     {
         private readonly IPetInteractionBonusRuleService _service;
         private readonly ILogger<PetInteractionBonusRuleController> _logger;
+        private readonly IPetInteractionBonusRuleValidationService _validationService;
 
         public PetInteractionBonusRuleController(
             IPetInteractionBonusRuleService service,
-            ILogger<PetInteractionBonusRuleController> logger)
+            ILogger<PetInteractionBonusRuleController> logger,
+            IPetInteractionBonusRuleValidationService validationService)
         {
             _service = service;
             _logger = logger;
+            _validationService = validationService;
         }
 
         /// <summary>
@@ -288,3 +291,5 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+
+

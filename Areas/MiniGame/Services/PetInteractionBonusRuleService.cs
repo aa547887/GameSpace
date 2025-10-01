@@ -12,11 +12,14 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly MiniGameDbContext _context;
         private readonly ILogger<PetInteractionBonusRuleService> _logger;
+        private readonly IPetInteractionBonusRuleValidationService _validationService;
+        private readonly IPetInteractionBonusRuleValidationService _validationService;
 
-        public PetInteractionBonusRuleService(MiniGameDbContext context, ILogger<PetInteractionBonusRuleService> logger)
+        public PetInteractionBonusRuleService(MiniGameDbContext context, ILogger<PetInteractionBonusRuleService> logger, IPetInteractionBonusRuleValidationService validationService)
         {
             _context = context;
             _logger = logger;
+            _validationService = validationService;
         }
 
         public async Task<List<PetInteractionBonusRule>> GetAllAsync()
@@ -328,3 +331,6 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+
+
+
