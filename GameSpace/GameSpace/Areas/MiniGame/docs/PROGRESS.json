@@ -59,7 +59,7 @@
     "id": "P1-1.3-01",
     "title": "完善寵物升級規則設定",
     "status": "done",
-    "commits": ["new"],
+    "commits": ["0062587"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
@@ -75,5 +75,19 @@
     "status": "done",
     "commits": ["76cabcd"],
     "updatedAt": "2025-10-01T17:05:00Z"
+  },
+  {
+    "id": "P1-1.3-04",
+    "title": "實作升級規則驗證邏輯",
+    "status": "done",
+    "commits": ["ea8b2ad"],
+    "updatedAt": "2025-10-01T17:15:00Z"
+  },
+  {
+    "id": "P1-1.4-01",
+    "title": "新增互動狀態增益規則設定",
+    "status": "todo",
+    "commits": [],
+    "updatedAt": "2025-01-15T00:00:00Z"
   }
 ]
