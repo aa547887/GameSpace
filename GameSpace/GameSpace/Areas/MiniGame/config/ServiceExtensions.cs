@@ -21,6 +21,11 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IMiniGameAdminAuthService, MiniGameAdminAuthService>();
             services.AddScoped<IMiniGameAdminGate, MiniGameAdminGate>();
 
+            // 註冊點數設定相關服務
+            services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
+            services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
+            services.AddScoped<IPointsSettingsStatisticsService, PointsSettingsStatisticsService>();
+
             return services;
         }
     }

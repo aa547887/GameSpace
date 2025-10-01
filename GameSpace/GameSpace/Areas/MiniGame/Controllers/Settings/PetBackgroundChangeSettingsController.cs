@@ -1,60 +1,74 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models.Settings;
-using GameSpace.Areas.MiniGame.Data;
-using Microsoft.EntityFrameworkCore;
+using GameSpace.Areas.MiniGame.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Controllers.Settings
 {
+    /// <summary>
+    /// 寵物換背景點數設定控制器
+    /// </summary>
     [Area("MiniGame")]
     [Authorize]
     public class PetBackgroundChangeSettingsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IPetBackgroundChangeSettingsService _settingsService;
         private readonly ILogger<PetBackgroundChangeSettingsController> _logger;
 
-        public PetBackgroundChangeSettingsController(ApplicationDbContext context, ILogger<PetBackgroundChangeSettingsController> logger)
+        public PetBackgroundChangeSettingsController(
+            IPetBackgroundChangeSettingsService settingsService,
+            ILogger<PetBackgroundChangeSettingsController> logger)
         {
-            _context = context;
+            _settingsService = settingsService;
             _logger = logger;
         }
 
-        // GET: MiniGame/Settings/PetBackgroundChangeSettings
+        /// <summary>
+        /// 寵物換背景點數設定列表
+        /// </summary>
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             try
             {
-                var settings = await _context.PetBackgroundChangeSettings
-                    .OrderBy(s => s.Id)
-                    .ToListAsync();
-
-                var viewModels = settings.Select(s => new PetBackgroundChangeSettingsViewModel
+                var settings = await _settingsService.GetAllAsync();
+                var viewModel = new PetBackgroundChangeSettingsIndexViewModel
                 {
-                    Id = s.Id,
-                    BackgroundColor = s.BackgroundColor,
-                    PointsRequired = s.PointsRequired,
-                    IsActive = s.IsActive,
-                    CreatedAt = s.CreatedAt,
-                    UpdatedAt = s.UpdatedAt
-                }).ToList();
+                    Settings = settings.Select(s => new PetBackgroundChangeSettingsViewModel
+                    {
+                        Id = s.Id,
+                        BackgroundName = s.BackgroundName,
+                        RequiredPoints = s.RequiredPoints,
+                        BackgroundCode = s.BackgroundCode,
+                        IsActive = s.IsActive,
+                        CreatedAt = s.CreatedAt,
+                        UpdatedAt = s.UpdatedAt
+                    }).ToList()
+                };
 
-                return View(viewModels);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving pet background change settings");
-                TempData["ErrorMessage"] = "載入寵物換背景點數設定時發生錯誤";
-                return View(new List<PetBackgroundChangeSettingsViewModel>());
+                _logger.LogError(ex, "取得寵物換背景設定列表時發生錯誤");
+                TempData["ErrorMessage"] = "取得設定列表時發生錯誤，請稍後再試";
+                return View(new PetBackgroundChangeSettingsIndexViewModel());
             }
         }
 
-        // GET: MiniGame/Settings/PetBackgroundChangeSettings/Create
+        /// <summary>
+        /// 新增寵物換背景點數設定
+        /// </summary>
+        [HttpGet]
         public IActionResult Create()
         {
             return View(new PetBackgroundChangeSettingsViewModel());
         }
 
-        // POST: MiniGame/Settings/PetBackgroundChangeSettings/Create
+        /// <summary>
+        /// 新增寵物換背景點數設定
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PetBackgroundChangeSettingsViewModel model)
@@ -66,78 +80,67 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
 
             try
             {
-                var setting = new PetBackgroundChangeSettings
+                var settings = new PetBackgroundChangeSettings
                 {
-                    BackgroundColor = model.BackgroundColor,
-                    PointsRequired = model.PointsRequired,
-                    IsActive = model.IsActive,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    BackgroundName = model.BackgroundName,
+                    RequiredPoints = model.RequiredPoints,
+                    BackgroundCode = model.BackgroundCode,
+                    IsActive = model.IsActive
                 };
 
-                _context.PetBackgroundChangeSettings.Add(setting);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Created new pet background change setting: {BackgroundColor}, Points: {PointsRequired}", 
-                    setting.BackgroundColor, setting.PointsRequired);
-
-                TempData["SuccessMessage"] = "寵物換背景點數設定已成功新增";
+                await _settingsService.CreateAsync(settings);
+                TempData["SuccessMessage"] = "成功新增寵物換背景點數設定";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating pet background change setting");
-                ModelState.AddModelError("", "新增寵物換背景點數設定時發生錯誤");
+                _logger.LogError(ex, "新增寵物換背景設定時發生錯誤");
+                TempData["ErrorMessage"] = "新增設定時發生錯誤，請稍後再試";
                 return View(model);
             }
         }
 
-        // GET: MiniGame/Settings/PetBackgroundChangeSettings/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        /// <summary>
+        /// 編輯寵物換背景點數設定
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             try
             {
-                var setting = await _context.PetBackgroundChangeSettings.FindAsync(id);
-                if (setting == null)
+                var settings = await _settingsService.GetByIdAsync(id);
+                if (settings == null)
                 {
-                    return NotFound();
+                    TempData["ErrorMessage"] = "找不到指定的設定";
+                    return RedirectToAction(nameof(Index));
                 }
 
-                var model = new PetBackgroundChangeSettingsViewModel
+                var viewModel = new PetBackgroundChangeSettingsViewModel
                 {
-                    Id = setting.Id,
-                    BackgroundColor = setting.BackgroundColor,
-                    PointsRequired = setting.PointsRequired,
-                    IsActive = setting.IsActive,
-                    CreatedAt = setting.CreatedAt,
-                    UpdatedAt = setting.UpdatedAt
+                    Id = settings.Id,
+                    BackgroundName = settings.BackgroundName,
+                    RequiredPoints = settings.RequiredPoints,
+                    BackgroundCode = settings.BackgroundCode,
+                    IsActive = settings.IsActive
                 };
 
-                return View(model);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving pet background change setting for edit: {Id}", id);
-                TempData["ErrorMessage"] = "載入寵物換背景點數設定時發生錯誤";
+                _logger.LogError(ex, "取得寵物換背景設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "取得設定時發生錯誤，請稍後再試";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        // POST: MiniGame/Settings/PetBackgroundChangeSettings/Edit/5
+        /// <summary>
+        /// 編輯寵物換背景點數設定
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, PetBackgroundChangeSettingsViewModel model)
         {
-            if (id != model.Id)
-            {
-                return NotFound();
-            }
-
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -145,112 +148,87 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
 
             try
             {
-                var setting = await _context.PetBackgroundChangeSettings.FindAsync(id);
-                if (setting == null)
+                var settings = new PetBackgroundChangeSettings
                 {
-                    return NotFound();
-                }
+                    Id = id,
+                    BackgroundName = model.BackgroundName,
+                    RequiredPoints = model.RequiredPoints,
+                    BackgroundCode = model.BackgroundCode,
+                    IsActive = model.IsActive
+                };
 
-                setting.BackgroundColor = model.BackgroundColor;
-                setting.PointsRequired = model.PointsRequired;
-                setting.IsActive = model.IsActive;
-                setting.UpdatedAt = DateTime.UtcNow;
-
-                _context.Update(setting);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Updated pet background change setting: {Id}, BackgroundColor: {BackgroundColor}, Points: {PointsRequired}", 
-                    setting.Id, setting.BackgroundColor, setting.PointsRequired);
-
-                TempData["SuccessMessage"] = "寵物換背景點數設定已成功更新";
+                await _settingsService.UpdateAsync(id, settings);
+                TempData["SuccessMessage"] = "成功更新寵物換背景點數設定";
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateConcurrencyException)
+            catch (ArgumentException ex)
             {
-                if (!await PetBackgroundChangeSettingsExists(model.Id))
+                _logger.LogWarning(ex, "更新寵物換背景設定 {Id} 時找不到記錄", id);
+                TempData["ErrorMessage"] = "找不到指定的設定";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新寵物換背景設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "更新設定時發生錯誤，請稍後再試";
+                return View(model);
+            }
+        }
+
+        /// <summary>
+        /// 刪除寵物換背景點數設定
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var result = await _settingsService.DeleteAsync(id);
+                if (result)
                 {
-                    return NotFound();
+                    TempData["SuccessMessage"] = "成功刪除寵物換背景點數設定";
                 }
                 else
                 {
-                    throw;
+                    TempData["ErrorMessage"] = "找不到指定的設定";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating pet background change setting: {Id}", id);
-                ModelState.AddModelError("", "更新寵物換背景點數設定時發生錯誤");
-                return View(model);
+                _logger.LogError(ex, "刪除寵物換背景設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "刪除設定時發生錯誤，請稍後再試";
             }
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: MiniGame/Settings/PetBackgroundChangeSettings/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            try
-            {
-                var setting = await _context.PetBackgroundChangeSettings.FindAsync(id);
-                if (setting == null)
-                {
-                    return NotFound();
-                }
-
-                var model = new PetBackgroundChangeSettingsViewModel
-                {
-                    Id = setting.Id,
-                    BackgroundColor = setting.BackgroundColor,
-                    PointsRequired = setting.PointsRequired,
-                    IsActive = setting.IsActive,
-                    CreatedAt = setting.CreatedAt,
-                    UpdatedAt = setting.UpdatedAt
-                };
-
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving pet background change setting for delete: {Id}", id);
-                TempData["ErrorMessage"] = "載入寵物換背景點數設定時發生錯誤";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        // POST: MiniGame/Settings/PetBackgroundChangeSettings/Delete/5
-        [HttpPost, ActionName("Delete")]
+        /// <summary>
+        /// 切換啟用狀態
+        /// </summary>
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> ToggleActive(int id)
         {
             try
             {
-                var setting = await _context.PetBackgroundChangeSettings.FindAsync(id);
-                if (setting != null)
+                var result = await _settingsService.ToggleActiveAsync(id);
+                if (result)
                 {
-                    _context.PetBackgroundChangeSettings.Remove(setting);
-                    await _context.SaveChangesAsync();
-
-                    _logger.LogInformation("Deleted pet background change setting: {Id}, BackgroundColor: {BackgroundColor}", 
-                        setting.Id, setting.BackgroundColor);
+                    TempData["SuccessMessage"] = "成功切換設定啟用狀態";
                 }
-
-                TempData["SuccessMessage"] = "寵物換背景點數設定已成功刪除";
-                return RedirectToAction(nameof(Index));
+                else
+                {
+                    TempData["ErrorMessage"] = "找不到指定的設定";
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting pet background change setting: {Id}", id);
-                TempData["ErrorMessage"] = "刪除寵物換背景點數設定時發生錯誤";
-                return RedirectToAction(nameof(Index));
+                _logger.LogError(ex, "切換寵物換背景設定 {Id} 啟用狀態時發生錯誤", id);
+                TempData["ErrorMessage"] = "切換啟用狀態時發生錯誤，請稍後再試";
             }
-        }
 
-        private async Task<bool> PetBackgroundChangeSettingsExists(int id)
-        {
-            return await _context.PetBackgroundChangeSettings.AnyAsync(e => e.Id == id);
+            return RedirectToAction(nameof(Index));
         }
     }
 }

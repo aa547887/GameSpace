@@ -1,5 +1,4 @@
 - [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) - 完成紀要：建立了 PetColorChangeSettings 模型、ViewModel、Controller 和 Index 頁面，包含完整的 CRUD 功能架構
 - [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) - 完成紀要：建立了 PetBackgroundChangeSettings 模型、ViewModel、Controller 和完整的 CRUD 頁面，包含 Index、Create、Edit、Delete 功能
-- [ ] 建立點數設定管理介面 (ID: P1-1.1-03)
-- [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
 - [x] 建立點數設定管理介面 (ID: P1-1.1-03) - 完成紀要：建立了 PointsSettingsController 統一管理介面，包含 Index 和 Statistics 頁面，整合寵物換色和換背景點數設定功能
+- [x] 實作點數設定儲存邏輯 (ID: P1-1.1-04) - 完成紀要：建立了完整的服務層架構，包含 IPetColorChangeSettingsService、IPetBackgroundChangeSettingsService、IPointsSettingsStatisticsService 及其實作，更新了 MiniGameDbContext 和 ServiceExtensions，實作了完整的資料庫操作邏輯

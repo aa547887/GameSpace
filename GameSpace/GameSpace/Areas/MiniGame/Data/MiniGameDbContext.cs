@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.Settings;
 
 namespace GameSpace.Areas.MiniGame.Data
 {
@@ -53,6 +54,10 @@ namespace GameSpace.Areas.MiniGame.Data
         public DbSet<PetBackgroundOption> PetBackgroundOptions { get; set; } = null!;
         public DbSet<PetLevelUpRule> PetLevelUpRules { get; set; } = null!;
         public DbSet<PetInteractionBonusRule> PetInteractionBonusRules { get; set; } = null!;
+
+        // 新增：點數設定相關表
+        public DbSet<PetColorChangeSettings> PetColorChangeSettings { get; set; } = null!;
+        public DbSet<PetBackgroundChangeSettings> PetBackgroundChangeSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -220,6 +225,27 @@ namespace GameSpace.Areas.MiniGame.Data
                 entity.Property(p => p.HappinessGain).IsRequired();
                 entity.Property(p => p.ExpGain).IsRequired();
                 entity.Property(p => p.CooldownMinutes).IsRequired();
+            });
+
+            // 新增：點數設定相關表的配置
+            modelBuilder.Entity<PetColorChangeSettings>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.ColorName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.RequiredPoints).IsRequired();
+                entity.Property(p => p.ColorCode).HasMaxLength(7);
+                entity.Property(p => p.IsActive).HasDefaultValue(true);
+                entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            modelBuilder.Entity<PetBackgroundChangeSettings>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.BackgroundName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.RequiredPoints).IsRequired();
+                entity.Property(p => p.BackgroundCode).HasMaxLength(7);
+                entity.Property(p => p.IsActive).HasDefaultValue(true);
+                entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             });
         }
     }

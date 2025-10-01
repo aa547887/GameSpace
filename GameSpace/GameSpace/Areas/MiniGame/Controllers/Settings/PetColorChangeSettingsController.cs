@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models.Settings;
+using GameSpace.Areas.MiniGame.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Controllers.Settings
@@ -8,14 +9,18 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
     /// <summary>
     /// 寵物換色點數設定控制器
     /// </summary>
-    [Area(""MiniGame"")]
+    [Area("MiniGame")]
     [Authorize]
     public class PetColorChangeSettingsController : Controller
     {
+        private readonly IPetColorChangeSettingsService _settingsService;
         private readonly ILogger<PetColorChangeSettingsController> _logger;
 
-        public PetColorChangeSettingsController(ILogger<PetColorChangeSettingsController> logger)
+        public PetColorChangeSettingsController(
+            IPetColorChangeSettingsService settingsService,
+            ILogger<PetColorChangeSettingsController> logger)
         {
+            _settingsService = settingsService;
             _logger = logger;
         }
 
@@ -23,32 +28,33 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         /// 寵物換色點數設定列表
         /// </summary>
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            // TODO: 實作從資料庫讀取設定列表
-            var settings = new List<PetColorChangeSettingsViewModel>
+            try
             {
-                new PetColorChangeSettingsViewModel
+                var settings = await _settingsService.GetAllAsync();
+                var viewModel = new PetColorChangeSettingsIndexViewModel
                 {
-                    Id = 1,
-                    ColorName = "紅色",
-                    RequiredPoints = 100,
-                    ColorCode = "#FF0000",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                },
-                new PetColorChangeSettingsViewModel
-                {
-                    Id = 2,
-                    ColorName = "藍色",
-                    RequiredPoints = 150,
-                    ColorCode = "#0000FF",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                }
-            };
+                    Settings = settings.Select(s => new PetColorChangeSettingsViewModel
+                    {
+                        Id = s.Id,
+                        ColorName = s.ColorName,
+                        RequiredPoints = s.RequiredPoints,
+                        ColorCode = s.ColorCode,
+                        IsActive = s.IsActive,
+                        CreatedAt = s.CreatedAt,
+                        UpdatedAt = s.UpdatedAt
+                    }).ToList()
+                };
 
-            return View(settings);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得寵物換色設定列表時發生錯誤");
+                TempData["ErrorMessage"] = "取得設定列表時發生錯誤，請稍後再試";
+                return View(new PetColorChangeSettingsIndexViewModel());
+            }
         }
 
         /// <summary>
@@ -65,7 +71,7 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(PetColorChangeSettingsViewModel model)
+        public async Task<IActionResult> Create(PetColorChangeSettingsViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -74,17 +80,22 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
 
             try
             {
-                // TODO: 實作儲存到資料庫
-                _logger.LogInformation("新增寵物換色點數設定: {ColorName}, 所需點數: {RequiredPoints}", 
-                    model.ColorName, model.RequiredPoints);
+                var settings = new PetColorChangeSettings
+                {
+                    ColorName = model.ColorName,
+                    RequiredPoints = model.RequiredPoints,
+                    ColorCode = model.ColorCode,
+                    IsActive = model.IsActive
+                };
 
-                TempData["SuccessMessage"] = "寵物換色點數設定新增成功！";
+                await _settingsService.CreateAsync(settings);
+                TempData["SuccessMessage"] = "成功新增寵物換色點數設定";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "新增寵物換色點數設定失敗");
-                ModelState.AddModelError("", "新增失敗，請稍後再試");
+                _logger.LogError(ex, "新增寵物換色設定時發生錯誤");
+                TempData["ErrorMessage"] = "新增設定時發生錯誤，請稍後再試";
                 return View(model);
             }
         }
@@ -93,20 +104,34 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         /// 編輯寵物換色點數設定
         /// </summary>
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            // TODO: 實作從資料庫讀取設定
-            var model = new PetColorChangeSettingsViewModel
+            try
             {
-                Id = id,
-                ColorName = "紅色",
-                RequiredPoints = 100,
-                ColorCode = "#FF0000",
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
+                var settings = await _settingsService.GetByIdAsync(id);
+                if (settings == null)
+                {
+                    TempData["ErrorMessage"] = "找不到指定的設定";
+                    return RedirectToAction(nameof(Index));
+                }
 
-            return View(model);
+                var viewModel = new PetColorChangeSettingsViewModel
+                {
+                    Id = settings.Id,
+                    ColorName = settings.ColorName,
+                    RequiredPoints = settings.RequiredPoints,
+                    ColorCode = settings.ColorCode,
+                    IsActive = settings.IsActive
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得寵物換色設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "取得設定時發生錯誤，請稍後再試";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         /// <summary>
@@ -114,13 +139,8 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, PetColorChangeSettingsViewModel model)
+        public async Task<IActionResult> Edit(int id, PetColorChangeSettingsViewModel model)
         {
-            if (id != model.Id)
-            {
-                return NotFound();
-            }
-
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -128,17 +148,29 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
 
             try
             {
-                // TODO: 實作更新到資料庫
-                _logger.LogInformation("更新寵物換色點數設定: {ColorName}, 所需點數: {RequiredPoints}", 
-                    model.ColorName, model.RequiredPoints);
+                var settings = new PetColorChangeSettings
+                {
+                    Id = id,
+                    ColorName = model.ColorName,
+                    RequiredPoints = model.RequiredPoints,
+                    ColorCode = model.ColorCode,
+                    IsActive = model.IsActive
+                };
 
-                TempData["SuccessMessage"] = "寵物換色點數設定更新成功！";
+                await _settingsService.UpdateAsync(id, settings);
+                TempData["SuccessMessage"] = "成功更新寵物換色點數設定";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "更新寵物換色設定 {Id} 時找不到記錄", id);
+                TempData["ErrorMessage"] = "找不到指定的設定";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "更新寵物換色點數設定失敗");
-                ModelState.AddModelError("", "更新失敗，請稍後再試");
+                _logger.LogError(ex, "更新寵物換色設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "更新設定時發生錯誤，請稍後再試";
                 return View(model);
             }
         }
@@ -148,22 +180,55 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                // TODO: 實作從資料庫刪除設定
-                _logger.LogInformation("刪除寵物換色點數設定: {Id}", id);
-
-                TempData["SuccessMessage"] = "寵物換色點數設定刪除成功！";
-                return RedirectToAction(nameof(Index));
+                var result = await _settingsService.DeleteAsync(id);
+                if (result)
+                {
+                    TempData["SuccessMessage"] = "成功刪除寵物換色點數設定";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "找不到指定的設定";
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "刪除寵物換色點數設定失敗");
-                TempData["ErrorMessage"] = "刪除失敗，請稍後再試";
-                return RedirectToAction(nameof(Index));
+                _logger.LogError(ex, "刪除寵物換色設定 {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "刪除設定時發生錯誤，請稍後再試";
             }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// 切換啟用狀態
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleActive(int id)
+        {
+            try
+            {
+                var result = await _settingsService.ToggleActiveAsync(id);
+                if (result)
+                {
+                    TempData["SuccessMessage"] = "成功切換設定啟用狀態";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "找不到指定的設定";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "切換寵物換色設定 {Id} 啟用狀態時發生錯誤", id);
+                TempData["ErrorMessage"] = "切換啟用狀態時發生錯誤，請稍後再試";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }
