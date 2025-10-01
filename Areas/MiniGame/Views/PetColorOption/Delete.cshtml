@@ -1,8 +1,8 @@
-@model GameSpace.Models.PetColorOption
+@model GameSpace.Areas.MiniGame.Models.PetColorOption
 
 @{
     ViewData["Title"] = "刪除寵物顏色選項";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
@@ -22,33 +22,30 @@
                 <div class="card-body">
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>警告：</strong> 您確定要刪除此寵物顏色選項嗎？此操作無法復原。
+                        <strong>警告：</strong> 您確定要刪除這個顏色選項嗎？此操作無法復原。
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <dl class="row">
-                                <dt class="col-sm-4">ID:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.Id)</dd>
-                                
-                                <dt class="col-sm-4">顏色名稱:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.ColorName)</dd>
-                                
-                                <dt class="col-sm-4">顏色代碼:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.ColorCode)</dd>
-                                
-                                <dt class="col-sm-4">顏色預覽:</dt>
+                                <dt class="col-sm-4">ID</dt>
+                                <dd class="col-sm-8">@Model.Id</dd>
+
+                                <dt class="col-sm-4">顏色名稱</dt>
+                                <dd class="col-sm-8">@Model.ColorName</dd>
+
+                                <dt class="col-sm-4">顏色代碼</dt>
                                 <dd class="col-sm-8">
-                                    <div class="color-preview" style="width: 50px; height: 50px; background-color: @Model.ColorCode; border: 2px solid #ccc; border-radius: 8px;"></div>
+                                    <code>@Model.ColorCode</code>
                                 </dd>
+
+                                <dt class="col-sm-4">描述</dt>
+                                <dd class="col-sm-8">@(Model.Description ?? "-")</dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
                             <dl class="row">
-                                <dt class="col-sm-4">排序順序:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.SortOrder)</dd>
-                                
-                                <dt class="col-sm-4">是否啟用:</dt>
+                                <dt class="col-sm-4">狀態</dt>
                                 <dd class="col-sm-8">
                                     @if (Model.IsActive)
                                     {
@@ -59,30 +56,38 @@
                                         <span class="badge badge-secondary">停用</span>
                                     }
                                 </dd>
-                                
-                                <dt class="col-sm-4">建立時間:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.CreatedAt)</dd>
-                                
-                                <dt class="col-sm-4">更新時間:</dt>
-                                <dd class="col-sm-8">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+
+                                <dt class="col-sm-4">排序順序</dt>
+                                <dd class="col-sm-8">@Model.SortOrder</dd>
+
+                                <dt class="col-sm-4">建立時間</dt>
+                                <dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</dd>
                             </dl>
                         </div>
                     </div>
-                    
-                    @if (!string.IsNullOrEmpty(Model.Description))
-                    {
-                        <div class="row">
-                            <div class="col-12">
-                                <dl class="row">
-                                    <dt class="col-sm-2">描述:</dt>
-                                    <dd class="col-sm-10">@Html.DisplayFor(model => model.Description)</dd>
-                                </dl>
+
+                    <!-- 顏色預覽 -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h5>即將刪除的顏色選項</h5>
+                            <div class="color-preview-container" style="padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                                <div class="d-flex align-items-center">
+                                    <div class="color-preview" style="width: 100px; height: 100px; background-color: @Model.ColorCode; border: 2px solid #ccc; border-radius: 8px; margin-right: 20px;"></div>
+                                    <div>
+                                        <h6>@Model.ColorName</h6>
+                                        <p class="text-muted mb-0">代碼: <code>@Model.ColorCode</code></p>
+                                        @if (!string.IsNullOrEmpty(Model.Description))
+                                        {
+                                            <p class="text-muted mb-0">@Model.Description</p>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    }
-                    
+                    </div>
+
                     <form asp-action="Delete" method="post" class="mt-4">
-                        <input type="hidden" asp-for="Id" />
+                        <input asp-for="Id" type="hidden" />
                         <div class="form-group">
                             <button type="submit" class="btn btn-danger">
                                 <i class="fas fa-trash"></i> 確認刪除
@@ -97,10 +102,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    .color-preview {
-        display: inline-block;
-        vertical-align: middle;
-    }
-</style>

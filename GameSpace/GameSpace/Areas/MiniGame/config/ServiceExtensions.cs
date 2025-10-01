@@ -47,11 +47,3 @@ namespace GameSpace.Areas.MiniGame.config
         }
     }
 }
-            // 註冊寵物升級規則驗證服務
-            services.AddScoped<IPetLevelUpRuleValidationService, PetLevelUpRuleValidationService>();
-
-            // 註冊寵物成本設定服務
-            services.AddScoped<IPetSkinColorCostSettingService, PetSkinColorCostSettingService>();
-            services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
-
-            return services;
