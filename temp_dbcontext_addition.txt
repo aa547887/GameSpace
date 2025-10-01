@@ -1,5 +1,22 @@
-// 在 MiniGameDbContext.cs 中添加新的 DbSet
-// 在現有的寵物系統設定相關表之後添加：
+        // 新增：寵物系統設定相關表
+        public DbSet<PetColorChangeCost> PetColorChangeCosts { get; set; } = null!;
+        public DbSet<PetBackgroundChangeCost> PetBackgroundChangeCosts { get; set; } = null!;
+        public DbSet<PetColorOption> PetColorOptions { get; set; } = null!;
+        public DbSet<PetBackgroundOption> PetBackgroundOptions { get; set; } = null!;
+        public DbSet<PetLevelUpRule> PetLevelUpRules { get; set; } = null!;
+        public DbSet<PetInteractionBonusRule> PetInteractionBonusRules { get; set; } = null!;
 
-        // 新增：寵物換色所需點數設定表
+        // 新增：點數設定相關表
+        public DbSet<PetColorChangeSettings> PetColorChangeSettings { get; set; } = null!;
+        public DbSet<PetBackgroundChangeSettings> PetBackgroundChangeSettings { get; set; } = null!;
+        
+        // 新增：寵物換色/換背景所需點數設定表
         public DbSet<PetColorCostSetting> PetColorCostSettings { get; set; } = null!;
+        public DbSet<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; } = null!;
+        
+        // 新增：寵物升級獎勵設定表
+        public DbSet<PetLevelRewardSetting> PetLevelRewardSettings { get; set; } = null!;
+
+                
+        // 新增：寵物升級經驗設定表
+        public DbSet<PetLevelExperienceSetting> PetLevelExperienceSettings { get; set; } = null!;

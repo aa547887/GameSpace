@@ -34,9 +34,9 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class PetSkinColorCostSettingService : IPetSkinColorCostSettingService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly MiniGameDbContext _context;
 
-        public PetSkinColorCostSettingService(ApplicationDbContext context)
+        public PetSkinColorCostSettingService(MiniGameDbContext context)
         {
             _context = context;
         }
@@ -124,9 +124,9 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class PetBackgroundCostSettingService : IPetBackgroundCostSettingService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly MiniGameDbContext _context;
 
-        public PetBackgroundCostSettingService(ApplicationDbContext context)
+        public PetBackgroundCostSettingService(MiniGameDbContext context)
         {
             _context = context;
         }

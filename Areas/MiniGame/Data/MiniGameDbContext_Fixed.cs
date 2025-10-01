@@ -23,7 +23,7 @@ namespace GameSpace.Areas.MiniGame.Data
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.ColorName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.ColorCode).HasMaxLength(7);
-                entity.Property(p => p.Cost).IsRequired();
+                entity.Property(p => p.RequiredPoints).IsRequired();
                 entity.Property(p => p.IsActive).HasDefaultValue(true);
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
@@ -34,7 +34,7 @@ namespace GameSpace.Areas.MiniGame.Data
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.BackgroundName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.BackgroundCode).HasMaxLength(7);
-                entity.Property(p => p.Cost).IsRequired();
+                entity.Property(p => p.RequiredPoints).IsRequired();
                 entity.Property(p => p.IsActive).HasDefaultValue(true);
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");

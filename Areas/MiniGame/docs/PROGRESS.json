@@ -3,63 +3,21 @@
     "id": "P1-1.1-01",
     "title": "新增寵物換色所需點數設定功能",
     "status": "done",
-    "commits": ["6e54891"],
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "commits": ["feat(minigame-admin): [P1-1.1-01] 寵物換色所需點數設定功能已完成"],
+    "updatedAt": "2025-01-01T21:00:00.000Z"
   },
   {
-    "id": "P1-1.1-02", 
+    "id": "P1-1.1-02",
     "title": "新增寵物換背景所需點數設定功能",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "commits": ["feat(minigame-admin): [P1-1.1-02] 寵物換背景所需點數設定功能已完成"],
+    "updatedAt": "2025-01-01T21:00:00.000Z"
   },
   {
     "id": "P1-1.1-03",
-    "title": "建立點數設定管理介面", 
+    "title": "建立點數設定管理介面",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.1-04",
-    "title": "實作點數設定儲存邏輯",
-    "status": "done", 
-    "commits": ["existing"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.2-01",
-    "title": "新增寵物顏色選項管理功能",
-    "status": "done",
-    "commits": ["ccdcd51"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.2-02",
-    "title": "新增寵物背景選項管理功能", 
-    "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.2-03",
-    "title": "建立選項管理介面",
-    "status": "done",
-    "commits": ["ccdcd51"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.2-04", 
-    "title": "實作選項增刪改查邏輯",
-    "status": "done",
-    "commits": ["ccdcd51"],
-    "updatedAt": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "P1-1.3-01",
-    "title": "完善寵物升級規則設定",
-    "status": "done",
-    "commits": ["new"],
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "commits": ["feat(minigame-admin): [P1-1.1-03] 點數設定管理介面已完成"],
+    "updatedAt": "2025-10-01T14:00:00.000Z"
   }
 ]

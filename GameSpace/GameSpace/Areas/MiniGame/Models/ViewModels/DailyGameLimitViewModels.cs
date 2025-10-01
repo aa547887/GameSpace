@@ -120,7 +120,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public string? CreatedBy { get; set; }
         public string? UpdatedBy { get; set; }
     }
-}
+
     /// <summary>
     /// 每日遊戲次數限制設定詳細模型
     /// </summary>

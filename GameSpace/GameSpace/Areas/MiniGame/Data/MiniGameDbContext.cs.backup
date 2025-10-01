@@ -58,6 +58,23 @@ namespace GameSpace.Areas.MiniGame.Data
         // 新增：點數設定相關表
         public DbSet<PetColorChangeSettings> PetColorChangeSettings { get; set; } = null!;
         public DbSet<PetBackgroundChangeSettings> PetBackgroundChangeSettings { get; set; } = null!;
+        
+        // 新增：寵物升級獎勵設定表
+        public DbSet<PetLevelRewardSetting> PetLevelRewardSettings { get; set; } = null!;
+
+                
+        // 新增：寵物升級經驗設定表
+        public DbSet<PetLevelExperienceSetting> PetLevelExperienceSettings { get; set; } = null!;
+
+        // 新增：寵物換色/換背景所需點數設定表
+        public DbSet<PetColorCostSetting> PetColorCostSettings { get; set; } = null!;
+        public DbSet<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; } = null!;
+
+        // 新增：寵物換色/換背景所需點數設定表
+        public DbSet<PetColorCostSetting> PetColorCostSettings { get; set; } = null!;
+        public DbSet<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; } = null!;
+
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -182,19 +199,19 @@ namespace GameSpace.Areas.MiniGame.Data
             // 新增：寵物系統設定相關表的配置
             modelBuilder.Entity<PetColorChangeCost>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.PointsRequired).IsRequired();
             });
 
             modelBuilder.Entity<PetBackgroundChangeCost>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.PointsRequired).IsRequired();
             });
 
             modelBuilder.Entity<PetColorOption>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.ColorName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.ColorValue).HasMaxLength(20).IsRequired();
                 entity.Property(p => p.DisplayOrder).IsRequired();
@@ -202,7 +219,7 @@ namespace GameSpace.Areas.MiniGame.Data
 
             modelBuilder.Entity<PetBackgroundOption>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.BackgroundName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.BackgroundValue).HasMaxLength(20).IsRequired();
                 entity.Property(p => p.DisplayOrder).IsRequired();
@@ -210,7 +227,7 @@ namespace GameSpace.Areas.MiniGame.Data
 
             modelBuilder.Entity<PetLevelUpRule>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.Level).IsRequired();
                 entity.Property(p => p.ExperienceRequired).IsRequired();
                 entity.Property(p => p.PointsReward).IsRequired();
@@ -219,7 +236,7 @@ namespace GameSpace.Areas.MiniGame.Data
 
             modelBuilder.Entity<PetInteractionBonusRule>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.InteractionType).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.PointsCost).IsRequired();
                 entity.Property(p => p.HappinessGain).IsRequired();
@@ -230,7 +247,7 @@ namespace GameSpace.Areas.MiniGame.Data
             // 新增：點數設定相關表的配置
             modelBuilder.Entity<PetColorChangeSettings>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.ColorName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.RequiredPoints).IsRequired();
                 entity.Property(p => p.ColorCode).HasMaxLength(7);
@@ -240,7 +257,7 @@ namespace GameSpace.Areas.MiniGame.Data
 
             modelBuilder.Entity<PetBackgroundChangeSettings>(entity =>
             {
-                entity.HasKey(p => p.Id);
+                entity.HasKey(p => p.ColorOptionId);
                 entity.Property(p => p.BackgroundName).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.RequiredPoints).IsRequired();
                 entity.Property(p => p.BackgroundCode).HasMaxLength(7);
@@ -250,3 +267,9 @@ namespace GameSpace.Areas.MiniGame.Data
         }
     }
 }
+
+
+
+
+
+

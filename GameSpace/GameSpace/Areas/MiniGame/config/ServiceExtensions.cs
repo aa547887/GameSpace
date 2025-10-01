@@ -21,6 +21,8 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IMiniGameAdminGate, MiniGameAdminGate>();
 
             // 註冊點數設定相關服務
+            services.AddScoped<IPetColorCostSettingService, PetColorCostSettingService>();
+            services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
             services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
             services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
             services.AddScoped<IPointsSettingsService, PointsSettingsService>();
@@ -45,3 +47,11 @@ namespace GameSpace.Areas.MiniGame.config
         }
     }
 }
+            // 註冊寵物升級規則驗證服務
+            services.AddScoped<IPetLevelUpRuleValidationService, PetLevelUpRuleValidationService>();
+
+            // 註冊寵物成本設定服務
+            services.AddScoped<IPetSkinColorCostSettingService, PetSkinColorCostSettingService>();
+            services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
+
+            return services;
