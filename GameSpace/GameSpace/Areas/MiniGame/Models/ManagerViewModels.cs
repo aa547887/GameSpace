@@ -29,9 +29,9 @@ namespace GameSpace.Areas.MiniGame.Models
         {
             get
             {
-                if (IsLocked) return ""已鎖定"";
-                if (!Manager_EmailConfirmed) return ""未確認"";
-                return ""正常"";
+                if (IsLocked) return "已鎖定";
+                if (!Manager_EmailConfirmed) return "未確認";
+                return "正常";
             }
         }
     }
@@ -90,36 +90,36 @@ namespace GameSpace.Areas.MiniGame.Models
     /// </summary>
     public class ManagerCreateViewModel
     {
-        [Required(ErrorMessage = ""管理員姓名不能為空"")]
-        [StringLength(50, ErrorMessage = ""管理員姓名長度不能超過50個字符"")]
-        [Display(Name = ""管理員姓名"")]
+        [Required(ErrorMessage = "管理員姓名不能為空")]
+        [StringLength(50, ErrorMessage = "管理員姓名長度不能超過50個字符")]
+        [Display(Name = "管理員姓名")]
         public string Manager_Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = ""管理員帳號不能為空"")]
-        [StringLength(50, ErrorMessage = ""管理員帳號長度不能超過50個字符"")]
-        [Display(Name = ""管理員帳號"")]
+        [Required(ErrorMessage = "管理員帳號不能為空")]
+        [StringLength(50, ErrorMessage = "管理員帳號長度不能超過50個字符")]
+        [Display(Name = "管理員帳號")]
         public string Manager_Account { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = ""管理員密碼不能為空"")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = ""管理員密碼長度必須在6-100個字符之間"")]
-        [Display(Name = ""管理員密碼"")]
+        [Required(ErrorMessage = "管理員密碼不能為空")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "管理員密碼長度必須在6-100個字符之間")]
+        [Display(Name = "管理員密碼")]
         public string Manager_Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = ""確認密碼不能為空"")]
-        [Compare(""Manager_Password"", ErrorMessage = ""確認密碼與密碼不一致"")]
-        [Display(Name = ""確認密碼"")]
+        [Required(ErrorMessage = "確認密碼不能為空")]
+        [Compare("Manager_Password", ErrorMessage = "確認密碼與密碼不一致")]
+        [Display(Name = "確認密碼")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = ""管理員電子郵件不能為空"")]
-        [StringLength(100, ErrorMessage = ""管理員電子郵件長度不能超過100個字符"")]
-        [EmailAddress(ErrorMessage = ""管理員電子郵件格式不正確"")]
-        [Display(Name = ""管理員電子郵件"")]
+        [Required(ErrorMessage = "管理員電子郵件不能為空")]
+        [StringLength(100, ErrorMessage = "管理員電子郵件長度不能超過100個字符")]
+        [EmailAddress(ErrorMessage = "管理員電子郵件格式不正確")]
+        [Display(Name = "管理員電子郵件")]
         public string Manager_Email { get; set; } = string.Empty;
 
-        [Display(Name = ""電子郵件確認狀態"")]
+        [Display(Name = "電子郵件確認狀態")]
         public bool Manager_EmailConfirmed { get; set; } = false;
 
-        [Display(Name = ""分配角色"")]
+        [Display(Name = "分配角色")]
         public List<int> SelectedRoleIds { get; set; } = new List<int>();
 
         public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> RoleOptions { get; set; } = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
@@ -132,37 +132,37 @@ namespace GameSpace.Areas.MiniGame.Models
     {
         public int Manager_Id { get; set; }
 
-        [Required(ErrorMessage = ""管理員姓名不能為空"")]
-        [StringLength(50, ErrorMessage = ""管理員姓名長度不能超過50個字符"")]
-        [Display(Name = ""管理員姓名"")]
+        [Required(ErrorMessage = "管理員姓名不能為空")]
+        [StringLength(50, ErrorMessage = "管理員姓名長度不能超過50個字符")]
+        [Display(Name = "管理員姓名")]
         public string Manager_Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = ""管理員帳號不能為空"")]
-        [StringLength(50, ErrorMessage = ""管理員帳號長度不能超過50個字符"")]
-        [Display(Name = ""管理員帳號"")]
+        [Required(ErrorMessage = "管理員帳號不能為空")]
+        [StringLength(50, ErrorMessage = "管理員帳號長度不能超過50個字符")]
+        [Display(Name = "管理員帳號")]
         public string Manager_Account { get; set; } = string.Empty;
 
-        [StringLength(100, MinimumLength = 6, ErrorMessage = ""管理員密碼長度必須在6-100個字符之間"")]
-        [Display(Name = ""新密碼（留空則不修改）"")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "管理員密碼長度必須在6-100個字符之間")]
+        [Display(Name = "新密碼（留空則不修改）")]
         public string? Manager_Password { get; set; }
 
-        [Compare(""Manager_Password"", ErrorMessage = ""確認密碼與密碼不一致"")]
-        [Display(Name = ""確認新密碼"")]
+        [Compare("Manager_Password", ErrorMessage = "確認密碼與密碼不一致")]
+        [Display(Name = "確認新密碼")]
         public string? ConfirmPassword { get; set; }
 
-        [Required(ErrorMessage = ""管理員電子郵件不能為空"")]
-        [StringLength(100, ErrorMessage = ""管理員電子郵件長度不能超過100個字符"")]
-        [EmailAddress(ErrorMessage = ""管理員電子郵件格式不正確"")]
-        [Display(Name = ""管理員電子郵件"")]
+        [Required(ErrorMessage = "管理員電子郵件不能為空")]
+        [StringLength(100, ErrorMessage = "管理員電子郵件長度不能超過100個字符")]
+        [EmailAddress(ErrorMessage = "管理員電子郵件格式不正確")]
+        [Display(Name = "管理員電子郵件")]
         public string Manager_Email { get; set; } = string.Empty;
 
-        [Display(Name = ""電子郵件確認狀態"")]
+        [Display(Name = "電子郵件確認狀態")]
         public bool Manager_EmailConfirmed { get; set; }
 
-        [Display(Name = ""帳號鎖定啟用狀態"")]
+        [Display(Name = "帳號鎖定啟用狀態")]
         public bool Manager_LockoutEnabled { get; set; }
 
-        [Display(Name = ""分配角色"")]
+        [Display(Name = "分配角色")]
         public List<int> SelectedRoleIds { get; set; } = new List<int>();
 
         public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> RoleOptions { get; set; } = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();

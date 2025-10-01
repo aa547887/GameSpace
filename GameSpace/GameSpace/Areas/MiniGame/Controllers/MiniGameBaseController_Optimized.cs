@@ -13,8 +13,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
     /// MiniGame Area 基礎控制器
     /// 提供統一的DbContext和權限驗證
     /// </summary>
-    [Area(""MiniGame"")]
-    [Authorize(AuthenticationSchemes = ""AdminCookie"", Policy = ""AdminOnly"")]
+    [Area("MiniGame")]
+    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public abstract class MiniGameBaseController : Controller
     {
         protected readonly MiniGameDbContext _context;
@@ -54,7 +54,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             try
             {
-                var managerIdClaim = User.FindFirst(""ManagerId"");
+                var managerIdClaim = User.FindFirst("ManagerId");
                 if (managerIdClaim != null && int.TryParse(managerIdClaim.Value, out int managerId))
                 {
                     return managerId;
@@ -63,7 +63,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取當前管理員ID時發生錯誤"");
+                _logger.LogError(ex, "獲取當前管理員ID時發生錯誤");
                 return null;
             }
         }
@@ -87,7 +87,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取當前管理員信息時發生錯誤"");
+                _logger.LogError(ex, "獲取當前管理員信息時發生錯誤");
                 return null;
             }
         }
@@ -108,7 +108,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""檢查管理員權限時發生錯誤: {Permission}"", permission);
+                _logger.LogError(ex, "檢查管理員權限時發生錯誤: {Permission}", permission);
                 return false;
             }
         }
@@ -121,12 +121,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
             try
             {
                 var managerId = GetCurrentManagerId();
-                _logger.LogInformation(""管理員 {ManagerId} 執行操作: {Operation} - {Details}"", 
+                _logger.LogInformation("管理員 {ManagerId} 執行操作: {Operation} - {Details}", 
                     managerId, operation, details);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""記錄操作日誌時發生錯誤"");
+                _logger.LogError(ex, "記錄操作日誌時發生錯誤");
             }
         }
 
@@ -135,11 +135,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// </summary>
         protected IActionResult HandleError(Exception ex, string operation)
         {
-            _logger.LogError(ex, ""執行操作 {Operation} 時發生錯誤"", operation);
+            _logger.LogError(ex, "執行操作 {Operation} 時發生錯誤", operation);
             
-            TempData[""ErrorMessage""] = $""執行 {operation} 時發生錯誤，請稍後再試"";
+            TempData["ErrorMessage"] = $"執行 {operation} 時發生錯誤，請稍後再試";
             
-            return RedirectToAction(""Index"", ""Admin"");
+            return RedirectToAction("Index", "Admin");
         }
     }
 }

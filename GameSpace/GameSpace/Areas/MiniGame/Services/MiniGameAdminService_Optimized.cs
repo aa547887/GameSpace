@@ -70,9 +70,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Select(s => new RecentActivityViewModel
                     {
                         UserName = s.User.User_name,
-                        ActivityType = ""簽到"",
+                        ActivityType = "簽到",
                         ActivityTime = s.SignTime,
-                        Description = $""連續簽到 {s.ConsecutiveDays} 天""
+                        Description = $"連續簽到 {s.ConsecutiveDays} 天"
                     })
                     .ToListAsync();
 
@@ -83,9 +83,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Select(g => new RecentActivityViewModel
                     {
                         UserName = g.User.User_name,
-                        ActivityType = ""遊戲"",
+                        ActivityType = "遊戲",
                         ActivityTime = g.StartTime,
-                        Description = $""遊戲類型: {g.GameType}, 得分: {g.Score}""
+                        Description = $"遊戲類型: {g.GameType}, 得分: {g.Score}"
                     })
                     .ToListAsync();
 
@@ -112,7 +112,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取儀表板資料時發生錯誤"");
+                _logger.LogError(ex, "獲取儀表板資料時發生錯誤");
                 throw;
             }
         }
@@ -180,7 +180,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取用戶統計資料時發生錯誤"");
+                _logger.LogError(ex, "獲取用戶統計資料時發生錯誤");
                 throw;
             }
         }
@@ -249,7 +249,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取遊戲統計資料時發生錯誤"");
+                _logger.LogError(ex, "獲取遊戲統計資料時發生錯誤");
                 throw;
             }
         }
@@ -334,7 +334,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取錢包統計資料時發生錯誤"");
+                _logger.LogError(ex, "獲取錢包統計資料時發生錯誤");
                 throw;
             }
         }
@@ -367,7 +367,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 // 錯誤統計
                 var errorCount = await _context.WalletHistories
-                    .Where(w => w.ChangeType == ""ERROR"" || w.Description.Contains(""錯誤""))
+                    .Where(w => w.ChangeType == "ERROR" || w.Description.Contains("錯誤"))
                     .CountAsync();
 
                 // 系統狀態評估
@@ -391,7 +391,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""獲取系統健康狀態時發生錯誤"");
+                _logger.LogError(ex, "獲取系統健康狀態時發生錯誤");
                 throw;
             }
         }
@@ -403,12 +403,12 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                await _context.Database.ExecuteSqlRawAsync(""SELECT 1"");
+                await _context.Database.ExecuteSqlRawAsync("SELECT 1");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ""資料庫連接測試失敗"");
+                _logger.LogError(ex, "資料庫連接測試失敗");
                 return false;
             }
         }
@@ -418,11 +418,11 @@ namespace GameSpace.Areas.MiniGame.Services
         /// </summary>
         private string EvaluateSystemStatus(bool dbHealthy, int activeUsers, int gamesToday, int errorCount)
         {
-            if (!dbHealthy) return ""Critical"";
-            if (errorCount > 100) return ""Warning"";
-            if (activeUsers > 1000 && gamesToday > 500) return ""High Load"";
-            if (activeUsers > 100 && gamesToday > 50) return ""Normal"";
-            return ""Low Load"";
+            if (!dbHealthy) return "Critical";
+            if (errorCount > 100) return "Warning";
+            if (activeUsers > 1000 && gamesToday > 500) return "High Load";
+            if (activeUsers > 100 && gamesToday > 50) return "Normal";
+            return "Low Load";
         }
     }
 }
