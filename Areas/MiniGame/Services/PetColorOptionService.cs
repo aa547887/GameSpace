@@ -47,7 +47,7 @@ namespace GameSpace.Areas.MiniGame.Services
     /// <summary>
     /// 寵物顏色選項服務實作
     /// </summary>
-    public class PetColorOptionService : IPetColorOptionService
+    public partial class PetColorOptionService : IPetColorOptionService
     {
         private readonly List<PetColorOption> _colorOptions;
         private readonly ILogger<PetColorOptionService> _logger;

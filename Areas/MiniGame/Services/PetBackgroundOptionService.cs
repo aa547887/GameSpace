@@ -54,7 +54,7 @@ namespace GameSpace.Areas.MiniGame.Services
     /// <summary>
     /// 寵物背景選項服務實作
     /// </summary>
-    public class PetBackgroundOptionService : IPetBackgroundOptionService
+    public partial class PetBackgroundOptionService : IPetBackgroundOptionService
     {
         private readonly MiniGameDbContext _context;
 
