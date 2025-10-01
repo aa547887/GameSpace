@@ -471,4 +471,138 @@ namespace GameSpace.Areas.MiniGame.Models
         [ForeignKey("UserID")]
         public virtual User User { get; set; } = null!;
     }
+
+    // 新增：寵物換色所需點數設定表
+    [Table("PetColorChangeCosts")]
+    public class PetColorChangeCost
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public int PointsRequired { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // 新增：寵物換背景所需點數設定表
+    [Table("PetBackgroundChangeCosts")]
+    public class PetBackgroundChangeCost
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public int PointsRequired { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // 新增：寵物顏色選項表
+    [Table("PetColorOptions")]
+    public class PetColorOption
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string ColorName { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(20)]
+        public string ColorValue { get; set; } = string.Empty;
+        
+        [Required]
+        public int DisplayOrder { get; set; }
+        
+        public bool IsActive { get; set; } = true;
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // 新增：寵物背景選項表
+    [Table("PetBackgroundOptions")]
+    public class PetBackgroundOption
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string BackgroundName { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(20)]
+        public string BackgroundValue { get; set; } = string.Empty;
+        
+        [Required]
+        public int DisplayOrder { get; set; }
+        
+        public bool IsActive { get; set; } = true;
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // 新增：寵物升級規則表
+    [Table("PetLevelUpRules")]
+    public class PetLevelUpRule
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public int Level { get; set; }
+        
+        [Required]
+        public int ExperienceRequired { get; set; }
+        
+        [Required]
+        public int PointsReward { get; set; }
+        
+        [Required]
+        public int ExpReward { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // 新增：寵物互動狀態增益規則表
+    [Table("PetInteractionBonusRules")]
+    public class PetInteractionBonusRule
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string InteractionType { get; set; } = string.Empty;
+        
+        [Required]
+        public int PointsCost { get; set; }
+        
+        [Required]
+        public int HappinessGain { get; set; }
+        
+        [Required]
+        public int ExpGain { get; set; }
+        
+        [Required]
+        public int CooldownMinutes { get; set; }
+        
+        public bool IsActive { get; set; } = true;
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
 }

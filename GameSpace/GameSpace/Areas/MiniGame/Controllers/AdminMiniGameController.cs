@@ -337,6 +337,149 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(stats);
         }
 
+        // 新增：每日遊戲次數限制設定
+        [HttpGet]
+        public async Task<IActionResult> GetDailyGameLimit()
+        {
+            try
+            {
+                var limit = await _context.DailyGameLimits.FirstOrDefaultAsync();
+                if (limit == null)
+                {
+                    // 如果沒有設定，返回預設值（一天三次）
+                    return Json(new { success = true, data = new { dailyLimit = 3 } });
+                }
+                
+                return Json(new { success = true, data = new { dailyLimit = limit.DailyLimit } });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateDailyGameLimit(int dailyLimit)
+        {
+            try
+            {
+                if (dailyLimit < 1)
+                {
+                    return Json(new { success = false, message = "每日遊戲次數限制不能小於1" });
+                }
+
+                var limit = await _context.DailyGameLimits.FirstOrDefaultAsync();
+                if (limit == null)
+                {
+                    limit = new DailyGameLimit { DailyLimit = dailyLimit };
+                    _context.DailyGameLimits.Add(limit);
+                }
+                else
+                {
+                    limit.DailyLimit = dailyLimit;
+                    _context.DailyGameLimits.Update(limit);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "每日遊戲次數限制設定成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：獎勵種類詳細設定
+        [HttpGet]
+        public async Task<IActionResult> GetGameRewardSettings()
+        {
+            try
+            {
+                var settings = await _context.GameRewardSettings.FirstOrDefaultAsync();
+                if (settings == null)
+                {
+                    // 如果沒有設定，返回預設值
+                    return Json(new { 
+                        success = true, 
+                        data = new { 
+                            pointsRewardRate = 0.1, 
+                            expRewardRate = 0.05, 
+                            couponRewardRate = 0.02,
+                            pointsRewardEnabled = true,
+                            expRewardEnabled = true,
+                            couponRewardEnabled = true
+                        } 
+                    });
+                }
+                
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        pointsRewardRate = settings.PointsRewardRate,
+                        expRewardRate = settings.ExpRewardRate,
+                        couponRewardRate = settings.CouponRewardRate,
+                        pointsRewardEnabled = settings.PointsRewardEnabled,
+                        expRewardEnabled = settings.ExpRewardEnabled,
+                        couponRewardEnabled = settings.CouponRewardEnabled
+                    } 
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateGameRewardSettings(
+            decimal pointsRewardRate, 
+            decimal expRewardRate, 
+            decimal couponRewardRate,
+            bool pointsRewardEnabled,
+            bool expRewardEnabled,
+            bool couponRewardEnabled)
+        {
+            try
+            {
+                if (pointsRewardRate < 0 || expRewardRate < 0 || couponRewardRate < 0)
+                {
+                    return Json(new { success = false, message = "獎勵比例不能為負數" });
+                }
+
+                var settings = await _context.GameRewardSettings.FirstOrDefaultAsync();
+                if (settings == null)
+                {
+                    settings = new GameRewardSettings
+                    {
+                        PointsRewardRate = pointsRewardRate,
+                        ExpRewardRate = expRewardRate,
+                        CouponRewardRate = couponRewardRate,
+                        PointsRewardEnabled = pointsRewardEnabled,
+                        ExpRewardEnabled = expRewardEnabled,
+                        CouponRewardEnabled = couponRewardEnabled
+                    };
+                    _context.GameRewardSettings.Add(settings);
+                }
+                else
+                {
+                    settings.PointsRewardRate = pointsRewardRate;
+                    settings.ExpRewardRate = expRewardRate;
+                    settings.CouponRewardRate = couponRewardRate;
+                    settings.PointsRewardEnabled = pointsRewardEnabled;
+                    settings.ExpRewardEnabled = expRewardEnabled;
+                    settings.CouponRewardEnabled = couponRewardEnabled;
+                    _context.GameRewardSettings.Update(settings);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "遊戲獎勵設定更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         private bool MiniGameExists(int id)
         {
             return _context.MiniGame.Any(e => e.GameId == id);

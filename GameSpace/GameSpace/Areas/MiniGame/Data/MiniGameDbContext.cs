@@ -46,6 +46,14 @@ namespace GameSpace.Areas.MiniGame.Data
         // 用戶代幣表
         public DbSet<UserToken> UserTokens { get; set; } = null!;
 
+        // 新增：寵物系統設定相關表
+        public DbSet<PetColorChangeCost> PetColorChangeCosts { get; set; } = null!;
+        public DbSet<PetBackgroundChangeCost> PetBackgroundChangeCosts { get; set; } = null!;
+        public DbSet<PetColorOption> PetColorOptions { get; set; } = null!;
+        public DbSet<PetBackgroundOption> PetBackgroundOptions { get; set; } = null!;
+        public DbSet<PetLevelUpRule> PetLevelUpRules { get; set; } = null!;
+        public DbSet<PetInteractionBonusRule> PetInteractionBonusRules { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -164,6 +172,54 @@ namespace GameSpace.Areas.MiniGame.Data
                 entity.Property(w => w.ChangeType).HasMaxLength(20);
                 entity.Property(w => w.ItemCode).HasMaxLength(50);
                 entity.Property(w => w.Description).HasMaxLength(200);
+            });
+
+            // 新增：寵物系統設定相關表的配置
+            modelBuilder.Entity<PetColorChangeCost>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.PointsRequired).IsRequired();
+            });
+
+            modelBuilder.Entity<PetBackgroundChangeCost>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.PointsRequired).IsRequired();
+            });
+
+            modelBuilder.Entity<PetColorOption>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.ColorName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.ColorValue).HasMaxLength(20).IsRequired();
+                entity.Property(p => p.DisplayOrder).IsRequired();
+            });
+
+            modelBuilder.Entity<PetBackgroundOption>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.BackgroundName).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.BackgroundValue).HasMaxLength(20).IsRequired();
+                entity.Property(p => p.DisplayOrder).IsRequired();
+            });
+
+            modelBuilder.Entity<PetLevelUpRule>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Level).IsRequired();
+                entity.Property(p => p.ExperienceRequired).IsRequired();
+                entity.Property(p => p.PointsReward).IsRequired();
+                entity.Property(p => p.ExpReward).IsRequired();
+            });
+
+            modelBuilder.Entity<PetInteractionBonusRule>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.InteractionType).HasMaxLength(50).IsRequired();
+                entity.Property(p => p.PointsCost).IsRequired();
+                entity.Property(p => p.HappinessGain).IsRequired();
+                entity.Property(p => p.ExpGain).IsRequired();
+                entity.Property(p => p.CooldownMinutes).IsRequired();
             });
         }
     }

@@ -326,6 +326,390 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(stats);
         }
 
+        // 新增：寵物換色所需點數設定
+        [HttpGet]
+        public async Task<IActionResult> GetPetColorChangeCost()
+        {
+            try
+            {
+                var cost = await _context.PetColorChangeCosts.FirstOrDefaultAsync();
+                if (cost == null)
+                {
+                    // 如果沒有設定，返回預設值
+                    return Json(new { success = true, data = new { pointsRequired = 100 } });
+                }
+                
+                return Json(new { success = true, data = new { pointsRequired = cost.PointsRequired } });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetColorChangeCost(int pointsRequired)
+        {
+            try
+            {
+                if (pointsRequired < 0)
+                {
+                    return Json(new { success = false, message = "所需點數不能為負數" });
+                }
+
+                var cost = await _context.PetColorChangeCosts.FirstOrDefaultAsync();
+                if (cost == null)
+                {
+                    cost = new PetColorChangeCost { PointsRequired = pointsRequired };
+                    _context.PetColorChangeCosts.Add(cost);
+                }
+                else
+                {
+                    cost.PointsRequired = pointsRequired;
+                    _context.PetColorChangeCosts.Update(cost);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "寵物換色所需點數設定成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：寵物換背景所需點數設定
+        [HttpGet]
+        public async Task<IActionResult> GetPetBackgroundChangeCost()
+        {
+            try
+            {
+                var cost = await _context.PetBackgroundChangeCosts.FirstOrDefaultAsync();
+                if (cost == null)
+                {
+                    // 如果沒有設定，返回預設值
+                    return Json(new { success = true, data = new { pointsRequired = 150 } });
+                }
+                
+                return Json(new { success = true, data = new { pointsRequired = cost.PointsRequired } });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetBackgroundChangeCost(int pointsRequired)
+        {
+            try
+            {
+                if (pointsRequired < 0)
+                {
+                    return Json(new { success = false, message = "所需點數不能為負數" });
+                }
+
+                var cost = await _context.PetBackgroundChangeCosts.FirstOrDefaultAsync();
+                if (cost == null)
+                {
+                    cost = new PetBackgroundChangeCost { PointsRequired = pointsRequired };
+                    _context.PetBackgroundChangeCosts.Add(cost);
+                }
+                else
+                {
+                    cost.PointsRequired = pointsRequired;
+                    _context.PetBackgroundChangeCosts.Update(cost);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "寵物換背景所需點數設定成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：寵物顏色選項管理
+        [HttpGet]
+        public async Task<IActionResult> GetPetColorOptions()
+        {
+            try
+            {
+                var options = await _context.PetColorOptions
+                    .OrderBy(o => o.DisplayOrder)
+                    .ToListAsync();
+                
+                return Json(new { success = true, data = options });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddPetColorOption(string colorName, string colorValue, int displayOrder)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(colorName) || string.IsNullOrEmpty(colorValue))
+                {
+                    return Json(new { success = false, message = "顏色名稱和顏色值不能為空" });
+                }
+
+                var option = new PetColorOption
+                {
+                    ColorName = colorName,
+                    ColorValue = colorValue,
+                    DisplayOrder = displayOrder,
+                    IsActive = true
+                };
+
+                _context.PetColorOptions.Add(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物顏色選項新增成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetColorOption(int id, string colorName, string colorValue, int displayOrder, bool isActive)
+        {
+            try
+            {
+                var option = await _context.PetColorOptions.FindAsync(id);
+                if (option == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的顏色選項" });
+                }
+
+                option.ColorName = colorName;
+                option.ColorValue = colorValue;
+                option.DisplayOrder = displayOrder;
+                option.IsActive = isActive;
+
+                _context.PetColorOptions.Update(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物顏色選項更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePetColorOption(int id)
+        {
+            try
+            {
+                var option = await _context.PetColorOptions.FindAsync(id);
+                if (option == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的顏色選項" });
+                }
+
+                _context.PetColorOptions.Remove(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物顏色選項刪除成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：寵物背景選項管理
+        [HttpGet]
+        public async Task<IActionResult> GetPetBackgroundOptions()
+        {
+            try
+            {
+                var options = await _context.PetBackgroundOptions
+                    .OrderBy(o => o.DisplayOrder)
+                    .ToListAsync();
+                
+                return Json(new { success = true, data = options });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddPetBackgroundOption(string backgroundName, string backgroundValue, int displayOrder)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(backgroundName) || string.IsNullOrEmpty(backgroundValue))
+                {
+                    return Json(new { success = false, message = "背景名稱和背景值不能為空" });
+                }
+
+                var option = new PetBackgroundOption
+                {
+                    BackgroundName = backgroundName,
+                    BackgroundValue = backgroundValue,
+                    DisplayOrder = displayOrder,
+                    IsActive = true
+                };
+
+                _context.PetBackgroundOptions.Add(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物背景選項新增成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetBackgroundOption(int id, string backgroundName, string backgroundValue, int displayOrder, bool isActive)
+        {
+            try
+            {
+                var option = await _context.PetBackgroundOptions.FindAsync(id);
+                if (option == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的背景選項" });
+                }
+
+                option.BackgroundName = backgroundName;
+                option.BackgroundValue = backgroundValue;
+                option.DisplayOrder = displayOrder;
+                option.IsActive = isActive;
+
+                _context.PetBackgroundOptions.Update(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物背景選項更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePetBackgroundOption(int id)
+        {
+            try
+            {
+                var option = await _context.PetBackgroundOptions.FindAsync(id);
+                if (option == null)
+                {
+                    return Json(new { success = false, message = "找不到指定的背景選項" });
+                }
+
+                _context.PetBackgroundOptions.Remove(option);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物背景選項刪除成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：升級規則詳細設定
+        [HttpGet]
+        public async Task<IActionResult> GetPetLevelUpRules()
+        {
+            try
+            {
+                var rules = await _context.PetLevelUpRules
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+                
+                return Json(new { success = true, data = rules });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetLevelUpRules(List<PetLevelUpRule> rules)
+        {
+            try
+            {
+                if (rules == null || !rules.Any())
+                {
+                    return Json(new { success = false, message = "升級規則不能為空" });
+                }
+
+                // 清除現有規則
+                var existingRules = await _context.PetLevelUpRules.ToListAsync();
+                _context.PetLevelUpRules.RemoveRange(existingRules);
+
+                // 新增新規則
+                _context.PetLevelUpRules.AddRange(rules);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物升級規則更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 新增：互動狀態增益規則設定
+        [HttpGet]
+        public async Task<IActionResult> GetPetInteractionBonusRules()
+        {
+            try
+            {
+                var rules = await _context.PetInteractionBonusRules
+                    .OrderBy(r => r.InteractionType)
+                    .ToListAsync();
+                
+                return Json(new { success = true, data = rules });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetInteractionBonusRules(List<PetInteractionBonusRule> rules)
+        {
+            try
+            {
+                if (rules == null || !rules.Any())
+                {
+                    return Json(new { success = false, message = "互動狀態增益規則不能為空" });
+                }
+
+                // 清除現有規則
+                var existingRules = await _context.PetInteractionBonusRules.ToListAsync();
+                _context.PetInteractionBonusRules.RemoveRange(existingRules);
+
+                // 新增新規則
+                _context.PetInteractionBonusRules.AddRange(rules);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "寵物互動狀態增益規則更新成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         private bool PetExists(int id)
         {
             return _context.Pet.Any(e => e.PetId == id);
