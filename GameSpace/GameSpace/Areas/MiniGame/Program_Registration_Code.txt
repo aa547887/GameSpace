@@ -1,0 +1,22 @@
+// MiniGame Area 註冊碼 - 請將以下程式碼加入到 Program.cs 中
+
+// 在 builder.Services 區段加入以下服務註冊
+builder.Services.AddDbContext<GameSpace.Areas.MiniGame.Data.MiniGameDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("GameSpace")));
+
+// 註冊 MiniGame Area 服務
+builder.Services.AddScoped<GameSpace.Areas.MiniGame.Services.IUserWalletService, GameSpace.Areas.MiniGame.Services.UserWalletService>();
+builder.Services.AddScoped<GameSpace.Areas.MiniGame.Services.ISignInStatsService, GameSpace.Areas.MiniGame.Services.SignInStatsService>();
+builder.Services.AddScoped<GameSpace.Areas.MiniGame.Services.IPetService, GameSpace.Areas.MiniGame.Services.PetService>();
+builder.Services.AddScoped<GameSpace.Areas.MiniGame.Services.IMiniGameService, GameSpace.Areas.MiniGame.Services.MiniGameService>();
+
+// 在 app.MapControllerRoute 區段加入以下路由設定
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+// 或者使用以下方式註冊 MiniGame Area
+app.MapControllerRoute(
+    name: "MiniGame",
+    pattern: "MiniGame/{controller=UserWallet}/{action=Index}/{id?}",
+    defaults: new { area = "MiniGame" });

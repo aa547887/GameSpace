@@ -1,320 +1,474 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
-    /// <summary>
-    /// 數據庫模型集合
-    /// </summary>
-    public class DatabaseModels
+    // 管理員資料表 - 對應 SSMS 中的 ManagerData 表
+    [Table("ManagerData")]
+    public class ManagerData
     {
-        /// <summary>
-        /// 數據庫連接配置
-        /// </summary>
-        public class DatabaseConnectionConfig
-        {
-            /// <summary>
-            /// 連接字串
-            /// </summary>
-            public string ConnectionString { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 數據庫名稱
-            /// </summary>
-            public string DatabaseName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 伺服器名稱
-            /// </summary>
-            public string ServerName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 是否使用信任連接
-            /// </summary>
-            public bool UseTrustedConnection { get; set; } = true;
-            
-            /// <summary>
-            /// 連接超時時間（秒）
-            /// </summary>
-            public int ConnectionTimeout { get; set; } = 30;
-            
-            /// <summary>
-            /// 命令超時時間（秒）
-            /// </summary>
-            public int CommandTimeout { get; set; } = 30;
-        }
+        [Key]
+        public int Manager_Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string Manager_Name { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(50)]
+        public string Manager_Account { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(100)]
+        public string Manager_Password { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(100)]
+        public string Manager_Email { get; set; } = string.Empty;
+        
+        public bool Manager_EmailConfirmed { get; set; }
+        
+        public int Manager_AccessFailedCount { get; set; }
+        
+        public bool Manager_LockoutEnabled { get; set; }
+        
+        public DateTime? Manager_LockoutEnd { get; set; }
+        
+        public DateTime Administrator_registration_date { get; set; }
+        
+        // 導航屬性
+        public virtual ICollection<ManagerRole> ManagerRoles { get; set; } = new List<ManagerRole>();
+    }
 
-        /// <summary>
-        /// 數據庫表配置
-        /// </summary>
-        public class DatabaseTableConfig
-        {
-            /// <summary>
-            /// 表名稱
-            /// </summary>
-            public string TableName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 主鍵欄位
-            /// </summary>
-            public string PrimaryKey { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 索引欄位
-            /// </summary>
-            public List<string> IndexFields { get; set; } = new();
-            
-            /// <summary>
-            /// 外鍵關聯
-            /// </summary>
-            public List<ForeignKeyRelation> ForeignKeys { get; set; } = new();
-            
-            /// <summary>
-            /// 檢查約束
-            /// </summary>
-            public List<CheckConstraint> CheckConstraints { get; set; } = new();
-        }
+    // 管理員角色權限表 - 對應 SSMS 中的 ManagerRolePermission 表
+    [Table("ManagerRolePermission")]
+    public class ManagerRolePermission
+    {
+        [Key]
+        public int ManagerRole_Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string role_name { get; set; } = string.Empty;
+        
+        public bool AdministratorPrivilegesManagement { get; set; }
+        
+        public bool UserStatusManagement { get; set; }
+        
+        public bool ShoppingPermissionManagement { get; set; }
+        
+        public bool MessagePermissionManagement { get; set; }
+        
+        public bool Pet_Rights_Management { get; set; }
+        
+        public bool customer_service { get; set; }
+        
+        // 導航屬性
+        public virtual ICollection<ManagerRole> ManagerRoles { get; set; } = new List<ManagerRole>();
+    }
 
-        /// <summary>
-        /// 外鍵關聯
-        /// </summary>
-        public class ForeignKeyRelation
-        {
-            /// <summary>
-            /// 外鍵欄位
-            /// </summary>
-            public string ForeignKeyField { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 參考表名稱
-            /// </summary>
-            public string ReferenceTable { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 參考欄位
-            /// </summary>
-            public string ReferenceField { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 級聯刪除
-            /// </summary>
-            public bool CascadeDelete { get; set; } = false;
-            
-            /// <summary>
-            /// 級聯更新
-            /// </summary>
-            public bool CascadeUpdate { get; set; } = false;
-        }
+    // 管理員角色關聯表 - 對應 SSMS 中的 ManagerRole 表
+    [Table("ManagerRole")]
+    public class ManagerRole
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        public int Manager_Id { get; set; }
+        
+        public int ManagerRole_Id { get; set; }
+        
+        // 導航屬性
+        [ForeignKey("Manager_Id")]
+        public virtual ManagerData Manager { get; set; } = null!;
+        
+        [ForeignKey("ManagerRole_Id")]
+        public virtual ManagerRolePermission ManagerRolePermission { get; set; } = null!;
+    }
 
-        /// <summary>
-        /// 檢查約束
-        /// </summary>
-        public class CheckConstraint
-        {
-            /// <summary>
-            /// 約束名稱
-            /// </summary>
-            public string ConstraintName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 約束條件
-            /// </summary>
-            public string ConstraintCondition { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 約束描述
-            /// </summary>
-            public string Description { get; set; } = string.Empty;
-        }
+    // 用戶錢包表 - 對應 SSMS 中的 User_Wallet 表
+    [Table("User_Wallet")]
+    public class UserWallet
+    {
+        [Key]
+        public int User_Id { get; set; }
+        
+        public int User_Point { get; set; } = 0;
+        
+        // 導航屬性
+        [ForeignKey("User_Id")]
+        public virtual User User { get; set; } = null!;
+        
+        public virtual ICollection<WalletHistory> WalletHistories { get; set; } = new List<WalletHistory>();
+    }
 
-        /// <summary>
-        /// 數據庫查詢配置
-        /// </summary>
-        public class DatabaseQueryConfig
-        {
-            /// <summary>
-            /// 查詢名稱
-            /// </summary>
-            public string QueryName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// SQL查詢語句
-            /// </summary>
-            public string SqlQuery { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 參數列表
-            /// </summary>
-            public List<QueryParameter> Parameters { get; set; } = new();
-            
-            /// <summary>
-            /// 查詢類型
-            /// </summary>
-            public string QueryType { get; set; } = "Select";
-            
-            /// <summary>
-            /// 是否使用分頁
-            /// </summary>
-            public bool UsePaging { get; set; } = false;
-            
-            /// <summary>
-            /// 預設頁面大小
-            /// </summary>
-            public int DefaultPageSize { get; set; } = 10;
-        }
+    // 錢包歷史記錄表 - 對應 SSMS 中的 WalletHistory 表
+    [Table("WalletHistory")]
+    public class WalletHistory
+    {
+        [Key]
+        public int LogID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        [Required]
+        [StringLength(20)]
+        public string ChangeType { get; set; } = string.Empty;
+        
+        public int PointsChanged { get; set; }
+        
+        [StringLength(50)]
+        public string? ItemCode { get; set; }
+        
+        [StringLength(200)]
+        public string? Description { get; set; }
+        
+        public DateTime ChangeTime { get; set; } = DateTime.UtcNow;
+        
+        // 導航屬性
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+    }
 
-        /// <summary>
-        /// 查詢參數
-        /// </summary>
-        public class QueryParameter
-        {
-            /// <summary>
-            /// 參數名稱
-            /// </summary>
-            public string ParameterName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 參數類型
-            /// </summary>
-            public string ParameterType { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 是否為輸出參數
-            /// </summary>
-            public bool IsOutput { get; set; } = false;
-            
-            /// <summary>
-            /// 預設值
-            /// </summary>
-            public object? DefaultValue { get; set; }
-            
-            /// <summary>
-            /// 是否必填
-            /// </summary>
-            public bool IsRequired { get; set; } = false;
-        }
+    // 用戶表 - 對應 SSMS 中的 Users 表
+    [Table("Users")]
+    public class User
+    {
+        [Key]
+        public int User_Id { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string User_name { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(50)]
+        public string User_Account { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(100)]
+        public string User_Password { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(100)]
+        public string User_Email { get; set; } = string.Empty;
+        
+        public bool User_EmailConfirmed { get; set; }
+        
+        public int User_AccessFailedCount { get; set; }
+        
+        public bool User_LockoutEnabled { get; set; }
+        
+        public DateTime? User_LockoutEnd { get; set; }
+        
+        public DateTime User_registration_date { get; set; } = DateTime.UtcNow;
+        
+        // 導航屬性
+        public virtual UserWallet? UserWallet { get; set; }
+        public virtual ICollection<WalletHistory> WalletHistories { get; set; } = new List<WalletHistory>();
+        public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();
+        public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
+        public virtual ICollection<UserSignInStats> UserSignInStats { get; set; } = new List<UserSignInStats>();
+        public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
+        public virtual ICollection<EVoucher> EVouchers { get; set; } = new List<EVoucher>();
+    }
 
-        /// <summary>
-        /// 數據庫事務配置
-        /// </summary>
-        public class DatabaseTransactionConfig
-        {
-            /// <summary>
-            /// 事務隔離級別
-            /// </summary>
-            public string IsolationLevel { get; set; } = "ReadCommitted";
-            
-            /// <summary>
-            /// 事務超時時間（秒）
-            /// </summary>
-            public int TransactionTimeout { get; set; } = 60;
-            
-            /// <summary>
-            /// 是否自動提交
-            /// </summary>
-            public bool AutoCommit { get; set; } = true;
-            
-            /// <summary>
-            /// 是否使用分散式事務
-            /// </summary>
-            public bool UseDistributedTransaction { get; set; } = false;
-        }
+    // 寵物表 - 對應 SSMS 中的 Pet 表
+    [Table("Pet")]
+    public class Pet
+    {
+        [Key]
+        public int PetID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string PetName { get; set; } = string.Empty;
+        
+        public int Level { get; set; } = 1;
+        
+        public DateTime LevelUpTime { get; set; } = DateTime.UtcNow;
+        
+        public int Experience { get; set; } = 0;
+        
+        public int Hunger { get; set; } = 100;
+        
+        public int Mood { get; set; } = 100;
+        
+        public int Stamina { get; set; } = 100;
+        
+        public int Cleanliness { get; set; } = 100;
+        
+        public int Health { get; set; } = 100;
+        
+        [Required]
+        [StringLength(10)]
+        public string SkinColor { get; set; } = "#000000";
+        
+        public DateTime SkinColorChangedTime { get; set; } = DateTime.UtcNow;
+        
+        [Required]
+        [StringLength(20)]
+        public string BackgroundColor { get; set; } = "白色";
+        
+        public DateTime BackgroundColorChangedTime { get; set; } = DateTime.UtcNow;
+        
+        public int PointsChanged_SkinColor { get; set; } = 0;
+        
+        public int PointsChanged_BackgroundColor { get; set; } = 0;
+        
+        public int PointsGained_LevelUp { get; set; } = 0;
+        
+        public DateTime PointsGainedTime_LevelUp { get; set; } = DateTime.UtcNow;
+        
+        // 導航屬性
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+    }
 
-        /// <summary>
-        /// 數據庫備份配置
-        /// </summary>
-        public class DatabaseBackupConfig
-        {
-            /// <summary>
-            /// 備份路徑
-            /// </summary>
-            public string BackupPath { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 備份檔案名稱
-            /// </summary>
-            public string BackupFileName { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// 備份類型
-            /// </summary>
-            public string BackupType { get; set; } = "Full";
-            
-            /// <summary>
-            /// 是否壓縮
-            /// </summary>
-            public bool Compress { get; set; } = true;
-            
-            /// <summary>
-            /// 備份保留天數
-            /// </summary>
-            public int RetentionDays { get; set; } = 30;
-            
-            /// <summary>
-            /// 是否加密
-            /// </summary>
-            public bool Encrypt { get; set; } = false;
-        }
+    // 小遊戲記錄表 - 對應 SSMS 中的 MiniGame 表
+    [Table("MiniGame")]
+    public class MiniGame
+    {
+        [Key]
+        public int GameID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        public int PetID { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string GameType { get; set; } = string.Empty;
+        
+        public DateTime StartTime { get; set; } = DateTime.UtcNow;
+        
+        public DateTime? EndTime { get; set; }
+        
+        [StringLength(20)]
+        public string? Result { get; set; }
+        
+        public int PointsEarned { get; set; } = 0;
+        
+        public int ExpEarned { get; set; } = 0;
+        
+        public int CouponEarned { get; set; } = 0;
+        
+        [StringLength(100)]
+        public string? SessionID { get; set; }
+        
+        // 導航屬性
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+        
+        [ForeignKey("PetID")]
+        public virtual Pet Pet { get; set; } = null!;
+    }
 
-        /// <summary>
-        /// 數據庫效能監控配置
-        /// </summary>
-        public class DatabasePerformanceConfig
-        {
-            /// <summary>
-            /// 是否啟用效能監控
-            /// </summary>
-            public bool EnableMonitoring { get; set; } = true;
-            
-            /// <summary>
-            /// 慢查詢閾值（毫秒）
-            /// </summary>
-            public int SlowQueryThreshold { get; set; } = 1000;
-            
-            /// <summary>
-            /// 連接池大小
-            /// </summary>
-            public int ConnectionPoolSize { get; set; } = 100;
-            
-            /// <summary>
-            /// 最大連接數
-            /// </summary>
-            public int MaxConnections { get; set; } = 200;
-            
-            /// <summary>
-            /// 連接生命週期（分鐘）
-            /// </summary>
-            public int ConnectionLifetime { get; set; } = 30;
-        }
+    // 用戶簽到統計表 - 對應 SSMS 中的 UserSignInStats 表
+    [Table("UserSignInStats")]
+    public class UserSignInStats
+    {
+        [Key]
+        public int LogID { get; set; }
+        
+        public DateTime SignTime { get; set; } = DateTime.UtcNow;
+        
+        public int UserID { get; set; }
+        
+        public int PointsGained { get; set; } = 0;
+        
+        public DateTime PointsGainedTime { get; set; } = DateTime.UtcNow;
+        
+        public int ExpGained { get; set; } = 0;
+        
+        public DateTime ExpGainedTime { get; set; } = DateTime.UtcNow;
+        
+        [StringLength(50)]
+        public string? CouponGained { get; set; }
+        
+        public DateTime CouponGainedTime { get; set; } = DateTime.UtcNow;
+        
+        // 導航屬性
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+    }
 
-        /// <summary>
-        /// 數據庫安全配置
-        /// </summary>
-        public class DatabaseSecurityConfig
-        {
-            /// <summary>
-            /// 是否啟用SQL注入防護
-            /// </summary>
-            public bool EnableSqlInjectionProtection { get; set; } = true;
-            
-            /// <summary>
-            /// 是否啟用參數化查詢
-            /// </summary>
-            public bool EnableParameterizedQueries { get; set; } = true;
-            
-            /// <summary>
-            /// 是否啟用查詢日誌
-            /// </summary>
-            public bool EnableQueryLogging { get; set; } = true;
-            
-            /// <summary>
-            /// 是否啟用敏感資料遮罩
-            /// </summary>
-            public bool EnableDataMasking { get; set; } = false;
-            
-            /// <summary>
-            /// 敏感欄位列表
-            /// </summary>
-            public List<string> SensitiveFields { get; set; } = new();
-        }
+    // 優惠券類型表 - 對應 SSMS 中的 CouponType 表
+    [Table("CouponType")]
+    public class CouponType
+    {
+        [Key]
+        public int CouponTypeID { get; set; }
+        
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(20)]
+        public string DiscountType { get; set; } = string.Empty;
+        
+        public decimal DiscountValue { get; set; }
+        
+        public decimal MinSpend { get; set; }
+        
+        public DateTime ValidFrom { get; set; }
+        
+        public DateTime ValidTo { get; set; }
+        
+        public int PointsCost { get; set; }
+        
+        [StringLength(500)]
+        public string? Description { get; set; }
+        
+        // 導航屬性
+        public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
+    }
+
+    // 優惠券表 - 對應 SSMS 中的 Coupon 表
+    [Table("Coupon")]
+    public class Coupon
+    {
+        [Key]
+        public int CouponID { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string CouponCode { get; set; } = string.Empty;
+        
+        public int CouponTypeID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        public bool IsUsed { get; set; } = false;
+        
+        public DateTime AcquiredTime { get; set; } = DateTime.UtcNow;
+        
+        public DateTime? UsedTime { get; set; }
+        
+        public int? UsedInOrderID { get; set; }
+        
+        // 導航屬性
+        [ForeignKey("CouponTypeID")]
+        public virtual CouponType CouponType { get; set; } = null!;
+        
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+    }
+
+    // 電子券類型表 - 對應 SSMS 中的 EVoucherType 表
+    [Table("EVoucherType")]
+    public class EVoucherType
+    {
+        [Key]
+        public int EVoucherTypeID { get; set; }
+        
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+        
+        public decimal ValueAmount { get; set; }
+        
+        public DateTime ValidFrom { get; set; }
+        
+        public DateTime ValidTo { get; set; }
+        
+        public int PointsCost { get; set; }
+        
+        public int TotalAvailable { get; set; }
+        
+        [StringLength(500)]
+        public string? Description { get; set; }
+        
+        // 導航屬性
+        public virtual ICollection<EVoucher> EVouchers { get; set; } = new List<EVoucher>();
+    }
+
+    // 電子券表 - 對應 SSMS 中的 EVoucher 表
+    [Table("EVoucher")]
+    public class EVoucher
+    {
+        [Key]
+        public int EVoucherID { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string EVoucherCode { get; set; } = string.Empty;
+        
+        public int EVoucherTypeID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        public bool IsUsed { get; set; } = false;
+        
+        public DateTime AcquiredTime { get; set; } = DateTime.UtcNow;
+        
+        public DateTime? UsedTime { get; set; }
+        
+        // 導航屬性
+        [ForeignKey("EVoucherTypeID")]
+        public virtual EVoucherType EVoucherType { get; set; } = null!;
+        
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
+        
+        public virtual ICollection<EVoucherToken> EVoucherTokens { get; set; } = new List<EVoucherToken>();
+        public virtual ICollection<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; } = new List<EVoucherRedeemLog>();
+    }
+
+    // 電子券令牌表 - 對應 SSMS 中的 EVoucherToken 表
+    [Table("EVoucherToken")]
+    public class EVoucherToken
+    {
+        [Key]
+        public int TokenID { get; set; }
+        
+        public int EVoucherID { get; set; }
+        
+        [Required]
+        [StringLength(100)]
+        public string Token { get; set; } = string.Empty;
+        
+        public DateTime ExpiresAt { get; set; }
+        
+        public bool IsRevoked { get; set; } = false;
+        
+        // 導航屬性
+        [ForeignKey("EVoucherID")]
+        public virtual EVoucher EVoucher { get; set; } = null!;
+    }
+
+    // 電子券兌換記錄表 - 對應 SSMS 中的 EVoucherRedeemLog 表
+    [Table("EVoucherRedeemLog")]
+    public class EVoucherRedeemLog
+    {
+        [Key]
+        public int LogID { get; set; }
+        
+        public int EVoucherID { get; set; }
+        
+        public int TokenID { get; set; }
+        
+        public int UserID { get; set; }
+        
+        public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
+        
+        [StringLength(200)]
+        public string? StoreLocation { get; set; }
+        
+        [StringLength(50)]
+        public string? StaffID { get; set; }
+        
+        // 導航屬性
+        [ForeignKey("EVoucherID")]
+        public virtual EVoucher EVoucher { get; set; } = null!;
+        
+        [ForeignKey("TokenID")]
+        public virtual EVoucherToken EVoucherToken { get; set; } = null!;
+        
+        [ForeignKey("UserID")]
+        public virtual User User { get; set; } = null!;
     }
 }

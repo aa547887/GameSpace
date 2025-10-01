@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Data;
+using GameSpace.Models;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,9 +10,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Area("MiniGame")]
     public class AdminUserController : Controller
     {
-        private readonly GameSpaceContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public AdminUserController(GameSpaceContext context)
+        public AdminUserController(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -362,3 +362,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+

@@ -8,9 +8,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Area("MiniGame")]
     public class AdminWalletController : Controller
     {
-        private readonly GameSpaceContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public AdminWalletController(GameSpaceContext context)
+        public AdminWalletController(GameSpacedatabaseContext context)
         {
             _context = context;
         }

@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Data;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
     public class AdminDashboardController : Controller
     {
-        private readonly GameSpaceContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public AdminDashboardController(GameSpaceContext context)
+        public AdminDashboardController(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -24,194 +24,159 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 // 基本統計數據
                 viewModel.TotalUsers = await _context.Users.CountAsync();
                 viewModel.ActiveUsers = await _context.Users.CountAsync(u => u.IsActive);
-                viewModel.TotalPets = await _context.Pet.CountAsync();
-                viewModel.TotalMiniGames = await _context.MiniGame.CountAsync();
-                viewModel.TotalCoupons = await _context.Coupon.CountAsync();
-                viewModel.TotalEVouchers = await _context.EVoucher.CountAsync();
+                viewModel.TotalPets = await _context.Pets.CountAsync();
+                viewModel.TotalMiniGames = await _context.MiniGames.CountAsync();
+                viewModel.TotalCoupons = await _context.Coupons.CountAsync();
+                viewModel.TotalEVouchers = await _context.EVouchers.CountAsync();
 
-                // 今日數據
+                // 今日統計
                 var today = DateTime.Today;
-                viewModel.TodaySignIns = await _context.SignIn.CountAsync(s => s.SignInDate.Date == today);
-                viewModel.TodayGamePlays = await _context.GamePlayRecord.CountAsync(g => g.PlayTime.Date == today);
+                viewModel.TodaySignIns = await _context.UserSignInStats
+                    .CountAsync(s => s.SignTime.Date == today);
+                viewModel.TodayGames = await _context.MiniGames
+                    .CountAsync(g => g.StartTime.Date == today);
 
-                // 點數統計
-                viewModel.TotalPointsEarned = await _context.Wallet
-                    .Where(w => w.TransactionType == "earn")
-                    .SumAsync(w => w.Amount);
-                viewModel.TotalPointsSpent = await _context.Wallet
-                    .Where(w => w.TransactionType == "spend")
-                    .SumAsync(w => w.Amount);
+                // 本月統計
+                var thisMonth = new DateTime(today.Year, today.Month, 1);
+                viewModel.ThisMonthSignIns = await _context.UserSignInStats
+                    .CountAsync(s => s.SignTime >= thisMonth);
+                viewModel.ThisMonthGames = await _context.MiniGames
+                    .CountAsync(g => g.StartTime >= thisMonth);
 
-                // 圖表數據 - 用戶成長（過去30天）
-                viewModel.UserGrowthData = await GetUserGrowthData();
-                
-                // 圖表數據 - 遊戲遊玩次數（過去7天）
-                viewModel.GamePlayData = await GetGamePlayData();
-                
-                // 圖表數據 - 點數使用（過去7天）
-                viewModel.PointsData = await GetPointsData();
-            }
-            catch (Exception ex)
-            {
-                // 記錄錯誤但不中斷頁面載入
-                Console.WriteLine($"Dashboard data loading error: {ex.Message}");
-            }
+                // 活躍用戶統計（最近7天）
+                var sevenDaysAgo = today.AddDays(-7);
+                viewModel.ActiveUsersLast7Days = await _context.Users
+                    .CountAsync(u => u.LastLoginDate >= sevenDaysAgo);
 
-            return View(viewModel);
-        }
+                // 寵物統計
+                viewModel.PetsWithMaxLevel = await _context.Pets
+                    .CountAsync(p => p.PetLevel >= 10);
+                viewModel.PetsWithMaxHappiness = await _context.Pets
+                    .CountAsync(p => p.Happiness >= 100);
 
-        private async Task<List<ChartData>> GetUserGrowthData()
-        {
-            var data = new List<ChartData>();
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-30);
+                // 錢包統計
+                viewModel.TotalPointsInCirculation = await _context.UserWallets
+                    .SumAsync(w => w.UserPoint);
+                viewModel.AveragePointsPerUser = viewModel.TotalUsers > 0 
+                    ? viewModel.TotalPointsInCirculation / viewModel.TotalUsers 
+                    : 0;
 
-            for (int i = 0; i < 30; i++)
-            {
-                var date = startDate.AddDays(i);
-                var count = await _context.Users.CountAsync(u => u.User_registration_date.Date <= date);
-                data.Add(new ChartData
-                {
-                    Label = date.ToString("MM/dd"),
-                    Count = count
-                });
-            }
+                // 優惠券統計
+                viewModel.UsedCoupons = await _context.Coupons
+                    .CountAsync(c => c.IsUsed);
+                viewModel.AvailableCoupons = await _context.Coupons
+                    .CountAsync(c => !c.IsUsed);
 
-            return data;
-        }
+                // 電子券統計
+                viewModel.UsedEVouchers = await _context.EVouchers
+                    .CountAsync(e => e.IsUsed);
+                viewModel.AvailableEVouchers = await _context.EVouchers
+                    .CountAsync(e => !e.IsUsed);
 
-        private async Task<List<ChartData>> GetGamePlayData()
-        {
-            var data = new List<ChartData>();
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-7);
-
-            for (int i = 0; i < 7; i++)
-            {
-                var date = startDate.AddDays(i);
-                var count = await _context.GamePlayRecord.CountAsync(g => g.PlayTime.Date == date);
-                data.Add(new ChartData
-                {
-                    Label = date.ToString("MM/dd"),
-                    Count = count
-                });
-            }
-
-            return data;
-        }
-
-        private async Task<List<ChartData>> GetPointsData()
-        {
-            var data = new List<ChartData>();
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-7);
-
-            for (int i = 0; i < 7; i++)
-            {
-                var date = startDate.AddDays(i);
-                var earned = await _context.Wallet
-                    .Where(w => w.TransactionDate.Date == date && w.TransactionType == "earn")
-                    .SumAsync(w => w.Amount);
-                var spent = await _context.Wallet
-                    .Where(w => w.TransactionDate.Date == date && w.TransactionType == "spend")
-                    .SumAsync(w => w.Amount);
-                
-                data.Add(new ChartData
-                {
-                    Label = date.ToString("MM/dd"),
-                    Value = earned - spent
-                });
-            }
-
-            return data;
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetChartData(string chartType)
-        {
-            try
-            {
-                List<ChartData> data = chartType switch
-                {
-                    "userGrowth" => await GetUserGrowthData(),
-                    "gamePlay" => await GetGamePlayData(),
-                    "points" => await GetPointsData(),
-                    _ => new List<ChartData>()
-                };
-
-                return Json(data);
-            }
-            catch (Exception ex)
-            {
-                return Json(new { error = ex.Message });
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetRecentActivity()
-        {
-            try
-            {
-                var recentActivities = new List<object>();
-
-                // 最近註冊的用戶
-                var recentUsers = await _context.Users
-                    .OrderByDescending(u => u.User_registration_date)
+                // 最近活動
+                viewModel.RecentSignIns = await _context.UserSignInStats
+                    .Include(s => s.User)
+                    .OrderByDescending(s => s.SignTime)
                     .Take(5)
-                    .Select(u => new
+                    .Select(s => new RecentActivityViewModel
                     {
-                        Type = "user",
-                        Message = $"新用戶 {u.User_name} 註冊",
-                        Time = u.User_registration_date,
-                        Icon = "fas fa-user-plus"
+                        UserName = s.User.User_name,
+                        Activity = "簽到",
+                        Time = s.SignTime,
+                        PointsEarned = s.PointsEarned
                     })
                     .ToListAsync();
 
-                // 最近的遊戲遊玩記錄
-                var recentGamePlays = await _context.GamePlayRecord
-                    .Include(g => g.MiniGame)
-                    .Include(g => g.Users)
-                    .OrderByDescending(g => g.PlayTime)
+                viewModel.RecentGames = await _context.MiniGames
+                    .Include(g => g.User)
+                    .OrderByDescending(g => g.StartTime)
                     .Take(5)
-                    .Select(g => new
+                    .Select(g => new RecentActivityViewModel
                     {
-                        Type = "game",
-                        Message = $"{g.Users.User_name} 遊玩了 {g.MiniGame.GameName}",
-                        Time = g.PlayTime,
-                        Icon = "fas fa-gamepad"
+                        UserName = g.User.User_name,
+                        Activity = "小遊戲",
+                        Time = g.StartTime,
+                        PointsEarned = g.PointsEarned
                     })
                     .ToListAsync();
 
-                // 最近的簽到記錄
-                var recentSignIns = await _context.SignIn
-                    .Include(s => s.Users)
-                    .OrderByDescending(s => s.SignInDate)
-                    .Take(5)
-                    .Select(s => new
-                    {
-                        Type = "signin",
-                        Message = $"{s.Users.User_name} 完成簽到",
-                        Time = s.SignInDate,
-                        Icon = "fas fa-calendar-check"
-                    })
-                    .ToListAsync();
+                // 圖表數據
+                viewModel.SignInChartData = await GetSignInChartDataAsync();
+                viewModel.GameChartData = await GetGameChartDataAsync();
+                viewModel.PointsChartData = await GetPointsChartDataAsync();
 
-                recentActivities.AddRange(recentUsers);
-                recentActivities.AddRange(recentGamePlays);
-                recentActivities.AddRange(recentSignIns);
-
-                // 按時間排序並取前10個
-                var sortedActivities = recentActivities
-                    .OrderByDescending(a => ((dynamic)a).Time)
-                    .Take(10)
-                    .ToList();
-
-                return Json(sortedActivities);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                return Json(new { error = ex.Message });
+                // 記錄錯誤
+                TempData["ErrorMessage"] = $"載入儀表板時發生錯誤：{ex.Message}";
+                return View(viewModel);
             }
+        }
+
+        private async Task<List<ChartData>> GetSignInChartDataAsync()
+        {
+            var today = DateTime.Today;
+            var chartData = new List<ChartData>();
+
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = today.AddDays(-i);
+                var count = await _context.UserSignInStats
+                    .CountAsync(s => s.SignTime.Date == date);
+                
+                chartData.Add(new ChartData
+                {
+                    Label = date.ToString("MM/dd"),
+                    Value = count
+                });
+            }
+
+            return chartData;
+        }
+
+        private async Task<List<ChartData>> GetGameChartDataAsync()
+        {
+            var today = DateTime.Today;
+            var chartData = new List<ChartData>();
+
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = today.AddDays(-i);
+                var count = await _context.MiniGames
+                    .CountAsync(g => g.StartTime.Date == date);
+                
+                chartData.Add(new ChartData
+                {
+                    Label = date.ToString("MM/dd"),
+                    Value = count
+                });
+            }
+
+            return chartData;
+        }
+
+        private async Task<List<ChartData>> GetPointsChartDataAsync()
+        {
+            var today = DateTime.Today;
+            var chartData = new List<ChartData>();
+
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = today.AddDays(-i);
+                var points = await _context.WalletHistories
+                    .Where(w => w.ChangeTime.Date == date && w.ChangeType == "Point")
+                    .SumAsync(w => w.ChangeAmount);
+                
+                chartData.Add(new ChartData
+                {
+                    Label = date.ToString("MM/dd"),
+                    Value = (int)points
+                });
+            }
+
+            return chartData;
         }
     }
 }

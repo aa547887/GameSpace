@@ -1,21 +1,18 @@
-@model GameSpace.Areas.MiniGame.Models.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "管理儀表板";
+    ViewData["Title"] = "MiniGame 管理後台";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">管理儀表板</h1>
-        <div>
-            <button class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" onclick="refreshDashboard()">
-                <i class="fas fa-sync-alt fa-sm text-white-50"></i> 重新整理
-            </button>
-        </div>
+        <h1 class="h3 mb-0 text-gray-800">MiniGame 管理後台</h1>
+        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-download fa-sm text-white-50"></i> 匯出報表
+        </a>
     </div>
 
-    <!-- 統計卡片 -->
+    <!-- Content Row -->
     <div class="row">
         <!-- 總用戶數 -->
         <div class="col-xl-3 col-md-6 mb-4">
@@ -23,12 +20,8 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                總用戶數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TotalUsers.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總用戶數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalUsers</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -44,12 +37,8 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                活躍用戶數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.ActiveUsers.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活躍用戶數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ActiveUsers</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-user-check fa-2x text-gray-300"></i>
@@ -65,12 +54,8 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                總寵物數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TotalPets.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">總寵物數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalPets</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-paw fa-2x text-gray-300"></i>
@@ -80,18 +65,14 @@
             </div>
         </div>
 
-        <!-- 總遊戲數 -->
+        <!-- 總遊戲次數 -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                總遊戲數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TotalMiniGames.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總遊戲次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalMiniGames</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-gamepad fa-2x text-gray-300"></i>
@@ -102,7 +83,7 @@
         </div>
     </div>
 
-    <!-- 第二行統計卡片 -->
+    <!-- Content Row -->
     <div class="row">
         <!-- 今日簽到數 -->
         <div class="col-xl-3 col-md-6 mb-4">
@@ -110,12 +91,8 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                今日簽到數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TodaySignIns.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodaySignIns</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
@@ -125,18 +102,14 @@
             </div>
         </div>
 
-        <!-- 今日遊戲遊玩數 -->
+        <!-- 今日遊戲次數 -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                今日遊戲遊玩數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TodayGamePlays.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日遊戲次數</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayGamePlays</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-play fa-2x text-gray-300"></i>
@@ -146,18 +119,14 @@
             </div>
         </div>
 
-        <!-- 總獲得點數 -->
+        <!-- 總點數獲得 -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                總獲得點數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TotalPointsEarned.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">總點數獲得</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalPointsEarned</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-coins fa-2x text-gray-300"></i>
@@ -167,18 +136,14 @@
             </div>
         </div>
 
-        <!-- 總消費點數 -->
+        <!-- 總點數消費 -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                總消費點數
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @Model.TotalPointsSpent.ToString("N0")
-                            </div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">總點數消費</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalPointsSpent</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
@@ -189,24 +154,13 @@
         </div>
     </div>
 
-    <!-- 圖表區域 -->
+    <!-- Content Row -->
     <div class="row">
         <!-- 用戶成長圖表 -->
         <div class="col-xl-8 col-lg-7">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">用戶成長趨勢</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                            <div class="dropdown-header">圖表選項</div>
-                            <a class="dropdown-item" href="#" onclick="updateChart('userGrowth', 7)">最近7天</a>
-                            <a class="dropdown-item" href="#" onclick="updateChart('userGrowth', 30)">最近30天</a>
-                            <a class="dropdown-item" href="#" onclick="updateChart('userGrowth', 90)">最近90天</a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body">
                     <div class="chart-area">
@@ -231,44 +185,59 @@
         </div>
     </div>
 
-    <!-- 點數使用圖表 -->
+    <!-- Content Row -->
     <div class="row">
-        <div class="col-lg-12">
+        <!-- 快速操作 -->
+        <div class="col-lg-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">點數使用趨勢</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink2">
-                            <div class="dropdown-header">圖表選項</div>
-                            <a class="dropdown-item" href="#" onclick="updateChart('points', 7)">最近7天</a>
-                            <a class="dropdown-item" href="#" onclick="updateChart('points', 30)">最近30天</a>
-                        </div>
-                    </div>
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
                 </div>
                 <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="pointsChart"></canvas>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="@Url.Action("Index", "AdminUser")" class="btn btn-primary btn-block">
+                                <i class="fas fa-users"></i> 用戶管理
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="@Url.Action("Index", "AdminPet")" class="btn btn-success btn-block">
+                                <i class="fas fa-paw"></i> 寵物管理
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="@Url.Action("Index", "AdminMiniGame")" class="btn btn-info btn-block">
+                                <i class="fas fa-gamepad"></i> 遊戲管理
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="@Url.Action("Index", "AdminWallet")" class="btn btn-warning btn-block">
+                                <i class="fas fa-wallet"></i> 錢包管理
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 最近活動 -->
-    <div class="row">
-        <div class="col-lg-12">
+        <!-- 系統狀態 -->
+        <div class="col-lg-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">最近活動</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">系統狀態</h6>
                 </div>
                 <div class="card-body">
-                    <div id="recentActivities">
-                        <div class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="sr-only">載入中...</span>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="text-center">
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalCoupons</div>
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">優惠券總數</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-center">
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalEVouchers</div>
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">禮券總數</div>
                             </div>
                         </div>
                     </div>
@@ -278,163 +247,55 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // 圖表變數
-        let userGrowthChart, gamePlayChart, pointsChart;
+<!-- Chart.js -->
+<script src="~/lib/chart.js/Chart.min.js"></script>
 
-        $(document).ready(function() {
-            // 初始化圖表
-            initUserGrowthChart();
-            initGamePlayChart();
-            initPointsChart();
-            
-            // 載入最近活動
-            loadRecentActivities();
-        });
-
-        // 初始化用戶成長圖表
-        function initUserGrowthChart() {
-            const ctx = document.getElementById('userGrowthChart').getContext('2d');
-            const data = @Html.Raw(Json.Serialize(Model.UserGrowthData));
-            
-            userGrowthChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.map(item => item.label),
-                    datasets: [{
-                        label: '用戶總數',
-                        data: data.map(item => item.count),
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+<script>
+// 用戶成長圖表
+var ctx = document.getElementById("userGrowthChart");
+var userGrowthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: @Html.Raw(Json.Serialize(Model.UserGrowthData.Select(x => x.Date))),
+        datasets: [{
+            label: '用戶數',
+            data: @Html.Raw(Json.Serialize(Model.UserGrowthData.Select(x => x.Count))),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
         }
+    }
+});
 
-        // 初始化遊戲遊玩次數圖表
-        function initGamePlayChart() {
-            const ctx = document.getElementById('gamePlayChart').getContext('2d');
-            const data = @Html.Raw(Json.Serialize(Model.GamePlayData));
-            
-            gamePlayChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.map(item => item.label),
-                    datasets: [{
-                        data: data.map(item => item.count),
-                        backgroundColor: [
-                            '#FF6384',
-                            '#36A2EB',
-                            '#FFCE56',
-                            '#4BC0C0',
-                            '#9966FF',
-                            '#FF9F40',
-                            '#FF6384'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-
-        // 初始化點數使用圖表
-        function initPointsChart() {
-            const ctx = document.getElementById('pointsChart').getContext('2d');
-            const data = @Html.Raw(Json.Serialize(Model.PointsData));
-            
-            pointsChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.map(item => item.label),
-                    datasets: [{
-                        label: '淨點數變化',
-                        data: data.map(item => item.value),
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // 更新圖表
-        function updateChart(chartType, days) {
-            $.get('@Url.Action("GetChartData", "AdminDashboard")', { chartType: chartType, days: days })
-                .done(function(data) {
-                    if (chartType === 'userGrowth') {
-                        userGrowthChart.data.labels = data.map(item => item.label);
-                        userGrowthChart.data.datasets[0].data = data.map(item => item.count);
-                        userGrowthChart.update();
-                    } else if (chartType === 'gamePlay') {
-                        gamePlayChart.data.labels = data.map(item => item.label);
-                        gamePlayChart.data.datasets[0].data = data.map(item => item.count);
-                        gamePlayChart.update();
-                    } else if (chartType === 'points') {
-                        pointsChart.data.labels = data.map(item => item.label);
-                        pointsChart.data.datasets[0].data = data.map(item => item.value);
-                        pointsChart.update();
-                    }
-                })
-                .fail(function() {
-                    alert('載入圖表數據失敗');
-                });
-        }
-
-        // 載入最近活動
-        function loadRecentActivities() {
-            $.get('@Url.Action("GetRecentActivity", "AdminDashboard")')
-                .done(function(data) {
-                    let html = '';
-                    if (data.length === 0) {
-                        html = '<p class="text-muted text-center">暫無最近活動</p>';
-                    } else {
-                        data.forEach(function(activity) {
-                            html += `
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="mr-3">
-                                        <i class="${activity.icon} text-primary"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="text-gray-800">${activity.message}</div>
-                                        <div class="text-xs text-gray-500">${new Date(activity.time).toLocaleString()}</div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
-                    $('#recentActivities').html(html);
-                })
-                .fail(function() {
-                    $('#recentActivities').html('<p class="text-danger text-center">載入活動數據失敗</p>');
-                });
-        }
-
-        // 重新整理儀表板
-        function refreshDashboard() {
-            location.reload();
-        }
-    </script>
-}
+// 遊戲遊玩次數圖表
+var ctx2 = document.getElementById("gamePlayChart");
+var gamePlayChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+        labels: @Html.Raw(Json.Serialize(Model.GamePlayData.Select(x => x.GameType))),
+        datasets: [{
+            data: @Html.Raw(Json.Serialize(Model.GamePlayData.Select(x => x.Count))),
+            backgroundColor: [
+                '#4e73df',
+                '#1cc88a',
+                '#36b9cc',
+                '#f6c23e',
+                '#e74a3b'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>

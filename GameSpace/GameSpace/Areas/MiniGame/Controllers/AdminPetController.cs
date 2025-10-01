@@ -8,9 +8,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Area("MiniGame")]
     public class AdminPetController : Controller
     {
-        private readonly GameSpaceContext _context;
+        private readonly MiniGameDbContext _context;
 
-        public AdminPetController(GameSpaceContext context)
+        public AdminPetController(MiniGameDbContext context)
         {
             _context = context;
         }

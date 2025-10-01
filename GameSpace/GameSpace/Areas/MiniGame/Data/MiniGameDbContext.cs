@@ -5,147 +5,88 @@ namespace GameSpace.Areas.MiniGame.Data
 {
     public class MiniGameDbContext : DbContext
     {
-        public MiniGameDbContext(DbContextOptions<MiniGameDbContext> options) : base(options)
-        {
-        }
+        public MiniGameDbContext(DbContextOptions<MiniGameDbContext> options)
+            : base(options) { }
 
-        // 管理者相關表
+        // 管理員相關表
         public DbSet<ManagerData> ManagerData { get; set; }
-        public DbSet<ManagerRolePermission> ManagerRolePermission { get; set; }
-        public DbSet<ManagerRole> ManagerRole { get; set; }
+        public DbSet<ManagerRolePermission> ManagerRolePermissions { get; set; }
+        public DbSet<ManagerRole> ManagerRoles { get; set; }
 
-        // 使用者相關表
-        public DbSet<Users> Users { get; set; }
-        public DbSet<User_Wallet> User_Wallet { get; set; }
-        public DbSet<WalletHistory> WalletHistory { get; set; }
-        public DbSet<UserTokens> UserTokens { get; set; }
+        // 用戶相關表
+        public DbSet<User> Users { get; set; }
+        public DbSet<UserWallet> UserWallets { get; set; }
+        public DbSet<WalletHistory> WalletHistories { get; set; }
 
         // 優惠券相關表
-        public DbSet<CouponType> CouponType { get; set; }
-        public DbSet<Coupon> Coupon { get; set; }
+        public DbSet<CouponType> CouponTypes { get; set; }
+        public DbSet<Coupon> Coupons { get; set; }
 
-        // 電子禮券相關表
-        public DbSet<EVoucherType> EVoucherType { get; set; }
-        public DbSet<EVoucher> EVoucher { get; set; }
-        public DbSet<EVoucherToken> EVoucherToken { get; set; }
-        public DbSet<EVoucherRedeemLog> EVoucherRedeemLog { get; set; }
+        // 電子券相關表
+        public DbSet<EVoucherType> EVoucherTypes { get; set; }
+        public DbSet<EVoucher> EVouchers { get; set; }
+        public DbSet<EVoucherToken> EVoucherTokens { get; set; }
+        public DbSet<EVoucherRedeemLog> EVoucherRedeemLogs { get; set; }
 
         // 簽到相關表
         public DbSet<UserSignInStats> UserSignInStats { get; set; }
 
         // 寵物相關表
-        public DbSet<Pet> Pet { get; set; }
-        public DbSet<PetAppearanceChangeLog> PetAppearanceChangeLog { get; set; }
+        public DbSet<Pet> Pets { get; set; }
+        public DbSet<PetAppearanceChangeLog> PetAppearanceChangeLogs { get; set; }
 
         // 小遊戲相關表
-        public DbSet<MiniGame> MiniGame { get; set; }
-        public DbSet<leaderboard_snapshots> leaderboard_snapshots { get; set; }
+        public DbSet<MiniGame> MiniGames { get; set; }
+        public DbSet<LeaderboardSnapshot> LeaderboardSnapshots { get; set; }
+
+        // 用戶代幣表
+        public DbSet<UserToken> UserTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // 設定複合主鍵
+            // 設定主鍵
+            modelBuilder.Entity<ManagerData>()
+                .HasKey(m => m.Manager_Id);
+
+            modelBuilder.Entity<ManagerRolePermission>()
+                .HasKey(m => m.ManagerRole_Id);
+
             modelBuilder.Entity<ManagerRole>()
-                .HasKey(mr => new { mr.Manager_Id, mr.ManagerRole_Id });
+                .HasKey(m => m.Id);
+
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.User_Id);
+
+            modelBuilder.Entity<UserWallet>()
+                .HasKey(w => w.User_Id);
+
+            modelBuilder.Entity<WalletHistory>()
+                .HasKey(w => w.LogID);
 
             // 設定外鍵關係
             modelBuilder.Entity<ManagerRole>()
-                .HasOne(mr => mr.ManagerData)
-                .WithMany()
+                .HasOne(mr => mr.Manager)
+                .WithMany(m => m.ManagerRoles)
                 .HasForeignKey(mr => mr.Manager_Id);
 
             modelBuilder.Entity<ManagerRole>()
                 .HasOne(mr => mr.ManagerRolePermission)
-                .WithMany()
+                .WithMany(mrp => mrp.ManagerRoles)
                 .HasForeignKey(mr => mr.ManagerRole_Id);
 
-            modelBuilder.Entity<User_Wallet>()
-                .HasOne(uw => uw.Users)
-                .WithMany()
-                .HasForeignKey(uw => uw.User_Id);
+            modelBuilder.Entity<UserWallet>()
+                .HasOne(w => w.User)
+                .WithOne()
+                .HasForeignKey<UserWallet>(w => w.User_Id);
 
             modelBuilder.Entity<WalletHistory>()
-                .HasOne(wh => wh.Users)
+                .HasOne(w => w.User)
                 .WithMany()
-                .HasForeignKey(wh => wh.UserID);
+                .HasForeignKey(w => w.UserID);
 
-            modelBuilder.Entity<Coupon>()
-                .HasOne(c => c.CouponType)
-                .WithMany()
-                .HasForeignKey(c => c.CouponTypeID);
-
-            modelBuilder.Entity<Coupon>()
-                .HasOne(c => c.Users)
-                .WithMany()
-                .HasForeignKey(c => c.UserID);
-
-            modelBuilder.Entity<EVoucher>()
-                .HasOne(ev => ev.EVoucherType)
-                .WithMany()
-                .HasForeignKey(ev => ev.EVoucherTypeID);
-
-            modelBuilder.Entity<EVoucher>()
-                .HasOne(ev => ev.Users)
-                .WithMany()
-                .HasForeignKey(ev => ev.UserID);
-
-            modelBuilder.Entity<EVoucherToken>()
-                .HasOne(et => et.EVoucher)
-                .WithMany()
-                .HasForeignKey(et => et.EVoucherID);
-
-            modelBuilder.Entity<EVoucherRedeemLog>()
-                .HasOne(er => er.EVoucher)
-                .WithMany()
-                .HasForeignKey(er => er.EVoucherID);
-
-            modelBuilder.Entity<EVoucherRedeemLog>()
-                .HasOne(er => er.EVoucherToken)
-                .WithMany()
-                .HasForeignKey(er => er.TokenID);
-
-            modelBuilder.Entity<EVoucherRedeemLog>()
-                .HasOne(er => er.Users)
-                .WithMany()
-                .HasForeignKey(er => er.UserID);
-
-            modelBuilder.Entity<UserSignInStats>()
-                .HasOne(us => us.Users)
-                .WithMany()
-                .HasForeignKey(us => us.UserID);
-
-            modelBuilder.Entity<Pet>()
-                .HasOne(p => p.Users)
-                .WithMany()
-                .HasForeignKey(p => p.UserID);
-
-            modelBuilder.Entity<PetAppearanceChangeLog>()
-                .HasOne(pacl => pacl.Pet)
-                .WithMany()
-                .HasForeignKey(pacl => pacl.PetID);
-
-            modelBuilder.Entity<MiniGame>()
-                .HasOne(mg => mg.Users)
-                .WithMany()
-                .HasForeignKey(mg => mg.UserID);
-
-            modelBuilder.Entity<MiniGame>()
-                .HasOne(mg => mg.Pet)
-                .WithMany()
-                .HasForeignKey(mg => mg.PetID);
-
-            modelBuilder.Entity<leaderboard_snapshots>()
-                .HasOne(ls => ls.Users)
-                .WithMany()
-                .HasForeignKey(ls => ls.user_id);
-
-            modelBuilder.Entity<UserTokens>()
-                .HasOne(ut => ut.Users)
-                .WithMany()
-                .HasForeignKey(ut => ut.User_ID);
-
-            // 設定索引
+            // 設定唯一約束
             modelBuilder.Entity<ManagerData>()
                 .HasIndex(m => m.Manager_Account)
                 .IsUnique();
@@ -154,30 +95,13 @@ namespace GameSpace.Areas.MiniGame.Data
                 .HasIndex(m => m.Manager_Email)
                 .IsUnique();
 
-            modelBuilder.Entity<Users>()
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.User_name)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
                 .HasIndex(u => u.User_Account)
                 .IsUnique();
-
-            modelBuilder.Entity<Coupon>()
-                .HasIndex(c => c.CouponCode)
-                .IsUnique();
-
-            modelBuilder.Entity<EVoucher>()
-                .HasIndex(ev => ev.EVoucherCode)
-                .IsUnique();
-
-            modelBuilder.Entity<EVoucherToken>()
-                .HasIndex(et => et.Token)
-                .IsUnique();
-
-            modelBuilder.Entity<MiniGame>()
-                .HasIndex(mg => mg.SessionID);
-
-            modelBuilder.Entity<leaderboard_snapshots>()
-                .HasIndex(ls => new { ls.game_id, ls.period, ls.rank });
-
-            modelBuilder.Entity<UserTokens>()
-                .HasIndex(ut => new { ut.User_ID, ut.TokenType, ut.TokenValue });
         }
     }
 }

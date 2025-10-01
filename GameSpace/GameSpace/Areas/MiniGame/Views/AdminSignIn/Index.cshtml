@@ -1,281 +1,105 @@
+@model IEnumerable<GameSpace.Models.UserSignInStat>
 @{
-    ViewData["Title"] = "會員簽到系統管理";
-    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "簽到管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-calendar-check mr-2 text-primary"></i>會員簽到系統管理
-        </h1>
-        <div class="d-flex">
-            <a href="@Url.Action("Rules")" class="btn btn-primary mr-2 shadow-sm">
-                <i class="fas fa-cog"></i> 簽到規則設定
-            </a>
-            <a href="@Url.Action("UserHistory")" class="btn btn-success shadow-sm">
-                <i class="fas fa-history"></i> 查看簽到紀錄
-            </a>
-        </div>
+        <h1 class="h3 mb-0 text-gray-800">簽到管理</h1>
+        <a href="@Url.Action("Create")" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> 新增簽到記錄
+        </a>
     </div>
 
-    <!-- 統計卡片 -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到人數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todaySignIns">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">簽到記錄列表</h6>
         </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">連續簽到</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="continuousSignIns">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-fire fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">本月全勤</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthlyPerfect">載入中...</div>
-                            <div class="text-xs text-muted">較上月 <span class="text-info">+8</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-trophy fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">平均簽到率</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="avgSignInRate">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-warning">+2.3%</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 快速操作 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-bolt"></i> 快速操作
-                    </h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                            <div class="dropdown-header">操作選項</div>
-                            <a class="dropdown-item" href="@Url.Action("UserHistory")">
-                                <i class="fas fa-history fa-sm fa-fw mr-2 text-gray-400"></i>
-                                查看簽到紀錄
-                            </a>
-                            <a class="dropdown-item" href="@Url.Action("Rules")">
-                                <i class="fas fa-cog fa-sm fa-fw mr-2 text-gray-400"></i>
-                                規則設定
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("Rules")" class="btn btn-outline-primary btn-block btn-hover">
-                                <i class="fas fa-cog"></i> 簽到規則設定
-                                <small class="d-block text-muted">設定獎勵規則與條件</small>
-                            </a>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("UserHistory")" class="btn btn-outline-success btn-block btn-hover">
-                                <i class="fas fa-history"></i> 查看簽到紀錄
-                                <small class="d-block text-muted">查看所有會員簽到歷史</small>
-                            </a>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="@Url.Action("UserHistory")" class="btn btn-outline-info btn-block btn-hover">
-                                <i class="fas fa-chart-line"></i> 簽到統計
-                                <small class="d-block text-muted">查看簽到數據分析</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 最近活動 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-clock"></i> 最近簽到活動
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="recentActivityTable">
-                            <thead>
-                                <tr>
-                                    <th>時間</th>
-                                    <th>會員</th>
-                                    <th>連續天數</th>
-                                    <th>獲得獎勵</th>
-                                    <th>狀態</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2024-01-15 14:30</td>
-                                    <td>user001</td>
-                                    <td>7天</td>
-                                    <td><span class="badge badge-primary">+20點數</span></td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:25</td>
-                                    <td>user002</td>
-                                    <td>3天</td>
-                                    <td><span class="badge badge-info">+10點數</span></td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:20</td>
-                                    <td>user003</td>
-                                    <td>1天</td>
-                                    <td><span class="badge badge-warning">+5點數</span></td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>記錄ID</th>
+                            <th>用戶</th>
+                            <th>簽到時間</th>
+                            <th>點數獲得</th>
+                            <th>經驗獲得</th>
+                            <th>優惠券獲得</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var signIn in Model)
+                        {
+                            <tr>
+                                <td>@signIn.LogId</td>
+                                <td>@signIn.User?.UserName</td>
+                                <td>@signIn.SignTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>
+                                    @if (signIn.PointsGained > 0)
+                                    {
+                                        <span class="badge badge-success">+@signIn.PointsGained</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">0</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (signIn.ExpGained > 0)
+                                    {
+                                        <span class="badge badge-info">+@signIn.ExpGained</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">0</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(signIn.CouponGained) && signIn.CouponGained != "0")
+                                    {
+                                        <span class="badge badge-warning">@signIn.CouponGained</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">無</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="@Url.Action("Details", new { id = signIn.LogId })" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = signIn.LogId })" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-
+<!-- DataTables JavaScript -->
+<script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
+<script src="~/lib/datatables/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        // 實際載入數據
-        loadStatistics();
-        
-        // 初始化 DataTable
-        $("#recentActivityTable").DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-            },
-            "pageLength": 10,
-            "order": [[0, "desc"]],
-            "columnDefs": [
-                { "orderable": false, "targets": 4 }
-            ],
-            "ajax": {
-                "url": "@Url.Action("GetSignInData")",
-                "type": "POST"
-            }
-        });
-
-        // 添加載入動畫
-        $(".card").each(function(index) {
-            $(this).css("animation-delay", (index * 0.1) + "s");
-            $(this).addClass("fade-in");
-        });
+.ready(function() {
+    #dataTable.DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+        },
+        "pageLength": 25,
+        "order": [[ 0, "desc" ]]
     });
-    
-    function loadStatistics() {
-        // 實際載入統計數據
-        $.ajax({
-            url: "@Url.Action("GetSignInStats")",
-            type: "GET",
-            data: { period: "today" },
-            success: function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    $("#todaySignIns").text(data.todaySignIns.toLocaleString());
-                    $("#continuousSignIns").text(data.consecutiveSignIns);
-                    $("#monthlyPerfect").text(data.monthlyPerfect);
-                    $("#avgSignInRate").text(data.avgSignInRate.toFixed(1) + "%");
-                    
-                    // 計算變化百分比
-                    var signInsChange = data.todaySignIns - data.yesterdaySignIns;
-                    var continuousChange = data.consecutiveSignIns - data.yesterdayConsecutiveSignIns;
-                    var perfectChange = data.monthlyPerfect - data.yesterdayMonthlyPerfect;
-                    var rateChange = (data.avgSignInRate - data.yesterdayAvgSignInRate).toFixed(1);
-                    
-                    $("#signInsChange").html("較昨日 <span class='text-" + (signInsChange >= 0 ? "success" : "danger") + "'>" + 
-                        (signInsChange >= 0 ? "+" : "") + signInsChange + "</span>");
-                    $("#continuousChange").html("較昨日 <span class='text-" + (continuousChange >= 0 ? "success" : "danger") + "'>" + 
-                        (continuousChange >= 0 ? "+" : "") + continuousChange + "</span>");
-                    $("#perfectChange").html("較昨日 <span class='text-" + (perfectChange >= 0 ? "success" : "danger") + "'>" + 
-                        (perfectChange >= 0 ? "+" : "") + perfectChange + "</span>");
-                    $("#rateChange").html("較昨日 <span class='text-" + (rateChange >= 0 ? "success" : "danger") + "'>" + 
-                        (rateChange >= 0 ? "+" : "") + rateChange + "%</span>");
-                } else {
-                    showError("載入統計數據失敗：" + response.message);
-                }
-            },
-            error: function() {
-                showError("載入統計數據時發生錯誤");
-            }
-        });
-    }
-    
-    // 添加錯誤處理函數
-    function showError(message) {
-        // 使用 Bootstrap Toast 顯示錯誤
-        var toastHtml = `
-            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>
-        `;
-        $("#toastContainer").html(toastHtml);
-        $('.toast').toast('show');
-    }
+});
 </script>
-
-
-

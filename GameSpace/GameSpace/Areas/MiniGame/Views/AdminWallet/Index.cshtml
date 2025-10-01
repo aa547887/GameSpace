@@ -1,287 +1,77 @@
+@model IEnumerable<GameSpace.Models.UserWallet>
 @{
-    ViewData["Title"] = "會員錢包管理";
-    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "錢包管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-wallet me-2 text-primary"></i>會員錢包管理
-        </h1>
-        <div class="d-flex">
-            <a href="@Url.Action("GrantPoints")" class="btn btn-primary me-2 shadow-sm">
-                <i class="fas fa-plus-circle"></i> 發放點數
-            </a>
-            <a href="@Url.Action("GrantCoupons")" class="btn btn-success shadow-sm">
-                <i class="fas fa-ticket-alt"></i> 發放優惠券
-            </a>
-        </div>
+        <h1 class="h3 mb-0 text-gray-800">錢包管理</h1>
+        <a href="@Url.Action("Create")" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> 新增錢包
+        </a>
     </div>
 
-    <!-- 統計卡片 -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col me-2">
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總點數餘額</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800" id="totalPoints">載入中...</div>
-                            <div class="text-xs text-muted" id="pointsChange">較昨日 <span class="text-success">+5.2%</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">錢包列表</h6>
         </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col me-2">
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">活躍優惠券</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800" id="activeCoupons">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-info shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col me-2">
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">電子券數量</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800" id="eVouchers">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+8</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-gift fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-warning shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col me-2">
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">今日交易</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800" id="todayTransactions">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+15</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 搜尋和篩選區域 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">
-                        <i class="fas fa-search"></i> 搜尋與篩選
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <form id="searchForm" class="row g-3">
-                        <div class="col-md-3">
-                            <label for="searchType" class="form-label">搜尋類型</label>
-                            <select class="form-select" id="searchType" name="searchType">
-                                <option value="all">全部</option>
-                                <option value="points">點數記錄</option>
-                                <option value="coupons">優惠券</option>
-                                <option value="vouchers">電子券</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="userId" class="form-label">會員ID</label>
-                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入會員ID">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="dateFrom" class="form-label">開始日期</label>
-                            <input type="date" class="form-control" id="dateFrom" name="dateFrom">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="dateTo" class="form-label">結束日期</label>
-                            <input type="date" class="form-control" id="dateTo" name="dateTo">
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i> 搜尋
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="resetSearch">
-                                <i class="fas fa-undo"></i> 重置
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 資料表格 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 fw-bold text-primary">
-                        <i class="fas fa-table"></i> 錢包記錄
-                    </h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                            <div class="dropdown-header">操作選項</div>
-                            <a class="dropdown-item" href="#" id="exportData">
-                                <i class="fas fa-download fa-sm fa-fw me-2 text-gray-400"></i>
-                                匯出資料
-                            </a>
-                            <a class="dropdown-item" href="#" id="refreshData">
-                                <i class="fas fa-sync fa-sm fa-fw me-2 text-gray-400"></i>
-                                重新整理
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="walletTable" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>記錄ID</th>
-                                    <th>會員ID</th>
-                                    <th>類型</th>
-                                    <th>金額/數量</th>
-                                    <th>描述</th>
-                                    <th>時間</th>
-                                    <th>狀態</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="walletTableBody">
-                                <!-- 動態載入資料 -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>用戶ID</th>
+                            <th>用戶名稱</th>
+                            <th>會員點數</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var wallet in Model)
+                        {
+                            <tr>
+                                <td>@wallet.UserId</td>
+                                <td>@wallet.User?.UserName</td>
+                                <td>
+                                    <span class="badge badge-primary">@wallet.UserPoint 點</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="@Url.Action("Details", new { id = wallet.UserId })" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", new { id = wallet.UserId })" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="@Url.Action("AdjustPoints", new { id = wallet.UserId })" class="btn btn-success btn-sm">
+                                            <i class="fas fa-coins"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-
+<!-- DataTables JavaScript -->
+<script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
+<script src="~/lib/datatables/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        // 初始化 DataTable
-        var table = $("#walletTable").DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-            },
-            "pageLength": 25,
-            "order": [[5, "desc"]],
-            "columnDefs": [
-                { "orderable": false, "targets": 7 }
-            ],
-            "processing": true,
-            "serverSide": false,
-            "ajax": {
-                "url": "@Url.Action("GetWalletData")",
-                "type": "POST"
-            }
-        });
-        
-        // 載入統計數據
-        loadStatistics();
-        
-        // 搜尋表單提交
-        $("#searchForm").on("submit", function(e) {
-            e.preventDefault();
-            var formData = $(this).serialize();
-            // 執行搜尋邏輯
-            console.log("搜尋條件:", formData);
-        });
-        
-        // 重置搜尋
-        $("#resetSearch").on("click", function() {
-            $("#searchForm")[0].reset();
-            table.search("").draw();
-        });
-        
-        // 匯出資料
-        $("#exportData").on("click", function() {
-            // 執行匯出邏輯
-            console.log("匯出資料");
-        });
-        
-        // 重新整理
-        $("#refreshData").on("click", function() {
-            table.ajax.reload();
-            loadStatistics();
-        });
+.ready(function() {
+    #dataTable.DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+        },
+        "pageLength": 25,
+        "order": [[ 0, "desc" ]]
     });
-    
-    function loadStatistics() {
-        // 實際載入統計數據
-        $.ajax({
-            url: "@Url.Action("GetWalletStats")",
-            type: "GET",
-            data: { period: "today" },
-            success: function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    $("#totalPoints").text(data.totalPoints.toLocaleString());
-                    $("#activeCoupons").text(data.totalCoupons);
-                    $("#eVouchers").text(data.totalEVouchers);
-                    $("#todayTransactions").text(data.todayTransactions);
-                    
-                    // 計算變化百分比
-                    var pointsChange = ((data.totalPoints - data.yesterdayPoints) / data.yesterdayPoints * 100).toFixed(1);
-                    $("#pointsChange").html("較昨日 <span class='text-" + (pointsChange >= 0 ? "success" : "danger") + "'>" + 
-                        (pointsChange >= 0 ? "+" : "") + pointsChange + "%</span>");
-                } else {
-                    showError("載入統計數據失敗：" + response.message);
-                }
-            },
-            error: function() {
-                showError("載入統計數據時發生錯誤");
-            }
-        });
-    }
-    
-    // 添加錯誤處理函數
-    function showError(message) {
-        // 使用 Bootstrap Toast 顯示錯誤
-        var toastHtml = `
-            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>
-        `;
-        $("#toastContainer").html(toastHtml);
-        $('.toast').toast('show');
-    }
+});
 </script>
-
-
-

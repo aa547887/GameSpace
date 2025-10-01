@@ -8,9 +8,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Area("MiniGame")]
     public class AdminEVoucherController : Controller
     {
-        private readonly GameSpaceContext _context;
+        private readonly MiniGameDbContext _context;
 
-        public AdminEVoucherController(GameSpaceContext context)
+        public AdminEVoucherController(MiniGameDbContext context)
         {
             _context = context;
         }
