@@ -1,57 +1,32 @@
-# MiniGame Area 後台功能修復 - 官方 TODO 清單
+# MiniGame Area 後台功能修復 - 工作進度清單
 
 ## 📋 官方 TODO 清單
 
 ### 🎯 Phase 1: 寵物系統功能完善
 
 #### 1.1 寵物換色/換背景所需點數設定
-- [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01, Commit: 8161714)
-- [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02, Commit: 8161714)
-- [x] 建立點數設定管理介面 (ID: P1-1.1-03, Commit: 8161714)
-- [x] 實作點數設定儲存邏輯 (ID: P1-1.1-04, Commit: 1be8b6c)
+- [ ] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01)
+- [ ] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02)
+- [ ] 建立點數設定管理介面 (ID: P1-1.1-03)
+- [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
 
 #### 1.2 寵物顏色/背景選項管理
-- [x] 新增寵物顏色選項管理功能 (ID: P1-1.2-01, Commit: 83b7859)
-- [x] 新增寵物背景選項管理功能 (ID: P1-1.2-02, Commit: a4e6b40)
-- [x] 建立選項管理介面 (ID: P1-1.2-03, Commit: 971898a)
-- [x] 實作選項增刪改查邏輯 (ID: P1-1.2-04, Commit: 71f0a87)
-
-**完成紀要 (P1-1.2-04)**:
-- 補充了缺少的服務方法：ToggleColorOptionStatusAsync 和 ToggleBackgroundOptionStatusAsync
-- 建立了 PetColorOptionFormViewModel 來支援快速新增功能
-- 使用 partial class 擴充服務類別，保持程式碼分離
-- 實作了完整的增刪改查功能，包含狀態切換、重複檢查、資料驗證
-- 涉及資料表：PetColorOption、PetBackgroundOption
-- 測試檔案：尚未建立（待 Phase 6）
+- [ ] 新增寵物顏色選項管理功能 (ID: P1-1.2-01)
+- [ ] 新增寵物背景選項管理功能 (ID: P1-1.2-02)
+- [ ] 建立選項管理介面 (ID: P1-1.2-03)
+- [ ] 實作選項增刪改查邏輯 (ID: P1-1.2-04)
 
 #### 1.3 升級規則詳細設定
-- [x] 完善寵物升級規則設定 (ID: P1-1.3-01, Commit: existing)
-- [x] 新增等級對應經驗值設定 (ID: P1-1.3-02, Commit: existing)
-- [x] 新增升級獎勵設定 (ID: P1-1.3-03, Commit: existing)
-- [x] 實作升級規則驗證邏輯 (ID: P1-1.3-04, Commit: existing)
-
-**完成紀要 (P1-1.3-01 至 P1-1.3-04)**:
-- 已實作完整的寵物升級規則管理系統，包含 PetLevelUpRule 和 PetLevelExperienceSetting 模型
-- 建立了對應的服務層：PetLevelUpRuleService 和 PetLevelExperienceSettingService
-- 實作了完整的 CRUD 控制器：PetLevelUpRuleController 和 PetLevelExperienceSettingController
-- 建立了完整的管理介面，包含列表、新增、編輯、刪除、詳情頁面
-- 涉及資料表：PetLevelUpRules、PetLevelExperienceSettings
-- 功能包含：等級設定、經驗值對應、升級獎勵、規則驗證邏輯
+- [ ] 完善寵物升級規則設定 (ID: P1-1.3-01)
+- [ ] 新增等級對應經驗值設定 (ID: P1-1.3-02)
+- [ ] 新增升級獎勵設定 (ID: P1-1.3-03)
+- [ ] 實作升級規則驗證邏輯 (ID: P1-1.3-04)
 
 #### 1.4 互動狀態增益規則設定
-- [x] 新增互動狀態增益規則設定 (ID: P1-1.4-01, Commit: 7c21e94)
-- [x] 新增狀態增益計算邏輯 (ID: P1-1.4-02, Commit: cf16110)
-- [x] 建立狀態增益管理介面 (ID: P1-1.4-03, Commit: 7c21e94)
-- [x] 實作狀態增益驗證邏輯 (ID: P1-1.4-04, Commit: 93698ad)
-
-**完成紀要 (P1-1.4-01)**:
-- 建立了完整的寵物互動狀態增益規則管理系統
-- 實作了 PetInteractionBonusRule 模型，包含互動類型、所需點數、快樂度增益、經驗值增益、冷卻時間等欄位
-- 建立了對應的服務層：PetInteractionBonusRuleService，提供完整的 CRUD 功能
-- 實作了 PetInteractionBonusRuleController，包含列表、新增、編輯、刪除、詳情、狀態切換等功能
-- 建立了完整的管理介面，包含搜尋、統計、分頁等功能
-- 涉及資料表：PetInteractionBonusRules
-- 功能包含：互動規則管理、狀態切換、資料驗證、統計分析
+- [ ] 新增互動狀態增益規則設定 (ID: P1-1.4-01)
+- [ ] 新增狀態增益計算邏輯 (ID: P1-1.4-02)
+- [ ] 建立狀態增益管理介面 (ID: P1-1.4-03)
+- [ ] 實作狀態增益驗證邏輯 (ID: P1-1.4-04)
 
 ### 🎯 Phase 2: 小遊戲系統功能完善
 
@@ -72,16 +47,7 @@
 #### 3.1 權限控制完善
 - [ ] 檢查所有功能權限控制 (ID: P3-3.1-01)
 - [ ] 優化 sidebar 權限顯示邏輯 (ID: P3-3.1-02)
-- [ ] 
-**完成紀要 (P1-1.4-03)**:
-- 寵物互動狀態增益規則管理介面已完整建立並符合 SB Admin 樣式
-- 實作了完整的 CRUD 管理介面：列表、新增、編輯、刪除、詳情頁面
-- 介面包含搜尋功能、統計資訊卡片、狀態切換按鈕
-- 統計資訊包含：總規則數、啟用規則、平均點數成本、平均快樂度增益
-- 資料表格包含分頁、排序、操作按鈕（查看、編輯、刪除、狀態切換）
-- 所有頁面都包含錯誤訊息顯示與成功訊息提示
-- 涉及資料表：PetInteractionBonusRules
-- 功能包含：CRUD 操作、搜尋、統計、狀態切換、資料驗證、錯誤處理新增權限驗證機制 (ID: P3-3.1-03)
+- [ ] 新增權限驗證機制 (ID: P3-3.1-03)
 - [ ] 實作權限錯誤處理 (ID: P3-3.1-04)
 
 #### 3.2 安全性強化
@@ -113,15 +79,7 @@
 - [ ] 新增操作確認機制 (ID: P5-5.1-04)
 
 #### 5.2 功能優化
-- [ ] 新增批量操作功能 (ID:
-**完成紀要 (P1-1.4-04)**:
-- 建立了完整的寵物互動狀態增益規則驗證服務：PetInteractionBonusRuleValidationService
-- 實作了詳細的業務邏輯驗證：互動類型唯一性、點數成本合理性、快樂度增益範圍、經驗值增益範圍、冷卻時間限制、增益比例合理性
-- 建立了驗證服務介面：IPetInteractionBonusRuleValidationService，支援依賴注入
-- 整合到 PetInteractionBonusRuleService 和 PetInteractionBonusRuleController，提供更詳細的錯誤訊息
-- 建立了單元測試：PetInteractionBonusRuleValidationServiceTests，涵蓋各種驗證情境
-- 涉及功能：資料驗證、業務邏輯檢查、錯誤處理、測試覆蓋
-- 驗證項目：格式檢查、唯一性檢查、數值範圍檢查、比例合理性檢查、刪除條件檢查 P5-5.2-01)
+- [ ] 新增批量操作功能 (ID: P5-5.2-01)
 - [ ] 優化搜尋功能 (ID: P5-5.2-02)
 - [ ] 新增匯出功能 (ID: P5-5.2-03)
 - [ ] 實作資料統計功能 (ID: P5-5.2-04)
@@ -140,7 +98,8 @@
 - [ ] 部署腳本準備 (ID: P6-6.2-03)
 - [ ] 監控設定 (ID: P6-6.2-04)
 
+---
 
+## 📝 完成紀要記錄區
 
-
-
+*此區域將記錄每個完成項目的詳細資訊*
