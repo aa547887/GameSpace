@@ -1,0 +1,37 @@
+        /// <summary>
+        /// 每日遊戲次數限制設定詳細資料頁面
+        /// </summary>
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var setting = await _service.GetByIdAsync(id);
+                if (setting == null)
+                {
+                    _logger.LogWarning("找不到每日遊戲次數限制設定 ID: {Id}", id);
+                    return NotFound();
+                }
+
+                var viewModel = new DailyGameLimitDetailsViewModel
+                {
+                    Id = setting.Id,
+                    DailyLimit = setting.DailyLimit,
+                    SettingName = setting.SettingName,
+                    Description = setting.Description,
+                    IsEnabled = setting.IsEnabled,
+                    CreatedAt = setting.CreatedAt,
+                    UpdatedAt = setting.UpdatedAt,
+                    CreatedBy = setting.CreatedBy,
+                    UpdatedBy = setting.UpdatedBy
+                };
+
+                _logger.LogInformation("顯示每日遊戲次數限制設定詳細資料 ID: {Id}", id);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "顯示每日遊戲次數限制設定詳細資料 ID: {Id} 時發生錯誤", id);
+                TempData["ErrorMessage"] = "載入資料時發生錯誤，請稍後再試";
+                return RedirectToAction(nameof(Index));
+            }
+        }

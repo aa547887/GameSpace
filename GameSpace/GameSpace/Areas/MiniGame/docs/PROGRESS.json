@@ -115,14 +115,14 @@
     "id": "P2-2.1-01",
     "title": "新增每日遊戲次數限制設定（預設一天三次）",
     "status": "done",
-    "commits": ["new"],
+    "commits": ["86177ae"],
     "updatedAt": "2024-12-19T13:00:00Z"
   },
   {
     "id": "P2-2.1-02",
     "title": "建立次數限制管理介面",
-    "status": "todo",
-    "commits": [],
-    "updatedAt": null
+    "status": "done",
+    "commits": ["new"],
+    "updatedAt": "2024-12-19T13:30:00Z"
   }
 ]

@@ -121,3 +121,49 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public string? UpdatedBy { get; set; }
     }
 }
+    /// <summary>
+    /// 每日遊戲次數限制設定詳細模型
+    /// </summary>
+    public class DailyGameLimitDetailsViewModel
+    {
+        public int Id { get; set; }
+        public int DailyLimit { get; set; }
+        public string SettingName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsEnabled { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+    }
+
+    /// <summary>
+    /// 每日遊戲次數限制設定刪除模型
+    /// </summary>
+    public class DailyGameLimitDeleteViewModel
+    {
+        public int Id { get; set; }
+        public int DailyLimit { get; set; }
+        public string SettingName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsEnabled { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+    }
+
+    /// <summary>
+    /// 每日遊戲次數限制設定統計模型
+    /// </summary>
+    public class DailyGameLimitStatisticsViewModel
+    {
+        public int TotalSettings { get; set; }
+        public int EnabledSettings { get; set; }
+        public int DisabledSettings { get; set; }
+        public int AverageDailyLimit { get; set; }
+        public int MinDailyLimit { get; set; }
+        public int MaxDailyLimit { get; set; }
+        public DateTime LastUpdated { get; set; }
+    }
+}

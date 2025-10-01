@@ -119,7 +119,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return NotFound();
                 }
 
-                var viewModel = new DailyGameLimitViewModel
+                var viewModel = new DailyGameLimitDetailsViewModel
                 {
                     Id = setting.Id,
                     DailyLimit = setting.DailyLimit,
@@ -228,7 +228,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return NotFound();
                 }
 
-                var viewModel = new DailyGameLimitViewModel
+                var viewModel = new DailyGameLimitDetailsViewModel
                 {
                     Id = setting.Id,
                     DailyLimit = setting.DailyLimit,
@@ -401,3 +401,6 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+
+
+
