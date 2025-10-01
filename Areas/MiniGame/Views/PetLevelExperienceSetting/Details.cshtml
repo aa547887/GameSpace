@@ -1,0 +1,151 @@
+@model GameSpace.Areas.MiniGame.Models.PetLevelExperienceSetting
+@{
+    ViewData["Title"] = "等級經驗值設定詳細";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">@ViewData["Title"]</h1>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 詳細資訊卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">等級經驗值設定詳細資訊</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">設定ID</label>
+                        <p class="form-control-plaintext">@Model.Id</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">等級</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge badge-info">@Model.Level</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">等級名稱</label>
+                        <p class="form-control-plaintext">@Model.LevelName</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">所需經驗值</label>
+                        <p class="form-control-plaintext">
+                            <span class="font-weight-bold text-primary">@Model.RequiredExperience.ToString("N0")</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">等級描述</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                @Model.Description
+                            }
+                            else
+                            {
+                                <span class="text-muted">無</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">啟用狀態</label>
+                        <p class="form-control-plaintext">
+                            @if (Model.IsEnabled)
+                            {
+                                <span class="badge badge-success">啟用</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">停用</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">建立時間</label>
+                        <p class="form-control-plaintext">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">更新時間</label>
+                        <p class="form-control-plaintext">@Model.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">建立者</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.CreatedBy))
+                            {
+                                @Model.CreatedBy
+                            }
+                            else
+                            {
+                                <span class="text-muted">系統</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-gray-700">更新者</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.UpdatedBy))
+                            {
+                                @Model.UpdatedBy
+                            }
+                            else
+                            {
+                                <span class="text-muted">系統</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mt-4">
+                <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> 編輯設定
+                </a>
+                <a href="@Url.Action("Index")" class="btn btn-secondary ml-2">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

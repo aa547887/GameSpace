@@ -1,0 +1,96 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetLevelExperienceSettingCreateViewModel
+@{
+    ViewData["Title"] = "新增等級經驗值設定";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">@ViewData["Title"]</h1>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 表單卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">等級經驗值設定資訊</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Level" class="font-weight-bold text-gray-700">等級 <span class="text-danger">*</span></label>
+                            <input asp-for="Level" type="number" class="form-control" min="1" max="100" required />
+                            <span asp-validation-for="Level" class="text-danger"></span>
+                            <small class="form-text text-muted">請輸入1-100之間的等級數字</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="RequiredExperience" class="font-weight-bold text-gray-700">所需經驗值 <span class="text-danger">*</span></label>
+                            <input asp-for="RequiredExperience" type="number" class="form-control" min="1" required />
+                            <span asp-validation-for="Level" class="text-danger"></span>
+                            <small class="form-text text-muted">請輸入該等級所需的經驗值</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label asp-for="LevelName" class="font-weight-bold text-gray-700">等級名稱 <span class="text-danger">*</span></label>
+                            <input asp-for="LevelName" class="form-control" maxlength="50" required />
+                            <span asp-validation-for="LevelName" class="text-danger"></span>
+                            <small class="form-text text-muted">請輸入等級的名稱，例如：新手、熟練、專家等</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label asp-for="Description" class="font-weight-bold text-gray-700">等級描述</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" maxlength="200"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                            <small class="form-text text-muted">請輸入等級的詳細描述（選填）</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input asp-for="IsEnabled" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsEnabled" class="form-check-label font-weight-bold text-gray-700">
+                                    啟用此設定
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">勾選後此等級經驗值設定將立即生效</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 建立設定
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ml-2">
+                        <i class="fas fa-times"></i> 取消
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
