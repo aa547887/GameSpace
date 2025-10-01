@@ -35,8 +35,13 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊寵物升級獎勵設定服務
             services.AddScoped<IPetLevelRewardSettingService, PetLevelRewardSettingService>();
 
+            // 註冊寵物升級規則服務
+            services.AddScoped<IPetLevelUpRuleService, PetLevelUpRuleService>();
+
+            // 註冊寵物升級規則驗證服務
+            services.AddScoped<IPetLevelUpRuleValidationService, PetLevelUpRuleValidationService>();
+
             return services;
         }
     }
 }
-
