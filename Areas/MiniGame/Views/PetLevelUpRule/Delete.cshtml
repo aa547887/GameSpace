@@ -1,0 +1,66 @@
+@model GameSpace.Areas.MiniGame.Models.PetLevelUpRule
+@{
+    ViewData["Title"] = "刪除升級規則";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">刪除升級規則</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 確認刪除
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>警告：</strong>您確定要刪除這個升級規則嗎？此操作無法復原。
+                    </div>
+                    
+                    <dl class="row">
+                        <dt class="col-sm-3">等級</dt>
+                        <dd class="col-sm-9">@Model.Level</dd>
+                        
+                        <dt class="col-sm-3">所需經驗值</dt>
+                        <dd class="col-sm-9">@Model.ExperienceRequired.ToString("N0")</dd>
+                        
+                        <dt class="col-sm-3">點數獎勵</dt>
+                        <dd class="col-sm-9">@Model.PointsReward.ToString("N0")</dd>
+                        
+                        <dt class="col-sm-3">經驗獎勵</dt>
+                        <dd class="col-sm-9">@Model.ExpReward.ToString("N0")</dd>
+                        
+                        <dt class="col-sm-3">狀態</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge badge-success">啟用</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">停用</span>
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-3">備註</dt>
+                        <dd class="col-sm-9">@(Model.Remarks ?? "-")</dd>
+                    </dl>
+                    
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="mt-4">
+                            <input type="submit" value="確認刪除" class="btn btn-danger" />
+                            <a asp-action="Index" class="btn btn-secondary">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

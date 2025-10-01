@@ -54,5 +54,12 @@
     "status": "done",
     "commits": ["ccdcd51"],
     "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "P1-1.3-01",
+    "title": "完善寵物升級規則設定",
+    "status": "done",
+    "commits": ["new"],
+    "updatedAt": "2024-01-01T00:00:00Z"
   }
 ]
