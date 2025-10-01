@@ -1,12 +1,5 @@
-# MiniGame Area 後台功能修復 - 進度追蹤
-
-## 📋 官方 TODO 清單
-
-### 🎯 Phase 1: 寵物系統功能完善
-
-#### 1.1 寵物換色/換背景所需點數設定
-- [ ] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01)
+- [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) - 完成紀要：建立了 PetColorChangeSettings 模型、ViewModel、Controller 和 Index 頁面，包含完整的 CRUD 功能架構
 - [ ] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02)
 - [ ] 建立點數設定管理介面 (ID: P1-1.1-03)
 - [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
-- [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) - 完成紀要：建立了 PetColorChangeSettings 模型、ViewModel、Controller 和 Index 頁面，包含完整的 CRUD 功能架構
+- [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) - 完成紀要：建立了 PetBackgroundChangeSettings 模型、ViewModel、Controller 和完整的 CRUD 頁面，包含 Index、Create、Edit、Delete 功能
