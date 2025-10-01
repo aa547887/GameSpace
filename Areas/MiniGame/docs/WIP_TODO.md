@@ -7,8 +7,8 @@
 #### 1.1 寵物換色/換背景所需點數設定
 - [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) (ID: P1-1.1-01, Commit: 941bc7e)
 - [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) (ID: P1-1.1-02, Commit: 254a866)
-- [x] 建立點數設定管理介面 (ID: P1-1.1-03) (ID: P1-1.1-03, Commit: 待提交)
-- [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
+- [x] 建立點數設定管理介面 (ID: P1-1.1-03) (ID: P1-1.1-03, Commit: 01a928a)
+- [x] 實作點數設定儲存邏輯 (ID: P1-1.1-04) (ID: P1-1.1-04, Commit: 待提交)
 
 #### 1.2 寵物顏色/背景選項管理
 - [ ] 新增寵物顏色選項管理功能 (ID: P1-1.2-01)
@@ -145,3 +145,17 @@
 **對應 URL/Route**：/MiniGame/PointSettingManagement
 **涉及的資料表/欄位/索引/檢核**：整合 PetSkinColorPointSettings 和 PetBackgroundPointSettings 表
 **測試檔案清單**：PointSettingManagementController.cs
+
+### P1-1.1-04: 實作點數設定儲存邏輯
+**完成紀要**：
+- 建立 IPointSettingStorageService 介面和 PointSettingStorageService 實作
+- 實作完整的點數設定儲存、驗證和批量操作邏輯
+- 新增 PointSettingStorageModel 和相關結果模型
+- 完善 PointSettingManagementController 的儲存功能
+- 實作資料驗證、錯誤處理和統計功能
+- 完成完整的儲存邏輯功能
+
+**權限名與 Policy 名稱**：PointSettingManagement
+**對應 URL/Route**：/MiniGame/PointSettingManagement
+**涉及的資料表/欄位/索引/檢核**：PetSkinColorPointSettings 和 PetBackgroundPointSettings 表的完整 CRUD 操作
+**測試檔案清單**：PointSettingStorageService.cs, PointSettingManagementController.cs

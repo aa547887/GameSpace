@@ -15,13 +15,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
     {
         private readonly IPetSkinColorPointSettingService _skinColorService;
         private readonly IPetBackgroundPointSettingService _backgroundService;
+        private readonly IPointSettingStorageService _storageService;
 
         public PointSettingManagementController(
             IPetSkinColorPointSettingService skinColorService,
-            IPetBackgroundPointSettingService backgroundService)
+            IPetBackgroundPointSettingService backgroundService,
+            IPointSettingStorageService storageService)
         {
             _skinColorService = skinColorService;
             _backgroundService = backgroundService;
+            _storageService = storageService;
         }
 
         /// <summary>
@@ -74,26 +77,25 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             try
             {
-                var skinColorSettings = await _skinColorService.GetAllAsync();
-                var backgroundSettings = await _backgroundService.GetAllAsync();
+                var statistics = await _storageService.GetPointSettingStatisticsAsync();
 
-                var statistics = new PointSettingStatisticsViewModel
+                var viewModel = new PointSettingStatisticsViewModel
                 {
-                    TotalSkinColorSettings = skinColorSettings.Count(),
-                    TotalBackgroundSettings = backgroundSettings.Count(),
-                    ActiveSkinColorSettings = skinColorSettings.Count(s => s.IsEnabled),
-                    ActiveBackgroundSettings = backgroundSettings.Count(s => s.IsEnabled),
-                    InactiveSkinColorSettings = skinColorSettings.Count(s => !s.IsEnabled),
-                    InactiveBackgroundSettings = backgroundSettings.Count(s => !s.IsEnabled),
-                    AverageSkinColorPoints = skinColorSettings.Any() ? (decimal)skinColorSettings.Average(s => s.RequiredPoints) : 0,
-                    AverageBackgroundPoints = backgroundSettings.Any() ? (decimal)backgroundSettings.Average(s => s.RequiredPoints) : 0,
-                    MaxSkinColorPoints = skinColorSettings.Any() ? skinColorSettings.Max(s => s.RequiredPoints) : 0,
-                    MaxBackgroundPoints = backgroundSettings.Any() ? backgroundSettings.Max(s => s.RequiredPoints) : 0,
-                    MinSkinColorPoints = skinColorSettings.Any() ? skinColorSettings.Min(s => s.RequiredPoints) : 0,
-                    MinBackgroundPoints = backgroundSettings.Any() ? backgroundSettings.Min(s => s.RequiredPoints) : 0
+                    TotalSkinColorSettings = statistics.TotalSkinColorSettings,
+                    TotalBackgroundSettings = statistics.TotalBackgroundSettings,
+                    ActiveSkinColorSettings = statistics.ActiveSkinColorSettings,
+                    ActiveBackgroundSettings = statistics.ActiveBackgroundSettings,
+                    InactiveSkinColorSettings = statistics.TotalSkinColorSettings - statistics.ActiveSkinColorSettings,
+                    InactiveBackgroundSettings = statistics.TotalBackgroundSettings - statistics.ActiveBackgroundSettings,
+                    AverageSkinColorPoints = statistics.AverageSkinColorPoints,
+                    AverageBackgroundPoints = statistics.AverageBackgroundPoints,
+                    MaxSkinColorPoints = statistics.MaxSkinColorPoints,
+                    MaxBackgroundPoints = statistics.MaxBackgroundPoints,
+                    MinSkinColorPoints = statistics.MinSkinColorPoints,
+                    MinBackgroundPoints = statistics.MinBackgroundPoints
                 };
 
-                return View(statistics);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -124,26 +126,64 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return View(model);
                 }
 
-                switch (model.OperationType)
+                var storageModels = new List<PointSettingStorageModel>();
+
+                // 根據操作類型建立儲存模型
+                foreach (var id in model.SelectedIds)
                 {
-                    case "Enable":
-                        await EnableSelectedSettings(model.SelectedIds);
-                        break;
-                    case "Disable":
-                        await DisableSelectedSettings(model.SelectedIds);
-                        break;
-                    case "Delete":
-                        await DeleteSelectedSettings(model.SelectedIds);
-                        break;
-                    case "UpdatePoints":
-                        if (model.NewPointsValue.HasValue)
+                    var storageModel = new PointSettingStorageModel
+                    {
+                        Id = id,
+                        UserId = GetCurrentUserId(),
+                        Operation = model.OperationType switch
                         {
-                            await UpdateSelectedPoints(model.SelectedIds, model.NewPointsValue.Value);
+                            "Enable" => "Toggle",
+                            "Disable" => "Toggle",
+                            "Delete" => "Delete",
+                            "UpdatePoints" => "Update",
+                            _ => "Update"
                         }
-                        break;
+                    };
+
+                    // 根據 ID 判斷設定類型
+                    var skinColorSetting = await _skinColorService.GetByIdAsync(id);
+                    if (skinColorSetting != null)
+                    {
+                        storageModel.SettingType = "SkinColor";
+                        storageModel.PetLevel = skinColorSetting.PetLevel;
+                        storageModel.RequiredPoints = model.NewPointsValue ?? skinColorSetting.RequiredPoints;
+                        storageModel.IsEnabled = model.OperationType == "Enable" ? true : 
+                                               model.OperationType == "Disable" ? false : skinColorSetting.IsEnabled;
+                    }
+                    else
+                    {
+                        var backgroundSetting = await _backgroundService.GetSettingByIdAsync(id);
+                        if (backgroundSetting != null)
+                        {
+                            storageModel.SettingType = "Background";
+                            storageModel.PetLevel = backgroundSetting.PetLevel;
+                            storageModel.RequiredPoints = model.NewPointsValue ?? backgroundSetting.RequiredPoints;
+                            storageModel.IsEnabled = model.OperationType == "Enable" ? true : 
+                                                   model.OperationType == "Disable" ? false : backgroundSetting.IsEnabled;
+                            storageModel.Remarks = backgroundSetting.Remarks;
+                        }
+                    }
+
+                    storageModels.Add(storageModel);
                 }
 
-                TempData["SuccessMessage"] = "批量操作執行成功";
+                // 執行批量儲存
+                var result = await _storageService.BatchSavePointSettingsAsync(storageModels);
+
+                if (result.ErrorCount > 0)
+                {
+                    TempData["WarningMessage"] = $"批量操作完成，成功 {result.SuccessCount} 筆，失敗 {result.ErrorCount} 筆。錯誤詳情：{string.Join(", ", result.ErrorMessages)}";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = $"批量操作執行成功，共處理 {result.SuccessCount} 筆資料";
+                }
+
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -188,46 +228,70 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        /// <summary>
+        /// 儲存單一點數設定
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SavePointSetting(PointSettingStorageModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return Json(new { success = false, message = "模型驗證失敗" });
+                }
+
+                var result = await _storageService.SavePointSettingAsync(model);
+
+                if (result.Success)
+                {
+                    return Json(new { success = true, message = result.Message, affectedRows = result.AffectedRows });
+                }
+                else
+                {
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"儲存時發生錯誤：{ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// 驗證點數設定
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ValidatePointSetting(PointSettingStorageModel model)
+        {
+            try
+            {
+                var result = await _storageService.ValidatePointSettingAsync(model);
+
+                return Json(new
+                {
+                    isValid = result.IsValid,
+                    validationErrors = result.ValidationErrors,
+                    warnings = result.Warnings
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { isValid = false, validationErrors = new[] { $"驗證時發生錯誤：{ex.Message}" } });
+            }
+        }
+
         #region 私有方法
 
-        private async Task EnableSelectedSettings(List<int> selectedIds)
+        /// <summary>
+        /// 取得當前使用者ID
+        /// </summary>
+        private int GetCurrentUserId()
         {
-            // 實作啟用選定設定的邏輯
-            foreach (var id in selectedIds)
-            {
-                // 這裡需要根據 ID 判斷是換色還是換背景設定
-                // 暫時跳過實作細節
-            }
-        }
-
-        private async Task DisableSelectedSettings(List<int> selectedIds)
-        {
-            // 實作停用選定設定的邏輯
-            foreach (var id in selectedIds)
-            {
-                // 這裡需要根據 ID 判斷是換色還是換背景設定
-                // 暫時跳過實作細節
-            }
-        }
-
-        private async Task DeleteSelectedSettings(List<int> selectedIds)
-        {
-            // 實作刪除選定設定的邏輯
-            foreach (var id in selectedIds)
-            {
-                // 這裡需要根據 ID 判斷是換色還是換背景設定
-                // 暫時跳過實作細節
-            }
-        }
-
-        private async Task UpdateSelectedPoints(List<int> selectedIds, int newPointsValue)
-        {
-            // 實作更新選定設定點數的邏輯
-            foreach (var id in selectedIds)
-            {
-                // 這裡需要根據 ID 判斷是換色還是換背景設定
-                // 暫時跳過實作細節
-            }
+            // 這裡應該從認證系統取得當前使用者ID
+            // 暫時返回預設值
+            return 30000001; // 預設管理員ID
         }
 
         #endregion

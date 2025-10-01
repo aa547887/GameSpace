@@ -19,5 +19,12 @@
     "status": "done",
     "commits": ["feat(minigame-admin): [P1-1.1-03] 點數設定管理介面已完成"],
     "updatedAt": "2025-10-01T23:51:34.167Z"
+  },
+  {
+    "id": "P1-1.1-04",
+    "title": "實作點數設定儲存邏輯",
+    "status": "done",
+    "commits": ["feat(minigame-admin): [P1-1.1-04] 點數設定儲存邏輯已完成"],
+    "updatedAt": "2025-10-01T23:59:53.237Z"
   }
 ]
