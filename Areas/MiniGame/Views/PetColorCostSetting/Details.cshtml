@@ -1,0 +1,90 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetColorCostSettingViewModel
+
+@{
+    ViewData["Title"] = "寵物換色所需點數設定詳情";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-eye"></i> 寵物換色所需點數設定詳情
+                    </h3>
+                    <div class="card-tools">
+                        <a asp-action="Index" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">ID:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.Id)</dd>
+                                
+                                <dt class="col-sm-4">設定名稱:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.SettingName)</dd>
+                                
+                                <dt class="col-sm-4">所需點數:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-primary">@Html.DisplayFor(model => model.RequiredPoints) 點</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">排序順序:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.SortOrder)</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">是否啟用:</dt>
+                                <dd class="col-sm-8">
+                                    @if (Model.IsActive)
+                                    {
+                                        <span class="badge badge-success">啟用</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">停用</span>
+                                    }
+                                </dd>
+                                
+                                <dt class="col-sm-4">建立時間:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.CreatedAt)</dd>
+                                
+                                <dt class="col-sm-4">更新時間:</dt>
+                                <dd class="col-sm-8">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <dl class="row">
+                                    <dt class="col-sm-2">描述:</dt>
+                                    <dd class="col-sm-10">@Html.DisplayFor(model => model.Description)</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> 編輯
+                            </a>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
