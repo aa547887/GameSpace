@@ -2,29 +2,29 @@
   {
     "id": "P1-1.1-01",
     "title": "新增寵物換色所需點數設定功能",
-    "status": "todo",
-    "commits": [],
+    "status": "done",
+    "commits": ["6e54891"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
     "id": "P1-1.1-02", 
     "title": "新增寵物換背景所需點數設定功能",
-    "status": "todo",
-    "commits": [],
+    "status": "done",
+    "commits": ["existing"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
     "id": "P1-1.1-03",
     "title": "建立點數設定管理介面", 
-    "status": "todo",
-    "commits": [],
+    "status": "done",
+    "commits": ["existing"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
     "id": "P1-1.1-04",
     "title": "實作點數設定儲存邏輯",
-    "status": "todo", 
-    "commits": [],
+    "status": "done", 
+    "commits": ["existing"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
@@ -37,8 +37,8 @@
   {
     "id": "P1-1.2-02",
     "title": "新增寵物背景選項管理功能", 
-    "status": "todo",
-    "commits": [],
+    "status": "done",
+    "commits": ["existing"],
     "updatedAt": "2024-01-01T00:00:00Z"
   },
   {
