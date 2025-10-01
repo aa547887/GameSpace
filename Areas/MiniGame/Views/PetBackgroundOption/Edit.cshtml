@@ -1,0 +1,174 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetBackgroundOptionFormViewModel
+@{
+    ViewData["Title"] = "編輯寵物背景選項";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">編輯寵物背景選項</h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">背景選項資訊</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post" id="backgroundOptionForm">
+                <input asp-for="Id" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="Name" class="control-label">背景名稱 <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="請輸入背景名稱" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                            <small class="form-text text-muted">背景名稱將顯示在選項列表中</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="BackgroundColorCode" class="control-label">背景顏色代碼 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input asp-for="BackgroundColorCode" class="form-control" id="colorCodeInput" 
+                                       placeholder="#000000" maxlength="7" />
+                                <div class="input-group-append">
+                                    <input type="color" class="form-control" id="colorPicker" 
+                                           style="width: 50px; height: 38px;" />
+                                </div>
+                            </div>
+                            <span asp-validation-for="BackgroundColorCode" class="text-danger"></span>
+                            <small class="form-text text-muted">請輸入十六進位顏色代碼，格式：#RRGGBB</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Description" class="control-label">背景描述</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" 
+                              placeholder="請輸入背景描述（選填）"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                    <small class="form-text text-muted">背景描述將幫助使用者了解此背景的特色</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="SortOrder" class="control-label">排序順序</label>
+                            <input asp-for="SortOrder" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="SortOrder" class="text-danger"></span>
+                            <small class="form-text text-muted">數字越小排序越前面，相同數字按名稱排序</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    啟用此背景選項
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">停用的背景選項將不會顯示在選項列表中</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 顏色預覽 -->
+                <div class="form-group">
+                    <label class="control-label">背景顏色預覽</label>
+                    <div class="color-preview-container">
+                        <div id="colorPreview" class="color-preview-large">
+                            <span class="preview-text">背景預覽</span>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">上方顯示所選背景顏色的預覽效果</small>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 更新背景選項
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> 取消
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // 顏色選擇器與文字框同步
+            $('#colorPicker').on('input', function() {
+                var color = $(this).val();
+                $('#colorCodeInput').val(color);
+                updateColorPreview();
+            });
+
+            $('#colorCodeInput').on('input', function() {
+                var color = $(this).val();
+                if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    $('#colorPicker').val(color);
+                    updateColorPreview();
+                }
+            });
+
+            // 更新顏色預覽
+            function updateColorPreview() {
+                var color = $('#colorCodeInput').val();
+                if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    $('#colorPreview').css('background-color', color);
+                } else {
+                    $('#colorPreview').css('background-color', '#f8f9fa');
+                }
+            }
+
+            // 表單提交前驗證
+            $('#backgroundOptionForm').on('submit', function(e) {
+                var colorCode = $('#colorCodeInput').val();
+                if (!colorCode.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    e.preventDefault();
+                    alert('請輸入正確的顏色代碼格式（#RRGGBB）');
+                    return false;
+                }
+            });
+
+            // 初始化顏色預覽
+            updateColorPreview();
+        });
+    </script>
+}
+
+<style>
+    .color-preview-large {
+        width: 200px;
+        height: 100px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        transition: background-color 0.3s ease;
+    }
+
+    .preview-text {
+        color: #666;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+    }
+
+    .color-preview-container {
+        margin-top: 10px;
+    }
+</style>

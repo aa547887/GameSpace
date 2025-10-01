@@ -1,0 +1,141 @@
+@model GameSpace.Areas.MiniGame.Models.PetBackgroundOption
+@{
+    ViewData["Title"] = "寵物背景選項詳情";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">寵物背景選項詳情</h1>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="fas fa-edit"></i> 編輯
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 背景選項詳情 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">背景選項資訊</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">背景選項ID：</dt>
+                        <dd class="col-sm-8">@Model.Id</dd>
+
+                        <dt class="col-sm-4">背景名稱：</dt>
+                        <dd class="col-sm-8">@Model.Name</dd>
+
+                        <dt class="col-sm-4">背景描述：</dt>
+                        <dd class="col-sm-8">@(Model.Description ?? "無")</dd>
+
+                        <dt class="col-sm-4">背景顏色代碼：</dt>
+                        <dd class="col-sm-8">
+                            <div class="d-flex align-items-center">
+                                <div class="color-preview mr-2" 
+                                     style="width: 30px; height: 30px; background-color: @Model.BackgroundColorCode; border: 1px solid #ddd; border-radius: 5px;"></div>
+                                <span class="font-weight-bold">@Model.BackgroundColorCode</span>
+                            </div>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">狀態：</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge badge-success badge-lg">啟用</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary badge-lg">停用</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">排序順序：</dt>
+                        <dd class="col-sm-8">@Model.SortOrder</dd>
+
+                        <dt class="col-sm-4">建立時間：</dt>
+                        <dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+
+                        <dt class="col-sm-4">更新時間：</dt>
+                        <dd class="col-sm-8">@(Model.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "無")</dd>
+
+                        <dt class="col-sm-4">建立者ID：</dt>
+                        <dd class="col-sm-8">@(Model.CreatedBy?.ToString() ?? "系統")</dd>
+
+                        <dt class="col-sm-4">更新者ID：</dt>
+                        <dd class="col-sm-8">@(Model.UpdatedBy?.ToString() ?? "無")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- 背景顏色預覽 -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6 class="font-weight-bold text-primary">背景顏色預覽</h6>
+                    <div class="color-preview-large" style="background-color: @Model.BackgroundColorCode;">
+                        <span class="preview-text">背景預覽效果</span>
+                    </div>
+                    <small class="form-text text-muted">上方顯示此背景選項的實際顏色效果</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> 編輯背景選項
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> 刪除背景選項
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> 返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .color-preview-large {
+        width: 100%;
+        height: 150px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .preview-text {
+        color: #666;
+        font-weight: bold;
+        font-size: 18px;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+    }
+
+    .badge-lg {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .color-preview {
+        display: inline-block;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+</style>

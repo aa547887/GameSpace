@@ -1,0 +1,190 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetBackgroundOptionListViewModel
+@{
+    ViewData["Title"] = "寵物背景選項管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">寵物背景選項管理</h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus fa-sm text-white-50"></i> 新增背景選項
+        </a>
+    </div>
+
+    <!-- 成功訊息 -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 錯誤訊息 -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 搜尋和篩選表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">搜尋與篩選</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="form-inline">
+                <div class="form-group mr-3">
+                    <label for="searchKeyword" class="sr-only">搜尋關鍵字</label>
+                    <input type="text" class="form-control" id="searchKeyword" name="searchKeyword" 
+                           value="@Model.SearchKeyword" placeholder="搜尋背景名稱或描述...">
+                </div>
+                <div class="form-group mr-3">
+                    <label for="isActiveFilter" class="sr-only">狀態篩選</label>
+                    <select class="form-control" id="isActiveFilter" name="isActiveFilter">
+                        <option value="">全部狀態</option>
+                        <option value="true" @(Model.IsActiveFilter == true ? "selected" : "")>啟用</option>
+                        <option value="false" @(Model.IsActiveFilter == false ? "selected" : "")>停用</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> 搜尋
+                </button>
+                <a asp-action="Index" class="btn btn-secondary ml-2">
+                    <i class="fas fa-times"></i> 清除
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- 背景選項列表 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">背景選項列表</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.BackgroundOptions.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>背景名稱</th>
+                                <th>背景描述</th>
+                                <th>背景顏色</th>
+                                <th>狀態</th>
+                                <th>排序</th>
+                                <th>建立時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.BackgroundOptions)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>@item.Name</td>
+                                    <td>@(item.Description ?? "無")</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-preview mr-2" 
+                                                 style="width: 20px; height: 20px; background-color: @item.BackgroundColorCode; border: 1px solid #ddd; border-radius: 3px;"></div>
+                                            <span>@item.BackgroundColorCode</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge badge-success">啟用</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">停用</span>
+                                        }
+                                    </td>
+                                    <td>@item.SortOrder</td>
+                                    <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">
+                                                <i class="fas fa-eye"></i> 詳情
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> 編輯
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> 刪除
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分頁導航 -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="分頁導航">
+                        <ul class="pagination justify-content-center">
+                            @if (Model.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(Model.CurrentPage - 1)&searchKeyword=@Model.SearchKeyword&isActiveFilter=@Model.IsActiveFilter">上一頁</a>
+                                </li>
+                            }
+
+                            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                            {
+                                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i&searchKeyword=@Model.SearchKeyword&isActiveFilter=@Model.IsActiveFilter">@i</a>
+                                </li>
+                            }
+
+                            @if (Model.CurrentPage < Model.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(Model.CurrentPage + 1)&searchKeyword=@Model.SearchKeyword&isActiveFilter=@Model.IsActiveFilter">下一頁</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+
+                <!-- 分頁資訊 -->
+                <div class="text-center text-muted">
+                    顯示第 @((Model.CurrentPage - 1) * Model.PageSize + 1) - @(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount)) 筆，共 @Model.TotalCount 筆資料
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-600">沒有找到背景選項</h5>
+                    <p class="text-gray-500">請嘗試調整搜尋條件或新增背景選項</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 新增背景選項
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .color-preview {
+        display: inline-block;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+</style>
