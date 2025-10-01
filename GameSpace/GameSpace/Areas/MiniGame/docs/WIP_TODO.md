@@ -30,8 +30,8 @@
 🎯 Phase 2: 小遊戲系統功能完善
 2.1 每日遊戲次數限制設定
 [x] 新增每日遊戲次數限制設定（預設一天三次） (ID: P2-2.1-01) (Commit: 86177ae)
-[x] 建立次數限制管理介面 (ID: P2-2.1-02) (Commit: new)
-[ ] 實作次數限制驗證邏輯 (ID: P2-2.1-03)
+[x] 建立次數限制管理介面 (ID: P2-2.1-02) (Commit: 61c3940)
+[x] 實作次數限制驗證邏輯 (ID: P2-2.1-03) (Commit: new)
 [ ] 新增次數限制統計功能 (ID: P2-2.1-04)
 
 2.2 獎勵種類詳細設定
@@ -94,18 +94,19 @@
 
 ## 完成紀要
 
-### P2-2.1-02: 建立次數限制管理介面
+### P2-2.1-03: 實作次數限制驗證邏輯
 - **完成時間**: 2024-12-19
 - **Commit**: new
 - **完成內容**:
-  - 新增 Edit.cshtml 編輯頁面，支援完整的表單驗證和錯誤處理
-  - 新增 Details.cshtml 詳細頁面，展示完整的設定資訊和操作按鈕
-  - 新增 Delete.cshtml 刪除確認頁面，包含警告訊息和確認機制
-  - 新增 Statistics.cshtml 統計頁面，展示總設定數、啟用設定、停用設定、平均限制等統計資料
-  - 更新 ViewModels 新增 DailyGameLimitDetailsViewModel、DailyGameLimitDeleteViewModel、DailyGameLimitStatisticsViewModel
-  - 更新控制器支援新的視圖和統計功能
-  - 更新 Index.cshtml 新增統計資料按鈕
-  - 使用 SB Admin 樣式，響應式設計，包含圖表和統計卡片
+  - 新增 DailyGameLimitValidationService 專門的驗證服務
+  - 實作 ValidateDailyGameLimitAsync 方法，驗證建立設定的資料完整性
+  - 實作 ValidateDailyGameLimitEditAsync 方法，驗證編輯設定的資料完整性
+  - 實作 ValidateUserGameAccessAsync 方法，驗證使用者遊戲權限
+  - 新增 ValidationResult 和 GameValidationResult 類別，提供完整的驗證結果
+  - 更新控制器整合驗證服務，在 Create 和 Edit 方法中加入驗證邏輯
+  - 新增 CheckUserGameAccess API 端點，提供使用者遊戲權限檢查
+  - 包含設定名稱唯一性驗證、每日限制範圍驗證、描述長度驗證
+  - 支援使用者今日遊戲次數檢查、剩餘遊戲次數計算、權限驗證
 - **權限控制**: 需要授權才能存取 (Authorize 屬性)
-- **功能**: 完整的 CRUD 管理介面、統計資料展示、確認刪除機制
-- **測試**: 基本功能測試通過，包含表單驗證和錯誤處理
+- **功能**: 完整的資料驗證、使用者權限檢查、API 端點
+- **測試**: 基本功能測試通過，包含驗證邏輯和錯誤處理

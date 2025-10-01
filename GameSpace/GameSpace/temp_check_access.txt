@@ -1,0 +1,44 @@
+        /// <summary>
+        /// 檢查使用者遊戲權限
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> CheckUserGameAccess(int userId)
+        {
+            try
+            {
+                var validationResult = await _validationService.ValidateUserGameAccessAsync(userId);
+                
+                if (validationResult.IsValid)
+                {
+                    return Json(new { 
+                        success = true, 
+                        data = new {
+                            dailyLimit = validationResult.DailyLimit,
+                            todayGameCount = validationResult.TodayGameCount,
+                            remainingGames = validationResult.RemainingGames,
+                            isExceeded = validationResult.IsExceeded,
+                            isDefaultLimit = validationResult.IsDefaultLimit
+                        }
+                    });
+                }
+                else
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = string.Join(", ", validationResult.Errors),
+                        data = new {
+                            dailyLimit = validationResult.DailyLimit,
+                            todayGameCount = validationResult.TodayGameCount,
+                            remainingGames = validationResult.RemainingGames,
+                            isExceeded = validationResult.IsExceeded,
+                            isDefaultLimit = validationResult.IsDefaultLimit
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "檢查使用者 {UserId} 遊戲權限時發生錯誤", userId);
+                return Json(new { success = false, message = "檢查遊戲權限時發生錯誤" });
+            }
+        }

@@ -122,7 +122,14 @@
     "id": "P2-2.1-02",
     "title": "建立次數限制管理介面",
     "status": "done",
-    "commits": ["new"],
+    "commits": ["61c3940"],
     "updatedAt": "2024-12-19T13:30:00Z"
+  },
+  {
+    "id": "P2-2.1-03",
+    "title": "實作次數限制驗證邏輯",
+    "status": "done",
+    "commits": ["new"],
+    "updatedAt": "2024-12-19T14:00:00Z"
   }
 ]

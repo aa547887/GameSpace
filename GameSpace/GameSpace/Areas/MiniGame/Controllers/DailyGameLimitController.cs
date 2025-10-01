@@ -1,4 +1,5 @@
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,13 +15,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
     public class DailyGameLimitController : Controller
     {
         private readonly IDailyGameLimitService _service;
+        private readonly DailyGameLimitValidationService _validationService;
         private readonly ILogger<DailyGameLimitController> _logger;
 
         public DailyGameLimitController(
+            DailyGameLimitValidationService validationService,
             IDailyGameLimitService service,
+            DailyGameLimitValidationService validationService,
             ILogger<DailyGameLimitController> logger)
         {
             _service = service;
+            _validationService = validationService;
             _logger = logger;
         }
 
@@ -401,6 +406,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+
 
 
 
