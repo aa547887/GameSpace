@@ -58,6 +58,9 @@ namespace GameSpace.Areas.MiniGame.Data
         // 新增：點數設定相關表
         public DbSet<PetColorChangeSettings> PetColorChangeSettings { get; set; } = null!;
         public DbSet<PetBackgroundChangeSettings> PetBackgroundChangeSettings { get; set; } = null!;
+        
+        // 新增：寵物升級獎勵設定表
+        public DbSet<PetLevelRewardSetting> PetLevelRewardSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -250,3 +253,4 @@ namespace GameSpace.Areas.MiniGame.Data
         }
     }
 }
+

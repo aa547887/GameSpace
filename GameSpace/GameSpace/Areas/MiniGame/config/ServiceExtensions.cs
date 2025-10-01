@@ -30,9 +30,13 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IPetBackgroundOptionService, PetBackgroundOptionService>();
 
             // 註冊寵物等級經驗值設定服務
-            services.AddScoped<IPetLevelExperienceSettingService, PetLevelExperienceSettingService>();
+            services.AddScoped<IPetLevelExperienceSettingService, PetLevelExperienceSettingService>(); 
+
+            // 註冊寵物升級獎勵設定服務
+            services.AddScoped<IPetLevelRewardSettingService, PetLevelRewardSettingService>();
 
             return services;
         }
     }
 }
+
