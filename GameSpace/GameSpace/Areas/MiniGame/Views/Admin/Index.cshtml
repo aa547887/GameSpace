@@ -1,260 +1,84 @@
+@model GameSpace.Areas.MiniGame.Models.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "MiniGame 管理後台";
+    ViewData["Title"] = "管理員儀表板";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid">
-    <!-- 頁面標題 -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-tachometer-alt mr-2 text-primary"></i>MiniGame 管理後台
-        </h1>
-        <div class="d-flex">
-            <span class="text-muted">歡迎回來，管理員！</span>
-        </div>
+<!-- Page Header -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-tachometer-alt me-2 text-primary"></i>管理員儀表板
+    </h1>
+    <div class="d-flex">
+        <span class="badge bg-success me-2 shadow-sm" id="systemStatus">
+            <i class="fas fa-circle text-success"></i> 系統正常
+        </span>
+        <span class="badge bg-info shadow-sm" id="currentTime">
+            <i class="fas fa-clock"></i> @DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+        </span>
     </div>
+</div>
 
-    <!-- 統計卡片 -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總會員數</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalUsers">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+5.2%</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總用戶數</div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalUsers.ToString("N0")</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日簽到</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todaySignIns">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-success">+12</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">活躍寵物</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activePets">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-info">+8</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-paw fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2 hover-card">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日遊戲</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGames">載入中...</div>
-                            <div class="text-xs text-muted">較昨日 <span class="text-warning">+23</span></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-gamepad fa-2x text-gray-300"></i>
-                        </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 功能模組 -->
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-wallet"></i> 會員錢包管理
-                    </h6>
-                    <a href="@Url.Action("Index", "AdminWallet")" class="btn btn-sm btn-primary">進入管理</a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("QueryPoints", "AdminWallet")" class="btn btn-outline-primary btn-sm btn-block">
-                                <i class="fas fa-search"></i> 查詢會員點數
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("QueryCoupons", "AdminWallet")" class="btn btn-outline-success btn-sm btn-block">
-                                <i class="fas fa-ticket-alt"></i> 查詢優惠券
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("QueryEVouchers", "AdminWallet")" class="btn btn-outline-info btn-sm btn-block">
-                                <i class="fas fa-gift"></i> 查詢電子券
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("ViewHistory", "AdminWallet")" class="btn btn-outline-warning btn-sm btn-block">
-                                <i class="fas fa-history"></i> 查看收支明細
-                            </a>
-                        </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card shadow h-100 py-2" style="background: linear-gradient(135deg, #1cc88a 0%, #17a673 100%);">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">活躍用戶</div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@Model.ActiveUsers.ToString("N0")</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-calendar-check"></i> 會員簽到系統
-                    </h6>
-                    <a href="@Url.Action("Index", "AdminSignIn")" class="btn btn-sm btn-primary">進入管理</a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("Rules", "AdminSignIn")" class="btn btn-outline-primary btn-sm btn-block">
-                                <i class="fas fa-cog"></i> 簽到規則設定
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("UserHistory", "AdminSignIn")" class="btn btn-outline-success btn-sm btn-block">
-                                <i class="fas fa-history"></i> 查看會員簽到紀錄
-                            </a>
-                        </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-paw"></i> 寵物系統管理
-                    </h6>
-                    <a href="@Url.Action("Index", "AdminPet")" class="btn btn-sm btn-primary">進入管理</a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("SystemRules", "AdminPet")" class="btn btn-outline-primary btn-sm btn-block">
-                                <i class="fas fa-cog"></i> 整體寵物系統規則設定
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("IndividualSettings", "AdminPet")" class="btn btn-outline-success btn-sm btn-block">
-                                <i class="fas fa-user-edit"></i> 會員個別寵物設定
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("QueryPets", "AdminPet")" class="btn btn-outline-info btn-sm btn-block">
-                                <i class="fas fa-search"></i> 會員個別寵物清單含查詢
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("ColorChangeHistory", "AdminPet")" class="btn btn-outline-warning btn-sm btn-block">
-                                <i class="fas fa-palette"></i> 換膚／換背景紀錄查詢
-                            </a>
-                        </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card shadow h-100 py-2" style="background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總寵物數</div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalPets.ToString("N0")</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-gamepad"></i> 小遊戲系統管理
-                    </h6>
-                    <a href="@Url.Action("Index", "AdminMiniGame")" class="btn btn-sm btn-primary">進入管理</a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("GameRules", "AdminMiniGame")" class="btn btn-outline-primary btn-sm btn-block">
-                                <i class="fas fa-cog"></i> 遊戲規則設定
-                            </a>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <a href="@Url.Action("QueryRecords", "AdminMiniGame")" class="btn btn-outline-success btn-sm btn-block">
-                                <i class="fas fa-history"></i> 查看會員遊戲紀錄
-                            </a>
-                        </div>
+                    <div class="col-auto">
+                        <i class="fas fa-paw fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 最近活動 -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-clock"></i> 最近活動
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="recentActivityTable">
-                            <thead>
-                                <tr>
-                                    <th>時間</th>
-                                    <th>模組</th>
-                                    <th>操作</th>
-                                    <th>會員</th>
-                                    <th>狀態</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2024-01-15 14:30</td>
-                                    <td><span class="badge badge-primary">錢包</span></td>
-                                    <td>點數發放</td>
-                                    <td>user001</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:25</td>
-                                    <td><span class="badge badge-info">簽到</span></td>
-                                    <td>每日簽到</td>
-                                    <td>user002</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                                <tr>
-                                    <td>2024-01-15 14:20</td>
-                                    <td><span class="badge badge-warning">寵物</span></td>
-                                    <td>寵物升級</td>
-                                    <td>user003</td>
-                                    <td><span class="badge badge-success">成功</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card shadow h-100 py-2" style="background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總點數</div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalPoints.ToString("N0")</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-coins fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
@@ -262,89 +86,240 @@
     </div>
 </div>
 
-
-
-<script>
-    $(document).ready(function() {
-        // 實際載入數據
-        loadStatistics();
-        
-        // 初始化 DataTable
-        $("#recentActivityTable").DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
-            },
-            "pageLength": 10,
-            "order": [[0, "desc"]],
-            "columnDefs": [
-                { "orderable": false, "targets": 4 }
-            ],
-            "ajax": {
-                "url": "@Url.Action("GetActivityData")",
-                "type": "POST"
-            }
-        });
-
-        // 添加載入動畫
-        $(".card").each(function(index) {
-            $(this).css("animation-delay", (index * 0.1) + "s");
-            $(this).addClass("fade-in");
-        });
-    });
-    
-    function loadStatistics() {
-        // 實際載入統計數據
-        $.ajax({
-            url: "@Url.Action("GetDashboardStats")",
-            type: "GET",
-            data: { period: "today" },
-            success: function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    $("#totalUsers").text(data.totalUsers.toLocaleString());
-                    $("#todaySignIns").text(data.todaySignIns);
-                    $("#activePets").text(data.activePets);
-                    $("#todayGames").text(data.todayGames);
-                    
-                    // 計算變化百分比
-                    var usersChange = data.totalUsers - data.yesterdayTotalUsers;
-                    var signInsChange = data.todaySignIns - data.yesterdaySignIns;
-                    var petsChange = data.activePets - data.yesterdayActivePets;
-                    var gamesChange = data.todayGames - data.yesterdayGames;
-                    
-                    $("#usersChange").html("較昨日 <span class='text-" + (usersChange >= 0 ? "success" : "danger") + "'>" + 
-                        (usersChange >= 0 ? "+" : "") + usersChange + "</span>");
-                    $("#signInsChange").html("較昨日 <span class='text-" + (signInsChange >= 0 ? "success" : "danger") + "'>" + 
-                        (signInsChange >= 0 ? "+" : "") + signInsChange + "</span>");
-                    $("#petsChange").html("較昨日 <span class='text-" + (petsChange >= 0 ? "success" : "danger") + "'>" + 
-                        (petsChange >= 0 ? "+" : "") + petsChange + "</span>");
-                    $("#gamesChange").html("較昨日 <span class='text-" + (gamesChange >= 0 ? "success" : "danger") + "'>" + 
-                        (gamesChange >= 0 ? "+" : "") + gamesChange + "</span>");
-                } else {
-                    showError("載入統計數據失敗：" + response.message);
-                }
-            },
-            error: function() {
-                showError("載入統計數據時發生錯誤");
-            }
-        });
-    }
-    
-    // 添加錯誤處理函數
-    function showError(message) {
-        // 使用 Bootstrap Toast 顯示錯誤
-        var toastHtml = `
-            <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+<!-- Today's Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodaySignIns</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                    </div>
                 </div>
             </div>
-        `;
-        $("#toastContainer").html(toastHtml);
-        $('.toast').toast('show');
-    }
-</script>
+        </div>
+    </div>
 
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日遊戲</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayGames</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-gamepad fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">本月簽到</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ThisMonthSignIns</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">本月遊戲</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ThisMonthGames</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-trophy fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- User Growth Chart -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">用戶成長趨勢</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow">
+                        <a class="dropdown-item" href="#">匯出資料</a>
+                        <a class="dropdown-item" href="#">列印報表</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-area">
+                    <canvas id="userGrowthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Statistics -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">遊戲統計</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pt-4 pb-2">
+                    <canvas id="gameStatsChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                    <span class="mr-2">
+                        <i class="fas fa-circle text-primary"></i> 小遊戲
+                    </span>
+                    <span class="mr-2">
+                        <i class="fas fa-circle text-success"></i> 競技遊戲
+                    </span>
+                    <span class="mr-2">
+                        <i class="fas fa-circle text-info"></i> 休閒遊戲
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">最近活動</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <thead>
+                            <tr>
+                                <th>用戶</th>
+                                <th>活動類型</th>
+                                <th>描述</th>
+                                <th>時間</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var activity in Model.RecentActivities)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                @activity.UserName.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">@activity.UserName</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@(activity.ActivityType == "簽到" ? "success" : "info")">
+                                            @activity.ActivityType
+                                        </span>
+                                    </td>
+                                    <td>@activity.Description</td>
+                                    <td>@activity.ActivityTime.ToString("MM/dd HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 用戶成長趨勢圖
+        const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+        const userGrowthChart = new Chart(userGrowthCtx, {
+            type: 'line',
+            data: {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                datasets: [{
+                    label: '用戶數',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 遊戲統計圓餅圖
+        const gameStatsCtx = document.getElementById('gameStatsChart').getContext('2d');
+        const gameStatsChart = new Chart(gameStatsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['小遊戲', '競技遊戲', '休閒遊戲'],
+                datasets: [{
+                    data: [@Model.TotalMiniGames, 150, 200],
+                    backgroundColor: [
+                        'rgb(54, 185, 204)',
+                        'rgb(28, 200, 138)',
+                        'rgb(246, 194, 62)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // 更新時間
+        setInterval(function() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('currentTime').innerHTML = '<i class="fas fa-clock"></i> ' + timeString;
+        }, 1000);
+    </script>
+}

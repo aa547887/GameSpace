@@ -1,74 +1,341 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GamiPort - MiniGame Area</title>
-
-    <link rel="icon" type="image/x-icon" href="~/icon/ImageToStl.com_Gamiport.ico" asp-append-version="true" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MiniGame管理系統</title>
     
-    <!-- Bootstrap 5 & FontAwesome -->
-    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="~/font-awesome/css/all.min.css" rel="stylesheet" />
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 全域樣式（與其他區域保持一致） --><link href="~/css/stylecol.css" rel="stylesheet" />
-    
-    <!-- Minigame Area 特有樣式（最後載入，覆蓋全域樣式） -->
-    <link href="~/Areas/MiniGame/wwwroot/css/site.css" rel="stylesheet" />
-
-    @RenderSection("Styles", required: false)
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-color);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 10%, #224abe 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin: 0.2rem 0;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2e59d9;
+            border-color: #2e59d9;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-card .text-white-50 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        .loading {
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body id="top" class="d-flex flex-column vh-100">
-
-    <!-- 第一層 Topbar -->
-    @Html.Partial("_TopbarLevel1")
-
-    <div class="d-flex flex-grow-1 position-relative">
-        <!-- Sidebar -->
-        <div id="sidebar" class="bg-dark text-white d-flex flex-column">
-            <div class="p-3 flex-grow-1 d-flex flex-column">
-                @Html.Partial("_Sidebar")
-            </div>
-        </div>
-
-        <!-- Content Wrapper -->
-        <div id="content-wrapper" class="flex-grow-1 d-flex flex-column overflow-hidden ms-0">
-            <!-- Main Content -->
-            <div class="flex-grow-1 overflow-auto p-3">
-                @RenderBody()
-            </div>
-
-            <!-- Footer -->
-            @Html.Partial("_Footer")
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h4 class="text-white">
+                            <i class="fas fa-gamepad me-2"></i>
+                            MiniGame管理
+                        </h4>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Admin" ? "active" : "")" 
+                               href="@Url.Action("Index", "Admin")">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                儀表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminUser" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminUser")">
+                                <i class="fas fa-users me-2"></i>
+                                用戶管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminManager" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminManager")">
+                                <i class="fas fa-user-shield me-2"></i>
+                                管理員管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminPet" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminPet")">
+                                <i class="fas fa-paw me-2"></i>
+                                寵物管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminMiniGame" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminMiniGame")">
+                                <i class="fas fa-gamepad me-2"></i>
+                                小遊戲管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminWallet" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminWallet")">
+                                <i class="fas fa-wallet me-2"></i>
+                                錢包管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminCoupon" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminCoupon")">
+                                <i class="fas fa-ticket-alt me-2"></i>
+                                優惠券管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminSignIn" ? "active" : "")" 
+                               href="@Url.Action("Index", "AdminSignIn")">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                簽到管理
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Topbar -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">@ViewData["Title"]</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download"></i> 匯出
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-print"></i> 列印
+                            </button>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-cog"></i> 設定
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>個人資料</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>系統設定</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="@Url.Action("Logout", "Home")"><i class="fas fa-sign-out-alt me-2"></i>登出</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Alert Messages -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                
+                @if (TempData["WarningMessage"] != null)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        @TempData["WarningMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                
+                <!-- Page Content -->
+                <div class="fade-in">
+                    @RenderBody()
+                </div>
+            </main>
         </div>
     </div>
-
-    <!-- Toggle Button 左下固定 -->
-    <button id="sidebarToggle" class="btn btn-primary position-fixed bottom-0 start-0 m-3">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Scroll to Top Button 右下固定 -->
-    <a class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3" href="#top"
-       style="width:45px;height:45px;">
-        <i class="fas fa-angle-up"></i>
-    </a>
-
-    <!-- jQuery（AJAX 功能需要） -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-            integrity="sha256-3fpdp4Z6xNn2c2JfUQw7vOxI0w6YJmq9hw3rro3At2c="
-            crossorigin="anonymous"></script>
-
-    <!-- Bootstrap 5 JS -->
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/font-awesome/js/all.min.js"></script>
-    <script src="~/js/test.js"></script>
     
-    <!-- Minigame Area 特有 JavaScript -->
-    <script src="~/Areas/MiniGame/wwwroot/js/site.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Loading Overlay -->
+    <div class="loading" id="loadingOverlay">
+        <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">載入中...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        // 全域JavaScript功能
+        .ready(function() {
+            // 初始化DataTables
+            .data-table.DataTable({
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json'
+                },
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'desc']]
+            });
+            
+            // 自動隱藏Alert
+            setTimeout(function() {
+                .alert.fadeOut();
+            }, 5000);
+            
+            // 確認刪除對話框
+            .btn-delete.click(function(e) {
+                if (!confirm('確定要刪除這筆資料嗎？此操作無法復原。')) {
+                    e.preventDefault();
+                }
+            });
+            
+            // 載入動畫
+            form.submit(function() {
+                #loadingOverlay.addClass('show');
+            });
+        });
+        
+        // 工具函數
+        function showLoading() {
+            #loadingOverlay.addClass('show');
+        }
+        
+        function hideLoading() {
+            #loadingOverlay.removeClass('show');
+        }
+        
+        function showAlert(message, type = 'info') {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-danger' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-exclamation-circle' : 
+                        type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+            
+            const alertHtml = 
+                <div class="alert  alert-dismissible fade show" role="alert">
+                    <i class="fas  me-2"></i>
+                    
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            ;
+            
+            main.prepend(alertHtml);
+            
+            setTimeout(function() {
+                .alert.fadeOut();
+            }, 5000);
+        }
+    </script>
+    
     @RenderSection("Scripts", required: false)
 </body>
 </html>
-
