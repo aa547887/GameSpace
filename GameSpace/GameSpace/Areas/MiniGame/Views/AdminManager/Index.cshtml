@@ -119,8 +119,8 @@
                             <label for="status">狀態</label>
                             <select class="form-control" id="status" name="status">
                                 <option value="">全部</option>
-                                <option value="active" @(ViewBag.Status == "active" ? "selected" : "")>啟用</option>
-                                <option value="locked" @(ViewBag.Status == "locked" ? "selected" : "")>鎖定</option>
+                                <option value="active" selected="@(ViewBag.Status == "active" ? "selected" : "")">啟用</option>
+                                <option value="locked" selected="@(ViewBag.Status == "locked" ? "selected" : "")">鎖定</option>
                             </select>
                         </div>
                     </div>
@@ -295,3 +295,4 @@
         });
     </script>
 }
+

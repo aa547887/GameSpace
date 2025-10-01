@@ -119,9 +119,9 @@
                             <label for="status">狀態</label>
                             <select class="form-control" id="status" name="status">
                                 <option value="">全部</option>
-                                <option value="unused" @(ViewBag.Status == "unused" ? "selected" : "")>未使用</option>
-                                <option value="used" @(ViewBag.Status == "used" ? "selected" : "")>已使用</option>
-                                <option value="expired" @(ViewBag.Status == "expired" ? "selected" : "")>已過期</option>
+                                <option value="unused" @(ViewBag.Status == "unused" ? "selected" : "")">未使用</option>
+                                <option value="used" selected="@(ViewBag.Status == "used" ? "selected" : "")">已使用</option>
+                                <option value="expired" selected="@(ViewBag.Status == "expired" ? "selected" : "")">已過期</option>
                             </select>
                         </div>
                     </div>
@@ -288,3 +288,6 @@
         });
     </script>
 }
+
+
+
