@@ -14,20 +14,18 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddDbContext<MiniGameDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("GameSpace")));
 
-            // 註冊 Services
+            // 註冊核心管理服務
             services.AddScoped<IMiniGameAdminService, MiniGameAdminService>();
             services.AddScoped<IMiniGamePermissionService, MiniGamePermissionService>();
             services.AddScoped<IMiniGameAdminAuthService, MiniGameAdminAuthService>();
             services.AddScoped<IMiniGameAdminGate, MiniGameAdminGate>();
 
-            // 註冊點數設定相關服務
-            services.AddScoped<IPetColorCostSettingService, PetColorCostSettingService>();
-            services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
-            services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
-            services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
-            services.AddScoped<IPointsSettingsService, PointsSettingsService>();
+            // 註冊寵物換色/背景點數設定服務
+            services.AddScoped<IPetSkinColorPointSettingService, PetSkinColorPointSettingService>();
+            services.AddScoped<IPetBackgroundPointSettingService, PetBackgroundPointSettingService>();
+            services.AddScoped<IPointSettingStorageService, PointSettingStorageService>();
 
-            // 註冊寵物選項相關服務
+            // 註冊寵物選項管理服務
             services.AddScoped<IPetColorOptionService, PetColorOptionService>();
             services.AddScoped<IPetBackgroundOptionService, PetBackgroundOptionService>();
 
@@ -42,6 +40,23 @@ namespace GameSpace.Areas.MiniGame.config
 
             // 註冊寵物升級規則驗證服務
             services.AddScoped<IPetLevelUpRuleValidationService, PetLevelUpRuleValidationService>();
+
+            // 註冊寵物互動增益規則服務
+            services.AddScoped<IPetInteractionBonusRuleService, PetInteractionBonusRuleService>();
+            services.AddScoped<IPetInteractionBonusRuleValidationService, PetInteractionBonusRuleValidationService>();
+            services.AddScoped<IPetInteractionBonusCalculationService, PetInteractionBonusCalculationService>();
+
+            // 註冊每日遊戲次數限制服務
+            services.AddScoped<IDailyGameLimitSettingService, DailyGameLimitSettingService>();
+
+            // 註冊寵物成本設定服務
+            services.AddScoped<IPetColorCostSettingService, PetColorCostSettingService>();
+            services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
+
+            // 註冊點數設定相關服務
+            services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
+            services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
+            services.AddScoped<IPointsSettingsService, PointsSettingsService>();
 
             return services;
         }
