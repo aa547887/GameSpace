@@ -67,21 +67,21 @@
     "title": "新增等級對應經驗值設定",
     "status": "done",
     "commits": ["existing"],
-    "updatedAt": "2024-12-19T10:00:00Z"
+    "updatedAt": "2024-12-19T12:00:00Z"
   },
   {
     "id": "P1-1.3-03",
     "title": "新增升級獎勵設定",
     "status": "done",
     "commits": ["existing"],
-    "updatedAt": "2024-12-19T10:15:00Z"
+    "updatedAt": "2024-12-19T12:15:00Z"
   },
   {
     "id": "P1-1.3-04",
     "title": "實作升級規則驗證邏輯",
     "status": "done",
     "commits": ["existing"],
-    "updatedAt": "2024-12-19T10:30:00Z"
+    "updatedAt": "2024-12-19T12:30:00Z"
   },
   {
     "id": "P1-1.4-01",
@@ -114,6 +114,13 @@
   {
     "id": "P2-2.1-01",
     "title": "新增每日遊戲次數限制設定（預設一天三次）",
+    "status": "done",
+    "commits": ["new"],
+    "updatedAt": "2024-12-19T13:00:00Z"
+  },
+  {
+    "id": "P2-2.1-02",
+    "title": "建立次數限制管理介面",
     "status": "todo",
     "commits": [],
     "updatedAt": null
