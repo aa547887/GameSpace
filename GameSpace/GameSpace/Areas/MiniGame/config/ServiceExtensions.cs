@@ -13,7 +13,8 @@ namespace GameSpace.Areas.MiniGame.config
         {
             // 註冊 MiniGameDbContext - 使用 GameSpace 連線字串
             services.AddDbContext<MiniGameDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("GameSpace")));
+                options.UseSqlServer(configuration.GetConnectionString(\
+GameSpace\)));
 
             // 註冊 Services
             services.AddScoped<IMiniGameAdminService, MiniGameAdminService>();
@@ -25,6 +26,10 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
             services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
             services.AddScoped<IPointsSettingsStatisticsService, PointsSettingsStatisticsService>();
+
+            // 註冊寵物選項相關服務
+            services.AddScoped<IPetColorOptionService, PetColorOptionService>();
+            services.AddScoped<IPetBackgroundOptionService, PetBackgroundOptionService>();
 
             return services;
         }
