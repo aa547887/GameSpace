@@ -1,4 +1,4 @@
-// ---- 服務命名空間（一般 using）----
+﻿// ---- 服務命名空間（一般 using）----
 // ---- 社群 Hub / 過濾器 / 共用登入 ----
 using GameSpace.Areas.social_hub.Auth;          // ★ IUserContextReader, AuthConstants
 using GameSpace.Areas.social_hub.Hubs;
@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 
 // ---- MiniGame Area 相關服務 ----
 using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Areas.MiniGame.config;
 
 // ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
@@ -35,221 +36,218 @@ using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.Notificatio
 
 namespace GameSpace
 {
-public class Program
-{
-public static async Task Main(string[] args)
-{
-var builder = WebApplication.CreateBuilder(args);
+	public class Program
+	{
+		public static async Task Main(string[] args)
+		{
+			var builder = WebApplication.CreateBuilder(args);
 
-// ========== 1) 組態與連線字串 ==========
-var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
-?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-var gameSpaceConn =
-builder.Configuration.GetConnectionString("GameSpace")
-?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+			// ========== 1) 組態與連線字串 ==========
+			var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
+				?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+			var gameSpaceConn =
+				builder.Configuration.GetConnectionString("GameSpace")
+				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
+				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-// ========== 2) DbContexts ==========
-builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
-builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
+			// ========== 2) DbContexts ==========
+			builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
+			builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
+			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// MiniGame Area DbContext 註冊
-builder.Services.AddDbContext<GameSpace.Areas.MiniGame.Data.ApplicationDbContext>(opt => opt.UseSqlServer(gameSpaceConn));
+			// ========== 3) Identity ==========
+			builder.Services
+				.AddDefaultIdentity<IdentityUser>(opt => opt.SignIn.RequireConfirmedAccount = true)
+				.AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+			// ========== 4) MVC / Razor ==========
+			builder.Services.AddControllersWithViews(o =>
+			{
+				o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+				// 防止瀏覽器回放舊頁（切帳號時 Sidebar 不會回放舊 HTML）
+				o.Filters.Add(new ResponseCacheAttribute { NoStore = true, Location = ResponseCacheLocation.None });
+			});
+			builder.Services.AddRazorPages();
 
-// ========== 3) Identity ==========
-builder.Services
-.AddDefaultIdentity<IdentityUser>(opt => opt.SignIn.RequireConfirmedAccount = true)
-.AddEntityFrameworkStores<ApplicationDbContext>();
+			// ========== 5) SignalR ==========
+			builder.Services.AddSignalR();
 
-// ========== 4) MVC / Razor ==========
-builder.Services.AddControllersWithViews(o =>
-{
-o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
-// 防止瀏覽器回放舊頁（切帳號時 Sidebar 不會回放舊 HTML）
-o.Filters.Add(new ResponseCacheAttribute { NoStore = true, Location = ResponseCacheLocation.None });
-});
-builder.Services.AddRazorPages();
+			// ========== 6) social_hub 相關服務 ==========
+			builder.Services.AddMemoryCache();
 
-// ========== 5) SignalR ==========
-builder.Services.AddSignalR();
+			builder.Services.Configure<GameSpace.Areas.social_hub.Services.MuteFilterOptions>(o =>
+			{
+				o.MaskStyle = GameSpace.Areas.social_hub.Services.MaskStyle.Asterisks;
+				o.FixedLabel = "【封鎖】";
+				o.FuzzyBetweenCjkChars = true;
+				o.MaskExactLength = false;
+				o.CacheTtlSeconds = 30;
+				o.UsePerWordReplacement = true;
+			});
 
-// ========== 6) social_hub 相關服務 ==========
-builder.Services.AddMemoryCache();
+			// 時鐘（App 時區）
+			builder.Services.AddSingleton<IAppClock>(sp => new AppClock(TimeZones.Taipei));
 
-builder.Services.Configure<GameSpace.Areas.social_hub.Services.MuteFilterOptions>(o =>
-{
-o.MaskStyle = GameSpace.Areas.social_hub.Services.MaskStyle.Asterisks;
-o.FixedLabel = "【封鎖】";
-o.FuzzyBetweenCjkChars = true;
-o.MaskExactLength = false;
-o.CacheTtlSeconds = 30;
-o.UsePerWordReplacement = true;
-});
+			// 穢語過濾 / 通知
+			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
+			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 
-// 時鐘（App 時區）
-builder.Services.AddSingleton<IAppClock>(sp => new AppClock(TimeZones.Taipei));
+			// ★ 必須：HttpContext
+			builder.Services.AddHttpContextAccessor();
 
-// 穢語過濾 / 通知
-builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
-builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
+			// ★ 這裡改成 Scoped（或 Transient），絕對不要 Singleton
+			builder.Services.AddScoped<IUserContextReader, UserContextReader>();
 
-// ★ 必須：HttpContext
-builder.Services.AddHttpContextAccessor();
+			// 權限服務（Gate + 細權限）
+			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
 
-// ★ 這裡改成 Scoped（或 Transient），絕對不要 Singleton
-builder.Services.AddScoped<IUserContextReader, UserContextReader>();
+			// ========== 6.5) MiniGame Area 相關服務 ==========
+			builder.Services.AddMiniGameServices(builder.Configuration);
 
-// 權限服務（Gate + 細權限）
-builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
+			// ========== 7) CORS（可選） ==========
+			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
+			if (corsOrigins is { Length: > 0 })
+			{
+				builder.Services.AddCors(opt =>
+				{
+					opt.AddPolicy("chat", p => p
+						.WithOrigins(corsOrigins)
+						.AllowAnyHeader()
+						.AllowAnyMethod()
+						.AllowCredentials());
+				});
+			}
 
-// ========== 7) CORS（可選） ==========
-var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
-if (corsOrigins is { Length: > 0 })
-{
-builder.Services.AddCors(opt =>
-{
-opt.AddPolicy("chat", p => p
-.WithOrigins(corsOrigins)
-.AllowAnyHeader()
-.AllowAnyMethod()
-.AllowCredentials());
-});
-}
+			// ========== 8) Session ==========
+			builder.Services.AddSession(opt =>
+			{
+				opt.IdleTimeout = TimeSpan.FromMinutes(30);
+				opt.Cookie.HttpOnly = true;
+				opt.Cookie.IsEssential = true;
+				opt.Cookie.SameSite = SameSiteMode.Lax;
+			});
 
-// ========== 8) Session ==========
-builder.Services.AddSession(opt =>
-{
-opt.IdleTimeout = TimeSpan.FromMinutes(30);
-opt.Cookie.HttpOnly = true;
-opt.Cookie.IsEssential = true;
-opt.Cookie.SameSite = SameSiteMode.Lax;
-});
+			// ========== 9) 共用登入介面 ==========
+			builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>();
 
-// ========== 9) 共用登入介面 ==========
-builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>();
+			// ========== 10) 後台 Cookie 方案（AdminCookie） ==========
+			builder.Services.AddAuthentication(options => { /* 保留 Identity 預設 */ })
+			.AddCookie(AuthConstants.AdminCookieScheme, opt =>
+			{
+				opt.LoginPath = "/Login";
+				opt.LogoutPath = "/Login/Logout";
+				opt.AccessDeniedPath = "/Login/Denied";
+				opt.Cookie.Name = "GameSpace.Admin";
+				opt.SlidingExpiration = true;
+				opt.ExpireTimeSpan = TimeSpan.FromHours(4);
 
-// ========== 10) 後台 Cookie 方案（AdminCookie） ==========
-builder.Services.AddAuthentication(options => { /* 保留 Identity 預設 */ })
-.AddCookie(AuthConstants.AdminCookieScheme, opt =>
-{
-opt.LoginPath = "/Login";
-opt.LogoutPath = "/Login/Logout";
-opt.AccessDeniedPath = "/Login/Denied";
-opt.Cookie.Name = "GameSpace.Admin";
-opt.SlidingExpiration = true;
-opt.ExpireTimeSpan = TimeSpan.FromHours(4);
+				// AJAX 401/403 不重導
+				opt.Events = new CookieAuthenticationEvents
+				{
+					OnRedirectToLogin = ctx =>
+					{
+						var isAjax =
+							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+							|| ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase);
 
-// AJAX 401/403 不重導
-opt.Events = new CookieAuthenticationEvents
-{
-OnRedirectToLogin = ctx =>
-{
-var isAjax =
-string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
-|| ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase);
+						if (isAjax)
+						{
+							ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+							return Task.CompletedTask;
+						}
+						ctx.Response.Redirect(ctx.RedirectUri);
+						return Task.CompletedTask;
+					},
+					OnRedirectToAccessDenied = ctx =>
+					{
+						var isAjax =
+							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
 
-if (isAjax)
-{
-ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-return Task.CompletedTask;
-}
-ctx.Response.Redirect(ctx.RedirectUri);
-return Task.CompletedTask;
-},
-OnRedirectToAccessDenied = ctx =>
-{
-var isAjax =
-string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
+						if (isAjax)
+						{
+							ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+							return Task.CompletedTask;
+						}
+						ctx.Response.Redirect(ctx.RedirectUri);
+						return Task.CompletedTask;
+					}
+				};
+			});
 
-if (isAjax)
-{
-ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-return Task.CompletedTask;
-}
-ctx.Response.Redirect(ctx.RedirectUri);
-return Task.CompletedTask;
-}
-};
-});
+			// ========== 11) 授權政策（需要就用） ==========
+			builder.Services.AddAuthorization(options =>
+			{
+				options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
+				options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
+				options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
+				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
+				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
+				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
+			});
 
-// ========== 11) 授權政策（需要就用） ==========
-builder.Services.AddAuthorization(options =>
-{
-options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
-options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
-options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
-options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
-options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
-options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
-// MiniGame Area 權限政策
-options.AddPolicy("CanMiniGameAdmin", p => p.RequireClaim("perm:MiniGame", "true"));
-});
+			// ========== 12) Anti-Forgery 設定 ==========
+			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-// ========== 12) Anti-Forgery 設定 ==========
-builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+			var app = builder.Build();
 
-var app = builder.Build();
+			// ========== 13) Middleware 管線 ==========
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseDeveloperExceptionPage();
+			}
+			else
+			{
+				app.UseExceptionHandler("/Home/Maintenance");
+				// app.UseHsts();
+			}
 
-// ========== 13) Middleware 管線 ==========
-if (app.Environment.IsDevelopment())
-{
-app.UseDeveloperExceptionPage();
-}
-else
-{
-app.UseExceptionHandler("/Home/Maintenance");
-// app.UseHsts();
-}
+			app.UseStatusCodePagesWithReExecute("/Home/Http{0}");
+			app.UseHttpsRedirection();
+			app.UseStaticFiles();
 
-app.UseStatusCodePagesWithReExecute("/Home/Http{0}");
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+			app.UseRouting();
 
-app.UseRouting();
+			if (corsOrigins is { Length: > 0 })
+				app.UseCors("chat");
 
-if (corsOrigins is { Length: > 0 })
-app.UseCors("chat");
+			app.UseCookiePolicy(new CookiePolicyOptions
+			{
+				MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+				Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
+			});
 
-app.UseCookiePolicy(new CookiePolicyOptions
-{
-MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
-});
+			// ★ Session 要在 Authentication 之前
+			app.UseSession();
 
-// ★ Session 要在 Authentication 之前
-app.UseSession();
+			app.UseAuthentication();
+			app.UseAuthorization();
 
-app.UseAuthentication();
-app.UseAuthorization();
+			// ========== 14) 路由 ==========
+			app.MapControllers();
 
-// ========== 14) 路由 ==========
-app.MapControllers();
+			app.MapControllerRoute(
+				name: "areas",
+				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-app.MapControllerRoute(
-name: "areas",
-pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+			app.MapControllerRoute(
+				name: "default",
+				pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapControllerRoute(
-name: "default",
-pattern: "{controller=Home}/{action=Index}/{id?}");
+			app.MapRazorPages();
 
-app.MapRazorPages();
+			// ========== 15) SignalR ==========
+			app.MapHub<ChatHub>("/social_hub/chatHub", opts =>
+			{
+				opts.Transports =
+					HttpTransportType.WebSockets |
+					HttpTransportType.ServerSentEvents |
+					HttpTransportType.LongPolling;
+			});
 
-// ========== 15) SignalR ==========
-app.MapHub<ChatHub>("/social_hub/chatHub", opts =>
-{
-opts.Transports =
-HttpTransportType.WebSockets |
-HttpTransportType.ServerSentEvents |
-HttpTransportType.LongPolling;
-});
-
-// ========== 16) 啟動 ==========
-await app.RunAsync();
-}
-}
+			// ========== 16) 啟動 ==========
+			await app.RunAsync();
+		}
+	}
 }

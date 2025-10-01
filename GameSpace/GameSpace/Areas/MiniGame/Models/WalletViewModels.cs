@@ -313,52 +313,6 @@ namespace GameSpace.Areas.MiniGame.Models
     /// <summary>
     /// 錢包統計讀取模型
     /// </summary>
-    public class WalletStatisticsReadModel
-    {
-        /// <summary>
-        /// 總用戶數
-        /// </summary>
-        public int TotalUsers { get; set; }
-        
-        /// <summary>
-        /// 總餘額
-        /// </summary>
-        public int TotalBalance { get; set; }
-        
-        /// <summary>
-        /// 平均餘額
-        /// </summary>
-        public double AverageBalance { get; set; }
-        
-        /// <summary>
-        /// 今日交易數
-        /// </summary>
-        public int TodayTransactions { get; set; }
-        
-        /// <summary>
-        /// 今日交易金額
-        /// </summary>
-        public int TodayAmount { get; set; }
-        
-        /// <summary>
-        /// 本月交易數
-        /// </summary>
-        public int MonthlyTransactions { get; set; }
-        
-        /// <summary>
-        /// 本月交易金額
-        /// </summary>
-        public int MonthlyAmount { get; set; }
-        
-        /// <summary>
-        /// 交易類型統計
-        /// </summary>
-        public List<TransactionTypeStatistics> TransactionTypeStats { get; set; } = new();
-        
-        /// <summary>
-        /// 每日統計
-        /// </summary>
-        public List<DailyWalletStatistics> DailyStats { get; set; } = new();
     }
 
     /// <summary>
@@ -550,51 +504,11 @@ namespace GameSpace.Areas.MiniGame.Models
     /// <summary>
     /// 交易類型統計
     /// </summary>
-    public class TransactionTypeStatistics
-    {
-        /// <summary>
-        /// 交易類型
-        /// </summary>
-        public string TransactionType { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// 交易次數
-        /// </summary>
-        public int Count { get; set; }
-        
-        /// <summary>
-        /// 總金額
-        /// </summary>
-        public int TotalAmount { get; set; }
-        
-        /// <summary>
-        /// 平均金額
-        /// </summary>
-        public double AverageAmount { get; set; }
-        
-        /// <summary>
-        /// 百分比
-        /// </summary>
-        public double Percentage { get; set; }
-        
-        /// <summary>
-        /// 交易類型顯示文字
-        /// </summary>
-        public string TransactionTypeDisplay => TransactionType switch
-        {
-            "Income" => "收入",
-            "Expense" => "支出",
-            "Transfer" => "轉帳",
-            "Refund" => "退款",
-            "Bonus" => "獎勵",
-            _ => TransactionType
-        };
-    }
 
     /// <summary>
     /// 每日錢包統計
     /// </summary>
-    public class DailyWalletStatistics
+    public class DailyWalletTransactionStatistics
     {
         /// <summary>
         /// 日期
@@ -613,52 +527,6 @@ namespace GameSpace.Areas.MiniGame.Models
         
         /// <summary>
         /// 收入金額
-        /// </summary>
-        public int IncomeAmount { get; set; }
-        
-        /// <summary>
-        /// 支出金額
-        /// </summary>
-        public int ExpenseAmount { get; set; }
-        
-        /// <summary>
-        /// 淨收入
-        /// </summary>
-        public int NetIncome { get; set; }
-        
-        /// <summary>
-        /// 日期顯示文字
-        /// </summary>
-        public string DateDisplay => Date.ToString("yyyy-MM-dd");
-        
-        /// <summary>
-        /// 淨收入顯示文字
-        /// </summary>
-        public string NetIncomeDisplay => NetIncome >= 0 ? $"+{NetIncome:N0}" : $"{NetIncome:N0}";
-    }
-
-    /// <summary>
-    /// 錢包充值記錄
-    /// </summary>
-    public class WalletTopUpRecord
-    {
-        /// <summary>
-        /// 記錄ID
-        /// </summary>
-        public int RecordId { get; set; }
-        
-        /// <summary>
-        /// 用戶ID
-        /// </summary>
-        public int UserId { get; set; }
-        
-        /// <summary>
-        /// 充值金額
-        /// </summary>
-        public int Amount { get; set; }
-        
-        /// <summary>
-        /// 充值方式
         /// </summary>
         public string PaymentMethod { get; set; } = string.Empty;
         

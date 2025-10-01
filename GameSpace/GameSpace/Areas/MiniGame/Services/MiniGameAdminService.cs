@@ -307,15 +307,6 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             return false;
         }
-        {
-            var signIn = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.UserId == userId && s.SignTime.Date == signInDate.Date);
-            if (signIn != null)
-            {
-                _context.UserSignInStats.Remove(signIn);
-                return await _context.SaveChangesAsync() > 0;
-            }
-            return false;
-        }
 
         public async Task<PagedResult<UserSignInStat>> GetSignInStatsAsync()
         {

@@ -548,20 +548,6 @@ namespace GameSpace.Areas.MiniGame.Models
     #region 通用模型
 
     /// <summary>
-    /// 分頁結果模型
-    /// </summary>
-    public class PagedResult<T>
-    {
-        public List<T> Items { get; set; } = new();
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-        public int TotalCount { get; set; }
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-        public bool HasPreviousPage => Page > 1;
-        public bool HasNextPage => Page < TotalPages;
-    }
-
-    /// <summary>
     /// 操作結果模型
     /// </summary>
     public class OperationResult

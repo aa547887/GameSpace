@@ -409,7 +409,7 @@ namespace GameSpace.Areas.MiniGame.Models
     /// <summary>
     /// 錢包統計讀取模型
     /// </summary>
-    public class WalletStatisticsReadModel
+    public class WalletDetailedStatisticsReadModel
     {
         /// <summary>
         /// 總用戶數

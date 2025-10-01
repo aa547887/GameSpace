@@ -346,18 +346,14 @@ namespace GameSpace.Areas.MiniGame.Models
     }
 
     /// <summary>
-    /// 電子禮券查詢模型
+    /// 系統狀態模型
     /// </summary>
-    public class EVoucherQueryModel
+    public class SystemStatusModel
     {
-        public int? UserId { get; set; }
-        public int? EVoucherTypeId { get; set; }
-        public string? SearchTerm { get; set; }
-        public bool? IsUsed { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
+        public bool DatabaseConnection { get; set; }
+        public string MemoryUsage { get; set; } = string.Empty;
+        public DateTime? LastBackup { get; set; }
+        public int ErrorCount { get; set; }
     }
 
     #endregion

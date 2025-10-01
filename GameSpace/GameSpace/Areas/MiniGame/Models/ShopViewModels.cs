@@ -658,41 +658,6 @@ namespace GameSpace.Areas.MiniGame.Models
     public class ShopStatisticsReadModel
     {
         /// <summary>
-        /// 總優惠券類型數
-        /// </summary>
-        public int TotalCouponTypes { get; set; }
-        
-        /// <summary>
-        /// 總電子禮券類型數
-        /// </summary>
-        public int TotalEVoucherTypes { get; set; }
-        
-        /// <summary>
-        /// 總發行優惠券數
-        /// </summary>
-        public int TotalCouponsIssued { get; set; }
-        
-        /// <summary>
-        /// 總發行電子禮券數
-        /// </summary>
-        public int TotalEVouchersIssued { get; set; }
-        
-        /// <summary>
-        /// 總消耗點數
-        /// </summary>
-        public int TotalPointsSpent { get; set; }
-        
-        /// <summary>
-        /// 總折扣金額
-        /// </summary>
-        public int TotalDiscountGiven { get; set; }
-        
-        /// <summary>
-        /// 熱門商品
-        /// </summary>
-        public List<ShopPopularItemModel> PopularItems { get; set; } = new();
-        
-        /// <summary>
         /// 今日統計
         /// </summary>
         public DailyShopStatistics TodayStats { get; set; } = new();
@@ -946,29 +911,39 @@ namespace GameSpace.Areas.MiniGame.Models
     public class DailyShopStatistics
     {
         /// <summary>
-        /// 日期
+        /// 優惠券類型統計
         /// </summary>
-        public DateTime Date { get; set; }
+        public CouponTypeStatistics CouponTypeStats { get; set; } = new();
         
         /// <summary>
-        /// 新增優惠券數
+        /// 電子禮券類型統計
         /// </summary>
-        public int NewCoupons { get; set; }
+        public EVoucherTypeStatistics EVoucherTypeStats { get; set; } = new();
         
         /// <summary>
-        /// 新增電子禮券數
+        /// 總訂單數
         /// </summary>
-        public int NewEVouchers { get; set; }
+        public int TotalOrders { get; set; }
         
         /// <summary>
-        /// 消耗點數
+        /// 總銷售額
         /// </summary>
-        public int PointsSpent { get; set; }
+        public decimal TotalSales { get; set; }
         
         /// <summary>
-        /// 折扣金額
+        /// 總點數收入
         /// </summary>
-        public int DiscountGiven { get; set; }
+        public int TotalPointsEarned { get; set; }
+        
+        /// <summary>
+        /// 總點數支出
+        /// </summary>
+        public int TotalPointsSpent { get; set; }
+        
+        /// <summary>
+        /// 總點數淨收入
+        /// </summary>
+        public int TotalPointsNet { get; set; }
     }
 
     /// <summary>

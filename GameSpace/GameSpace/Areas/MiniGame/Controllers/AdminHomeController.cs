@@ -436,11 +436,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         public DateTime Timestamp { get; set; }
     }
 
-    public class SystemStatusModel
-    {
-        public bool DatabaseConnection { get; set; }
-        public string MemoryUsage { get; set; } = string.Empty;
-        public DateTime? LastBackup { get; set; }
-        public int ErrorCount { get; set; }
-    }
 }

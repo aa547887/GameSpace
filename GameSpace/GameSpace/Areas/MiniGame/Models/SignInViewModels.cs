@@ -191,7 +191,7 @@ namespace GameSpace.Areas.MiniGame.Models
         /// <summary>
         /// 更新模型
         /// </summary>
-        public SignInRulesUpdateModel UpdateModel { get; set; } = new();
+        public SignInRuleUpdateModel UpdateModel { get; set; } = new();
         
         /// <summary>
         /// 規則歷史
@@ -202,52 +202,6 @@ namespace GameSpace.Areas.MiniGame.Models
         /// 規則統計
         /// </summary>
         public SignInRuleStatistics RuleStatistics { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 簽到查詢模型
-    /// </summary>
-    public class SignInQueryModel
-    {
-        /// <summary>
-        /// 頁碼
-        /// </summary>
-        public int PageNumber { get; set; } = 1;
-        
-        /// <summary>
-        /// 每頁大小
-        /// </summary>
-        public int PageSize { get; set; } = 10;
-        
-        /// <summary>
-        /// 搜尋關鍵字
-        /// </summary>
-        public string? SearchTerm { get; set; }
-        
-        /// <summary>
-        /// 用戶ID
-        /// </summary>
-        public int? UserId { get; set; }
-        
-        /// <summary>
-        /// 開始日期
-        /// </summary>
-        public DateTime? StartDate { get; set; }
-        
-        /// <summary>
-        /// 結束日期
-        /// </summary>
-        public DateTime? EndDate { get; set; }
-        
-        /// <summary>
-        /// 排序方式
-        /// </summary>
-        public string SortBy { get; set; } = "SignInDate";
-        
-        /// <summary>
-        /// 排序方向
-        /// </summary>
-        public string SortDirection { get; set; } = "desc";
     }
 
     /// <summary>
@@ -297,9 +251,9 @@ namespace GameSpace.Areas.MiniGame.Models
         public int TotalSignIns { get; set; }
         
         /// <summary>
-        /// 今日簽到次數
+        /// 連續簽到天數
         /// </summary>
-        public int TodaySignIns { get; set; }
+        public int ConsecutiveDays { get; set; }
         
         /// <summary>
         /// 本月簽到次數
@@ -312,14 +266,19 @@ namespace GameSpace.Areas.MiniGame.Models
         public double AverageDailySignInRate { get; set; }
         
         /// <summary>
-        /// 連續簽到統計
+        /// 總獲得點數
         /// </summary>
-        public List<ConsecutiveSignInStatistics> ConsecutiveStats { get; set; } = new();
+        public int TotalPointsEarned { get; set; }
         
         /// <summary>
-        /// 每日簽到統計
+        /// 總獲得經驗
         /// </summary>
-        public List<DailySignInStatistics> DailyStats { get; set; } = new();
+        public int TotalExperienceEarned { get; set; }
+        
+        /// <summary>
+        /// 平均每日簽到率顯示文字
+        /// </summary>
+        public string AverageDailySignInRateDisplay => $"{AverageDailySignInRate:P1}";
     }
 
     /// <summary>
@@ -458,49 +417,8 @@ namespace GameSpace.Areas.MiniGame.Models
     /// <summary>
     /// 連續簽到統計
     /// </summary>
-    public class ConsecutiveSignInStatistics
+    public class ContinuousSignInStatistics
     {
-        /// <summary>
-        /// 連續天數
-        /// </summary>
-        public int ConsecutiveDays { get; set; }
-        
-        /// <summary>
-        /// 用戶數量
-        /// </summary>
-        public int UserCount { get; set; }
-        
-        /// <summary>
-        /// 百分比
-        /// </summary>
-        public double Percentage { get; set; }
-    }
-
-    /// <summary>
-    /// 每日簽到統計
-    /// </summary>
-    public class DailySignInStatistics
-    {
-        /// <summary>
-        /// 日期
-        /// </summary>
-        public DateTime Date { get; set; }
-        
-        /// <summary>
-        /// 簽到次數
-        /// </summary>
-        public int SignInCount { get; set; }
-        
-        /// <summary>
-        /// 簽到率
-        /// </summary>
-        public double SignInRate { get; set; }
-        
-        /// <summary>
-        /// 日期顯示文字
-        /// </summary>
-        public string DateDisplay => Date.ToString("yyyy-MM-dd");
-        
         /// <summary>
         /// 簽到率顯示文字
         /// </summary>

@@ -514,7 +514,7 @@ namespace GameSpace.Areas.MiniGame.Models
             /// <summary>
             /// 更新模型
             /// </summary>
-            public SignInRulesUpdateModel UpdateModel { get; set; } = new();
+            public SignInRuleUpdateModel UpdateModel { get; set; } = new();
             
             /// <summary>
             /// 規則歷史
