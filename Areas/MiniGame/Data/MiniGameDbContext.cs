@@ -23,6 +23,7 @@ namespace GameSpace.Areas.MiniGame.Data
 
         // 寵物互動狀態增益規則表
         public DbSet<PetInteractionBonusRule> PetInteractionBonusRules { get; set; } = null!;
+        public DbSet<PetInteractionHistory> PetInteractionHistories { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -146,3 +147,4 @@ namespace GameSpace.Areas.MiniGame.Data
         }
     }
 }
+

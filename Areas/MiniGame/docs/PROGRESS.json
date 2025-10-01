@@ -3,91 +3,126 @@
     "id": "P1-1.1-01",
     "title": "新增寵物換色所需點數設定功能",
     "status": "done",
-    "commits": ["8161714"],
-    "updatedAt": "2025-01-01T21:00:00.000Z"
+    "commits": [
+      "8161714"
+    ],
+    "updatedAt": "2025-01-01T21:00:00Z"
   },
   {
     "id": "P1-1.1-02",
     "title": "新增寵物換背景所需點數設定功能",
     "status": "done",
-    "commits": ["8161714"],
-    "updatedAt": "2025-01-01T21:00:00.000Z"
+    "commits": [
+      "8161714"
+    ],
+    "updatedAt": "2025-01-01T21:00:00Z"
   },
   {
     "id": "P1-1.1-03",
     "title": "建立點數設定管理介面",
     "status": "done",
-    "commits": ["8161714"],
-    "updatedAt": "2025-01-01T21:00:00.000Z"
+    "commits": [
+      "8161714"
+    ],
+    "updatedAt": "2025-01-01T21:00:00Z"
   },
   {
     "id": "P1-1.1-04",
     "title": "實作點數設定儲存邏輯",
     "status": "done",
-    "commits": ["1be8b6c"],
-    "updatedAt": "2025-01-01T22:00:00.000Z"
+    "commits": [
+      "1be8b6c"
+    ],
+    "updatedAt": "2025-01-01T22:00:00Z"
   },
   {
     "id": "P1-1.2-01",
     "title": "新增寵物顏色選項管理功能",
     "status": "done",
-    "commits": ["83b7859"],
-    "updatedAt": "2025-01-01T23:00:00.000Z"
+    "commits": [
+      "83b7859"
+    ],
+    "updatedAt": "2025-01-01T23:00:00Z"
   },
   {
     "id": "P1-1.2-02",
     "title": "新增寵物背景選項管理功能",
     "status": "done",
-    "commits": ["a4e6b40"],
-    "updatedAt": "2025-01-01T23:30:00.000Z"
+    "commits": [
+      "a4e6b40"
+    ],
+    "updatedAt": "2025-01-01T23:30:00Z"
   },
   {
     "id": "P1-1.2-03",
     "title": "建立選項管理介面",
     "status": "done",
-    "commits": ["971898a"],
-    "updatedAt": "2025-01-01T23:45:00.000Z"
+    "commits": [
+      "971898a"
+    ],
+    "updatedAt": "2025-01-01T23:45:00Z"
   },
   {
     "id": "P1-1.2-04",
     "title": "實作選項增刪改查邏輯",
     "status": "done",
-    "commits": ["71f0a87"],
-    "updatedAt": "2025-10-02T00:00:00.000Z"
+    "commits": [
+      "71f0a87"
+    ],
+    "updatedAt": "2025-10-02T00:00:00Z"
   },
   {
     "id": "P1-1.3-01",
     "title": "完善寵物升級規則設定",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2025-10-02T01:00:00.000Z"
+    "commits": [
+      "existing"
+    ],
+    "updatedAt": "2025-10-02T01:00:00Z"
   },
   {
     "id": "P1-1.3-02",
     "title": "新增等級對應經驗值設定",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2025-10-02T01:00:00.000Z"
+    "commits": [
+      "existing"
+    ],
+    "updatedAt": "2025-10-02T01:00:00Z"
   },
   {
     "id": "P1-1.3-03",
     "title": "新增升級獎勵設定",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2025-10-02T01:00:00.000Z"
+    "commits": [
+      "existing"
+    ],
+    "updatedAt": "2025-10-02T01:00:00Z"
   },
   {
     "id": "P1-1.3-04",
     "title": "實作升級規則驗證邏輯",
     "status": "done",
-    "commits": ["existing"],
-    "updatedAt": "2025-10-02T01:00:00.000Z"
+    "commits": [
+      "existing"
+    ],
+    "updatedAt": "2025-10-02T01:00:00Z"
   },
   {
     "id": "P1-1.4-01",
     "title": "新增互動狀態增益規則設定",
     "status": "done",
-    "commits": ["7c21e94"],
-    "updatedAt": "2025-10-02T02:00:00.000Z"
+    "commits": [
+      "7c21e94"
+    ],
+    "updatedAt": "2025-10-02T02:00:00Z"
+  },
+  {
+    "title": "新增狀態增益計算邏輯",
+    "commits": [
+      "d16e73dbd66b614bb5e1794e1a125a650287b351"
+    ],
+    "status": "done",
+    "id": "P1-1.4-02",
+    "updatedAt": "2025-10-01T22:34:49.382Z"
   }
 ]
