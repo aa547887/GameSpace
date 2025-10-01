@@ -14,7 +14,15 @@
 - [x] 新增寵物顏色選項管理功能 (ID: P1-1.2-01, Commit: 83b7859)
 - [x] 新增寵物背景選項管理功能 (ID: P1-1.2-02, Commit: a4e6b40)
 - [x] 建立選項管理介面 (ID: P1-1.2-03, Commit: 971898a)
-- [ ] 實作選項增刪改查邏輯 (ID: P1-1.2-04)
+- [x] 實作選項增刪改查邏輯 (ID: P1-1.2-04, Commit: 71f0a87)
+
+**完成紀要 (P1-1.2-04)**:
+- 補充了缺少的服務方法：ToggleColorOptionStatusAsync 和 ToggleBackgroundOptionStatusAsync
+- 建立了 PetColorOptionFormViewModel 來支援快速新增功能
+- 使用 partial class 擴充服務類別，保持程式碼分離
+- 實作了完整的增刪改查功能，包含狀態切換、重複檢查、資料驗證
+- 涉及資料表：PetColorOption、PetBackgroundOption
+- 測試檔案：尚未建立（待 Phase 6）
 
 #### 1.3 升級規則詳細設定
 - [ ] 完善寵物升級規則設定 (ID: P1-1.3-01)
@@ -90,7 +98,7 @@
 - [ ] 單元測試 (ID: P6-6.1-01)
 - [ ] 整合測試 (ID: P6-6.1-02)
 - [ ] 效能測試 (ID: P6-6.1-03)
-- [ ] 安全性測試 (ID: P6-6.1-03)
+- [ ] 安全性測試 (ID: P6-6.1-04)
 
 #### 6.2 部署準備
 - [ ] 環境配置檢查 (ID: P6-6.2-01)

@@ -51,8 +51,8 @@
   {
     "id": "P1-1.2-04",
     "title": "實作選項增刪改查邏輯",
-    "status": "todo",
-    "commits": [],
-    "updatedAt": "2025-01-01T23:45:00.000Z"
+    "status": "done",
+    "commits": ["71f0a87"],
+    "updatedAt": "2025-10-02T00:00:00.000Z"
   }
 ]
