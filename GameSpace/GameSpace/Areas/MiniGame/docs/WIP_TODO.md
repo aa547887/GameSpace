@@ -18,7 +18,7 @@
 1.3 升級規則詳細設定
 [x] 完善寵物升級規則設定 (ID: P1-1.3-01) (Commit: new)
 [x] 新增等級對應經驗值設定 (ID: P1-1.3-02) (Commit: 9ba54b3)
-[ ] 新增升級獎勵設定 (ID: P1-1.3-03)
+[x] 新增升級獎勵設定 (ID: P1-1.3-03) (Commit: 76cabcd)
 [ ] 實作升級規則驗證邏輯 (ID: P1-1.3-04)
 
 1.4 互動狀態增益規則設定
@@ -109,3 +109,23 @@
 - **資料表**: PetLevelExperienceSettings (需要加入 DbContext 並建立 Migration)
 - **功能**: 完整的等級經驗值管理、驗證邏輯、統計功能
 - **測試**: 基本功能測試通過，包含表單驗證和錯誤處理
+
+### P1-1.3-03: 新增升級獎勵設定
+- **完成時間**: 2025-10-01
+- **Commit**: 76cabcd
+- **完成內容**:
+  - 建立 PetLevelRewardSetting 模型，包含等級、獎勵類型、獎勵數量、描述等欄位
+  - 實作完整的 CRUD 服務層架構 (IPetLevelRewardSettingService, PetLevelRewardSettingService)
+  - 建立 PetLevelRewardSettingController 控制器，支援增刪改查操作
+  - 建立完整的 View 層 (Index, Create, Edit, Details, Delete)
+  - 實作搜尋、篩選、分頁、統計功能
+  - 支援等級+獎勵類型組合唯一性驗證、啟用狀態切換
+  - 使用 SB Admin 樣式，響應式設計
+  - 統計資料包含：總設定數、啟用設定數、停用設定數、獎勵類型統計、等級統計
+- **權限控制**: 需要授權才能存取 (Authorize 屬性)
+- **資料表**: PetLevelRewardSettings (已加入 MiniGameDbContext)
+- **路由**: /MiniGame/PetLevelRewardSetting
+- **功能**: 完整的升級獎勵管理、驗證邏輯、統計功能、獎勵類型查詢
+- **安全性**: 輸入驗證、防 XSS、防 CSRF (ValidateAntiForgeryToken)
+- **測試**: 基本功能測試通過，包含表單驗證和錯誤處理
+- **服務註冊**: 已在 ServiceExtensions.cs 中註冊服務
