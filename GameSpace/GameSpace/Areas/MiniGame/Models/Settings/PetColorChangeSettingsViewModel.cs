@@ -7,27 +7,62 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
     /// </summary>
     public class PetColorChangeSettingsViewModel
     {
-        public int Id { get; set; }
+        /// <summary>
+        /// 設定ID
+        /// </summary>
+        public int SettingId { get; set; }
 
-        [Required(ErrorMessage = "顏色名稱為必填")]
-        [StringLength(50, ErrorMessage = "顏色名稱長度不能超過50字")]
-        [Display(Name = "顏色名稱")]
-        public string ColorName { get; set; } = "";
+        /// <summary>
+        /// 設定名稱
+        /// </summary>
+        [Required(ErrorMessage = "設定名稱為必填欄位")]
+        [StringLength(100, ErrorMessage = "設定名稱長度不能超過100個字元")]
+        [Display(Name = "設定名稱")]
+        public string SettingName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "所需點數為必填")]
-        [Range(1, 10000, ErrorMessage = "所需點數必須在1-10000之間")]
-        [Display(Name = "所需點數")]
-        public int RequiredPoints { get; set; }
+        /// <summary>
+        /// 換色所需點數
+        /// </summary>
+        [Required(ErrorMessage = "換色所需點數為必填欄位")]
+        [Range(0, int.MaxValue, ErrorMessage = "換色所需點數必須大於等於0")]
+        [Display(Name = "換色所需點數")]
+        public int PointsRequired { get; set; } = 2000;
 
-        [StringLength(7, ErrorMessage = "顏色代碼長度不能超過7字")]
-        [Display(Name = "顏色代碼")]
-        public string ColorCode { get; set; } = "";
-
+        /// <summary>
+        /// 是否啟用
+        /// </summary>
         [Display(Name = "是否啟用")]
         public bool IsActive { get; set; } = true;
 
+        /// <summary>
+        /// 建立時間
+        /// </summary>
+        [Display(Name = "建立時間")]
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>
+        /// 更新時間
+        /// </summary>
+        [Display(Name = "更新時間")]
         public DateTime? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// 建立者ID
+        /// </summary>
+        [Display(Name = "建立者ID")]
+        public int CreatedBy { get; set; }
+
+        /// <summary>
+        /// 更新者ID
+        /// </summary>
+        [Display(Name = "更新者ID")]
+        public int? UpdatedBy { get; set; }
+
+        /// <summary>
+        /// 備註
+        /// </summary>
+        [StringLength(500, ErrorMessage = "備註長度不能超過500個字元")]
+        [Display(Name = "備註")]
+        public string? Remarks { get; set; }
     }
 }
