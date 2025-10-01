@@ -1,0 +1,248 @@
+@model List<GameSpace.Areas.MiniGame.Models.ViewModels.RightTypeViewModel>
+@{
+    ViewData["Title"] = "權限類型管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-tags"></i>
+                        權限類型管理
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addRightTypeModal">
+                            <i class="fas fa-plus"></i>
+                            添加權限類型
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>類型ID</th>
+                                    <th>類型名稱</th>
+                                    <th>顯示名稱</th>
+                                    <th>描述</th>
+                                    <th>狀態</th>
+                                    <th>創建時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var rightType in Model)
+                                {
+                                    <tr>
+                                        <td>@rightType.TypeId</td>
+                                        <td>
+                                            <code>@rightType.TypeName</code>
+                                        </td>
+                                        <td>@rightType.DisplayName</td>
+                                        <td>@rightType.Description</td>
+                                        <td>
+                                            @if (rightType.IsActive)
+                                            {
+                                                <span class="badge badge-success">啟用</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">停用</span>
+                                            }
+                                        </td>
+                                        <td>@rightType.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="editRightType(@rightType.TypeId)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteRightType(@rightType.TypeId)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加權限類型模態框 -->
+<div class="modal fade" id="addRightTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加權限類型</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addRightTypeForm">
+                    <div class="form-group">
+                        <label>類型名稱</label>
+                        <input type="text" id="typeName" class="form-control" required>
+                        <small class="form-text text-muted">用於系統內部識別，建議使用英文</small>
+                    </div>
+                    <div class="form-group">
+                        <label>顯示名稱</label>
+                        <input type="text" id="displayName" class="form-control" required>
+                        <small class="form-text text-muted">在界面中顯示的名稱</small>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="description" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addRightType()">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯權限類型模態框 -->
+<div class="modal fade" id="editRightTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">編輯權限類型</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editRightTypeForm">
+                    <input type="hidden" id="editTypeId">
+                    <div class="form-group">
+                        <label>類型名稱</label>
+                        <input type="text" id="editTypeName" class="form-control" readonly>
+                        <small class="form-text text-muted">類型名稱不可修改</small>
+                    </div>
+                    <div class="form-group">
+                        <label>顯示名稱</label>
+                        <input type="text" id="editDisplayName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="editDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateRightType()">更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function addRightType() {
+            var formData = {
+                TypeName: #typeName.val(),
+                DisplayName: #displayName.val(),
+                Description: #description.val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("AddRightType")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        alert('權限類型添加成功');
+                        location.reload();
+                    } else {
+                        alert('權限類型添加失敗: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失敗');
+                }
+            });
+        }
+
+        function editRightType(typeId) {
+            // 獲取權限類型詳情
+            $.ajax({
+                url: '@Url.Action("GetRightTypeDetails")',
+                type: 'GET',
+                data: { typeId: typeId },
+                success: function(response) {
+                    if (response.success) {
+                        #editTypeId.val(response.data.typeId);
+                        #editTypeName.val(response.data.typeName);
+                        #editDisplayName.val(response.data.displayName);
+                        #editDescription.val(response.data.description);
+                        #editRightTypeModal.modal('show');
+                    } else {
+                        alert('獲取權限類型詳情失敗: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失敗');
+                }
+            });
+        }
+
+        function updateRightType() {
+            var formData = {
+                TypeId: parseInt(#editTypeId.val()),
+                DisplayName: #editDisplayName.val(),
+                Description: #editDescription.val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("UpdateRightType")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        alert('權限類型更新成功');
+                        location.reload();
+                    } else {
+                        alert('權限類型更新失敗: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失敗');
+                }
+            });
+        }
+
+        function deleteRightType(typeId) {
+            if (confirm('確定要刪除這個權限類型嗎？')) {
+                $.ajax({
+                    url: '@Url.Action("DeleteRightType")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ TypeId: typeId }),
+                    success: function(response) {
+                        if (response.success) {
+                            alert('權限類型刪除成功');
+                            location.reload();
+                        } else {
+                            alert('權限類型刪除失敗: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('操作失敗');
+                    }
+                });
+            }
+        }
+    </script>
+}

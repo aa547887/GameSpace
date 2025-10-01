@@ -1,386 +1,375 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using GameSpace.Areas.MiniGame.Services;
-using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Data;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
-    public class AdminCouponController : MiniGameBaseController
+    public class AdminCouponController : Controller
     {
-        private readonly IMiniGameAdminService _adminService;
+        private readonly GameSpaceContext _context;
 
-        public AdminCouponController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminCouponController(GameSpaceContext context)
         {
-            _adminService = adminService;
+            _context = context;
         }
 
-        // 優惠券類型管理
-        public async Task<IActionResult> Index(CouponTypeQueryModel query)
+        // GET: AdminCoupon
+        public async Task<IActionResult> Index(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 10;
+            var query = _context.Coupon.AsQueryable();
 
-            try
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
             {
-                var result = await QueryCouponTypesAsync(query);
-                var viewModel = new AdminCouponTypeListViewModel
+                query = query.Where(c => c.CouponName.Contains(searchTerm) || 
+                                       c.CouponCode.Contains(searchTerm) || 
+                                       c.Description.Contains(searchTerm));
+            }
+
+            // 狀態篩選
+            if (!string.IsNullOrEmpty(status))
+            {
+                var now = DateTime.Now;
+                query = status switch
                 {
-                    CouponTypes = result.Items,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
+                    "active" => query.Where(c => c.IsActive && c.StartDate <= now && c.EndDate >= now),
+                    "expired" => query.Where(c => c.EndDate < now),
+                    "upcoming" => query.Where(c => c.StartDate > now),
+                    "inactive" => query.Where(c => !c.IsActive),
+                    _ => query
                 };
-                return View(viewModel);
             }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"查詢優惠券類型時發生錯誤：{ex.Message}";
-                return View(new AdminCouponTypeListViewModel());
-            }
-        }
 
-        // 新增優惠券類型
-        [HttpGet]
-        public async Task<IActionResult> Create()
-        {
-            try
+            // 排序
+            query = sortBy switch
             {
-                var viewModel = new CreateCouponTypeViewModel();
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入新增優惠券類型頁面時發生錯誤：{ex.Message}";
-                return View(new CreateCouponTypeViewModel());
-            }
-        }
+                "code" => query.OrderBy(c => c.CouponCode),
+                "discount" => query.OrderByDescending(c => c.DiscountValue),
+                "start" => query.OrderByDescending(c => c.StartDate),
+                "end" => query.OrderByDescending(c => c.EndDate),
+                "usage" => query.OrderByDescending(c => c.UsageCount),
+                _ => query.OrderBy(c => c.CouponName)
+            };
 
-        [HttpPost]
-        public async Task<IActionResult> Create(CreateCouponTypeViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
+            // 分頁
+            var totalCount = await query.CountAsync();
+            var coupons = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-            try
+            var viewModel = new AdminCouponIndexViewModel
             {
-                await CreateCouponTypeAsync(model);
-                TempData["SuccessMessage"] = "優惠券類型創建成功！";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"創建失敗：{ex.Message}");
-                return View(model);
-            }
-        }
-
-        // 編輯優惠券類型
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                var couponType = await GetCouponTypeByIdAsync(id);
-                if (couponType == null)
+                Coupons = new PagedResult<Coupon>
                 {
-                    TempData["ErrorMessage"] = "找不到指定的優惠券類型";
-                    return RedirectToAction(nameof(Index));
+                    Items = coupons,
+                    TotalCount = totalCount,
+                    PageNumber = page,
+                    PageSize = pageSize
+                }
+            };
+
+            // 設定 ViewBag 用於搜尋和篩選
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.Status = status;
+            ViewBag.SortBy = sortBy;
+            ViewBag.TotalCoupons = totalCount;
+            ViewBag.ActiveCoupons = await _context.Coupon.CountAsync(c => c.IsActive && c.StartDate <= DateTime.Now && c.EndDate >= DateTime.Now);
+            ViewBag.ExpiredCoupons = await _context.Coupon.CountAsync(c => c.EndDate < DateTime.Now);
+            ViewBag.UpcomingCoupons = await _context.Coupon.CountAsync(c => c.StartDate > DateTime.Now);
+
+            return View(viewModel);
+        }
+
+        // GET: AdminCoupon/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var coupon = await _context.Coupon
+                .Include(c => c.CouponUsages)
+                .FirstOrDefaultAsync(m => m.CouponId == id);
+
+            if (coupon == null)
+            {
+                return NotFound();
+            }
+
+            return View(coupon);
+        }
+
+        // GET: AdminCoupon/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        // POST: AdminCoupon/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(AdminCouponCreateViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // 檢查優惠券代碼是否已存在
+                if (await _context.Coupon.AnyAsync(c => c.CouponCode == model.CouponCode))
+                {
+                    ModelState.AddModelError("CouponCode", "此優惠券代碼已存在");
+                    return View(model);
                 }
 
-                var viewModel = new EditCouponTypeViewModel
+                var coupon = new Coupon
                 {
-                    CouponTypeId = couponType.CouponTypeId,
-                    Name = couponType.Name,
-                    Description = couponType.Description,
-                    DiscountType = couponType.DiscountType,
-                    DiscountValue = couponType.DiscountValue,
-                    MinOrderAmount = couponType.MinOrderAmount,
-                    MaxDiscountAmount = couponType.MaxDiscountAmount,
-                    IsActive = couponType.IsActive,
-                    ValidFrom = couponType.ValidFrom,
-                    ValidTo = couponType.ValidTo
+                    CouponName = model.CouponName,
+                    CouponCode = model.CouponCode,
+                    DiscountType = model.DiscountType,
+                    DiscountValue = model.DiscountValue,
+                    MinOrderAmount = model.MinOrderAmount,
+                    MaxDiscountAmount = model.MaxDiscountAmount,
+                    StartDate = model.StartDate,
+                    EndDate = model.EndDate,
+                    UsageLimit = model.UsageLimit,
+                    Description = model.Description,
+                    IsActive = model.IsActive,
+                    CreatedAt = DateTime.Now,
+                    UsageCount = 0
                 };
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入編輯優惠券類型頁面時發生錯誤：{ex.Message}";
+
+                _context.Add(coupon);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "優惠券建立成功";
                 return RedirectToAction(nameof(Index));
             }
+
+            return View(model);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Edit(EditCouponTypeViewModel model)
+        // GET: AdminCoupon/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
-            if (!ModelState.IsValid)
-                return View(model);
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-            try
+            var coupon = await _context.Coupon.FindAsync(id);
+            if (coupon == null)
             {
-                await UpdateCouponTypeAsync(model);
-                TempData["SuccessMessage"] = "優惠券類型更新成功！";
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
-            catch (Exception ex)
+
+            var model = new AdminCouponCreateViewModel
             {
-                ModelState.AddModelError("", $"更新失敗：{ex.Message}");
-                return View(model);
-            }
+                CouponName = coupon.CouponName,
+                CouponCode = coupon.CouponCode,
+                DiscountType = coupon.DiscountType,
+                DiscountValue = coupon.DiscountValue,
+                MinOrderAmount = coupon.MinOrderAmount,
+                MaxDiscountAmount = coupon.MaxDiscountAmount,
+                StartDate = coupon.StartDate,
+                EndDate = coupon.EndDate,
+                UsageLimit = coupon.UsageLimit,
+                Description = coupon.Description,
+                IsActive = coupon.IsActive
+            };
+
+            return View(model);
         }
 
-        // 刪除優惠券類型
+        // POST: AdminCoupon/Edit/5
         [HttpPost]
-        public async Task<IActionResult> Delete(int id)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AdminCouponCreateViewModel model)
         {
-            try
+            if (ModelState.IsValid)
             {
-                await DeleteCouponTypeAsync(id);
-                return Json(new { success = true, message = "優惠券類型刪除成功！" });
+                try
+                {
+                    var coupon = await _context.Coupon.FindAsync(id);
+                    if (coupon == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // 檢查優惠券代碼是否已被其他優惠券使用
+                    if (await _context.Coupon.AnyAsync(c => c.CouponCode == model.CouponCode && c.CouponId != id))
+                    {
+                        ModelState.AddModelError("CouponCode", "此優惠券代碼已被其他優惠券使用");
+                        return View(model);
+                    }
+
+                    coupon.CouponName = model.CouponName;
+                    coupon.CouponCode = model.CouponCode;
+                    coupon.DiscountType = model.DiscountType;
+                    coupon.DiscountValue = model.DiscountValue;
+                    coupon.MinOrderAmount = model.MinOrderAmount;
+                    coupon.MaxDiscountAmount = model.MaxDiscountAmount;
+                    coupon.StartDate = model.StartDate;
+                    coupon.EndDate = model.EndDate;
+                    coupon.UsageLimit = model.UsageLimit;
+                    coupon.Description = model.Description;
+                    coupon.IsActive = model.IsActive;
+
+                    _context.Update(coupon);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "優惠券更新成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!CouponExists(id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+
+            return View(model);
         }
 
-        // 切換優惠券類型狀態
+        // GET: AdminCoupon/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var coupon = await _context.Coupon
+                .Include(c => c.CouponUsages)
+                .FirstOrDefaultAsync(m => m.CouponId == id);
+
+            if (coupon == null)
+            {
+                return NotFound();
+            }
+
+            return View(coupon);
+        }
+
+        // POST: AdminCoupon/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var coupon = await _context.Coupon.FindAsync(id);
+            if (coupon != null)
+            {
+                _context.Coupon.Remove(coupon);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "優惠券刪除成功";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // 切換優惠券狀態
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            try
+            var coupon = await _context.Coupon.FindAsync(id);
+            if (coupon != null)
             {
-                await ToggleCouponTypeStatusAsync(id);
-                return Json(new { success = true, message = "優惠券類型狀態切換成功！" });
+                coupon.IsActive = !coupon.IsActive;
+                _context.Update(coupon);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, isActive = coupon.IsActive });
             }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+
+            return Json(new { success = false });
         }
 
-        // 獲取優惠券類型詳情
+        // 獲取優惠券統計數據
         [HttpGet]
-        public async Task<IActionResult> GetDetails(int id)
+        public async Task<IActionResult> GetCouponStats()
         {
-            try
+            var now = DateTime.Now;
+            var stats = new
             {
-                var couponType = await GetCouponTypeByIdAsync(id);
-                if (couponType == null)
-                    return Json(new { success = false, message = "找不到指定的優惠券類型" });
+                total = await _context.Coupon.CountAsync(),
+                active = await _context.Coupon.CountAsync(c => c.IsActive && c.StartDate <= now && c.EndDate >= now),
+                expired = await _context.Coupon.CountAsync(c => c.EndDate < now),
+                upcoming = await _context.Coupon.CountAsync(c => c.StartDate > now),
+                totalUsage = await _context.Coupon.SumAsync(c => c.UsageCount)
+            };
 
-                var details = new
-                {
-                    couponTypeId = couponType.CouponTypeId,
-                    name = couponType.Name,
-                    description = couponType.Description,
-                    discountType = couponType.DiscountType,
-                    discountValue = couponType.DiscountValue,
-                    minOrderAmount = couponType.MinOrderAmount,
-                    maxDiscountAmount = couponType.MaxDiscountAmount,
-                    isActive = couponType.IsActive,
-                    validFrom = couponType.ValidFrom,
-                    validTo = couponType.ValidTo,
-                    createdTime = couponType.CreatedTime
-                };
-
-                return Json(new { success = true, data = details });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            return Json(stats);
         }
 
-        // 私有方法
-        private async Task<PagedResult<CouponTypeModel>> QueryCouponTypesAsync(CouponTypeQueryModel query)
+        // 獲取優惠券使用趨勢
+        [HttpGet]
+        public async Task<IActionResult> GetCouponUsageTrend(int days = 30)
         {
-            var queryable = _context.CouponTypes.AsQueryable();
+            var endDate = DateTime.Today;
+            var startDate = endDate.AddDays(-days);
 
-            if (!string.IsNullOrEmpty(query.Name))
-                queryable = queryable.Where(c => c.Name.Contains(query.Name));
-
-            if (query.IsActive.HasValue)
-                queryable = queryable.Where(c => c.IsActive == query.IsActive.Value);
-
-            if (query.DiscountType != null)
-                queryable = queryable.Where(c => c.DiscountType == query.DiscountType);
-
-            var totalCount = await queryable.CountAsync();
-
-            var items = await queryable
-                .OrderByDescending(c => c.CreatedTime)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .Select(c => new CouponTypeModel
+            var trend = await _context.CouponUsage
+                .Where(cu => cu.UsedAt >= startDate)
+                .GroupBy(cu => cu.UsedAt.Date)
+                .Select(g => new
                 {
-                    CouponTypeId = c.CouponTypeId,
-                    Name = c.Name,
-                    Description = c.Description,
-                    DiscountType = c.DiscountType,
-                    DiscountValue = c.DiscountValue,
-                    MinOrderAmount = c.MinOrderAmount,
-                    MaxDiscountAmount = c.MaxDiscountAmount,
-                    IsActive = c.IsActive,
-                    ValidFrom = c.ValidFrom,
-                    ValidTo = c.ValidTo,
-                    CreatedTime = c.CreatedTime
+                    date = g.Key.ToString("yyyy-MM-dd"),
+                    count = g.Count()
+                })
+                .OrderBy(g => g.date)
+                .ToListAsync();
+
+            return Json(trend);
+        }
+
+        // 獲取優惠券類型分佈
+        [HttpGet]
+        public async Task<IActionResult> GetCouponTypeDistribution()
+        {
+            var distribution = await _context.Coupon
+                .GroupBy(c => c.DiscountType)
+                .Select(g => new
+                {
+                    type = g.Key,
+                    count = g.Count()
                 })
                 .ToListAsync();
 
-            return new PagedResult<CouponTypeModel>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = query.PageNumber,
-                PageSize = query.PageSize
-            };
+            return Json(distribution);
         }
 
-        private async Task<CouponTypeModel> GetCouponTypeByIdAsync(int id)
+        // 獲取最受歡迎的優惠券
+        [HttpGet]
+        public async Task<IActionResult> GetPopularCoupons(int top = 10)
         {
-            var couponType = await _context.CouponTypes.FindAsync(id);
-            if (couponType == null)
-                return null;
+            var popular = await _context.Coupon
+                .OrderByDescending(c => c.UsageCount)
+                .Take(top)
+                .Select(c => new
+                {
+                    couponId = c.CouponId,
+                    couponName = c.CouponName,
+                    couponCode = c.CouponCode,
+                    usageCount = c.UsageCount,
+                    usageLimit = c.UsageLimit,
+                    usageRate = (double)c.UsageCount / c.UsageLimit * 100
+                })
+                .ToListAsync();
 
-            return new CouponTypeModel
-            {
-                CouponTypeId = couponType.CouponTypeId,
-                Name = couponType.Name,
-                Description = couponType.Description,
-                DiscountType = couponType.DiscountType,
-                DiscountValue = couponType.DiscountValue,
-                MinOrderAmount = couponType.MinOrderAmount,
-                MaxDiscountAmount = couponType.MaxDiscountAmount,
-                IsActive = couponType.IsActive,
-                ValidFrom = couponType.ValidFrom,
-                ValidTo = couponType.ValidTo,
-                CreatedTime = couponType.CreatedTime
-            };
+            return Json(popular);
         }
 
-        private async Task CreateCouponTypeAsync(CreateCouponTypeViewModel model)
+        private bool CouponExists(int id)
         {
-            var couponType = new CouponType
-            {
-                Name = model.Name,
-                Description = model.Description,
-                DiscountType = model.DiscountType,
-                DiscountValue = model.DiscountValue,
-                MinOrderAmount = model.MinOrderAmount,
-                MaxDiscountAmount = model.MaxDiscountAmount,
-                IsActive = model.IsActive,
-                ValidFrom = model.ValidFrom,
-                ValidTo = model.ValidTo,
-                CreatedTime = DateTime.Now
-            };
-
-            _context.CouponTypes.Add(couponType);
-            await _context.SaveChangesAsync();
+            return _context.Coupon.Any(e => e.CouponId == id);
         }
-
-        private async Task UpdateCouponTypeAsync(EditCouponTypeViewModel model)
-        {
-            var couponType = await _context.CouponTypes.FindAsync(model.CouponTypeId);
-            if (couponType == null)
-                throw new Exception("找不到指定的優惠券類型");
-
-            couponType.Name = model.Name;
-            couponType.Description = model.Description;
-            couponType.DiscountType = model.DiscountType;
-            couponType.DiscountValue = model.DiscountValue;
-            couponType.MinOrderAmount = model.MinOrderAmount;
-            couponType.MaxDiscountAmount = model.MaxDiscountAmount;
-            couponType.IsActive = model.IsActive;
-            couponType.ValidFrom = model.ValidFrom;
-            couponType.ValidTo = model.ValidTo;
-
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task DeleteCouponTypeAsync(int id)
-        {
-            var couponType = await _context.CouponTypes.FindAsync(id);
-            if (couponType == null)
-                throw new Exception("找不到指定的優惠券類型");
-
-            _context.CouponTypes.Remove(couponType);
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task ToggleCouponTypeStatusAsync(int id)
-        {
-            var couponType = await _context.CouponTypes.FindAsync(id);
-            if (couponType == null)
-                throw new Exception("找不到指定的優惠券類型");
-
-            couponType.IsActive = !couponType.IsActive;
-            await _context.SaveChangesAsync();
-        }
-    }
-
-    // ViewModels
-    public class CouponTypeQueryModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public bool? IsActive { get; set; }
-        public string DiscountType { get; set; } = string.Empty;
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
-
-    public class AdminCouponTypeListViewModel
-    {
-        public List<CouponTypeModel> CouponTypes { get; set; } = new();
-        public CouponTypeQueryModel Query { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-    }
-
-    public class CreateCouponTypeViewModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string DiscountType { get; set; } = string.Empty;
-        public decimal DiscountValue { get; set; }
-        public decimal MinOrderAmount { get; set; }
-        public decimal? MaxDiscountAmount { get; set; }
-        public bool IsActive { get; set; } = true;
-        public DateTime ValidFrom { get; set; } = DateTime.Now;
-        public DateTime? ValidTo { get; set; }
-    }
-
-    public class EditCouponTypeViewModel
-    {
-        public int CouponTypeId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string DiscountType { get; set; } = string.Empty;
-        public decimal DiscountValue { get; set; }
-        public decimal MinOrderAmount { get; set; }
-        public decimal? MaxDiscountAmount { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime ValidFrom { get; set; }
-        public DateTime? ValidTo { get; set; }
-    }
-
-    public class CouponTypeModel
-    {
-        public int CouponTypeId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string DiscountType { get; set; } = string.Empty;
-        public decimal DiscountValue { get; set; }
-        public decimal MinOrderAmount { get; set; }
-        public decimal? MaxDiscountAmount { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime ValidFrom { get; set; }
-        public DateTime? ValidTo { get; set; }
-        public DateTime CreatedTime { get; set; }
     }
 }

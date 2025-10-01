@@ -1,0 +1,282 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.UserRightsIndexViewModel
+@{
+    ViewData["Title"] = "用戶權限管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-cog"></i>
+                        用戶權限管理
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addRightModal">
+                            <i class="fas fa-plus"></i>
+                            添加權限
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 查詢表單 -->
+                    <form method="get" class="mb-3">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <select name="userId" class="form-control">
+                                    <option value="">所有用戶</option>
+                                    @foreach (var user in Model.Users)
+                                    {
+                                        <option value="@user.UserId" selected="@(Model.Query.UserId == user.UserId)">
+                                            @user.UserName (@user.UserAccount)
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="text" name="rightName" class="form-control" placeholder="權限名稱" value="@Model.Query.RightName">
+                            </div>
+                            <div class="col-md-2">
+                                <select name="rightType" class="form-control">
+                                    <option value="">所有類型</option>
+                                    @foreach (var type in Model.RightTypes)
+                                    {
+                                        <option value="@type.TypeName" selected="@(Model.Query.RightType == type.TypeName)">
+                                            @type.DisplayName
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="isActive" class="form-control">
+                                    <option value="">所有狀態</option>
+                                    <option value="true" selected="@(Model.Query.IsActive == true)">啟用</option>
+                                    <option value="false" selected="@(Model.Query.IsActive == false)">停用</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                    查詢
+                                </button>
+                                <a href="@Url.Action("UserRights")" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i>
+                                    清除
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- 權限列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>用戶</th>
+                                    <th>權限名稱</th>
+                                    <th>權限類型</th>
+                                    <th>等級</th>
+                                    <th>狀態</th>
+                                    <th>過期時間</th>
+                                    <th>創建時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var right in Model.UserRights.Items)
+                                {
+                                    <tr>
+                                        <td>@right.UserId</td>
+                                        <td>@right.RightName</td>
+                                        <td>
+                                            <span class="badge badge-info">@right.RightType</span>
+                                        </td>
+                                        <td>@right.RightLevel</td>
+                                        <td>
+                                            @if (right.IsActive)
+                                            {
+                                                <span class="badge badge-success">啟用</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">停用</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (right.ExpiresAt.HasValue)
+                                            {
+                                                @right.ExpiresAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">永不過期</span>
+                                            }
+                                        </td>
+                                        <td>@right.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="editRight(@right.UserRightId)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeRight(@right.UserId, '@right.RightName')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分頁 -->
+                    @if (Model.UserRights.TotalCount > 0)
+                    {
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                @{
+                                    var totalPages = (int)Math.Ceiling((double)Model.UserRights.TotalCount / Model.UserRights.PageSize);
+                                    var currentPage = Model.UserRights.PageNumber;
+                                }
+                                
+                                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("UserRights", new { 
+                                            userId = Model.Query.UserId,
+                                            rightName = Model.Query.RightName,
+                                            rightType = Model.Query.RightType,
+                                            isActive = Model.Query.IsActive,
+                                            page = i,
+                                            pageSize = Model.Query.PageSize
+                                        })">@i</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加權限模態框 -->
+<div class="modal fade" id="addRightModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加用戶權限</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addRightForm">
+                    <div class="form-group">
+                        <label>用戶</label>
+                        <select id="userId" class="form-control" required>
+                            <option value="">請選擇用戶</option>
+                            @foreach (var user in Model.Users)
+                            {
+                                <option value="@user.UserId">@user.UserName (@user.UserAccount)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>權限名稱</label>
+                        <input type="text" id="rightName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>權限類型</label>
+                        <select id="rightType" class="form-control">
+                            @foreach (var type in Model.RightTypes)
+                            {
+                                <option value="@type.TypeName">@type.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>權限等級</label>
+                        <input type="number" id="rightLevel" class="form-control" value="1" min="1" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>過期時間</label>
+                        <input type="datetime-local" id="expiresAt" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addUserRight()">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function addUserRight() {
+            var formData = {
+                UserId: parseInt(#userId.val()),
+                RightName: #rightName.val(),
+                RightType: #rightType.val(),
+                RightLevel: parseInt(#rightLevel.val()),
+                Description: #description.val(),
+                ExpiresAt: #expiresAt.val() ? new Date(#expiresAt.val()).toISOString() : null
+            };
+
+            $.ajax({
+                url: '@Url.Action("AddUserRight")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        alert('權限添加成功');
+                        location.reload();
+                    } else {
+                        alert('權限添加失敗: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('操作失敗');
+                }
+            });
+        }
+
+        function editRight(userRightId) {
+            // 實現編輯功能
+            alert('編輯功能待實現');
+        }
+
+        function removeRight(userId, rightName) {
+            if (confirm('確定要移除這個權限嗎？')) {
+                $.ajax({
+                    url: '@Url.Action("RemoveUserRight")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        UserId: userId,
+                        RightName: rightName
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            alert('權限移除成功');
+                            location.reload();
+                        } else {
+                            alert('權限移除失敗: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('操作失敗');
+                    }
+                });
+            }
+        }
+    </script>
+}

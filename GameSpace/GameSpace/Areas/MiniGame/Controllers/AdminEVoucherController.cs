@@ -1,363 +1,404 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using GameSpace.Areas.MiniGame.Services;
-using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Data;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
-    public class AdminEVoucherController : MiniGameBaseController
+    public class AdminEVoucherController : Controller
     {
-        private readonly IMiniGameAdminService _adminService;
+        private readonly GameSpaceContext _context;
 
-        public AdminEVoucherController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminEVoucherController(GameSpaceContext context)
         {
-            _adminService = adminService;
+            _context = context;
         }
 
-        // 電子禮券類型管理
-        public async Task<IActionResult> Index(EVoucherTypeQueryModel query)
+        // GET: AdminEVoucher
+        public async Task<IActionResult> Index(string searchTerm = "", string status = "", string evoucherType = "", string sortBy = "code", int page = 1, int pageSize = 10)
         {
-            if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 10;
+            var query = _context.EVoucher
+                .Include(e => e.Users)
+                .Include(e => e.EVoucherType)
+                .AsQueryable();
 
-            try
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
             {
-                var result = await QueryEVoucherTypesAsync(query);
-                var viewModel = new AdminEVoucherTypeListViewModel
+                query = query.Where(e => e.EVoucherCode.Contains(searchTerm) || 
+                                       e.Users.User_name.Contains(searchTerm) || 
+                                       e.EVoucherType.Name.Contains(searchTerm));
+            }
+
+            // 狀態篩選
+            if (!string.IsNullOrEmpty(status))
+            {
+                var now = DateTime.Now;
+                query = status switch
                 {
-                    EVoucherTypes = result.Items,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
+                    "unused" => query.Where(e => !e.IsUsed && e.EVoucherType.ValidTo >= now),
+                    "used" => query.Where(e => e.IsUsed),
+                    "expired" => query.Where(e => !e.IsUsed && e.EVoucherType.ValidTo < now),
+                    _ => query
                 };
-                return View(viewModel);
             }
-            catch (Exception ex)
+
+            // 禮券類型篩選
+            if (!string.IsNullOrEmpty(evoucherType) && int.TryParse(evoucherType, out int typeId))
             {
-                TempData["ErrorMessage"] = $"查詢電子禮券類型時發生錯誤：{ex.Message}";
-                return View(new AdminEVoucherTypeListViewModel());
+                query = query.Where(e => e.EVoucherTypeID == typeId);
             }
-        }
 
-        // 新增電子禮券類型
-        [HttpGet]
-        public async Task<IActionResult> Create()
-        {
-            try
+            // 排序
+            query = sortBy switch
             {
-                var viewModel = new CreateEVoucherTypeViewModel();
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入新增電子禮券類型頁面時發生錯誤：{ex.Message}";
-                return View(new CreateEVoucherTypeViewModel());
-            }
-        }
+                "type" => query.OrderBy(e => e.EVoucherType.Name),
+                "user" => query.OrderBy(e => e.Users.User_name),
+                "acquired" => query.OrderByDescending(e => e.AcquiredTime),
+                "used" => query.OrderByDescending(e => e.UsedTime),
+                _ => query.OrderBy(e => e.EVoucherCode)
+            };
 
-        [HttpPost]
-        public async Task<IActionResult> Create(CreateEVoucherTypeViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            try
-            {
-                await CreateEVoucherTypeAsync(model);
-                TempData["SuccessMessage"] = "電子禮券類型創建成功！";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"創建失敗：{ex.Message}");
-                return View(model);
-            }
-        }
-
-        // 編輯電子禮券類型
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                var eVoucherType = await GetEVoucherTypeByIdAsync(id);
-                if (eVoucherType == null)
-                {
-                    TempData["ErrorMessage"] = "找不到指定的電子禮券類型";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var viewModel = new EditEVoucherTypeViewModel
-                {
-                    EVoucherTypeId = eVoucherType.EVoucherTypeId,
-                    Name = eVoucherType.Name,
-                    Description = eVoucherType.Description,
-                    ValueAmount = eVoucherType.ValueAmount,
-                    IsActive = eVoucherType.IsActive,
-                    ValidFrom = eVoucherType.ValidFrom,
-                    ValidTo = eVoucherType.ValidTo
-                };
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入編輯電子禮券類型頁面時發生錯誤：{ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Edit(EditEVoucherTypeViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            try
-            {
-                await UpdateEVoucherTypeAsync(model);
-                TempData["SuccessMessage"] = "電子禮券類型更新成功！";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"更新失敗：{ex.Message}");
-                return View(model);
-            }
-        }
-
-        // 刪除電子禮券類型
-        [HttpPost]
-        public async Task<IActionResult> Delete(int id)
-        {
-            try
-            {
-                await DeleteEVoucherTypeAsync(id);
-                return Json(new { success = true, message = "電子禮券類型刪除成功！" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 切換電子禮券類型狀態
-        [HttpPost]
-        public async Task<IActionResult> ToggleStatus(int id)
-        {
-            try
-            {
-                await ToggleEVoucherTypeStatusAsync(id);
-                return Json(new { success = true, message = "電子禮券類型狀態切換成功！" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 獲取電子禮券類型詳情
-        [HttpGet]
-        public async Task<IActionResult> GetDetails(int id)
-        {
-            try
-            {
-                var eVoucherType = await GetEVoucherTypeByIdAsync(id);
-                if (eVoucherType == null)
-                    return Json(new { success = false, message = "找不到指定的電子禮券類型" });
-
-                var details = new
-                {
-                    eVoucherTypeId = eVoucherType.EVoucherTypeId,
-                    name = eVoucherType.Name,
-                    description = eVoucherType.Description,
-                    valueAmount = eVoucherType.ValueAmount,
-                    isActive = eVoucherType.IsActive,
-                    validFrom = eVoucherType.ValidFrom,
-                    validTo = eVoucherType.ValidTo,
-                    createdTime = eVoucherType.CreatedTime
-                };
-
-                return Json(new { success = true, data = details });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 私有方法
-        private async Task<PagedResult<EVoucherTypeModel>> QueryEVoucherTypesAsync(EVoucherTypeQueryModel query)
-        {
-            var queryable = _context.EVoucherTypes.AsQueryable();
-
-            if (!string.IsNullOrEmpty(query.Name))
-                queryable = queryable.Where(e => e.Name.Contains(query.Name));
-
-            if (query.IsActive.HasValue)
-                queryable = queryable.Where(e => e.IsActive == query.IsActive.Value);
-
-            if (query.MinValueAmount.HasValue)
-                queryable = queryable.Where(e => e.ValueAmount >= query.MinValueAmount.Value);
-
-            if (query.MaxValueAmount.HasValue)
-                queryable = queryable.Where(e => e.ValueAmount <= query.MaxValueAmount.Value);
-
-            var totalCount = await queryable.CountAsync();
-
-            var items = await queryable
-                .OrderByDescending(e => e.CreatedTime)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .Select(e => new EVoucherTypeModel
-                {
-                    EVoucherTypeId = e.EVoucherTypeId,
-                    Name = e.Name,
-                    Description = e.Description,
-                    ValueAmount = e.ValueAmount,
-                    IsActive = e.IsActive,
-                    ValidFrom = e.ValidFrom,
-                    ValidTo = e.ValidTo,
-                    CreatedTime = e.CreatedTime
-                })
+            // 分頁
+            var totalCount = await query.CountAsync();
+            var evouchers = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return new PagedResult<EVoucherTypeModel>
+            var viewModel = new AdminEVoucherIndexViewModel
             {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = query.PageNumber,
-                PageSize = query.PageSize
-            };
-        }
-
-        private async Task<EVoucherTypeModel> GetEVoucherTypeByIdAsync(int id)
-        {
-            var eVoucherType = await _context.EVoucherTypes.FindAsync(id);
-            if (eVoucherType == null)
-                return null;
-
-            return new EVoucherTypeModel
-            {
-                EVoucherTypeId = eVoucherType.EVoucherTypeId,
-                Name = eVoucherType.Name,
-                Description = eVoucherType.Description,
-                ValueAmount = eVoucherType.ValueAmount,
-                IsActive = eVoucherType.IsActive,
-                ValidFrom = eVoucherType.ValidFrom,
-                ValidTo = eVoucherType.ValidTo,
-                CreatedTime = eVoucherType.CreatedTime
-            };
-        }
-
-        private async Task CreateEVoucherTypeAsync(CreateEVoucherTypeViewModel model)
-        {
-            var eVoucherType = new EVoucherType
-            {
-                Name = model.Name,
-                Description = model.Description,
-                ValueAmount = model.ValueAmount,
-                IsActive = model.IsActive,
-                ValidFrom = model.ValidFrom,
-                ValidTo = model.ValidTo,
-                CreatedTime = DateTime.Now
+                EVouchers = new PagedResult<EVoucher>
+                {
+                    Items = evouchers,
+                    TotalCount = totalCount,
+                    PageNumber = page,
+                    PageSize = pageSize
+                }
             };
 
-            _context.EVoucherTypes.Add(eVoucherType);
-            await _context.SaveChangesAsync();
+            // 設定 ViewBag 用於搜尋和篩選
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.Status = status;
+            ViewBag.EVoucherType = evoucherType;
+            ViewBag.SortBy = sortBy;
+            ViewBag.TotalEVouchers = totalCount;
+            ViewBag.UsedEVouchers = await _context.EVoucher.CountAsync(e => e.IsUsed);
+            ViewBag.UnusedEVouchers = await _context.EVoucher.CountAsync(e => !e.IsUsed);
+            ViewBag.EVoucherTypes = await _context.EVoucherType.CountAsync();
+            ViewBag.EVoucherTypeList = await _context.EVoucherType.ToListAsync();
+
+            return View(viewModel);
         }
 
-        private async Task UpdateEVoucherTypeAsync(EditEVoucherTypeViewModel model)
+        // GET: AdminEVoucher/Details/5
+        public async Task<IActionResult> Details(int? id)
         {
-            var eVoucherType = await _context.EVoucherTypes.FindAsync(model.EVoucherTypeId);
-            if (eVoucherType == null)
-                throw new Exception("找不到指定的電子禮券類型");
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-            eVoucherType.Name = model.Name;
-            eVoucherType.Description = model.Description;
-            eVoucherType.ValueAmount = model.ValueAmount;
-            eVoucherType.IsActive = model.IsActive;
-            eVoucherType.ValidFrom = model.ValidFrom;
-            eVoucherType.ValidTo = model.ValidTo;
+            var eVoucher = await _context.EVoucher
+                .Include(e => e.Users)
+                .Include(e => e.EVoucherType)
+                .FirstOrDefaultAsync(m => m.EVoucherID == id);
 
-            await _context.SaveChangesAsync();
+            if (eVoucher == null)
+            {
+                return NotFound();
+            }
+
+            return View(eVoucher);
         }
 
-        private async Task DeleteEVoucherTypeAsync(int id)
+        // GET: AdminEVoucher/Create
+        public async Task<IActionResult> Create()
         {
-            var eVoucherType = await _context.EVoucherTypes.FindAsync(id);
-            if (eVoucherType == null)
-                throw new Exception("找不到指定的電子禮券類型");
-
-            _context.EVoucherTypes.Remove(eVoucherType);
-            await _context.SaveChangesAsync();
+            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            return View();
         }
 
-        private async Task ToggleEVoucherTypeStatusAsync(int id)
+        // POST: AdminEVoucher/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(AdminEVoucherCreateViewModel model)
         {
-            var eVoucherType = await _context.EVoucherTypes.FindAsync(id);
-            if (eVoucherType == null)
-                throw new Exception("找不到指定的電子禮券類型");
+            if (ModelState.IsValid)
+            {
+                // 檢查禮券代碼是否已存在
+                if (await _context.EVoucher.AnyAsync(e => e.EVoucherCode == model.EVoucherCode))
+                {
+                    ModelState.AddModelError("EVoucherCode", "此禮券代碼已存在");
+                    ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+                    ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+                    return View(model);
+                }
 
-            eVoucherType.IsActive = !eVoucherType.IsActive;
-            await _context.SaveChangesAsync();
+                var eVoucher = new EVoucher
+                {
+                    EVoucherTypeID = model.EVoucherTypeID,
+                    UserID = model.UserID,
+                    EVoucherCode = model.EVoucherCode,
+                    AcquiredTime = model.AcquiredTime ?? DateTime.Now,
+                    UsedTime = model.UsedTime,
+                    IsUsed = model.IsUsed
+                };
+
+                _context.Add(eVoucher);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "電子禮券建立成功";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            return View(model);
         }
-    }
 
-    // ViewModels
-    public class EVoucherTypeQueryModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public bool? IsActive { get; set; }
-        public decimal? MinValueAmount { get; set; }
-        public decimal? MaxValueAmount { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
+        // GET: AdminEVoucher/CreateType
+        public IActionResult CreateType()
+        {
+            return View();
+        }
 
-    public class AdminEVoucherTypeListViewModel
-    {
-        public List<EVoucherTypeModel> EVoucherTypes { get; set; } = new();
-        public EVoucherTypeQueryModel Query { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-    }
+        // POST: AdminEVoucher/CreateType
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateType(AdminEVoucherTypeCreateViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var eVoucherType = new EVoucherType
+                {
+                    Name = model.Name,
+                    Description = model.Description,
+                    ValueAmount = model.ValueAmount,
+                    ValidDays = model.ValidDays,
+                    ImageUrl = model.ImageUrl,
+                    IsActive = model.IsActive,
+                    CreatedAt = DateTime.Now
+                };
 
-    public class CreateEVoucherTypeViewModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal ValueAmount { get; set; }
-        public bool IsActive { get; set; } = true;
-        public DateTime ValidFrom { get; set; } = DateTime.Now;
-        public DateTime? ValidTo { get; set; }
-    }
+                _context.Add(eVoucherType);
+                await _context.SaveChangesAsync();
 
-    public class EditEVoucherTypeViewModel
-    {
-        public int EVoucherTypeId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal ValueAmount { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime ValidFrom { get; set; }
-        public DateTime? ValidTo { get; set; }
-    }
+                TempData["SuccessMessage"] = "禮券類型建立成功";
+                return RedirectToAction(nameof(Index));
+            }
 
-    public class EVoucherTypeModel
-    {
-        public int EVoucherTypeId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal ValueAmount { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime ValidFrom { get; set; }
-        public DateTime? ValidTo { get; set; }
-        public DateTime CreatedTime { get; set; }
+            return View(model);
+        }
+
+        // GET: AdminEVoucher/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var eVoucher = await _context.EVoucher.FindAsync(id);
+            if (eVoucher == null)
+            {
+                return NotFound();
+            }
+
+            var model = new AdminEVoucherCreateViewModel
+            {
+                EVoucherTypeID = eVoucher.EVoucherTypeID,
+                UserID = eVoucher.UserID,
+                EVoucherCode = eVoucher.EVoucherCode,
+                AcquiredTime = eVoucher.AcquiredTime,
+                UsedTime = eVoucher.UsedTime,
+                IsUsed = eVoucher.IsUsed
+            };
+
+            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            return View(model);
+        }
+
+        // POST: AdminEVoucher/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AdminEVoucherCreateViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var eVoucher = await _context.EVoucher.FindAsync(id);
+                    if (eVoucher == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // 檢查禮券代碼是否已被其他禮券使用
+                    if (await _context.EVoucher.AnyAsync(e => e.EVoucherCode == model.EVoucherCode && e.EVoucherID != id))
+                    {
+                        ModelState.AddModelError("EVoucherCode", "此禮券代碼已被其他禮券使用");
+                        ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+                        ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+                        return View(model);
+                    }
+
+                    eVoucher.EVoucherTypeID = model.EVoucherTypeID;
+                    eVoucher.UserID = model.UserID;
+                    eVoucher.EVoucherCode = model.EVoucherCode;
+                    eVoucher.AcquiredTime = model.AcquiredTime ?? DateTime.Now;
+                    eVoucher.UsedTime = model.UsedTime;
+                    eVoucher.IsUsed = model.IsUsed;
+
+                    _context.Update(eVoucher);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "電子禮券更新成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!EVoucherExists(id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+
+            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
+            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            return View(model);
+        }
+
+        // GET: AdminEVoucher/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var eVoucher = await _context.EVoucher
+                .Include(e => e.Users)
+                .Include(e => e.EVoucherType)
+                .FirstOrDefaultAsync(m => m.EVoucherID == id);
+
+            if (eVoucher == null)
+            {
+                return NotFound();
+            }
+
+            return View(eVoucher);
+        }
+
+        // POST: AdminEVoucher/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var eVoucher = await _context.EVoucher.FindAsync(id);
+            if (eVoucher != null)
+            {
+                _context.EVoucher.Remove(eVoucher);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "電子禮券刪除成功";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // 切換禮券使用狀態
+        [HttpPost]
+        public async Task<IActionResult> ToggleUsage(int id)
+        {
+            var eVoucher = await _context.EVoucher.FindAsync(id);
+            if (eVoucher != null)
+            {
+                eVoucher.IsUsed = !eVoucher.IsUsed;
+                if (eVoucher.IsUsed && !eVoucher.UsedTime.HasValue)
+                {
+                    eVoucher.UsedTime = DateTime.Now;
+                }
+                else if (!eVoucher.IsUsed)
+                {
+                    eVoucher.UsedTime = null;
+                }
+
+                _context.Update(eVoucher);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, isUsed = eVoucher.IsUsed });
+            }
+
+            return Json(new { success = false });
+        }
+
+        // 獲取禮券統計數據
+        [HttpGet]
+        public async Task<IActionResult> GetEVoucherStats()
+        {
+            var now = DateTime.Now;
+            var stats = new
+            {
+                total = await _context.EVoucher.CountAsync(),
+                used = await _context.EVoucher.CountAsync(e => e.IsUsed),
+                unused = await _context.EVoucher.CountAsync(e => !e.IsUsed),
+                expired = await _context.EVoucher.CountAsync(e => !e.IsUsed && e.EVoucherType.ValidTo < now),
+                types = await _context.EVoucherType.CountAsync()
+            };
+
+            return Json(stats);
+        }
+
+        // 獲取禮券類型分佈
+        [HttpGet]
+        public async Task<IActionResult> GetEVoucherTypeDistribution()
+        {
+            var distribution = await _context.EVoucher
+                .GroupBy(e => e.EVoucherType.Name)
+                .Select(g => new
+                {
+                    type = g.Key,
+                    count = g.Count()
+                })
+                .OrderByDescending(g => g.count)
+                .ToListAsync();
+
+            return Json(distribution);
+        }
+
+        // 獲取禮券使用趨勢
+        [HttpGet]
+        public async Task<IActionResult> GetEVoucherUsageTrend(int days = 30)
+        {
+            var endDate = DateTime.Today;
+            var startDate = endDate.AddDays(-days);
+
+            var trend = await _context.EVoucher
+                .Where(e => e.UsedTime >= startDate)
+                .GroupBy(e => e.UsedTime.Value.Date)
+                .Select(g => new
+                {
+                    date = g.Key.ToString("yyyy-MM-dd"),
+                    count = g.Count()
+                })
+                .OrderBy(g => g.date)
+                .ToListAsync();
+
+            return Json(trend);
+        }
+
+        private bool EVoucherExists(int id)
+        {
+            return _context.EVoucher.Any(e => e.EVoucherID == id);
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
     {
         protected readonly GameSpacedatabaseContext _context;
         protected readonly IMiniGameAdminService _adminService;
+        protected readonly IMiniGamePermissionService _permissionService;
 
         protected MiniGameBaseController(GameSpacedatabaseContext context)
         {
@@ -23,6 +24,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
         protected MiniGameBaseController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : this(context)
         {
             _adminService = adminService;
+        }
+
+        protected MiniGameBaseController(GameSpacedatabaseContext context, IMiniGameAdminService adminService, IMiniGamePermissionService permissionService) : this(context, adminService)
+        {
+            _permissionService = permissionService;
         }
 
         // 獲取當前管理員ID
@@ -50,6 +56,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // 檢查管理員權限
         protected async Task<bool> HasPermissionAsync(string permission)
         {
+            var managerId = GetCurrentManagerId();
+            if (!managerId.HasValue) return false;
+
+            if (_permissionService != null)
+            {
+                return await _permissionService.HasManagerPermissionAsync(managerId.Value, permission);
+            }
+
+            // 後備方案：使用原有的權限檢查邏輯
             var manager = await GetCurrentManagerAsync();
             if (manager == null) return false;
 
@@ -90,24 +105,45 @@ namespace GameSpace.Areas.MiniGame.Controllers
             };
         }
 
+        // 檢查用戶權限
+        protected async Task<bool> HasUserRightAsync(int userId, string rightName)
+        {
+            if (_permissionService != null)
+            {
+                return await _permissionService.HasUserRightAsync(userId, rightName);
+            }
+            return true; // 如果沒有權限服務，默認允許
+        }
+
         // 記錄操作日誌
         protected async Task LogOperationAsync(string operation, string details, int? targetUserId = null)
         {
             try
             {
                 var managerId = GetCurrentManagerId();
-                var log = new AdminOperationLog
+                if (managerId.HasValue)
                 {
-                    ManagerId = managerId,
-                    Operation = operation,
-                    Details = details,
-                    TargetUserId = targetUserId,
-                    OperationTime = DateTime.Now,
-                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
-                };
+                    if (_permissionService != null)
+                    {
+                        await _permissionService.LogPermissionOperationAsync(managerId.Value, operation, details, targetUserId);
+                    }
+                    else
+                    {
+                        // 後備方案：直接記錄到資料庫
+                        var log = new AdminOperationLog
+                        {
+                            ManagerId = managerId,
+                            Operation = operation,
+                            Details = details,
+                            TargetUserId = targetUserId,
+                            OperationTime = DateTime.Now,
+                            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+                        };
 
-                _context.AdminOperationLogs.Add(log);
-                await _context.SaveChangesAsync();
+                        _context.AdminOperationLogs.Add(log);
+                        await _context.SaveChangesAsync();
+                    }
+                }
             }
             catch
             {

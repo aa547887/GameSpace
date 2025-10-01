@@ -48,6 +48,35 @@
         <span class="sidebar-text d-none d-sm-inline">小遊戲管理系統</span>
     </a>
 
+    <!-- 權限管理 -->
+    <div class="nav-item">
+        <a class="nav-link d-flex align-items-center text-white" data-bs-toggle="collapse" href="#permissionCollapse" role="button" aria-expanded="false" aria-controls="permissionCollapse">
+            <i class="fas fa-shield-alt me-2"></i>
+            <span class="sidebar-text d-none d-sm-inline">權限管理</span>
+            <i class="fas fa-chevron-down ms-auto"></i>
+        </a>
+        <div class="collapse" id="permissionCollapse">
+            <div class="nav-item">
+                <a class="nav-link d-flex align-items-center text-white-50 ps-4" asp-area="MiniGame" asp-controller="Permission" asp-action="Index">
+                    <i class="fas fa-dashboard me-2"></i>
+                    <span class="sidebar-text d-none d-sm-inline">權限總覽</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link d-flex align-items-center text-white-50 ps-4" asp-area="MiniGame" asp-controller="Permission" asp-action="UserRights">
+                    <i class="fas fa-user-cog me-2"></i>
+                    <span class="sidebar-text d-none d-sm-inline">用戶權限管理</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link d-flex align-items-center text-white-50 ps-4" asp-area="MiniGame" asp-controller="Permission" asp-action="OperationLogs">
+                    <i class="fas fa-history me-2"></i>
+                    <span class="sidebar-text d-none d-sm-inline">操作日誌</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- 會員錢包 -->
     <div class="nav-item">
         <a class="nav-link d-flex align-items-center text-white" data-bs-toggle="collapse" href="#walletCollapse" role="button" aria-expanded="false" aria-controls="walletCollapse">

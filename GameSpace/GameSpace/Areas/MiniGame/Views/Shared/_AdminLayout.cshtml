@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GameSpace MiniGame Admin</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- SB Admin CSS -->
+    <link href="~/lib/sb-admin/css/sb-admin-2.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link href="~/lib/datatables/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        .sidebar-brand-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .nav-item .nav-link {
+            color: #858796;
+        }
+        .nav-item .nav-link:hover {
+            color: #5a5c69;
+        }
+        .nav-item .nav-link.active {
+            color: #4e73df;
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        .table th {
+            background-color: #f8f9fc;
+            border-top: none;
+        }
+        .btn-group .btn {
+            margin-right: 2px;
+        }
+        .btn-group .btn:last-child {
+            margin-right: 0;
+        }
+    </style>
+</head>
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="@Url.Action("Index", "AdminDashboard")">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">MiniGame Admin</div>
+            </a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminDashboard" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminDashboard")">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>儀表板</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                用戶管理
+            </div>
+
+            <!-- Nav Item - Users -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminUser" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminUser")">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>用戶管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Wallet -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminWallet" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminWallet")">
+                    <i class="fas fa-fw fa-wallet"></i>
+                    <span>點數管理</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                遊戲系統
+            </div>
+
+            <!-- Nav Item - Sign In -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminSignIn" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminSignIn")">
+                    <i class="fas fa-fw fa-calendar-check"></i>
+                    <span>簽到管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Pet -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminPet" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminPet")">
+                    <i class="fas fa-fw fa-paw"></i>
+                    <span>寵物管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - MiniGame -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminMiniGame" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminMiniGame")">
+                    <i class="fas fa-fw fa-gamepad"></i>
+                    <span>遊戲管理</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                優惠系統
+            </div>
+
+            <!-- Nav Item - Coupon -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminCoupon" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminCoupon")">
+                    <i class="fas fa-fw fa-ticket-alt"></i>
+                    <span>優惠券管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - EVoucher -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminEVoucher" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminEVoucher")">
+                    <i class="fas fa-fw fa-gift"></i>
+                    <span>電子禮券管理</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                系統管理
+            </div>
+
+            <!-- Nav Item - Manager -->
+            <li class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminManager" ? "active" : "")">
+                <a class="nav-link" href="@Url.Action("Index", "AdminManager")">
+                    <i class="fas fa-fw fa-users-cog"></i>
+                    <span>管理者管理</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Search -->
+                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-light border-0 small" placeholder="搜尋..." aria-label="Search" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+                        <!-- Nav Item - Search Dropdown (Visible Only XS) -->
+                        <li class="nav-item dropdown no-arrow d-sm-none">
+                            <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-search fa-fw"></i>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in" aria-labelledby="searchDropdown">
+                                <form class="form-inline mr-auto w-100 navbar-search">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light border-0 small" placeholder="搜尋..." aria-label="Search" aria-describedby="basic-addon2">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="button">
+                                                <i class="fas fa-search fa-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </li>
+
+                        <!-- Nav Item - Alerts -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter">3+</span>
+                            </a>
+                            <!-- Dropdown - Alerts -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="alertsDropdown">
+                                <h6 class="dropdown-header">
+                                    通知中心
+                                </h6>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-primary">
+                                            <i class="fas fa-file-alt text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 12, 2019</div>
+                                        <span class="font-weight-bold">新的月報表已準備就緒！</span>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-success">
+                                            <i class="fas fa-donate text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 7, 2019</div>
+                                        $290.29 已存入您的帳戶！
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-warning">
+                                            <i class="fas fa-exclamation-triangle text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small text-gray-500">December 2, 2019</div>
+                                        支出警報：您的支出已超過預算。
+                                    </div>
+                                </a>
+                                <a class="dropdown-item text-center small text-gray-500" href="#">顯示所有通知</a>
+                            </div>
+                        </li>
+
+                        <!-- Nav Item - Messages -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-envelope fa-fw"></i>
+                                <!-- Counter - Messages -->
+                                <span class="badge badge-danger badge-counter">7</span>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="messagesDropdown">
+                                <h6 class="dropdown-header">
+                                    訊息中心
+                                </h6>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="https://source.unsplash.com/Mv9hjnEUHR4/60x60" alt="">
+                                        <div class="status-indicator bg-success"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">Hi there! I am wondering if you can help me with a problem I've been having.</div>
+                                        <div class="small text-gray-500">Emily Fowler · 58m</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="https://source.unsplash.com/CS2uCrpNzJY/60x60" alt="">
+                                        <div class="status-indicator"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">I have the photos that you ordered last month, how would you like them sent to you?</div>
+                                        <div class="small text-gray-500">Jae Chun · 1d</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="https://source.unsplash.com/QAB-WJcbgJk/60x60" alt="">
+                                        <div class="status-indicator bg-warning"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">Last month's report looks great, I am very happy with the progress so far, keep up the excellent work!</div>
+                                        <div class="small text-gray-500">Morgan Alvarez · 2d</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <div class="dropdown-list-image mr-3">
+                                        <img class="rounded-circle" src="https://source.unsplash.com/7YVZYZeITc8/60x60" alt="">
+                                        <div class="status-indicator bg-success"></div>
+                                    </div>
+                                    <div>
+                                        <div class="text-truncate">Am I a good boy? The reason I ask is because someone told me that people say this to all dogs, even if they aren't good...</div>
+                                        <div class="small text-gray-500">Chicken the Dog · 2w</div>
+                                    </div>
+                                </a>
+                                <a class="dropdown-item text-center small text-gray-500" href="#">讀取所有訊息</a>
+                            </div>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">管理員</span>
+                                <img class="img-profile rounded-circle" src="https://source.unsplash.com/QAB-WJcbgJk/60x60">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    個人資料
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    設定
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    活動記錄
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    登出
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    @RenderBody()
+                </div>
+                <!-- /.container-fluid -->
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; GameSpace MiniGame Admin @DateTime.Now.Year</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+        </div>
+        <!-- End of Content Wrapper -->
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">準備登出？</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">選擇「登出」如果您準備結束當前的會話。</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+                    <a class="btn btn-primary" href="@Url.Action("Logout", "Account")">登出</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="~/lib/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="~/lib/sb-admin/js/sb-admin-2.min.js"></script>
+
+    <!-- DataTables JavaScript -->
+    <script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="~/lib/datatables/js/dataTables.bootstrap4.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="~/lib/chart.js/Chart.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

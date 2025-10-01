@@ -1,673 +1,334 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using GameSpace.Areas.MiniGame.Services;
-using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Data;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
-    public class AdminPetController : MiniGameBaseController
+    public class AdminPetController : Controller
     {
-        private readonly IMiniGameAdminService _adminService;
+        private readonly GameSpaceContext _context;
 
-        public AdminPetController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminPetController(GameSpaceContext context)
         {
-            _adminService = adminService;
+            _context = context;
         }
 
-        // 1. 整體寵物系統規則設定（升級規則/互動增益/可選膚色與所需點數/可選背景與所需點數）
-        [HttpGet]
-        public async Task<IActionResult> PetSystemRules()
+        // GET: AdminPet
+        public async Task<IActionResult> Index(string searchTerm = "", string rarity = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            try
+            var query = _context.Pet.AsQueryable();
+
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
             {
-                var rules = await GetPetSystemRulesAsync();
-                var viewModel = new PetSystemRulesViewModel
+                query = query.Where(p => p.PetName.Contains(searchTerm) || 
+                                       p.PetType.Contains(searchTerm) || 
+                                       p.PetDescription.Contains(searchTerm));
+            }
+
+            // 稀有度篩選
+            if (!string.IsNullOrEmpty(rarity))
+            {
+                query = query.Where(p => p.Rarity == rarity);
+            }
+
+            // 排序
+            query = sortBy switch
+            {
+                "type" => query.OrderBy(p => p.PetType),
+                "rarity" => query.OrderBy(p => p.Rarity),
+                "rate" => query.OrderByDescending(p => p.DropRate),
+                "created" => query.OrderByDescending(p => p.CreatedAt),
+                _ => query.OrderBy(p => p.PetName)
+            };
+
+            // 分頁
+            var totalCount = await query.CountAsync();
+            var pets = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var viewModel = new AdminPetIndexViewModel
+            {
+                Pets = new PagedResult<Pet>
                 {
-                    Rules = rules
-                };
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入寵物系統規則時發生錯誤：{ex.Message}";
-                return View(new PetSystemRulesViewModel());
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> PetSystemRules(PetSystemRulesViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                model.Rules = await GetPetSystemRulesAsync();
-                return View(model);
-            }
-
-            try
-            {
-                await UpdatePetSystemRulesAsync(model.Rules);
-                TempData["SuccessMessage"] = "寵物系統規則更新成功！";
-                return RedirectToAction(nameof(PetSystemRules));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"更新失敗：{ex.Message}");
-                model.Rules = await GetPetSystemRulesAsync();
-                return View(model);
-            }
-        }
-
-        // 2. 會員個別寵物設定手動調整基本資料（寵物名、膚色、背景）
-        [HttpGet]
-        public async Task<IActionResult> PetSettings(int? userId = null)
-        {
-            try
-            {
-                var users = await _context.Users
-                    .Select(u => new { u.Id, u.UserName, u.Email })
-                    .ToListAsync();
-
-                var petSettings = new List<PetSettingModel>();
-
-                if (userId.HasValue)
-                {
-                    petSettings = await GetUserPetSettingsAsync(userId.Value);
+                    Items = pets,
+                    TotalCount = totalCount,
+                    PageNumber = page,
+                    PageSize = pageSize
                 }
+            };
 
-                var viewModel = new PetSettingsViewModel
-                {
-                    Users = users,
-                    PetSettings = petSettings,
-                    SelectedUserId = userId
-                };
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"載入寵物設定時發生錯誤：{ex.Message}";
-                return View(new PetSettingsViewModel());
-            }
+            // 設定 ViewBag 用於搜尋和篩選
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.Rarity = rarity;
+            ViewBag.SortBy = sortBy;
+            ViewBag.TotalPets = totalCount;
+            ViewBag.CommonPets = await _context.Pet.CountAsync(p => p.Rarity == "普通");
+            ViewBag.RarePets = await _context.Pet.CountAsync(p => p.Rarity == "稀有");
+            ViewBag.EpicPets = await _context.Pet.CountAsync(p => p.Rarity == "史詩");
+            ViewBag.LegendaryPets = await _context.Pet.CountAsync(p => p.Rarity == "傳說");
+
+            return View(viewModel);
         }
 
+        // GET: AdminPet/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var pet = await _context.Pet
+                .Include(p => p.Users)
+                .FirstOrDefaultAsync(m => m.PetId == id);
+
+            if (pet == null)
+            {
+                return NotFound();
+            }
+
+            return View(pet);
+        }
+
+        // GET: AdminPet/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        // POST: AdminPet/Create
         [HttpPost]
-        public async Task<IActionResult> PetSettings(PetSettingsViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(AdminPetCreateViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                model.Users = await _context.Users
-                    .Select(u => new { u.Id, u.UserName, u.Email })
-                    .ToListAsync();
-                return View(model);
-            }
-
-            try
-            {
-                await UpdateUserPetSettingsAsync(model.PetSettings);
-                TempData["SuccessMessage"] = "寵物設定更新成功！";
-                return RedirectToAction(nameof(PetSettings), new { userId = model.SelectedUserId });
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"更新失敗：{ex.Message}");
-                model.Users = await _context.Users
-                    .Select(u => new { u.Id, u.UserName, u.Email })
-                    .ToListAsync();
-                return View(model);
-            }
-        }
-
-        // 3. 會員個別寵物清單含查詢（寵物名/膚色/背景/經驗/等級/五大狀態）＋ 換膚／換背景紀錄查詢
-        [HttpGet]
-        public async Task<IActionResult> PetList(PetQueryModel query)
-        {
-            if (query.PageNumber <= 0) query.PageNumber = 1;
-            if (query.PageSize <= 0) query.PageSize = 20;
-
-            try
-            {
-                var result = await QueryPetsAsync(query);
-                var users = await _context.Users
-                    .Select(u => new { u.Id, u.UserName, u.Email })
-                    .ToListAsync();
-
-                var viewModel = new AdminPetListViewModel
+                var pet = new Pet
                 {
-                    Pets = result.Items,
-                    Users = users,
-                    Query = query,
-                    TotalCount = result.TotalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
+                    PetName = model.PetName,
+                    PetDescription = model.PetDescription,
+                    PetType = model.PetType,
+                    Rarity = model.Rarity,
+                    DropRate = model.DropRate,
+                    PetImageUrl = model.PetImageUrl,
+                    IsActive = model.IsActive,
+                    CreatedAt = DateTime.Now
                 };
 
-                return View(viewModel);
+                _context.Add(pet);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "寵物建立成功";
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"查詢寵物清單時發生錯誤：{ex.Message}";
-                return View(new AdminPetListViewModel());
-            }
+
+            return View(model);
         }
 
-        // 查看寵物詳細信息
-        [HttpGet]
-        public async Task<IActionResult> PetDetails(int petId)
+        // GET: AdminPet/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
-            try
+            if (id == null)
             {
-                var pet = await GetPetDetailsAsync(petId);
-                if (pet == null)
+                return NotFound();
+            }
+
+            var pet = await _context.Pet.FindAsync(id);
+            if (pet == null)
+            {
+                return NotFound();
+            }
+
+            var model = new AdminPetCreateViewModel
+            {
+                PetName = pet.PetName,
+                PetDescription = pet.PetDescription,
+                PetType = pet.PetType,
+                Rarity = pet.Rarity,
+                DropRate = pet.DropRate,
+                PetImageUrl = pet.PetImageUrl,
+                IsActive = pet.IsActive
+            };
+
+            return View(model);
+        }
+
+        // POST: AdminPet/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AdminPetCreateViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
                 {
-                    TempData["ErrorMessage"] = "找不到指定的寵物！";
-                    return RedirectToAction(nameof(PetList));
+                    var pet = await _context.Pet.FindAsync(id);
+                    if (pet == null)
+                    {
+                        return NotFound();
+                    }
+
+                    pet.PetName = model.PetName;
+                    pet.PetDescription = model.PetDescription;
+                    pet.PetType = model.PetType;
+                    pet.Rarity = model.Rarity;
+                    pet.DropRate = model.DropRate;
+                    pet.PetImageUrl = model.PetImageUrl;
+                    pet.IsActive = model.IsActive;
+
+                    _context.Update(pet);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "寵物更新成功";
+                    return RedirectToAction(nameof(Index));
                 }
-
-                var changeRecords = await GetPetChangeRecordsAsync(petId);
-                var viewModel = new PetDetailsViewModel
+                catch (DbUpdateConcurrencyException)
                 {
-                    Pet = pet,
-                    ChangeRecords = changeRecords
-                };
+                    if (!PetExists(id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
 
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"查看寵物詳情時發生錯誤：{ex.Message}";
-                return RedirectToAction(nameof(PetList));
-            }
+            return View(model);
         }
 
-        // 更新寵物設定
-        [HttpPost]
-        public async Task<IActionResult> UpdatePetSettings([FromBody] PetUpdateModel model)
+        // GET: AdminPet/Delete/5
+        public async Task<IActionResult> Delete(int? id)
         {
-            try
+            if (id == null)
             {
-                await UpdatePetAsync(model);
-                return Json(new { success = true, message = "寵物設定更新成功！" });
+                return NotFound();
             }
-            catch (Exception ex)
+
+            var pet = await _context.Pet
+                .Include(p => p.Users)
+                .FirstOrDefaultAsync(m => m.PetId == id);
+
+            if (pet == null)
             {
-                return Json(new { success = false, message = ex.Message });
+                return NotFound();
             }
+
+            return View(pet);
         }
 
-        // 獲取寵物統計資料
+        // POST: AdminPet/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var pet = await _context.Pet.FindAsync(id);
+            if (pet != null)
+            {
+                _context.Pet.Remove(pet);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "寵物刪除成功";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // 切換寵物狀態
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var pet = await _context.Pet.FindAsync(id);
+            if (pet != null)
+            {
+                pet.IsActive = !pet.IsActive;
+                _context.Update(pet);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, isActive = pet.IsActive });
+            }
+
+            return Json(new { success = false });
+        }
+
+        // 獲取寵物統計數據
         [HttpGet]
         public async Task<IActionResult> GetPetStats()
         {
-            try
+            var stats = new
             {
-                var stats = await GetPetStatisticsAsync();
-                return Json(new { success = true, data = stats });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 獲取用戶寵物清單
-        [HttpGet]
-        public async Task<IActionResult> GetUserPets(int userId)
-        {
-            try
-            {
-                var pets = await GetUserPetsAsync(userId);
-                return Json(new { success = true, data = pets });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 導出寵物資料
-        [HttpGet]
-        public async Task<IActionResult> ExportPetData(PetQueryModel query)
-        {
-            try
-            {
-                var pets = await GetAllPetsAsync(query);
-                var csv = GeneratePetDataCSV(pets);
-                
-                var fileName = $"寵物資料_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"導出寵物資料時發生錯誤：{ex.Message}";
-                return RedirectToAction(nameof(PetList));
-            }
-        }
-
-        // 私有方法：獲取寵物系統規則
-        private async Task<List<PetSystemRuleModel>> GetPetSystemRulesAsync()
-        {
-            var rules = await _context.PetSystemRules
-                .OrderBy(r => r.RuleType)
-                .ThenBy(r => r.Level)
-                .Select(r => new PetSystemRuleModel
-                {
-                    Id = r.Id,
-                    RuleType = r.RuleType,
-                    Level = r.Level,
-                    Value = r.Value,
-                    Description = r.Description,
-                    IsActive = r.IsActive
-                })
-                .ToListAsync();
-
-            return rules;
-        }
-
-        // 私有方法：更新寵物系統規則
-        private async Task UpdatePetSystemRulesAsync(List<PetSystemRuleModel> rules)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                // 清除現有規則
-                var existingRules = await _context.PetSystemRules.ToListAsync();
-                _context.PetSystemRules.RemoveRange(existingRules);
-
-                // 添加新規則
-                foreach (var rule in rules)
-                {
-                    var petRule = new PetSystemRule
-                    {
-                        RuleType = rule.RuleType,
-                        Level = rule.Level,
-                        Value = rule.Value,
-                        Description = rule.Description,
-                        IsActive = rule.IsActive,
-                        CreateTime = DateTime.Now,
-                        LastUpdateTime = DateTime.Now
-                    };
-                    _context.PetSystemRules.Add(petRule);
-                }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 私有方法：獲取用戶寵物設定
-        private async Task<List<PetSettingModel>> GetUserPetSettingsAsync(int userId)
-        {
-            var pets = await _context.Pets
-                .Where(p => p.UserId == userId)
-                .Select(p => new PetSettingModel
-                {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    PetName = p.PetName,
-                    SkinColor = p.SkinColor,
-                    Background = p.Background,
-                    Level = p.Level,
-                    Experience = p.Experience,
-                    Happiness = p.Happiness,
-                    Hunger = p.Hunger,
-                    Health = p.Health,
-                    Energy = p.Energy,
-                    Cleanliness = p.Cleanliness
-                })
-                .ToListAsync();
-
-            return pets;
-        }
-
-        // 私有方法：更新用戶寵物設定
-        private async Task UpdateUserPetSettingsAsync(List<PetSettingModel> petSettings)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                foreach (var setting in petSettings)
-                {
-                    var pet = await _context.Pets.FindAsync(setting.Id);
-                    if (pet != null)
-                    {
-                        pet.PetName = setting.PetName;
-                        pet.SkinColor = setting.SkinColor;
-                        pet.Background = setting.Background;
-                        pet.Level = setting.Level;
-                        pet.Experience = setting.Experience;
-                        pet.Happiness = setting.Happiness;
-                        pet.Hunger = setting.Hunger;
-                        pet.Health = setting.Health;
-                        pet.Energy = setting.Energy;
-                        pet.Cleanliness = setting.Cleanliness;
-                        pet.LastUpdateTime = DateTime.Now;
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 私有方法：查詢寵物
-        private async Task<PagedResult<PetModel>> QueryPetsAsync(PetQueryModel query)
-        {
-            var queryable = _context.Pets
-                .Include(p => p.User)
-                .AsQueryable();
-
-            if (query.UserId.HasValue)
-            {
-                queryable = queryable.Where(p => p.UserId == query.UserId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(query.SearchTerm))
-            {
-                queryable = queryable.Where(p => 
-                    p.PetName.Contains(query.SearchTerm) || 
-                    p.User.UserName.Contains(query.SearchTerm) ||
-                    p.User.Email.Contains(query.SearchTerm));
-            }
-
-            if (query.MinLevel.HasValue)
-            {
-                queryable = queryable.Where(p => p.Level >= query.MinLevel.Value);
-            }
-
-            if (query.MaxLevel.HasValue)
-            {
-                queryable = queryable.Where(p => p.Level <= query.MaxLevel.Value);
-            }
-
-            if (!string.IsNullOrEmpty(query.SkinColor))
-            {
-                queryable = queryable.Where(p => p.SkinColor == query.SkinColor);
-            }
-
-            if (!string.IsNullOrEmpty(query.Background))
-            {
-                queryable = queryable.Where(p => p.Background == query.Background);
-            }
-
-            var totalCount = await queryable.CountAsync();
-
-            var items = await queryable
-                .OrderByDescending(p => p.Level)
-                .ThenByDescending(p => p.Experience)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .Select(p => new PetModel
-                {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    UserName = p.User.UserName,
-                    Email = p.User.Email,
-                    PetName = p.PetName,
-                    SkinColor = p.SkinColor,
-                    Background = p.Background,
-                    Level = p.Level,
-                    Experience = p.Experience,
-                    Happiness = p.Happiness,
-                    Hunger = p.Hunger,
-                    Health = p.Health,
-                    Energy = p.Energy,
-                    Cleanliness = p.Cleanliness,
-                    CreateTime = p.CreateTime,
-                    LastUpdateTime = p.LastUpdateTime
-                })
-                .ToListAsync();
-
-            return new PagedResult<PetModel>
-            {
-                Items = items,
-                TotalCount = totalCount
-            };
-        }
-
-        // 私有方法：獲取寵物詳情
-        private async Task<PetModel> GetPetDetailsAsync(int petId)
-        {
-            var pet = await _context.Pets
-                .Include(p => p.User)
-                .Where(p => p.Id == petId)
-                .Select(p => new PetModel
-                {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    UserName = p.User.UserName,
-                    Email = p.User.Email,
-                    PetName = p.PetName,
-                    SkinColor = p.SkinColor,
-                    Background = p.Background,
-                    Level = p.Level,
-                    Experience = p.Experience,
-                    Happiness = p.Happiness,
-                    Hunger = p.Hunger,
-                    Health = p.Health,
-                    Energy = p.Energy,
-                    Cleanliness = p.Cleanliness,
-                    CreateTime = p.CreateTime,
-                    LastUpdateTime = p.LastUpdateTime
-                })
-                .FirstOrDefaultAsync();
-
-            return pet;
-        }
-
-        // 私有方法：獲取寵物變更紀錄
-        private async Task<List<PetChangeRecordModel>> GetPetChangeRecordsAsync(int petId)
-        {
-            var records = await _context.PetChangeRecords
-                .Where(r => r.PetId == petId)
-                .OrderByDescending(r => r.ChangeTime)
-                .Select(r => new PetChangeRecordModel
-                {
-                    Id = r.Id,
-                    PetId = r.PetId,
-                    ChangeType = r.ChangeType,
-                    OldValue = r.OldValue,
-                    NewValue = r.NewValue,
-                    Description = r.Description,
-                    ChangeTime = r.ChangeTime
-                })
-                .ToListAsync();
-
-            return records;
-        }
-
-        // 私有方法：更新寵物
-        private async Task UpdatePetAsync(PetUpdateModel model)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var pet = await _context.Pets.FindAsync(model.Id);
-                if (pet == null)
-                {
-                    throw new Exception("找不到指定的寵物");
-                }
-
-                // 記錄變更
-                var changeRecord = new PetChangeRecord
-                {
-                    PetId = model.Id,
-                    ChangeType = model.ChangeType,
-                    OldValue = model.OldValue,
-                    NewValue = model.NewValue,
-                    Description = model.Description,
-                    ChangeTime = DateTime.Now
-                };
-                _context.PetChangeRecords.Add(changeRecord);
-
-                // 更新寵物資料
-                if (model.PetName != null) pet.PetName = model.PetName;
-                if (model.SkinColor != null) pet.SkinColor = model.SkinColor;
-                if (model.Background != null) pet.Background = model.Background;
-                if (model.Level.HasValue) pet.Level = model.Level.Value;
-                if (model.Experience.HasValue) pet.Experience = model.Experience.Value;
-                if (model.Happiness.HasValue) pet.Happiness = model.Happiness.Value;
-                if (model.Hunger.HasValue) pet.Hunger = model.Hunger.Value;
-                if (model.Health.HasValue) pet.Health = model.Health.Value;
-                if (model.Energy.HasValue) pet.Energy = model.Energy.Value;
-                if (model.Cleanliness.HasValue) pet.Cleanliness = model.Cleanliness.Value;
-
-                pet.LastUpdateTime = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        // 私有方法：獲取寵物統計
-        private async Task<PetStatsModel> GetPetStatisticsAsync()
-        {
-            var today = DateTime.Today;
-            var thisMonth = new DateTime(today.Year, today.Month, 1);
-
-            var stats = new PetStatsModel
-            {
-                TotalPets = await _context.Pets.CountAsync(),
-                ActivePets = await _context.Pets
-                    .Where(p => p.LastUpdateTime >= today.AddDays(-7))
-                    .CountAsync(),
-                AverageLevel = await _context.Pets.AverageAsync(p => p.Level),
-                TotalExperience = await _context.Pets.SumAsync(p => p.Experience),
-                NewPetsThisMonth = await _context.Pets
-                    .Where(p => p.CreateTime >= thisMonth)
-                    .CountAsync(),
-                TopPets = await _context.Pets
-                    .OrderByDescending(p => p.Level)
-                    .ThenByDescending(p => p.Experience)
-                    .Take(5)
-                    .Select(p => new { p.PetName, p.Level, p.Experience, p.User.UserName })
-                    .ToListAsync()
+                total = await _context.Pet.CountAsync(),
+                active = await _context.Pet.CountAsync(p => p.IsActive),
+                common = await _context.Pet.CountAsync(p => p.Rarity == "普通"),
+                rare = await _context.Pet.CountAsync(p => p.Rarity == "稀有"),
+                epic = await _context.Pet.CountAsync(p => p.Rarity == "史詩"),
+                legendary = await _context.Pet.CountAsync(p => p.Rarity == "傳說")
             };
 
-            return stats;
+            return Json(stats);
         }
 
-        // 私有方法：獲取用戶寵物
-        private async Task<List<PetModel>> GetUserPetsAsync(int userId)
+        // 獲取寵物稀有度分佈
+        [HttpGet]
+        public async Task<IActionResult> GetPetRarityDistribution()
         {
-            var pets = await _context.Pets
-                .Where(p => p.UserId == userId)
-                .Select(p => new PetModel
+            var distribution = await _context.Pet
+                .GroupBy(p => p.Rarity)
+                .Select(g => new
                 {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    PetName = p.PetName,
-                    SkinColor = p.SkinColor,
-                    Background = p.Background,
-                    Level = p.Level,
-                    Experience = p.Experience,
-                    Happiness = p.Happiness,
-                    Hunger = p.Hunger,
-                    Health = p.Health,
-                    Energy = p.Energy,
-                    Cleanliness = p.Cleanliness,
-                    CreateTime = p.CreateTime,
-                    LastUpdateTime = p.LastUpdateTime
+                    rarity = g.Key,
+                    count = g.Count(),
+                    percentage = (double)g.Count() / _context.Pet.Count() * 100
                 })
                 .ToListAsync();
 
-            return pets;
+            return Json(distribution);
         }
 
-        // 私有方法：獲取所有寵物（用於導出）
-        private async Task<List<PetModel>> GetAllPetsAsync(PetQueryModel query)
+        // 獲取寵物類型分佈
+        [HttpGet]
+        public async Task<IActionResult> GetPetTypeDistribution()
         {
-            var queryable = _context.Pets
-                .Include(p => p.User)
-                .AsQueryable();
-
-            if (query.UserId.HasValue)
-            {
-                queryable = queryable.Where(p => p.UserId == query.UserId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(query.SearchTerm))
-            {
-                queryable = queryable.Where(p => 
-                    p.PetName.Contains(query.SearchTerm) || 
-                    p.User.UserName.Contains(query.SearchTerm) ||
-                    p.User.Email.Contains(query.SearchTerm));
-            }
-
-            if (query.MinLevel.HasValue)
-            {
-                queryable = queryable.Where(p => p.Level >= query.MinLevel.Value);
-            }
-
-            if (query.MaxLevel.HasValue)
-            {
-                queryable = queryable.Where(p => p.Level <= query.MaxLevel.Value);
-            }
-
-            if (!string.IsNullOrEmpty(query.SkinColor))
-            {
-                queryable = queryable.Where(p => p.SkinColor == query.SkinColor);
-            }
-
-            if (!string.IsNullOrEmpty(query.Background))
-            {
-                queryable = queryable.Where(p => p.Background == query.Background);
-            }
-
-            return await queryable
-                .OrderByDescending(p => p.Level)
-                .ThenByDescending(p => p.Experience)
-                .Select(p => new PetModel
+            var distribution = await _context.Pet
+                .GroupBy(p => p.PetType)
+                .Select(g => new
                 {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    UserName = p.User.UserName,
-                    Email = p.User.Email,
-                    PetName = p.PetName,
-                    SkinColor = p.SkinColor,
-                    Background = p.Background,
-                    Level = p.Level,
-                    Experience = p.Experience,
-                    Happiness = p.Happiness,
-                    Hunger = p.Hunger,
-                    Health = p.Health,
-                    Energy = p.Energy,
-                    Cleanliness = p.Cleanliness,
-                    CreateTime = p.CreateTime,
-                    LastUpdateTime = p.LastUpdateTime
+                    type = g.Key,
+                    count = g.Count()
+                })
+                .OrderByDescending(g => g.count)
+                .ToListAsync();
+
+            return Json(distribution);
+        }
+
+        // 獲取寵物獲得率統計
+        [HttpGet]
+        public async Task<IActionResult> GetPetDropRateStats()
+        {
+            var stats = await _context.Pet
+                .GroupBy(p => p.Rarity)
+                .Select(g => new
+                {
+                    rarity = g.Key,
+                    avgDropRate = g.Average(p => p.DropRate),
+                    minDropRate = g.Min(p => p.DropRate),
+                    maxDropRate = g.Max(p => p.DropRate)
                 })
                 .ToListAsync();
+
+            return Json(stats);
         }
 
-        // 私有方法：生成寵物資料CSV
-        private string GeneratePetDataCSV(List<PetModel> pets)
+        private bool PetExists(int id)
         {
-            var csv = new System.Text.StringBuilder();
-            csv.AppendLine("寵物ID,用戶ID,用戶名稱,寵物名稱,膚色,背景,等級,經驗值,快樂度,飢餓度,健康度,精力,清潔度,創建時間,最後更新時間");
-
-            foreach (var pet in pets)
-            {
-                csv.AppendLine($"{pet.Id},{pet.UserId},{pet.UserName},{pet.PetName},{pet.SkinColor},{pet.Background},{pet.Level},{pet.Experience},{pet.Happiness},{pet.Hunger},{pet.Health},{pet.Energy},{pet.Cleanliness},{pet.CreateTime:yyyy-MM-dd HH:mm:ss},{pet.LastUpdateTime:yyyy-MM-dd HH:mm:ss}");
-            }
-
-            return csv.ToString();
+            return _context.Pet.Any(e => e.PetId == id);
         }
     }
 }

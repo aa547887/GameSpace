@@ -414,8 +414,31 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<bool> UpdatePetDetailsAsync(int petId, PetUpdateModel model)
         {
-            _context.Pets.Update(pet);
-            return await _context.SaveChangesAsync() > 0;
+            var pet = await _context.Pets.FirstOrDefaultAsync(p => p.PetId == petId);
+            if (pet != null)
+            {
+                // 更新寵物屬性
+                if (!string.IsNullOrEmpty(model.PetName))
+                    pet.PetName = model.PetName;
+                if (model.Experience.HasValue)
+                    pet.Experience = model.Experience.Value;
+                if (model.Level.HasValue)
+                    pet.Level = model.Level.Value;
+                if (model.Hunger.HasValue)
+                    pet.Hunger = model.Hunger.Value;
+                if (model.Happiness.HasValue)
+                    pet.Happiness = model.Happiness.Value;
+                if (model.Health.HasValue)
+                    pet.Health = model.Health.Value;
+                if (model.Energy.HasValue)
+                    pet.Energy = model.Energy.Value;
+                if (model.Cleanliness.HasValue)
+                    pet.Cleanliness = model.Cleanliness.Value;
+                
+                _context.Pets.Update(pet);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
         }
 
         public async Task<List<PetSkinColorChangeLog>> GetPetSkinColorChangeLogsAsync(PetQueryModel query)
@@ -477,7 +500,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.MiniGames
                 .Include(g => g.User)
-                .FirstOrDefaultAsync(g => g.PlayId == PlayId);
+                .FirstOrDefaultAsync(g => g.PlayId == playId);
         }
 
         // 總覽系統
@@ -537,3 +560,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

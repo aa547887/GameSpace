@@ -1,0 +1,160 @@
+@model IEnumerable<GameSpace.Data.Wallet>
+@{
+    ViewData["Title"] = "用戶錢包";
+    Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">用戶錢包</h1>
+        <div>
+            <a href="@Url.Action("Transaction", "AdminWallet", new { userId = ViewBag.User.User_Id })" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <i class="fas fa-plus fa-sm text-white-50"></i> 新增交易
+            </a>
+            <a href="@Url.Action("Index", "AdminWallet")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 用戶資訊卡片 -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                    <i class="fas fa-user fa-2x text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>@ViewBag.User.User_name</h4>
+                            <p class="text-muted">@ViewBag.User.User_account</p>
+                            <p class="text-muted">@ViewBag.User.User_email</p>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">@ViewBag.CurrentPoints.ToString("N0")</h3>
+                                <p class="text-muted">目前點數</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h5 class="text-success">@Model.Count()</h5>
+                                <p class="text-muted">交易記錄</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易記錄 -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">交易記錄</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="walletTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>交易ID</th>
+                                        <th>交易類型</th>
+                                        <th>金額</th>
+                                        <th>交易日期</th>
+                                        <th>描述</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var wallet in Model)
+                                    {
+                                        <tr>
+                                            <td>@wallet.WalletId</td>
+                                            <td>
+                                                <span class="badge @(wallet.TransactionType == "earn" ? "badge-success" : "badge-danger")">
+                                                    @(wallet.TransactionType == "earn" ? "獲得" : "消費")
+                                                </span>
+                                            </td>
+                                            <td class="@(wallet.TransactionType == "earn" ? "text-success" : "text-danger")">
+                                                @(wallet.TransactionType == "earn" ? "+" : "-")@wallet.Amount.ToString("N0")
+                                            </td>
+                                            <td>@wallet.TransactionDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@wallet.Description</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-wallet fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">暫無交易記錄</h5>
+                            <p class="text-muted">此用戶尚未有任何點數交易記錄</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計資訊 -->
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-up fa-2x text-success mb-3"></i>
+                    <h4 class="text-success">@Model.Where(w => w.TransactionType == "earn").Sum(w => w.Amount).ToString("N0")</h4>
+                    <p class="text-muted">總獲得點數</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-down fa-2x text-danger mb-3"></i>
+                    <h4 class="text-danger">@Model.Where(w => w.TransactionType == "spend").Sum(w => w.Amount).ToString("N0")</h4>
+                    <p class="text-muted">總消費點數</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                    <h4 class="text-primary">@ViewBag.CurrentPoints.ToString("N0")</h4>
+                    <p class="text-muted">目前餘額</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#walletTable').DataTable({
+                "paging": true,
+                "searching": true,
+                "info": true,
+                "ordering": true,
+                "order": [[3, "desc"]], // 按交易日期降序排列
+                "pageLength": 25,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
+                }
+            });
+        });
+    </script>
+}

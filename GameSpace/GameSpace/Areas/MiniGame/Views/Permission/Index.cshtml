@@ -1,0 +1,276 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminPermissionIndexViewModel
+@{
+    ViewData["Title"] = "權限管理";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        權限管理系統
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- 管理員信息卡片 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-user-tie"></i>
+                                        當前管理員
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>姓名:</strong> @Model.ManagerRoleInfo.ManagerName<br>
+                                        <strong>帳號:</strong> @Model.ManagerRoleInfo.ManagerAccount<br>
+                                        <strong>角色:</strong> @Model.ManagerRoleInfo.RoleName<br>
+                                        <strong>狀態:</strong> 
+                                        @if (Model.ManagerRoleInfo.IsActive)
+                                        {
+                                            <span class="badge badge-success">啟用</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">停用</span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-clock"></i>
+                                        最後登入
+                                    </h5>
+                                    <p class="card-text">
+                                        @Model.ManagerRoleInfo.LastLoginTime.ToString("yyyy-MM-dd HH:mm:ss")
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 權限統計卡片 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.Statistics.TotalManagers</h4>
+                                            <p>總管理員數</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-users fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.Statistics.TotalUsers</h4>
+                                            <p>總用戶數</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-user fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.Statistics.TotalUserRights</h4>
+                                            <p>用戶權限數</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-key fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.Statistics.TotalOperationLogs</h4>
+                                            <p>操作日誌數</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-list fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 功能選單 -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-cog fa-3x text-primary mb-3"></i>
+                                    <h5 class="card-title">用戶權限管理</h5>
+                                    <p class="card-text">管理用戶的權限設定，包括添加、修改、移除權限等操作。</p>
+                                    <a href="@Url.Action("UserRights")" class="btn btn-primary">
+                                        <i class="fas fa-arrow-right"></i>
+                                        進入管理
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-tags fa-3x text-success mb-3"></i>
+                                    <h5 class="card-title">權限類型管理</h5>
+                                    <p class="card-text">管理權限類型定義，包括創建、修改、刪除權限類型。</p>
+                                    <a href="@Url.Action("RightTypes")" class="btn btn-success">
+                                        <i class="fas fa-arrow-right"></i>
+                                        進入管理
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-list-alt fa-3x text-info mb-3"></i>
+                                    <h5 class="card-title">操作日誌</h5>
+                                    <p class="card-text">查看系統操作日誌，追蹤所有權限相關的操作記錄。</p>
+                                    <a href="@Url.Action("OperationLogs")" class="btn btn-info">
+                                        <i class="fas fa-arrow-right"></i>
+                                        查看日誌
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 統計圖表區域 -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-chart-pie"></i>
+                                        權限類型分布
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="rightTypeChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-chart-bar"></i>
+                                        管理員角色分布
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="managerRoleChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 權限類型分布圖表
+        var rightTypeCtx = document.getElementById('rightTypeChart').getContext('2d');
+        var rightTypeChart = new Chart(rightTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    @foreach (var stat in Model.Statistics.RightTypeStatistics)
+                    {
+                        <text>'@stat.RightType',</text>
+                    }
+                ],
+                datasets: [{
+                    data: [
+                        @foreach (var stat in Model.Statistics.RightTypeStatistics)
+                        {
+                            <text>@stat.Count,</text>
+                        }
+                    ],
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // 管理員角色分布圖表
+        var managerRoleCtx = document.getElementById('managerRoleChart').getContext('2d');
+        var managerRoleChart = new Chart(managerRoleCtx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    @foreach (var stat in Model.Statistics.ManagerRoleStatistics)
+                    {
+                        <text>'@stat.RoleName',</text>
+                    }
+                ],
+                datasets: [{
+                    label: '管理員數量',
+                    data: [
+                        @foreach (var stat in Model.Statistics.ManagerRoleStatistics)
+                        {
+                            <text>@stat.Count,</text>
+                        }
+                    ],
+                    backgroundColor: '#36A2EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+}
