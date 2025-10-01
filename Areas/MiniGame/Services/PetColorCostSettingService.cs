@@ -11,10 +11,12 @@ namespace GameSpace.Areas.MiniGame.Services
     public class PetColorCostSettingService : IPetColorCostSettingService
     {
         private readonly MiniGameDbContext _context;
+        private readonly PetCostSettingStorageService _storageService;
 
-        public PetColorCostSettingService(MiniGameDbContext context)
+        public PetColorCostSettingService(MiniGameDbContext context, PetCostSettingStorageService storageService)
         {
             _context = context;
+            _storageService = storageService;
         }
 
         public async Task<IEnumerable<PetColorCostSetting>> GetAllAsync()
@@ -32,9 +34,26 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<PetColorCostSetting> CreateAsync(PetColorCostSettingViewModel model)
         {
-            var entity = new PetColorCostSetting
+            // 驗證資料
+            var validation = await _storageService.ValidateCostSettingAsync(new PetSkinColorCostSetting
             {
-                SettingName = model.SettingName,
+                ColorName = model.SettingName,
+                ColorCode = model.ColorCode ?? "#000000",
+                RequiredPoints = model.RequiredPoints,
+                IsActive = model.IsActive,
+                Description = model.Description,
+                SortOrder = model.SortOrder
+            });
+
+            if (!validation.IsValid)
+            {
+                throw new InvalidOperationException(string.Join(", ", validation.Errors.Select(e => e.Message)));
+            }
+
+            var entity = new PetSkinColorCostSetting
+            {
+                ColorName = model.SettingName,
+                ColorCode = model.ColorCode ?? "#000000",
                 RequiredPoints = model.RequiredPoints,
                 IsActive = model.IsActive,
                 Description = model.Description,
@@ -43,8 +62,12 @@ namespace GameSpace.Areas.MiniGame.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.PetColorCostSettings.Add(entity);
-            await _context.SaveChangesAsync();
+            var success = await _storageService.SaveColorCostSettingAsync(entity);
+            if (!success)
+            {
+                throw new InvalidOperationException("儲存失敗");
+            }
+
             return entity;
         }
 
@@ -54,14 +77,37 @@ namespace GameSpace.Areas.MiniGame.Services
             if (entity == null)
                 throw new ArgumentException("找不到指定的設定項目");
 
-            entity.SettingName = model.SettingName;
+            // 驗證資料
+            var validation = await _storageService.ValidateCostSettingAsync(new PetSkinColorCostSetting
+            {
+                Id = id,
+                ColorName = model.SettingName,
+                ColorCode = model.ColorCode ?? "#000000",
+                RequiredPoints = model.RequiredPoints,
+                IsActive = model.IsActive,
+                Description = model.Description,
+                SortOrder = model.SortOrder
+            });
+
+            if (!validation.IsValid)
+            {
+                throw new InvalidOperationException(string.Join(", ", validation.Errors.Select(e => e.Message)));
+            }
+
+            entity.ColorName = model.SettingName;
+            entity.ColorCode = model.ColorCode ?? "#000000";
             entity.RequiredPoints = model.RequiredPoints;
             entity.IsActive = model.IsActive;
             entity.Description = model.Description;
             entity.SortOrder = model.SortOrder;
             entity.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            var success = await _storageService.SaveColorCostSettingAsync(entity);
+            if (!success)
+            {
+                throw new InvalidOperationException("更新失敗");
+            }
+
             return entity;
         }
 
@@ -82,7 +128,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(x => x.SettingName.Contains(searchTerm) || 
+                query = query.Where(x => x.ColorName.Contains(searchTerm) || 
                                         (x.Description != null && x.Description.Contains(searchTerm)));
             }
 
@@ -94,13 +140,14 @@ namespace GameSpace.Areas.MiniGame.Services
             var totalCount = await query.CountAsync();
             var settings = await query
                 .OrderBy(x => x.SortOrder)
-                .ThenBy(x => x.SettingName)
+                .ThenBy(x => x.ColorName)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(x => new PetColorCostSettingViewModel
                 {
                     Id = x.Id,
-                    SettingName = x.SettingName,
+                    SettingName = x.ColorName,
+                    ColorCode = x.ColorCode,
                     RequiredPoints = x.RequiredPoints,
                     IsActive = x.IsActive,
                     Description = x.Description,

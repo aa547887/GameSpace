@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "寵物換色所需點數設定";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
@@ -53,6 +53,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>設定名稱</th>
+                                    <th>顏色預覽</th>
                                     <th>所需點數</th>
                                     <th>狀態</th>
                                     <th>排序順序</th>
@@ -68,6 +69,12 @@
                                         <tr>
                                             <td>@item.Id</td>
                                             <td>@item.SettingName</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="color-preview" style="width: 30px; height: 30px; background-color: @item.ColorCode; border: 1px solid #ccc; border-radius: 4px; margin-right: 8px;"></div>
+                                                    <span class="text-muted">@item.ColorCode</span>
+                                                </div>
+                                            </td>
                                             <td>
                                                 <span class="badge badge-primary">@item.RequiredPoints 點</span>
                                             </td>
@@ -102,7 +109,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">
+                                        <td colspan="8" class="text-center text-muted">
                                             <i class="fas fa-info-circle"></i> 沒有找到任何設定項目
                                         </td>
                                     </tr>

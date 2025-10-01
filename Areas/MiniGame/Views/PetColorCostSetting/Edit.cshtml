@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "編輯寵物換色所需點數設定";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
@@ -21,9 +21,8 @@
                 </div>
                 <div class="card-body">
                     <form asp-action="Edit" method="post">
+                        <input asp-for="Id" type="hidden" />
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                        <input type="hidden" asp-for="Id" />
-                        <input type="hidden" asp-for="CreatedAt" />
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -35,9 +34,14 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="RequiredPoints" class="control-label">所需點數</label>
-                                    <input asp-for="RequiredPoints" class="form-control" type="number" min="0" placeholder="請輸入所需點數" />
-                                    <span asp-validation-for="RequiredPoints" class="text-danger"></span>
+                                    <label asp-for="ColorCode" class="control-label">顏色代碼</label>
+                                    <div class="input-group">
+                                        <input asp-for="ColorCode" class="form-control" placeholder="#000000" />
+                                        <div class="input-group-append">
+                                            <input type="color" id="colorPicker" class="form-control" style="width: 50px; height: 38px;" />
+                                        </div>
+                                    </div>
+                                    <span asp-validation-for="ColorCode" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
@@ -45,12 +49,32 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label asp-for="RequiredPoints" class="control-label">所需點數</label>
+                                    <input asp-for="RequiredPoints" class="form-control" type="number" min="0" placeholder="請輸入所需點數" />
+                                    <span asp-validation-for="RequiredPoints" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label asp-for="SortOrder" class="control-label">排序順序</label>
                                     <input asp-for="SortOrder" class="form-control" type="number" min="0" placeholder="請輸入排序順序" />
                                     <span asp-validation-for="SortOrder" class="text-danger"></span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="Description" class="control-label">描述</label>
+                                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="請輸入描述"></textarea>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <div class="form-check">
                                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
@@ -61,14 +85,8 @@
                         </div>
                         
                         <div class="form-group">
-                            <label asp-for="Description" class="control-label">描述</label>
-                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="請輸入設定描述"></textarea>
-                            <span asp-validation-for="Description" class="text-danger"></span>
-                        </div>
-                        
-                        <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 儲存變更
+                                <i class="fas fa-save"></i> 更新
                             </button>
                             <a asp-action="Index" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> 取消
@@ -82,5 +100,24 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // 顏色選擇器與文字框同步
+        document.getElementById('colorPicker').addEventListener('change', function() {
+            document.getElementById('ColorCode').value = this.value;
+        });
+        
+        document.getElementById('ColorCode').addEventListener('input', function() {
+            if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+                document.getElementById('colorPicker').value = this.value;
+            }
+        });
+        
+        // 初始化顏色選擇器
+        document.addEventListener('DOMContentLoaded', function() {
+            const colorCode = document.getElementById('ColorCode').value;
+            if (colorCode && colorCode.match(/^#[0-9A-Fa-f]{6}$/)) {
+                document.getElementById('colorPicker').value = colorCode;
+            }
+        });
+    </script>
 }

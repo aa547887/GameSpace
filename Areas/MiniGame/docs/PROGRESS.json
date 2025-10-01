@@ -3,21 +3,28 @@
     "id": "P1-1.1-01",
     "title": "新增寵物換色所需點數設定功能",
     "status": "done",
-    "commits": ["feat(minigame-admin): [P1-1.1-01] 寵物換色所需點數設定功能已完成"],
+    "commits": ["8161714"],
     "updatedAt": "2025-01-01T21:00:00.000Z"
   },
   {
     "id": "P1-1.1-02",
     "title": "新增寵物換背景所需點數設定功能",
     "status": "done",
-    "commits": ["feat(minigame-admin): [P1-1.1-02] 寵物換背景所需點數設定功能已完成"],
+    "commits": ["8161714"],
     "updatedAt": "2025-01-01T21:00:00.000Z"
   },
   {
     "id": "P1-1.1-03",
     "title": "建立點數設定管理介面",
     "status": "done",
-    "commits": ["feat(minigame-admin): [P1-1.1-03] 點數設定管理介面已完成"],
-    "updatedAt": "2025-10-01T14:00:00.000Z"
+    "commits": ["8161714"],
+    "updatedAt": "2025-01-01T21:00:00.000Z"
+  },
+  {
+    "id": "P1-1.1-04",
+    "title": "實作點數設定儲存邏輯",
+    "status": "todo",
+    "commits": [],
+    "updatedAt": "2025-01-01T21:00:00.000Z"
   }
 ]

@@ -14,6 +14,12 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [Display(Name = "設定名稱")]
         public string SettingName { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "顏色代碼為必填")]
+        [StringLength(7, ErrorMessage = "顏色代碼長度必須為7個字元")]
+        [RegularExpression(@"^#[0-9A-Fa-f]{6}$", ErrorMessage = "顏色代碼格式不正確，應為 #RRGGBB 格式")]
+        [Display(Name = "顏色代碼")]
+        public string ColorCode { get; set; } = "#000000";
+
         [Required(ErrorMessage = "所需點數為必填")]
         [Range(0, int.MaxValue, ErrorMessage = "點數必須大於等於0")]
         [Display(Name = "所需點數")]
