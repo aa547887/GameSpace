@@ -1,3 +1,16 @@
-[{"id": "P1-1.1-01", "title": "新增寵物換色所需點數設定功能", "status": "done", "commits": ["feat(minigame-admin): [P1-1.1-01] 寵物換色所需點數設定功能已完成"], "updatedAt": "
-2025-10-01T23:30:31.097Z
-"}]
+[
+  {
+    "id": "P1-1.1-01",
+    "title": "新增寵物換色所需點數設定功能",
+    "status": "done",
+    "commits": ["feat(minigame-admin): [P1-1.1-01] 寵物換色所需點數設定功能已完成"],
+    "updatedAt": "2025-10-01T23:30:31.097Z"
+  },
+  {
+    "id": "P1-1.1-02",
+    "title": "新增寵物換背景所需點數設定功能",
+    "status": "done",
+    "commits": ["feat(minigame-admin): [P1-1.1-02] 寵物換背景所需點數設定功能已完成"],
+    "updatedAt": "2025-10-01T23:44:52.691Z"
+  }
+]

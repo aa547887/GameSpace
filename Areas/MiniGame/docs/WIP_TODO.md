@@ -5,8 +5,8 @@
 ### 🎯 Phase 1: 寵物系統功能完善
 
 #### 1.1 寵物換色/換背景所需點數設定
-- [ ] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01)
-- [ ] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02)
+- [x] 新增寵物換色所需點數設定功能 (ID: P1-1.1-01) (ID: P1-1.1-01, Commit: 941bc7e)
+- [x] 新增寵物換背景所需點數設定功能 (ID: P1-1.1-02) (ID: P1-1.1-02, Commit: 待提交)
 - [ ] 建立點數設定管理介面 (ID: P1-1.1-03)
 - [ ] 實作點數設定儲存邏輯 (ID: P1-1.1-04)
 
@@ -102,4 +102,32 @@
 
 ## 📝 完成紀要記錄區
 
-*此區域將記錄每個完成項目的詳細資訊*
+### P1-1.1-01: 新增寵物換色所需點數設定功能
+**完成紀要**：
+- 建立 PetSkinColorPointSetting Model 和 ViewModel
+- 實作 IPetSkinColorPointSettingService 介面和服務
+- 建立 PetSkinColorPointSettingController 控制器
+- 建立 Index、Create、Edit Views
+- 建立 PetSkinColorPointSettings 資料庫表
+- 插入測試資料
+- 完成完整的 CRUD 功能
+
+**權限名與 Policy 名稱**：PetSkinColorPointSettingManagement
+**對應 URL/Route**：/MiniGame/PetSkinColorPointSetting
+**涉及的資料表/欄位/索引/檢核**：PetSkinColorPointSettings 表，包含 PetLevel、RequiredPoints、IsEnabled 等欄位
+**測試檔案清單**：PetSkinColorPointSettingService.cs, PetSkinColorPointSettingController.cs
+
+### P1-1.1-02: 新增寵物換背景所需點數設定功能
+**完成紀要**：
+- 建立 PetBackgroundPointSetting Model 和 ViewModel
+- 實作 IPetBackgroundPointSettingService 介面和服務
+- 建立 PetBackgroundPointSettingController 控制器
+- 建立 Index、Create、Edit Views
+- 建立 PetBackgroundPointSettings 資料庫表
+- 插入測試資料
+- 完成完整的 CRUD 功能
+
+**權限名與 Policy 名稱**：PetBackgroundPointSettingManagement
+**對應 URL/Route**：/MiniGame/PetBackgroundPointSetting
+**涉及的資料表/欄位/索引/檢核**：PetBackgroundPointSettings 表，包含 PetLevel、RequiredPoints、IsEnabled 等欄位
+**測試檔案清單**：PetBackgroundPointSettingService.cs, PetBackgroundPointSettingController.cs
