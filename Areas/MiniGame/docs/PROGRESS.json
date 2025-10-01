@@ -82,5 +82,12 @@
     "status": "done",
     "commits": ["existing"],
     "updatedAt": "2025-10-02T01:00:00.000Z"
+  },
+  {
+    "id": "P1-1.4-01",
+    "title": "新增互動狀態增益規則設定",
+    "status": "done",
+    "commits": ["7c21e94"],
+    "updatedAt": "2025-10-02T02:00:00.000Z"
   }
 ]
