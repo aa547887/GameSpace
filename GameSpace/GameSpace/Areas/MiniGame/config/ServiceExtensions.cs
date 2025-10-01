@@ -1,9 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.MiniGame.Data;
-using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Areas.MiniGame.config
 {
@@ -13,8 +12,7 @@ namespace GameSpace.Areas.MiniGame.config
         {
             // 註冊 MiniGameDbContext - 使用 GameSpace 連線字串
             services.AddDbContext<MiniGameDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString(\
-GameSpace\)));
+                options.UseSqlServer(configuration.GetConnectionString("GameSpace")));
 
             // 註冊 Services
             services.AddScoped<IMiniGameAdminService, MiniGameAdminService>();
@@ -25,11 +23,14 @@ GameSpace\)));
             // 註冊點數設定相關服務
             services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
             services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
-            services.AddScoped<IPointsSettingsStatisticsService, PointsSettingsStatisticsService>();
+            services.AddScoped<IPointsSettingsService, PointsSettingsService>();
 
             // 註冊寵物選項相關服務
             services.AddScoped<IPetColorOptionService, PetColorOptionService>();
             services.AddScoped<IPetBackgroundOptionService, PetBackgroundOptionService>();
+
+            // 註冊寵物等級經驗值設定服務
+            services.AddScoped<IPetLevelExperienceSettingService, PetLevelExperienceSettingService>();
 
             return services;
         }

@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "Level": 1,
+    "RequiredExperience": 100,
+    "Description": "初始等級",
+    "CreatedAt": "2024-01-01T00:00:00.000Z",
+    "UpdatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "Id": 2,
+    "Level": 2,
+    "RequiredExperience": 250,
+    "Description": "第二等級",
+    "CreatedAt": "2024-01-01T00:00:00.000Z",
+    "UpdatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "Id": 3,
+    "Level": 3,
+    "RequiredExperience": 450,
+    "Description": "第三等級",
+    "CreatedAt": "2024-01-01T00:00:00.000Z",
+    "UpdatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "Id": 4,
+    "Level": 4,
+    "RequiredExperience": 700,
+    "Description": "第四等級",
+    "CreatedAt": "2024-01-01T00:00:00.000Z",
+    "UpdatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "Id": 5,
+    "Level": 5,
+    "RequiredExperience": 1000,
+    "Description": "第五等級",
+    "CreatedAt": "2024-01-01T00:00:00.000Z",
+    "UpdatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
