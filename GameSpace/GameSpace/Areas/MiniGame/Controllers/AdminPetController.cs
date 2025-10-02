@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Data;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -9,54 +8,56 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(Policy = "AdminOnly")]
     public class AdminPetController : Controller
     {
-        private readonly GameSpacedatabaseContext _context;
+        private readonly IPetService _petService;
+        private readonly IPetRulesService _petRulesService;
 
-        public AdminPetController(GameSpacedatabaseContext context)
+        public AdminPetController(IPetService petService, IPetRulesService petRulesService)
         {
-            _context = context;
+            _petService = petService;
+            _petRulesService = petRulesService;
         }
 
         // GET: AdminPet
         public async Task<IActionResult> Index(string searchTerm = "", string rarity = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.Pet.AsQueryable();
+            var pets = await _petService.GetAllPetsAsync();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(p => p.PetName.Contains(searchTerm) || 
-                                       p.PetType.Contains(searchTerm) || 
-                                       p.PetDescription.Contains(searchTerm));
+                pets = pets.Where(p => p.PetName.Contains(searchTerm) ||
+                                      p.PetType.Contains(searchTerm) ||
+                                      p.PetDescription.Contains(searchTerm));
             }
 
             // 稀有度篩選
             if (!string.IsNullOrEmpty(rarity))
             {
-                query = query.Where(p => p.Rarity == rarity);
+                pets = pets.Where(p => p.Rarity == rarity);
             }
 
             // 排序
-            query = sortBy switch
+            pets = sortBy switch
             {
-                "type" => query.OrderBy(p => p.PetType),
-                "rarity" => query.OrderBy(p => p.Rarity),
-                "rate" => query.OrderByDescending(p => p.DropRate),
-                "created" => query.OrderByDescending(p => p.CreatedAt),
-                _ => query.OrderBy(p => p.PetName)
+                "type" => pets.OrderBy(p => p.PetType),
+                "rarity" => pets.OrderBy(p => p.Rarity),
+                "rate" => pets.OrderByDescending(p => p.DropRate),
+                "created" => pets.OrderByDescending(p => p.CreatedAt),
+                _ => pets.OrderBy(p => p.PetName)
             };
 
             // 分頁
-            var totalCount = await query.CountAsync();
-            var pets = await query
+            var totalCount = pets.Count();
+            var pagedPets = pets
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
             var viewModel = new AdminPetIndexViewModel
             {
                 Pets = new PagedResult<Pet>
                 {
-                    Items = pets,
+                    Items = pagedPets,
                     TotalCount = totalCount,
                     PageNumber = page,
                     PageSize = pageSize
@@ -64,14 +65,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
             };
 
             // 設定 ViewBag 用於搜尋和篩選
+            var allPets = await _petService.GetAllPetsAsync();
             ViewBag.SearchTerm = searchTerm;
             ViewBag.Rarity = rarity;
             ViewBag.SortBy = sortBy;
-            ViewBag.TotalPets = totalCount;
-            ViewBag.CommonPets = await _context.Pet.CountAsync(p => p.Rarity == "普通");
-            ViewBag.RarePets = await _context.Pet.CountAsync(p => p.Rarity == "稀有");
-            ViewBag.EpicPets = await _context.Pet.CountAsync(p => p.Rarity == "史詩");
-            ViewBag.LegendaryPets = await _context.Pet.CountAsync(p => p.Rarity == "傳說");
+            ViewBag.TotalPets = allPets.Count();
+            ViewBag.CommonPets = allPets.Count(p => p.Rarity == "普通");
+            ViewBag.RarePets = allPets.Count(p => p.Rarity == "稀有");
+            ViewBag.EpicPets = allPets.Count(p => p.Rarity == "史詩");
+            ViewBag.LegendaryPets = allPets.Count(p => p.Rarity == "傳說");
 
             return View(viewModel);
         }
@@ -84,9 +86,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var pet = await _context.Pet
-                .Include(p => p.Users)
-                .FirstOrDefaultAsync(m => m.PetId == id);
+            var pet = await _petService.GetPetByIdAsync(id.Value);
 
             if (pet == null)
             {
@@ -118,14 +118,28 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     DropRate = model.DropRate,
                     PetImageUrl = model.PetImageUrl,
                     IsActive = model.IsActive,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow,
+                    // 初始化寵物狀態
+                    Level = 1,
+                    Experience = 0,
+                    Hunger = 100,
+                    Mood = 100,
+                    Stamina = 100,
+                    Cleanliness = 100,
+                    Health = 100
                 };
 
-                _context.Add(pet);
-                await _context.SaveChangesAsync();
+                var result = await _petService.CreatePetAsync(pet);
 
-                TempData["SuccessMessage"] = "寵物建立成功";
-                return RedirectToAction(nameof(Index));
+                if (result)
+                {
+                    TempData["SuccessMessage"] = "寵物建立成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    ModelState.AddModelError("", "建立寵物失敗");
+                }
             }
 
             return View(model);
@@ -139,7 +153,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var pet = await _context.Pet.FindAsync(id);
+            var pet = await _petService.GetPetByIdAsync(id.Value);
             if (pet == null)
             {
                 return NotFound();
@@ -166,38 +180,30 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                try
+                var pet = await _petService.GetPetByIdAsync(id);
+                if (pet == null)
                 {
-                    var pet = await _context.Pet.FindAsync(id);
-                    if (pet == null)
-                    {
-                        return NotFound();
-                    }
+                    return NotFound();
+                }
 
-                    pet.PetName = model.PetName;
-                    pet.PetDescription = model.PetDescription;
-                    pet.PetType = model.PetType;
-                    pet.Rarity = model.Rarity;
-                    pet.DropRate = model.DropRate;
-                    pet.PetImageUrl = model.PetImageUrl;
-                    pet.IsActive = model.IsActive;
+                pet.PetName = model.PetName;
+                pet.PetDescription = model.PetDescription;
+                pet.PetType = model.PetType;
+                pet.Rarity = model.Rarity;
+                pet.DropRate = model.DropRate;
+                pet.PetImageUrl = model.PetImageUrl;
+                pet.IsActive = model.IsActive;
 
-                    _context.Update(pet);
-                    await _context.SaveChangesAsync();
+                var result = await _petService.UpdatePetAsync(pet);
 
+                if (result)
+                {
                     TempData["SuccessMessage"] = "寵物更新成功";
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!PetExists(id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError("", "更新寵物失敗");
                 }
             }
 
@@ -212,9 +218,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var pet = await _context.Pet
-                .Include(p => p.Users)
-                .FirstOrDefaultAsync(m => m.PetId == id);
+            var pet = await _petService.GetPetByIdAsync(id.Value);
 
             if (pet == null)
             {
@@ -229,13 +233,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var pet = await _context.Pet.FindAsync(id);
-            if (pet != null)
-            {
-                _context.Pet.Remove(pet);
-                await _context.SaveChangesAsync();
+            var result = await _petService.DeletePetAsync(id);
 
+            if (result)
+            {
                 TempData["SuccessMessage"] = "寵物刪除成功";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "寵物刪除失敗";
             }
 
             return RedirectToAction(nameof(Index));
@@ -245,14 +251,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var pet = await _context.Pet.FindAsync(id);
+            var pet = await _petService.GetPetByIdAsync(id);
             if (pet != null)
             {
                 pet.IsActive = !pet.IsActive;
-                _context.Update(pet);
-                await _context.SaveChangesAsync();
+                var result = await _petService.UpdatePetAsync(pet);
 
-                return Json(new { success = true, isActive = pet.IsActive });
+                if (result)
+                {
+                    return Json(new { success = true, isActive = pet.IsActive });
+                }
             }
 
             return Json(new { success = false });
@@ -262,14 +270,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPetStats()
         {
+            var allPets = await _petService.GetAllPetsAsync();
             var stats = new
             {
-                total = await _context.Pet.CountAsync(),
-                active = await _context.Pet.CountAsync(p => p.IsActive),
-                common = await _context.Pet.CountAsync(p => p.Rarity == "普通"),
-                rare = await _context.Pet.CountAsync(p => p.Rarity == "稀有"),
-                epic = await _context.Pet.CountAsync(p => p.Rarity == "史詩"),
-                legendary = await _context.Pet.CountAsync(p => p.Rarity == "傳說")
+                total = allPets.Count(),
+                active = allPets.Count(p => p.IsActive),
+                common = allPets.Count(p => p.Rarity == "普通"),
+                rare = allPets.Count(p => p.Rarity == "稀有"),
+                epic = allPets.Count(p => p.Rarity == "史詩"),
+                legendary = allPets.Count(p => p.Rarity == "傳說")
             };
 
             return Json(stats);
@@ -279,15 +288,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPetRarityDistribution()
         {
-            var distribution = await _context.Pet
+            var allPets = await _petService.GetAllPetsAsync();
+            var total = allPets.Count();
+
+            var distribution = allPets
                 .GroupBy(p => p.Rarity)
                 .Select(g => new
                 {
                     rarity = g.Key,
                     count = g.Count(),
-                    percentage = (double)g.Count() / _context.Pet.Count() * 100
+                    percentage = total > 0 ? (double)g.Count() / total * 100 : 0
                 })
-                .ToListAsync();
+                .ToList();
 
             return Json(distribution);
         }
@@ -296,7 +308,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPetTypeDistribution()
         {
-            var distribution = await _context.Pet
+            var allPets = await _petService.GetAllPetsAsync();
+
+            var distribution = allPets
                 .GroupBy(p => p.PetType)
                 .Select(g => new
                 {
@@ -304,7 +318,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     count = g.Count()
                 })
                 .OrderByDescending(g => g.count)
-                .ToListAsync();
+                .ToList();
 
             return Json(distribution);
         }
@@ -313,7 +327,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPetDropRateStats()
         {
-            var stats = await _context.Pet
+            var allPets = await _petService.GetAllPetsAsync();
+
+            var stats = allPets
                 .GroupBy(p => p.Rarity)
                 .Select(g => new
                 {
@@ -322,125 +338,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     minDropRate = g.Min(p => p.DropRate),
                     maxDropRate = g.Max(p => p.DropRate)
                 })
-                .ToListAsync();
+                .ToList();
 
             return Json(stats);
         }
 
-        // 新增：寵物換色所需點數設定
-        [HttpGet]
-        public async Task<IActionResult> GetPetColorChangeCost()
-        {
-            try
-            {
-                var cost = await _context.PetColorChangeCosts.FirstOrDefaultAsync();
-                if (cost == null)
-                {
-                    // 如果沒有設定，返回預設值
-                    return Json(new { success = true, data = new { pointsRequired = 100 } });
-                }
-                
-                return Json(new { success = true, data = new { pointsRequired = cost.PointsRequired } });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> UpdatePetColorChangeCost(int pointsRequired)
-        {
-            try
-            {
-                if (pointsRequired < 0)
-                {
-                    return Json(new { success = false, message = "所需點數不能為負數" });
-                }
-
-                var cost = await _context.PetColorChangeCosts.FirstOrDefaultAsync();
-                if (cost == null)
-                {
-                    cost = new PetColorChangeCost { PointsRequired = pointsRequired };
-                    _context.PetColorChangeCosts.Add(cost);
-                }
-                else
-                {
-                    cost.PointsRequired = pointsRequired;
-                    _context.PetColorChangeCosts.Update(cost);
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "寵物換色所需點數設定成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 新增：寵物換背景所需點數設定
-        [HttpGet]
-        public async Task<IActionResult> GetPetBackgroundChangeCost()
-        {
-            try
-            {
-                var cost = await _context.PetBackgroundChangeCosts.FirstOrDefaultAsync();
-                if (cost == null)
-                {
-                    // 如果沒有設定，返回預設值
-                    return Json(new { success = true, data = new { pointsRequired = 150 } });
-                }
-                
-                return Json(new { success = true, data = new { pointsRequired = cost.PointsRequired } });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> UpdatePetBackgroundChangeCost(int pointsRequired)
-        {
-            try
-            {
-                if (pointsRequired < 0)
-                {
-                    return Json(new { success = false, message = "所需點數不能為負數" });
-                }
-
-                var cost = await _context.PetBackgroundChangeCosts.FirstOrDefaultAsync();
-                if (cost == null)
-                {
-                    cost = new PetBackgroundChangeCost { PointsRequired = pointsRequired };
-                    _context.PetBackgroundChangeCosts.Add(cost);
-                }
-                else
-                {
-                    cost.PointsRequired = pointsRequired;
-                    _context.PetBackgroundChangeCosts.Update(cost);
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "寵物換背景所需點數設定成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 新增：寵物顏色選項管理
+        // 獲取寵物顏色選項
         [HttpGet]
         public async Task<IActionResult> GetPetColorOptions()
         {
             try
             {
-                var options = await _context.PetColorOptions
-                    .OrderBy(o => o.DisplayOrder)
-                    .ToListAsync();
-                
+                var options = await _petService.GetAvailableColorsAsync();
                 return Json(new { success = true, data = options });
             }
             catch (Exception ex)
@@ -449,6 +358,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 新增寵物顏色選項
         [HttpPost]
         public async Task<IActionResult> AddPetColorOption(string colorName, string colorValue, int displayOrder)
         {
@@ -467,10 +377,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     IsActive = true
                 };
 
-                _context.PetColorOptions.Add(option);
-                await _context.SaveChangesAsync();
+                var result = await _petRulesService.CreateColorOptionAsync(option);
 
-                return Json(new { success = true, message = "寵物顏色選項新增成功" });
+                if (result)
+                {
+                    return Json(new { success = true, message = "寵物顏色選項新增成功" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "新增失敗" });
+                }
             }
             catch (Exception ex)
             {
@@ -478,12 +394,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 更新寵物顏色選項
         [HttpPost]
         public async Task<IActionResult> UpdatePetColorOption(int id, string colorName, string colorValue, int displayOrder, bool isActive)
         {
             try
             {
-                var option = await _context.PetColorOptions.FindAsync(id);
+                var options = await _petRulesService.GetAllColorOptionsAsync();
+                var option = options.FirstOrDefault(o => o.OptionID == id);
+
                 if (option == null)
                 {
                     return Json(new { success = false, message = "找不到指定的顏色選項" });
@@ -494,10 +413,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 option.DisplayOrder = displayOrder;
                 option.IsActive = isActive;
 
-                _context.PetColorOptions.Update(option);
-                await _context.SaveChangesAsync();
+                var result = await _petRulesService.UpdateColorOptionAsync(option);
 
-                return Json(new { success = true, message = "寵物顏色選項更新成功" });
+                if (result)
+                {
+                    return Json(new { success = true, message = "寵物顏色選項更新成功" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "更新失敗" });
+                }
             }
             catch (Exception ex)
             {
@@ -505,21 +430,22 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 刪除寵物顏色選項
         [HttpPost]
         public async Task<IActionResult> DeletePetColorOption(int id)
         {
             try
             {
-                var option = await _context.PetColorOptions.FindAsync(id);
-                if (option == null)
+                var result = await _petRulesService.DeleteColorOptionAsync(id);
+
+                if (result)
                 {
-                    return Json(new { success = false, message = "找不到指定的顏色選項" });
+                    return Json(new { success = true, message = "寵物顏色選項刪除成功" });
                 }
-
-                _context.PetColorOptions.Remove(option);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "寵物顏色選項刪除成功" });
+                else
+                {
+                    return Json(new { success = false, message = "刪除失敗" });
+                }
             }
             catch (Exception ex)
             {
@@ -527,16 +453,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 新增：寵物背景選項管理
+        // 獲取寵物背景選項
         [HttpGet]
         public async Task<IActionResult> GetPetBackgroundOptions()
         {
             try
             {
-                var options = await _context.PetBackgroundOptions
-                    .OrderBy(o => o.DisplayOrder)
-                    .ToListAsync();
-                
+                var options = await _petService.GetAvailableBackgroundsAsync();
                 return Json(new { success = true, data = options });
             }
             catch (Exception ex)
@@ -545,94 +468,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddPetBackgroundOption(string backgroundName, string backgroundValue, int displayOrder)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(backgroundName) || string.IsNullOrEmpty(backgroundValue))
-                {
-                    return Json(new { success = false, message = "背景名稱和背景值不能為空" });
-                }
-
-                var option = new PetBackgroundOption
-                {
-                    BackgroundName = backgroundName,
-                    BackgroundValue = backgroundValue,
-                    DisplayOrder = displayOrder,
-                    IsActive = true
-                };
-
-                _context.PetBackgroundOptions.Add(option);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "寵物背景選項新增成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> UpdatePetBackgroundOption(int id, string backgroundName, string backgroundValue, int displayOrder, bool isActive)
-        {
-            try
-            {
-                var option = await _context.PetBackgroundOptions.FindAsync(id);
-                if (option == null)
-                {
-                    return Json(new { success = false, message = "找不到指定的背景選項" });
-                }
-
-                option.BackgroundName = backgroundName;
-                option.BackgroundValue = backgroundValue;
-                option.DisplayOrder = displayOrder;
-                option.IsActive = isActive;
-
-                _context.PetBackgroundOptions.Update(option);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "寵物背景選項更新成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DeletePetBackgroundOption(int id)
-        {
-            try
-            {
-                var option = await _context.PetBackgroundOptions.FindAsync(id);
-                if (option == null)
-                {
-                    return Json(new { success = false, message = "找不到指定的背景選項" });
-                }
-
-                _context.PetBackgroundOptions.Remove(option);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "寵物背景選項刪除成功" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // 新增：升級規則詳細設定
+        // 獲取升級規則
         [HttpGet]
         public async Task<IActionResult> GetPetLevelUpRules()
         {
             try
             {
-                var rules = await _context.PetLevelUpRules
-                    .OrderBy(r => r.Level)
-                    .ToListAsync();
-                
+                var rules = await _petRulesService.GetAllLevelUpRulesAsync();
                 return Json(new { success = true, data = rules });
             }
             catch (Exception ex)
@@ -641,6 +483,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 更新升級規則
         [HttpPost]
         public async Task<IActionResult> UpdatePetLevelUpRules(List<PetLevelUpRule> rules)
         {
@@ -651,13 +494,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return Json(new { success = false, message = "升級規則不能為空" });
                 }
 
-                // 清除現有規則
-                var existingRules = await _context.PetLevelUpRules.ToListAsync();
-                _context.PetLevelUpRules.RemoveRange(existingRules);
-
-                // 新增新規則
-                _context.PetLevelUpRules.AddRange(rules);
-                await _context.SaveChangesAsync();
+                // 更新每個規則
+                foreach (var rule in rules)
+                {
+                    await _petRulesService.UpdateLevelUpRuleAsync(rule);
+                }
 
                 return Json(new { success = true, message = "寵物升級規則更新成功" });
             }
@@ -667,16 +508,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        // 新增：互動狀態增益規則設定
+        // 獲取互動獎勵規則
         [HttpGet]
         public async Task<IActionResult> GetPetInteractionBonusRules()
         {
             try
             {
-                var rules = await _context.PetInteractionBonusRules
-                    .OrderBy(r => r.InteractionType)
-                    .ToListAsync();
-                
+                var rules = await _petRulesService.GetAllInteractionRulesAsync();
                 return Json(new { success = true, data = rules });
             }
             catch (Exception ex)
@@ -685,6 +523,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
+        // 更新互動獎勵規則
         [HttpPost]
         public async Task<IActionResult> UpdatePetInteractionBonusRules(List<PetInteractionBonusRule> rules)
         {
@@ -695,13 +534,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return Json(new { success = false, message = "互動狀態增益規則不能為空" });
                 }
 
-                // 清除現有規則
-                var existingRules = await _context.PetInteractionBonusRules.ToListAsync();
-                _context.PetInteractionBonusRules.RemoveRange(existingRules);
-
-                // 新增新規則
-                _context.PetInteractionBonusRules.AddRange(rules);
-                await _context.SaveChangesAsync();
+                // 更新每個規則
+                foreach (var rule in rules)
+                {
+                    await _petRulesService.UpdateInteractionRuleAsync(rule);
+                }
 
                 return Json(new { success = true, message = "寵物互動狀態增益規則更新成功" });
             }
@@ -711,9 +548,92 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        private bool PetExists(int id)
+        // 獲取換色成本
+        [HttpGet]
+        public async Task<IActionResult> GetPetColorChangeCost()
         {
-            return _context.Pet.Any(e => e.PetId == id);
+            try
+            {
+                // 使用預設等級1的成本
+                var cost = await _petRulesService.GetSkinColorCostForLevelAsync(1);
+                return Json(new { success = true, data = new { pointsRequired = cost } });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 更新換色成本
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetColorChangeCost(int pointsRequired)
+        {
+            try
+            {
+                if (pointsRequired < 0)
+                {
+                    return Json(new { success = false, message = "所需點數不能為負數" });
+                }
+
+                // 更新等級1的換色成本設定
+                var settings = await _petRulesService.GetAllSkinColorSettingsAsync();
+                var setting = settings.FirstOrDefault(s => s.Level == 1);
+
+                if (setting != null)
+                {
+                    setting.PointsCost = pointsRequired;
+                    await _petRulesService.UpdateSkinColorSettingAsync(setting);
+                }
+
+                return Json(new { success = true, message = "寵物換色所需點數設定成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 獲取換背景成本
+        [HttpGet]
+        public async Task<IActionResult> GetPetBackgroundChangeCost()
+        {
+            try
+            {
+                var cost = await _petRulesService.GetBackgroundCostForLevelAsync(1);
+                return Json(new { success = true, data = new { pointsRequired = cost } });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // 更新換背景成本
+        [HttpPost]
+        public async Task<IActionResult> UpdatePetBackgroundChangeCost(int pointsRequired)
+        {
+            try
+            {
+                if (pointsRequired < 0)
+                {
+                    return Json(new { success = false, message = "所需點數不能為負數" });
+                }
+
+                var settings = await _petRulesService.GetAllBackgroundSettingsAsync();
+                var setting = settings.FirstOrDefault(s => s.Level == 1);
+
+                if (setting != null)
+                {
+                    setting.PointsCost = pointsRequired;
+                    await _petRulesService.UpdateBackgroundSettingAsync(setting);
+                }
+
+                return Json(new { success = true, message = "寵物換背景所需點數設定成功" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }
