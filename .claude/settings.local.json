@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Select-String -Pattern \"^    public class.*Controller : Controller$\" -Context 2,0)"
+      "Bash(Select-Object Name)",
+      "Bash(Sort-Object Name)"
     ],
     "deny": [],
     "ask": []
