@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Data;
 
 namespace GameSpace.Areas.MiniGame.Controllers
@@ -9,66 +9,78 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(Policy = "AdminOnly")]
     public class AdminWalletController : MiniGameBaseController
     {
-        public AdminWalletController(GameSpacedatabaseContext context) : base(context)
+        private readonly IWalletService _walletService;
+        private readonly IUserService _userService;
+
+        public AdminWalletController(
+            GameSpacedatabaseContext context,
+            IWalletService walletService,
+            IUserService userService) : base(context)
         {
+            _walletService = walletService;
+            _userService = userService;
         }
 
         // GET: AdminWallet
-        public async Task<IActionResult> Index(string searchTerm = "", string transactionType = "", string sortBy = "date", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string searchTerm = "", string changeType = "", string sortBy = "date", int page = 1, int pageSize = 10)
         {
-            var query = _context.Wallet
-                .Include(w => w.Users)
-                .AsQueryable();
+            // 獲取所有歷史記錄
+            var allHistory = await _walletService.GetAllHistoryAsync(1, 10000); // 簡化：取大量數據
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(w => w.Users.User_name.Contains(searchTerm) || 
-                                       w.Users.User_account.Contains(searchTerm) || 
-                                       w.Description.Contains(searchTerm));
+                allHistory = allHistory.Where(w => w.Description.Contains(searchTerm));
             }
 
             // 交易類型篩選
-            if (!string.IsNullOrEmpty(transactionType))
+            if (!string.IsNullOrEmpty(changeType))
             {
-                query = query.Where(w => w.TransactionType == transactionType);
+                allHistory = allHistory.Where(w => w.ChangeType == changeType);
             }
 
             // 排序
-            query = sortBy switch
+            allHistory = sortBy switch
             {
-                "amount" => query.OrderByDescending(w => w.Amount),
-                "user" => query.OrderBy(w => w.Users.User_name),
-                "type" => query.OrderBy(w => w.TransactionType),
-                _ => query.OrderByDescending(w => w.TransactionDate)
+                "amount" => allHistory.OrderByDescending(w => Math.Abs(w.PointsChanged)),
+                "type" => allHistory.OrderBy(w => w.ChangeType),
+                _ => allHistory.OrderByDescending(w => w.ChangeTime)
             };
 
             // 分頁
-            var totalCount = await query.CountAsync();
-            var wallets = await query
+            var totalCount = allHistory.Count();
+            var pagedHistory = allHistory
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
             var viewModel = new AdminWalletIndexViewModel
             {
                 Wallets = new PagedResult<Wallet>
                 {
-                    Items = wallets,
+                    Items = pagedHistory.Select(h => new Wallet
+                    {
+                        WalletId = h.HistoryID,
+                        UserId = h.UserID,
+                        Amount = Math.Abs(h.PointsChanged),
+                        TransactionType = h.PointsChanged > 0 ? "earn" : "spend",
+                        TransactionDate = h.ChangeTime,
+                        Description = h.Description
+                    }).ToList(),
                     TotalCount = totalCount,
                     PageNumber = page,
                     PageSize = pageSize
                 }
             };
 
-            // 設定 ViewBag 用於搜尋和篩選
+            // 統計數據
             ViewBag.SearchTerm = searchTerm;
-            ViewBag.TransactionType = transactionType;
+            ViewBag.TransactionType = changeType;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalTransactions = totalCount;
-            ViewBag.TotalEarned = await _context.Wallet.Where(w => w.TransactionType == "earn").SumAsync(w => w.Amount);
-            ViewBag.TotalSpent = await _context.Wallet.Where(w => w.TransactionType == "spend").SumAsync(w => w.Amount);
-            ViewBag.TotalUsers = await _context.Users.CountAsync();
+            ViewBag.TotalEarned = allHistory.Where(h => h.PointsChanged > 0).Sum(h => h.PointsChanged);
+            ViewBag.TotalSpent = Math.Abs(allHistory.Where(h => h.PointsChanged < 0).Sum(h => h.PointsChanged));
+            ViewBag.TotalUsers = await _userService.GetTotalUsersCountAsync();
 
             return View(viewModel);
         }
@@ -81,14 +93,23 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var wallet = await _context.Wallet
-                .Include(w => w.Users)
-                .FirstOrDefaultAsync(m => m.WalletId == id);
+            var history = await _walletService.GetHistoryDetailAsync(id.Value);
 
-            if (wallet == null)
+            if (history == null)
             {
                 return NotFound();
             }
+
+            // 轉換為 Wallet 格式顯示
+            var wallet = new Wallet
+            {
+                WalletId = history.HistoryID,
+                UserId = history.UserID,
+                Amount = Math.Abs(history.PointsChanged),
+                TransactionType = history.PointsChanged > 0 ? "earn" : "spend",
+                TransactionDate = history.ChangeTime,
+                Description = history.Description
+            };
 
             return View(wallet);
         }
@@ -101,21 +122,19 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId.Value);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var currentPoints = await _context.Wallet
-                .Where(w => w.UserId == userId)
-                .SumAsync(w => w.TransactionType == "earn" ? w.Amount : -w.Amount);
+            var summary = await _walletService.GetPointsSummaryAsync(userId.Value);
 
             var model = new AdminWalletTransactionViewModel
             {
                 UserId = user.User_Id,
-                UserName = user.User_name,
-                CurrentPoints = currentPoints
+                UserName = user.User_Name,
+                CurrentPoints = summary["CurrentPoints"]
             };
 
             return View(model);
@@ -128,32 +147,42 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                var wallet = new Wallet
+                bool result;
+                if (model.TransactionType == "earn")
                 {
-                    UserId = model.UserId,
-                    Amount = model.TransactionAmount,
-                    TransactionType = model.TransactionType,
-                    TransactionDate = DateTime.Now,
-                    Description = model.Description
-                };
+                    result = await _walletService.AddPointsAsync(
+                        model.UserId,
+                        model.TransactionAmount,
+                        model.Description
+                    );
+                }
+                else
+                {
+                    result = await _walletService.DeductPointsAsync(
+                        model.UserId,
+                        model.TransactionAmount,
+                        model.Description
+                    );
+                }
 
-                _context.Add(wallet);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "點數交易成功";
-                return RedirectToAction(nameof(Index));
+                if (result)
+                {
+                    TempData["SuccessMessage"] = "點數交易成功";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    ModelState.AddModelError("", "交易失敗（點數不足或其他錯誤）");
+                }
             }
 
             // 重新載入用戶資訊
-            var user = await _context.Users.FindAsync(model.UserId);
+            var user = await _userService.GetUserByIdAsync(model.UserId);
             if (user != null)
             {
-                var currentPoints = await _context.Wallet
-                    .Where(w => w.UserId == model.UserId)
-                    .SumAsync(w => w.TransactionType == "earn" ? w.Amount : -w.Amount);
-
-                model.UserName = user.User_name;
-                model.CurrentPoints = currentPoints;
+                var summary = await _walletService.GetPointsSummaryAsync(model.UserId);
+                model.UserName = user.User_Name;
+                model.CurrentPoints = summary["CurrentPoints"];
             }
 
             return View(model);
@@ -167,21 +196,28 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId.Value);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var wallets = await _context.Wallet
-                .Where(w => w.UserId == userId)
-                .OrderByDescending(w => w.TransactionDate)
-                .ToListAsync();
+            var walletHistory = await _walletService.GetWalletHistoryAsync(userId.Value, 1, 100);
+            var summary = await _walletService.GetPointsSummaryAsync(userId.Value);
 
-            var currentPoints = wallets.Sum(w => w.TransactionType == "earn" ? w.Amount : -w.Amount);
+            // 轉換為 Wallet 格式
+            var wallets = walletHistory.Select(h => new Wallet
+            {
+                WalletId = h.HistoryID,
+                UserId = h.UserID,
+                Amount = Math.Abs(h.PointsChanged),
+                TransactionType = h.PointsChanged > 0 ? "earn" : "spend",
+                TransactionDate = h.ChangeTime,
+                Description = h.Description
+            }).ToList();
 
             ViewBag.User = user;
-            ViewBag.CurrentPoints = currentPoints;
+            ViewBag.CurrentPoints = summary["CurrentPoints"];
 
             return View(wallets);
         }
@@ -190,23 +226,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserPoints(int userId)
         {
-            var currentPoints = await _context.Wallet
-                .Where(w => w.UserId == userId)
-                .SumAsync(w => w.TransactionType == "earn" ? w.Amount : -w.Amount);
-
-            var earnedPoints = await _context.Wallet
-                .Where(w => w.UserId == userId && w.TransactionType == "earn")
-                .SumAsync(w => w.Amount);
-
-            var spentPoints = await _context.Wallet
-                .Where(w => w.UserId == userId && w.TransactionType == "spend")
-                .SumAsync(w => w.Amount);
+            var summary = await _walletService.GetPointsSummaryAsync(userId);
 
             return Json(new
             {
-                currentPoints,
-                earnedPoints,
-                spentPoints
+                currentPoints = summary["CurrentPoints"],
+                earnedPoints = summary["TotalEarned"],
+                spentPoints = summary["TotalSpent"]
             });
         }
 
@@ -214,20 +240,21 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPointsChartData(int days = 30)
         {
-            var endDate = DateTime.Today;
+            var endDate = DateTime.UtcNow.Date;
             var startDate = endDate.AddDays(-days);
+
+            var allHistory = await _walletService.GetAllHistoryAsync(1, 10000);
+            var historyInRange = allHistory.Where(h => h.ChangeTime.Date >= startDate && h.ChangeTime.Date <= endDate);
 
             var data = new List<object>();
 
             for (int i = 0; i < days; i++)
             {
                 var date = startDate.AddDays(i);
-                var earned = await _context.Wallet
-                    .Where(w => w.TransactionDate.Date == date && w.TransactionType == "earn")
-                    .SumAsync(w => w.Amount);
-                var spent = await _context.Wallet
-                    .Where(w => w.TransactionDate.Date == date && w.TransactionType == "spend")
-                    .SumAsync(w => w.Amount);
+                var dayHistory = historyInRange.Where(h => h.ChangeTime.Date == date);
+
+                var earned = dayHistory.Where(h => h.PointsChanged > 0).Sum(h => h.PointsChanged);
+                var spent = Math.Abs(dayHistory.Where(h => h.PointsChanged < 0).Sum(h => h.PointsChanged));
 
                 data.Add(new
                 {
@@ -245,15 +272,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTransactionTypeStats()
         {
-            var stats = await _context.Wallet
-                .GroupBy(w => w.TransactionType)
+            var allHistory = await _walletService.GetAllHistoryAsync(1, 10000);
+
+            var stats = allHistory
+                .GroupBy(h => h.ChangeType)
                 .Select(g => new
                 {
                     type = g.Key,
                     count = g.Count(),
-                    totalAmount = g.Sum(w => w.Amount)
+                    totalAmount = Math.Abs(g.Sum(h => h.PointsChanged))
                 })
-                .ToListAsync();
+                .ToList();
 
             return Json(stats);
         }
@@ -262,21 +291,27 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPointsLeaderboard(int top = 10)
         {
-            var leaderboard = await _context.Users
-                .Select(u => new
-                {
-                    userId = u.User_Id,
-                    userName = u.User_name,
-                    userAccount = u.User_account,
-                    currentPoints = _context.Wallet
-                        .Where(w => w.UserId == u.User_Id)
-                        .Sum(w => w.TransactionType == "earn" ? w.Amount : -w.Amount)
-                })
-                .OrderByDescending(u => u.currentPoints)
-                .Take(top)
-                .ToListAsync();
+            var users = await _userService.GetAllUsersAsync(1, 1000);
+            var leaderboard = new List<object>();
 
-            return Json(leaderboard);
+            foreach (var user in users.Take(top * 2)) // 取多一點以防有些用戶沒有錢包
+            {
+                var summary = await _walletService.GetPointsSummaryAsync(user.User_Id);
+                leaderboard.Add(new
+                {
+                    userId = user.User_Id,
+                    userName = user.User_Name,
+                    userAccount = user.User_Account,
+                    currentPoints = summary["CurrentPoints"]
+                });
+            }
+
+            var result = leaderboard
+                .OrderByDescending(u => ((dynamic)u).currentPoints)
+                .Take(top)
+                .ToList();
+
+            return Json(result);
         }
     }
 }
