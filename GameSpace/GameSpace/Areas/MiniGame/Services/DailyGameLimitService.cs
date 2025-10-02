@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +10,10 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class DailyGameLimitService : IDailyGameLimitService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<DailyGameLimitService> _logger;
 
-        public DailyGameLimitService(MiniGameDbContext context, ILogger<DailyGameLimitService> logger)
+        public DailyGameLimitService(GameSpacedatabaseContext context, ILogger<DailyGameLimitService> logger)
         {
             _context = context;
             _logger = logger;

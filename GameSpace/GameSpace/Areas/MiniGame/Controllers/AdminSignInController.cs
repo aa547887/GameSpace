@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -13,7 +14,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         private readonly ISignInService _signInService;
         private readonly IUserService _userService;
 
-        public AdminSignInController(ISignInService signInService, IUserService userService)
+        public AdminSignInController(GameSpacedatabaseContext context, ISignInService signInService, IUserService userService) : base(context)
         {
             _signInService = signInService;
             _userService = userService;
@@ -291,5 +292,306 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var rules = await _signInService.GetSignInRewardRulesAsync();
             return Json(new { success = true, data = rules });
         }
+
+        #region Statistics and Reports
+
+        // GET: AdminSignIn/Statistics
+        public async Task<IActionResult> Statistics(DateTime? startDate, DateTime? endDate)
+        {
+            // 設定預設日期範圍（最近30天）
+            startDate ??= DateTime.Today.AddDays(-30);
+            endDate ??= DateTime.Today;
+
+            // 取得統計數據
+            var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
+            var signInsInRange = allSignIns.Where(s => s.SignInTime.Date >= startDate.Value.Date && s.SignInTime.Date <= endDate.Value.Date).ToList();
+
+            // 基本統計
+            var stats = new
+            {
+                TotalSignIns = signInsInRange.Count,
+                UniqueUsers = signInsInRange.Select(s => s.UserID).Distinct().Count(),
+                TotalPointsGained = signInsInRange.Sum(s => s.PointsGained),
+                AveragePointsPerSignIn = signInsInRange.Any() ? signInsInRange.Average(s => s.PointsGained) : 0,
+                MaxConsecutiveDays = signInsInRange.Any() ? signInsInRange.Max(s => s.ConsecutiveDays) : 0,
+                AverageConsecutiveDays = signInsInRange.Any() ? signInsInRange.Average(s => s.ConsecutiveDays) : 0
+            };
+
+            // 每日簽到趨勢
+            var dailyTrend = signInsInRange
+                .GroupBy(s => s.SignInTime.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Count = g.Count(),
+                    UniqueUsers = g.Select(s => s.UserID).Distinct().Count(),
+                    TotalPoints = g.Sum(s => s.PointsGained)
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+
+            // 星期分佈
+            var weekdayDistribution = signInsInRange
+                .GroupBy(s => s.SignInTime.DayOfWeek)
+                .Select(g => new
+                {
+                    DayOfWeek = g.Key.ToString(),
+                    Count = g.Count()
+                })
+                .OrderBy(d => (int)Enum.Parse<DayOfWeek>(d.DayOfWeek))
+                .ToList();
+
+            // 時段分佈（按小時）
+            var hourlyDistribution = signInsInRange
+                .GroupBy(s => s.SignInTime.Hour)
+                .Select(g => new
+                {
+                    Hour = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(h => h.Hour)
+                .ToList();
+
+            // 連續簽到天數分佈
+            var consecutiveDaysDistribution = signInsInRange
+                .GroupBy(s => s.ConsecutiveDays)
+                .Select(g => new
+                {
+                    ConsecutiveDays = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(c => c.ConsecutiveDays)
+                .ToList();
+
+            // 獎勵點數分佈
+            var pointsDistribution = signInsInRange
+                .GroupBy(s => s.PointsGained / 10 * 10) // 按10點分組
+                .Select(g => new
+                {
+                    PointsRange = $"{g.Key}-{g.Key + 9}",
+                    Count = g.Count()
+                })
+                .OrderBy(p => p.PointsRange)
+                .ToList();
+
+            ViewBag.StartDate = startDate.Value;
+            ViewBag.EndDate = endDate.Value;
+            ViewBag.Stats = stats;
+            ViewBag.DailyTrend = dailyTrend;
+            ViewBag.WeekdayDistribution = weekdayDistribution;
+            ViewBag.HourlyDistribution = hourlyDistribution;
+            ViewBag.ConsecutiveDaysDistribution = consecutiveDaysDistribution;
+            ViewBag.PointsDistribution = pointsDistribution;
+
+            return View();
+        }
+
+        // GET: AdminSignIn/UserStatistics
+        public async Task<IActionResult> UserStatistics(int? userId, int page = 1, int pageSize = 20)
+        {
+            if (userId.HasValue)
+            {
+                // 顯示特定用戶的簽到統計
+                var user = await _userService.GetUserByIdAsync(userId.Value);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                var userSignIns = await _signInService.GetSignInHistoryAsync(userId.Value, 1, 1000);
+                var userStats = await _signInService.GetUserSignInStatisticsAsync(userId.Value);
+
+                ViewBag.User = user;
+                ViewBag.UserSignIns = userSignIns;
+                ViewBag.UserStats = userStats;
+
+                return View("UserStatisticsDetail");
+            }
+            else
+            {
+                // 顯示所有用戶的簽到統計列表
+                var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
+
+                var userStats = allSignIns
+                    .GroupBy(s => new { s.UserID, s.Users })
+                    .Select(g => new
+                    {
+                        UserId = g.Key.UserID,
+                        User = g.Key.Users,
+                        TotalSignIns = g.Count(),
+                        TotalPoints = g.Sum(s => s.PointsGained),
+                        MaxConsecutive = g.Max(s => s.ConsecutiveDays),
+                        LastSignIn = g.Max(s => s.SignInTime),
+                        AveragePoints = g.Average(s => s.PointsGained)
+                    })
+                    .OrderByDescending(u => u.TotalSignIns)
+                    .ToList();
+
+                var totalCount = userStats.Count;
+                var pagedStats = userStats
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                ViewBag.UserStats = pagedStats;
+                ViewBag.TotalCount = totalCount;
+                ViewBag.PageNumber = page;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+                return View();
+            }
+        }
+
+        // GET: AdminSignIn/MonthlyReport
+        public async Task<IActionResult> MonthlyReport(int? year, int? month)
+        {
+            year ??= DateTime.Today.Year;
+            month ??= DateTime.Today.Month;
+
+            var startDate = new DateTime(year.Value, month.Value, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
+            var monthlySignIns = allSignIns
+                .Where(s => s.SignInTime >= startDate && s.SignInTime <= endDate)
+                .ToList();
+
+            // 每日統計
+            var dailyStats = new List<object>();
+            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+            {
+                var daySignIns = monthlySignIns.Where(s => s.SignInTime.Date == date).ToList();
+                dailyStats.Add(new
+                {
+                    Date = date,
+                    DayOfWeek = date.DayOfWeek.ToString(),
+                    TotalSignIns = daySignIns.Count,
+                    UniqueUsers = daySignIns.Select(s => s.UserID).Distinct().Count(),
+                    TotalPoints = daySignIns.Sum(s => s.PointsGained)
+                });
+            }
+
+            // 月度總結
+            var monthlySummary = new
+            {
+                Year = year.Value,
+                Month = month.Value,
+                TotalSignIns = monthlySignIns.Count,
+                UniqueUsers = monthlySignIns.Select(s => s.UserID).Distinct().Count(),
+                TotalPoints = monthlySignIns.Sum(s => s.PointsGained),
+                AverageSignInsPerDay = monthlySignIns.Count / (double)DateTime.DaysInMonth(year.Value, month.Value),
+                PeakDay = dailyStats.OrderByDescending(d => ((dynamic)d).TotalSignIns).FirstOrDefault()
+            };
+
+            ViewBag.Year = year.Value;
+            ViewBag.Month = month.Value;
+            ViewBag.DailyStats = dailyStats;
+            ViewBag.MonthlySummary = monthlySummary;
+
+            return View();
+        }
+
+        // GET: AdminSignIn/ExportReport
+        public async Task<IActionResult> ExportReport(DateTime? startDate, DateTime? endDate, string format = "csv")
+        {
+            startDate ??= DateTime.Today.AddDays(-30);
+            endDate ??= DateTime.Today;
+
+            var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
+            var signInsInRange = allSignIns
+                .Where(s => s.SignInTime.Date >= startDate.Value.Date && s.SignInTime.Date <= endDate.Value.Date)
+                .OrderByDescending(s => s.SignInTime)
+                .ToList();
+
+            if (format.ToLower() == "csv")
+            {
+                var csv = new System.Text.StringBuilder();
+                csv.AppendLine("簽到ID,用戶ID,用戶名稱,簽到時間,獲得點數,連續天數,經驗值,優惠券");
+
+                foreach (var signIn in signInsInRange)
+                {
+                    csv.AppendLine($"{signIn.LogID},{signIn.UserID},{signIn.Users?.User_Name},{signIn.SignInTime:yyyy-MM-dd HH:mm:ss},{signIn.PointsGained},{signIn.ConsecutiveDays},{signIn.ExpGained},{signIn.CouponGained}");
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+                return File(bytes, "text/csv", $"SignInReport_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv");
+            }
+            else
+            {
+                // JSON format
+                var jsonData = signInsInRange.Select(s => new
+                {
+                    signInId = s.LogID,
+                    userId = s.UserID,
+                    userName = s.Users?.User_Name,
+                    signInTime = s.SignInTime,
+                    pointsGained = s.PointsGained,
+                    consecutiveDays = s.ConsecutiveDays,
+                    expGained = s.ExpGained,
+                    couponGained = s.CouponGained
+                });
+
+                return Json(jsonData);
+            }
+        }
+
+        // GET: AdminSignIn/ComparisonReport
+        public async Task<IActionResult> ComparisonReport(DateTime? period1Start, DateTime? period1End, DateTime? period2Start, DateTime? period2End)
+        {
+            // 預設比較最近兩個月
+            period1End ??= DateTime.Today;
+            period1Start ??= period1End.Value.AddDays(-30);
+            period2End ??= period1Start.Value.AddDays(-1);
+            period2Start ??= period2End.Value.AddDays(-30);
+
+            var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
+
+            var period1SignIns = allSignIns.Where(s => s.SignInTime.Date >= period1Start.Value.Date && s.SignInTime.Date <= period1End.Value.Date).ToList();
+            var period2SignIns = allSignIns.Where(s => s.SignInTime.Date >= period2Start.Value.Date && s.SignInTime.Date <= period2End.Value.Date).ToList();
+
+            var comparison = new
+            {
+                Period1 = new
+                {
+                    StartDate = period1Start.Value,
+                    EndDate = period1End.Value,
+                    TotalSignIns = period1SignIns.Count,
+                    UniqueUsers = period1SignIns.Select(s => s.UserID).Distinct().Count(),
+                    TotalPoints = period1SignIns.Sum(s => s.PointsGained),
+                    AveragePointsPerSignIn = period1SignIns.Any() ? period1SignIns.Average(s => s.PointsGained) : 0
+                },
+                Period2 = new
+                {
+                    StartDate = period2Start.Value,
+                    EndDate = period2End.Value,
+                    TotalSignIns = period2SignIns.Count,
+                    UniqueUsers = period2SignIns.Select(s => s.UserID).Distinct().Count(),
+                    TotalPoints = period2SignIns.Sum(s => s.PointsGained),
+                    AveragePointsPerSignIn = period2SignIns.Any() ? period2SignIns.Average(s => s.PointsGained) : 0
+                }
+            };
+
+            // 計算成長率
+            var growth = new
+            {
+                SignInsGrowth = comparison.Period2.TotalSignIns > 0
+                    ? ((comparison.Period1.TotalSignIns - comparison.Period2.TotalSignIns) / (double)comparison.Period2.TotalSignIns * 100)
+                    : 0,
+                UsersGrowth = comparison.Period2.UniqueUsers > 0
+                    ? ((comparison.Period1.UniqueUsers - comparison.Period2.UniqueUsers) / (double)comparison.Period2.UniqueUsers * 100)
+                    : 0,
+                PointsGrowth = comparison.Period2.TotalPoints > 0
+                    ? ((comparison.Period1.TotalPoints - comparison.Period2.TotalPoints) / (double)comparison.Period2.TotalPoints * 100)
+                    : 0
+            };
+
+            ViewBag.Comparison = comparison;
+            ViewBag.Growth = growth;
+
+            return View();
+        }
+
+        #endregion
     }
 }

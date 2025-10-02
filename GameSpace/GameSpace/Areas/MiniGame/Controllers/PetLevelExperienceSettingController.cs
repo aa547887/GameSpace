@@ -1,15 +1,19 @@
 using GameSpace.Areas.MiniGame.Models.Settings;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    public class PetLevelExperienceSettingController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PetLevelExperienceSettingController : MiniGameBaseController
     {
         private readonly IPetLevelExperienceSettingService _service;
-        
-        public PetLevelExperienceSettingController(IPetLevelExperienceSettingService service)
+
+        public PetLevelExperienceSettingController(GameSpacedatabaseContext context, IPetLevelExperienceSettingService service) : base(context)
         {
             _service = service;
         }

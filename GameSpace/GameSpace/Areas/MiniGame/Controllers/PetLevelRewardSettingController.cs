@@ -1,20 +1,23 @@
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize]
-    public class PetLevelRewardSettingController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PetLevelRewardSettingController : MiniGameBaseController
     {
         private readonly IPetLevelRewardSettingService _service;
         private readonly ILogger<PetLevelRewardSettingController> _logger;
 
         public PetLevelRewardSettingController(
+            GameSpacedatabaseContext context,
             IPetLevelRewardSettingService service,
-            ILogger<PetLevelRewardSettingController> logger)
+            ILogger<PetLevelRewardSettingController> logger) : base(context)
         {
             _service = service;
             _logger = logger;

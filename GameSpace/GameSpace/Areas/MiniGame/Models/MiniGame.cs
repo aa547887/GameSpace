@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -89,7 +90,7 @@ namespace GameSpace.Areas.MiniGame.Models
 
         // Navigation properties
         [ForeignKey("UserID")]
-        public virtual Users? Users { get; set; }
+        public virtual User? Users { get; set; }
 
         [ForeignKey("PetID")]
         public virtual Pet? Pet { get; set; }

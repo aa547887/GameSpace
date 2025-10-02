@@ -87,7 +87,7 @@ namespace GameSpace.Areas.MiniGame.Models
 
         // Navigation properties
         [ForeignKey("UserID")]
-        public virtual Users? Users { get; set; }
+        public virtual User? Users { get; set; }
 
         public virtual ICollection<MiniGame>? MiniGames { get; set; }
     }

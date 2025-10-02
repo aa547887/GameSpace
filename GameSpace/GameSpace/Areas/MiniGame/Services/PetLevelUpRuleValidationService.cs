@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -16,20 +16,12 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<List<string>> GetValidationErrorsAsync(PetLevelUpRuleEditViewModel model);
     }
 
-    public class ValidationResult
-    {
-        public bool IsValid { get; set; }
-        public List<string> Errors { get; set; } = new List<string>();
-        public List<string> Warnings { get; set; } = new List<string>();
-        public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
-    }
-
     public class PetLevelUpRuleValidationService : IPetLevelUpRuleValidationService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<PetLevelUpRuleValidationService> _logger;
 
-        public PetLevelUpRuleValidationService(MiniGameDbContext context, ILogger<PetLevelUpRuleValidationService> logger)
+        public PetLevelUpRuleValidationService(GameSpacedatabaseContext context, ILogger<PetLevelUpRuleValidationService> logger)
         {
             _context = context;
             _logger = logger;

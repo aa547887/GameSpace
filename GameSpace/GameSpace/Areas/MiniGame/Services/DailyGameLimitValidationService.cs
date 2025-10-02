@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +10,10 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class DailyGameLimitValidationService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<DailyGameLimitValidationService> _logger;
 
-        public DailyGameLimitValidationService(MiniGameDbContext context, ILogger<DailyGameLimitValidationService> logger)
+        public DailyGameLimitValidationService(GameSpacedatabaseContext context, ILogger<DailyGameLimitValidationService> logger)
         {
             _context = context;
             _logger = logger;
@@ -202,20 +202,6 @@ namespace GameSpace.Areas.MiniGame.Services
                 _logger.LogError(ex, "取得使用者 {UserId} 今日遊戲次數時發生錯誤", userId);
                 throw;
             }
-        }
-    }
-
-    /// <summary>
-    /// 驗證結果
-    /// </summary>
-    public class ValidationResult
-    {
-        public bool IsValid => !Errors.Any();
-        public List<string> Errors { get; } = new List<string>();
-
-        public void AddError(string error)
-        {
-            Errors.Add(error);
         }
     }
 

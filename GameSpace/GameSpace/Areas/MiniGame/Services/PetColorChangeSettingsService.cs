@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models.Settings;
 using Microsoft.EntityFrameworkCore;
 

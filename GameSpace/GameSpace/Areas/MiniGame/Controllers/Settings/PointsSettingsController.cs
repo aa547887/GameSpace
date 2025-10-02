@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models.Settings;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Controllers.Settings
 {
@@ -9,8 +11,8 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
     /// 點數設定管理控制器
     /// </summary>
     [Area("MiniGame")]
-    [Authorize]
-    public class PointsSettingsController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PointsSettingsController : MiniGameBaseController
     {
         private readonly IPetColorChangeSettingsService _colorSettingsService;
         private readonly IPetBackgroundChangeSettingsService _backgroundSettingsService;
@@ -18,10 +20,11 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
         private readonly ILogger<PointsSettingsController> _logger;
 
         public PointsSettingsController(
+            GameSpacedatabaseContext context,
             IPetColorChangeSettingsService colorSettingsService,
             IPetBackgroundChangeSettingsService backgroundSettingsService,
             IPointsSettingsStatisticsService statisticsService,
-            ILogger<PointsSettingsController> logger)
+            ILogger<PointsSettingsController> logger) : base(context)
         {
             _colorSettingsService = colorSettingsService;
             _backgroundSettingsService = backgroundSettingsService;

@@ -8,7 +8,12 @@
       "Bash(for:*)",
       "Bash(do sed -i 's/using GameSpace\\.Data;/using GameSpace.Models;/' \"$file\")",
       "Bash(done)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(Select-String -Pattern \"error|warning\" -Context 0,2)",
+      "Bash(do sed -i 's/using GameSpace\\.Areas\\.MiniGame\\.Data;/using GameSpace.Models;/' \"$file\")",
+      "Bash(cat:*)",
+      "Bash(Get-Content \"C:\\Users\\n2029\\Desktop\\GameSpace\\audit_remaining\")"
     ],
     "deny": [],
     "ask": []

@@ -1,17 +1,19 @@
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize]
-    public class PetSkinColorCostSettingController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PetSkinColorCostSettingController : MiniGameBaseController
     {
         private readonly IPetSkinColorCostSettingService _service;
 
-        public PetSkinColorCostSettingController(IPetSkinColorCostSettingService service)
+        public PetSkinColorCostSettingController(GameSpacedatabaseContext context, IPetSkinColorCostSettingService service) : base(context)
         {
             _service = service;
         }

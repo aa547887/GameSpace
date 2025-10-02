@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models.Settings;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Controllers.Settings
@@ -10,15 +12,16 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
     /// 寵物換背景點數設定控制器
     /// </summary>
     [Area("MiniGame")]
-    [Authorize]
-    public class PetBackgroundChangeSettingsController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PetBackgroundChangeSettingsController : MiniGameBaseController
     {
         private readonly IPetBackgroundChangeSettingsService _settingsService;
         private readonly ILogger<PetBackgroundChangeSettingsController> _logger;
 
         public PetBackgroundChangeSettingsController(
+            GameSpacedatabaseContext context,
             IPetBackgroundChangeSettingsService settingsService,
-            ILogger<PetBackgroundChangeSettingsController> logger)
+            ILogger<PetBackgroundChangeSettingsController> logger) : base(context)
         {
             _settingsService = settingsService;
             _logger = logger;

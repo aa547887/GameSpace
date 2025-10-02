@@ -1,5 +1,7 @@
 using GameSpace.Areas.MiniGame.Models.Settings;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +11,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
     /// 寵物換色點數設定控制器
     /// </summary>
     [Area("MiniGame")]
-    [Authorize]
-    public class PetColorChangeSettingsController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class PetColorChangeSettingsController : MiniGameBaseController
     {
         private readonly IPetColorChangeSettingsService _settingsService;
 
-        public PetColorChangeSettingsController(IPetColorChangeSettingsService settingsService)
+        public PetColorChangeSettingsController(GameSpacedatabaseContext context, IPetColorChangeSettingsService settingsService) : base(context)
         {
             _settingsService = settingsService;
         }

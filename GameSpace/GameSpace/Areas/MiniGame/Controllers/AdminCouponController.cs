@@ -230,5 +230,291 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             return _context.Coupon.Any(e => e.CouponId == id);
         }
+
+        #region CouponType Management
+
+        // GET: AdminCoupon/CouponTypes
+        public async Task<IActionResult> CouponTypes(string searchTerm = "", string discountType = "", string sortBy = "name", int page = 1, int pageSize = 10)
+        {
+            var query = _context.CouponType.AsQueryable();
+
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(ct => ct.Name.Contains(searchTerm) || ct.Description.Contains(searchTerm));
+            }
+
+            // 折扣類型篩選
+            if (!string.IsNullOrEmpty(discountType))
+            {
+                query = query.Where(ct => ct.DiscountType == discountType);
+            }
+
+            // 排序
+            query = sortBy switch
+            {
+                "points" => query.OrderBy(ct => ct.PointsCost),
+                "discount" => query.OrderByDescending(ct => ct.DiscountValue),
+                "validfrom" => query.OrderBy(ct => ct.ValidFrom),
+                _ => query.OrderBy(ct => ct.Name)
+            };
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var viewModel = new
+            {
+                CouponTypes = items,
+                TotalCount = totalCount,
+                PageNumber = page,
+                PageSize = pageSize,
+                SearchTerm = searchTerm,
+                DiscountType = discountType,
+                SortBy = sortBy
+            };
+
+            ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            ViewBag.CurrentPage = page;
+
+            return View(items);
+        }
+
+        // GET: AdminCoupon/CreateCouponType
+        public IActionResult CreateCouponType()
+        {
+            ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+            return View();
+        }
+
+        // POST: AdminCoupon/CreateCouponType
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCouponType([Bind("CouponTypeId,Name,DiscountType,DiscountValue,MinSpend,ValidFrom,ValidTo,PointsCost,Description")] CouponType couponType)
+        {
+            if (ModelState.IsValid)
+            {
+                // 驗證邏輯
+                if (couponType.ValidFrom >= couponType.ValidTo)
+                {
+                    ModelState.AddModelError("ValidFrom", "開始日期必須早於結束日期");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.DiscountType == "Percentage" && (couponType.DiscountValue < 0 || couponType.DiscountValue > 100))
+                {
+                    ModelState.AddModelError("DiscountValue", "百分比折扣必須在 0-100 之間");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.DiscountValue < 0)
+                {
+                    ModelState.AddModelError("DiscountValue", "折扣值不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.MinSpend < 0)
+                {
+                    ModelState.AddModelError("MinSpend", "最低消費金額不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.PointsCost < 0)
+                {
+                    ModelState.AddModelError("PointsCost", "所需點數不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                _context.Add(couponType);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "優惠券類型建立成功";
+                return RedirectToAction(nameof(CouponTypes));
+            }
+
+            ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+            return View(couponType);
+        }
+
+        // GET: AdminCoupon/EditCouponType/5
+        public async Task<IActionResult> EditCouponType(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var couponType = await _context.CouponType.FindAsync(id);
+            if (couponType == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+            return View(couponType);
+        }
+
+        // POST: AdminCoupon/EditCouponType/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCouponType(int id, [Bind("CouponTypeId,Name,DiscountType,DiscountValue,MinSpend,ValidFrom,ValidTo,PointsCost,Description")] CouponType couponType)
+        {
+            if (id != couponType.CouponTypeId)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                // 驗證邏輯
+                if (couponType.ValidFrom >= couponType.ValidTo)
+                {
+                    ModelState.AddModelError("ValidFrom", "開始日期必須早於結束日期");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.DiscountType == "Percentage" && (couponType.DiscountValue < 0 || couponType.DiscountValue > 100))
+                {
+                    ModelState.AddModelError("DiscountValue", "百分比折扣必須在 0-100 之間");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.DiscountValue < 0)
+                {
+                    ModelState.AddModelError("DiscountValue", "折扣值不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.MinSpend < 0)
+                {
+                    ModelState.AddModelError("MinSpend", "最低消費金額不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                if (couponType.PointsCost < 0)
+                {
+                    ModelState.AddModelError("PointsCost", "所需點數不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                try
+                {
+                    _context.Update(couponType);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "優惠券類型更新成功";
+                    return RedirectToAction(nameof(CouponTypes));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!CouponTypeExists(couponType.CouponTypeId))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+
+            ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+            return View(couponType);
+        }
+
+        // GET: AdminCoupon/DeleteCouponType/5
+        public async Task<IActionResult> DeleteCouponType(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var couponType = await _context.CouponType
+                .FirstOrDefaultAsync(m => m.CouponTypeId == id);
+
+            if (couponType == null)
+            {
+                return NotFound();
+            }
+
+            // 檢查是否有相關的優惠券
+            var relatedCouponsCount = await _context.Coupon.CountAsync(c => c.CouponTypeId == id);
+            ViewBag.RelatedCouponsCount = relatedCouponsCount;
+
+            return View(couponType);
+        }
+
+        // POST: AdminCoupon/DeleteCouponType/5
+        [HttpPost, ActionName("DeleteCouponType")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCouponTypeConfirmed(int id)
+        {
+            // 檢查是否有相關的優惠券
+            var relatedCouponsCount = await _context.Coupon.CountAsync(c => c.CouponTypeId == id);
+            if (relatedCouponsCount > 0)
+            {
+                TempData["ErrorMessage"] = $"無法刪除：此優惠券類型仍有 {relatedCouponsCount} 個相關優惠券";
+                return RedirectToAction(nameof(CouponTypes));
+            }
+
+            var couponType = await _context.CouponType.FindAsync(id);
+            if (couponType != null)
+            {
+                _context.CouponType.Remove(couponType);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "優惠券類型刪除成功";
+            }
+
+            return RedirectToAction(nameof(CouponTypes));
+        }
+
+        // GET: AdminCoupon/CouponTypeDetails/5
+        public async Task<IActionResult> CouponTypeDetails(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var couponType = await _context.CouponType
+                .FirstOrDefaultAsync(m => m.CouponTypeId == id);
+
+            if (couponType == null)
+            {
+                return NotFound();
+            }
+
+            // 取得使用此類型的優惠券統計
+            var relatedCoupons = await _context.Coupon
+                .Where(c => c.CouponTypeId == id)
+                .ToListAsync();
+
+            ViewBag.TotalCoupons = relatedCoupons.Count;
+            ViewBag.UsedCoupons = relatedCoupons.Count(c => c.IsUsed);
+            ViewBag.UnusedCoupons = relatedCoupons.Count(c => !c.IsUsed);
+
+            return View(couponType);
+        }
+
+        private bool CouponTypeExists(int id)
+        {
+            return _context.CouponType.Any(e => e.CouponTypeId == id);
+        }
+
+        #endregion
     }
 }

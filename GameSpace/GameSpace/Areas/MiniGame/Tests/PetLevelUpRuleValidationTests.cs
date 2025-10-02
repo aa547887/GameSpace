@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 
@@ -8,16 +8,16 @@ namespace GameSpace.Areas.MiniGame.Tests
 {
     public class PetLevelUpRuleValidationTests
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly PetLevelUpRuleValidationService _validationService;
 
         public PetLevelUpRuleValidationTests()
         {
-            var options = new DbContextOptionsBuilder<MiniGameDbContext>()
+            var options = new DbContextOptionsBuilder<GameSpacedatabaseContext>()
                 .UseInMemoryDatabase(databaseName: "TestDatabase")
                 .Options;
-            
-            _context = new MiniGameDbContext(options);
+
+            _context = new GameSpacedatabaseContext(options);
             
             var logger = new LoggerFactory().CreateLogger<PetLevelUpRuleValidationService>();
             _validationService = new PetLevelUpRuleValidationService(_context, logger);

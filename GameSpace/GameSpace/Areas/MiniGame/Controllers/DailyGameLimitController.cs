@@ -1,6 +1,8 @@
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,17 +12,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
     /// 每日遊戲次數限制設定控制器
     /// </summary>
     [Area("MiniGame")]
-    [Authorize]
-    public class DailyGameLimitController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class DailyGameLimitController : MiniGameBaseController
     {
         private readonly IDailyGameLimitService _service;
         private readonly DailyGameLimitValidationService _validationService;
         private readonly ILogger<DailyGameLimitController> _logger;
 
         public DailyGameLimitController(
+            GameSpacedatabaseContext context,
             IDailyGameLimitService service,
             DailyGameLimitValidationService validationService,
-            ILogger<DailyGameLimitController> logger)
+            ILogger<DailyGameLimitController> logger) : base(context)
         {
             _service = service;
             _validationService = validationService;

@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Data;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,72 +6,72 @@ namespace GameSpace.Areas.MiniGame.Services
 {
     public class EVoucherService : IEVoucherService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<EVoucherService> _logger;
 
-        public EVoucherService(MiniGameDbContext context, ILogger<EVoucherService> logger)
+        public EVoucherService(GameSpacedatabaseContext context, ILogger<EVoucherService> logger)
         {
             _context = context;
             _logger = logger;
         }
 
-        public async Task<IEnumerable<EVoucher>> GetAllEVouchersAsync()
+        public async Task<IEnumerable<Evoucher>> GetAllEVouchersAsync()
         {
             try
             {
-                return await _context.EVouchers
-                    .Include(e => e.EVoucherType)
+                return await _context.Evouchers
+                    .Include(e => e.EvoucherType)
                     .OrderByDescending(e => e.AcquiredTime)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "取得所有電子禮券時發生錯誤");
-                return new List<EVoucher>();
+                return new List<Evoucher>();
             }
         }
 
-        public async Task<IEnumerable<EVoucher>> GetEVouchersByUserIdAsync(int userId)
+        public async Task<IEnumerable<Evoucher>> GetEVouchersByUserIdAsync(int userId)
         {
             try
             {
-                return await _context.EVouchers
-                    .Include(e => e.EVoucherType)
-                    .Where(e => e.UserID == userId)
+                return await _context.Evouchers
+                    .Include(e => e.EvoucherType)
+                    .Where(e => e.UserId == userId)
                     .OrderByDescending(e => e.AcquiredTime)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "取得使用者 {UserId} 的電子禮券時發生錯誤", userId);
-                return new List<EVoucher>();
+                return new List<Evoucher>();
             }
         }
 
-        public async Task<IEnumerable<EVoucher>> GetUnusedEVouchersByUserIdAsync(int userId)
+        public async Task<IEnumerable<Evoucher>> GetUnusedEVouchersByUserIdAsync(int userId)
         {
             try
             {
-                return await _context.EVouchers
-                    .Include(e => e.EVoucherType)
-                    .Where(e => e.UserID == userId && !e.IsUsed)
+                return await _context.Evouchers
+                    .Include(e => e.EvoucherType)
+                    .Where(e => e.UserId == userId && !e.IsUsed)
                     .OrderByDescending(e => e.AcquiredTime)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "取得使用者 {UserId} 未使用的電子禮券時發生錯誤", userId);
-                return new List<EVoucher>();
+                return new List<Evoucher>();
             }
         }
 
-        public async Task<EVoucher?> GetEVoucherByIdAsync(int eVoucherId)
+        public async Task<Evoucher?> GetEVoucherByIdAsync(int eVoucherId)
         {
             try
             {
-                return await _context.EVouchers
-                    .Include(e => e.EVoucherType)
-                    .FirstOrDefaultAsync(e => e.EVoucherID == eVoucherId);
+                return await _context.Evouchers
+                    .Include(e => e.EvoucherType)
+                    .FirstOrDefaultAsync(e => e.EvoucherId == eVoucherId);
             }
             catch (Exception ex)
             {
@@ -80,13 +80,13 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<EVoucher?> GetEVoucherByCodeAsync(string eVoucherCode)
+        public async Task<Evoucher?> GetEVoucherByCodeAsync(string eVoucherCode)
         {
             try
             {
-                return await _context.EVouchers
-                    .Include(e => e.EVoucherType)
-                    .FirstOrDefaultAsync(e => e.EVoucherCode == eVoucherCode);
+                return await _context.Evouchers
+                    .Include(e => e.EvoucherType)
+                    .FirstOrDefaultAsync(e => e.EvoucherCode == eVoucherCode);
             }
             catch (Exception ex)
             {
@@ -95,13 +95,13 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> CreateEVoucherAsync(EVoucher eVoucher)
+        public async Task<bool> CreateEVoucherAsync(Evoucher eVoucher)
         {
             try
             {
-                _context.EVouchers.Add(eVoucher);
+                _context.Evouchers.Add(eVoucher);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("成功建立電子禮券 {EVoucherCode}", eVoucher.EVoucherCode);
+                _logger.LogInformation("成功建立電子禮券 {EVoucherCode}", eVoucher.EvoucherCode);
                 return true;
             }
             catch (Exception ex)
@@ -111,18 +111,18 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> UpdateEVoucherAsync(EVoucher eVoucher)
+        public async Task<bool> UpdateEVoucherAsync(Evoucher eVoucher)
         {
             try
             {
-                _context.EVouchers.Update(eVoucher);
+                _context.Evouchers.Update(eVoucher);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("成功更新電子禮券 {EVoucherId}", eVoucher.EVoucherID);
+                _logger.LogInformation("成功更新電子禮券 {EVoucherId}", eVoucher.EvoucherId);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "更新電子禮券 {EVoucherId} 時發生錯誤", eVoucher.EVoucherID);
+                _logger.LogError(ex, "更新電子禮券 {EVoucherId} 時發生錯誤", eVoucher.EvoucherId);
                 return false;
             }
         }
@@ -131,10 +131,10 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var eVoucher = await _context.EVouchers.FindAsync(eVoucherId);
+                var eVoucher = await _context.Evouchers.FindAsync(eVoucherId);
                 if (eVoucher == null) return false;
 
-                _context.EVouchers.Remove(eVoucher);
+                _context.Evouchers.Remove(eVoucher);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("成功刪除電子禮券 {EVoucherId}", eVoucherId);
                 return true;
@@ -150,7 +150,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var eVoucher = await _context.EVouchers.FindAsync(eVoucherId);
+                var eVoucher = await _context.Evouchers.FindAsync(eVoucherId);
                 if (eVoucher == null || eVoucher.IsUsed) return false;
 
                 eVoucher.IsUsed = true;
@@ -171,11 +171,11 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var eVoucherType = await _context.EVoucherTypes.FindAsync(eVoucherTypeId);
+                var eVoucherType = await _context.EvoucherTypes.FindAsync(eVoucherTypeId);
                 if (eVoucherType == null) return false;
 
                 var eVoucherCode = GenerateEVoucherCode(eVoucherType.Name);
-                var eVoucher = new EVoucher
+                var eVoucher = new Evoucher
                 {
                     EVoucherCode = eVoucherCode,
                     EVoucherTypeID = eVoucherTypeId,
@@ -184,7 +184,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     AcquiredTime = DateTime.Now
                 };
 
-                _context.EVouchers.Add(eVoucher);
+                _context.Evouchers.Add(eVoucher);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("成功發放電子禮券 {EVoucherCode} 給使用者 {UserId}", eVoucherCode, userId);
                 return true;
@@ -200,8 +200,8 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                return await _context.EVouchers
-                    .Where(e => e.UserID == userId && !e.IsUsed)
+                return await _context.Evouchers
+                    .Where(e => e.UserId == userId && !e.IsUsed)
                     .CountAsync();
             }
             catch (Exception ex)
@@ -211,26 +211,26 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<IEnumerable<EVoucherType>> GetAllEVoucherTypesAsync()
+        public async Task<IEnumerable<EvoucherType>> GetAllEVoucherTypesAsync()
         {
             try
             {
-                return await _context.EVoucherTypes
+                return await _context.EvoucherTypes
                     .OrderBy(et => et.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "取得所有電子禮券類型時發生錯誤");
-                return new List<EVoucherType>();
+                return new List<EvoucherType>();
             }
         }
 
-        public async Task<EVoucherType?> GetEVoucherTypeByIdAsync(int eVoucherTypeId)
+        public async Task<EvoucherType?> GetEVoucherTypeByIdAsync(int eVoucherTypeId)
         {
             try
             {
-                return await _context.EVoucherTypes.FindAsync(eVoucherTypeId);
+                return await _context.EvoucherTypes.FindAsync(eVoucherTypeId);
             }
             catch (Exception ex)
             {

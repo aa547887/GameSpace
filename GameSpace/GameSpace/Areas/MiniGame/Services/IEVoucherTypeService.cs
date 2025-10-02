@@ -1,32 +1,33 @@
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
     public interface IEVoucherTypeService
     {
-        // EVoucherType 基本 CRUD
-        Task<IEnumerable<EVoucherType>> GetAllEVoucherTypesAsync();
-        Task<EVoucherType?> GetEVoucherTypeByIdAsync(int evoucherTypeId);
-        Task<bool> CreateEVoucherTypeAsync(EVoucherType evoucherType);
-        Task<bool> UpdateEVoucherTypeAsync(EVoucherType evoucherType);
+        // EvoucherType 基本 CRUD
+        Task<IEnumerable<EvoucherType>> GetAllEVoucherTypesAsync();
+        Task<EvoucherType?> GetEVoucherTypeByIdAsync(int evoucherTypeId);
+        Task<bool> CreateEVoucherTypeAsync(EvoucherType evoucherType);
+        Task<bool> UpdateEVoucherTypeAsync(EvoucherType evoucherType);
         Task<bool> DeleteEVoucherTypeAsync(int evoucherTypeId);
 
-        // EVoucherType 狀態管理
+        // EvoucherType 狀態管理
         Task<bool> ActivateEVoucherTypeAsync(int evoucherTypeId);
         Task<bool> DeactivateEVoucherTypeAsync(int evoucherTypeId);
 
-        // EVoucherType 查詢
-        Task<IEnumerable<EVoucherType>> GetActiveEVoucherTypesAsync();
-        Task<IEnumerable<EVoucherType>> GetEVoucherTypesByValueRangeAsync(decimal minValue, decimal maxValue);
-        Task<IEnumerable<EVoucherType>> GetAvailableEVoucherTypesAsync();
+        // EvoucherType 查詢
+        Task<IEnumerable<EvoucherType>> GetActiveEVoucherTypesAsync();
+        Task<IEnumerable<EvoucherType>> GetEVoucherTypesByValueRangeAsync(decimal minValue, decimal maxValue);
+        Task<IEnumerable<EvoucherType>> GetAvailableEVoucherTypesAsync();
 
-        // EVoucherType 庫存管理
+        // EvoucherType 庫存管理
         Task<bool> IncreaseStockAsync(int evoucherTypeId, int amount);
         Task<bool> DecreaseStockAsync(int evoucherTypeId, int amount);
         Task<int> GetRemainingStockAsync(int evoucherTypeId);
         Task<bool> IsStockAvailableAsync(int evoucherTypeId);
 
-        // EVoucherType 統計
+        // EvoucherType 統計
         Task<int> GetTotalEVoucherTypesCountAsync();
         Task<int> GetActiveEVoucherTypesCountAsync();
         Task<Dictionary<string, int>> GetEVoucherTypesDistributionAsync();
