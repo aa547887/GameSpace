@@ -185,6 +185,9 @@ namespace GameSpace
 				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
 				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
 				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
+				// MiniGame Area 專用政策
+				options.AddPolicy("AdminOnly", p => p.RequireAuthenticatedUser()
+					.AddAuthenticationSchemes("AdminCookie"));
 			});
 
 			// ========== 12) Anti-Forgery 設定 ==========
