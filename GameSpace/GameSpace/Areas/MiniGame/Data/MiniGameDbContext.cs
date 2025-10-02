@@ -79,12 +79,11 @@ namespace GameSpace.Areas.MiniGame.Data
             // 簽到統計配置
             modelBuilder.Entity<UserSignInStats>(entity =>
             {
-                entity.HasKey(s => s.LogID);
+                entity.HasKey(s => s.StatsID);
                 entity.Property(s => s.SignTime).HasDefaultValueSql("GETDATE()");
-                entity.Property(s => s.PointsGained).HasDefaultValue(0);
-                entity.Property(s => s.ExpGained).HasDefaultValue(0);
-                entity.Property(s => s.PointsGainedTime).HasDefaultValueSql("GETDATE()");
-                entity.Property(s => s.ExpGainedTime).HasDefaultValueSql("GETDATE()");
+                entity.Property(s => s.PointsEarned).HasDefaultValue(0);
+                entity.Property(s => s.PetExpEarned).HasDefaultValue(0);
+                entity.Property(s => s.ConsecutiveDays).HasDefaultValue(1);
             });
 
             // 寵物成本設定表的配置

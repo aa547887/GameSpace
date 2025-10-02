@@ -15,7 +15,7 @@ namespace GameSpace.Areas.MiniGame.Models
 
         [Required]
         [StringLength(20)]
-        public string DiscountType { get; set; } = string.Empty;
+        public string DiscountType { get; set; } = string.Empty; // "Amount" or "Percent"
 
         [Required]
         [Column(TypeName = "decimal(10,2)")]
