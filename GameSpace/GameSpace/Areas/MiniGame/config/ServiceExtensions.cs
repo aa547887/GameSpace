@@ -35,9 +35,6 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊小遊戲服務
             services.AddScoped<IMiniGameService, MiniGameService>();
 
-            // 註冊小遊戲服務
-            services.AddScoped<IMiniGameService, MiniGameService>();
-
             // 註冊寵物選項管理服務
             services.AddScoped<IPetColorOptionService, PetColorOptionService>();
             services.AddScoped<IPetBackgroundOptionService, PetBackgroundOptionService>();

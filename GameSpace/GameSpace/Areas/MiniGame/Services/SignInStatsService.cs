@@ -1,282 +1,272 @@
-using GameSpace.Areas.MiniGame.Data;
 using GameSpace.Areas.MiniGame.Models;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
     public class SignInStatsService : ISignInStatsService
     {
-        private readonly MiniGameDbContext _context;
-        private readonly ILogger<SignInStatsService> _logger;
+        private readonly string _connectionString;
 
-        public SignInStatsService(MiniGameDbContext context, ILogger<SignInStatsService> logger)
+        public SignInStatsService(IConfiguration configuration)
         {
-            _context = context;
-            _logger = logger;
+            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         public async Task<IEnumerable<UserSignInStats>> GetAllSignInStatsAsync()
         {
-            try
+            var stats = new List<UserSignInStats>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var command = new SqlCommand("SELECT * FROM UserSignInStats ORDER BY SignTime DESC", connection);
+
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                return await _context.UserSignInStats
-                    .OrderByDescending(s => s.SignTime)
-                    .ToListAsync();
+                stats.Add(new UserSignInStats
+                {
+                    StatsID = reader.GetInt32("StatsID"),
+                    UserID = reader.GetInt32("UserID"),
+                    SignTime = reader.GetDateTime("SignTime"),
+                    PointsEarned = reader.GetInt32("PointsEarned"),
+                    PetExpEarned = reader.GetInt32("PetExpEarned"),
+                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
+                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得所有簽到統計時發生錯誤");
-                return new List<UserSignInStats>();
-            }
+            return stats;
         }
 
         public async Task<IEnumerable<UserSignInStats>> GetSignInStatsByUserIdAsync(int userId)
         {
-            try
+            var stats = new List<UserSignInStats>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var command = new SqlCommand(@"
+                SELECT * FROM UserSignInStats 
+                WHERE UserID = @UserId 
+                ORDER BY SignTime DESC", connection);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                return await _context.UserSignInStats
-                    .Where(s => s.UserID == userId)
-                    .OrderByDescending(s => s.SignTime)
-                    .ToListAsync();
+                stats.Add(new UserSignInStats
+                {
+                    StatsID = reader.GetInt32("StatsID"),
+                    UserID = reader.GetInt32("UserID"),
+                    SignTime = reader.GetDateTime("SignTime"),
+                    PointsEarned = reader.GetInt32("PointsEarned"),
+                    PetExpEarned = reader.GetInt32("PetExpEarned"),
+                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
+                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得使用者 {UserId} 的簽到統計時發生錯誤", userId);
-                return new List<UserSignInStats>();
-            }
+            return stats;
         }
 
         public async Task<UserSignInStats?> GetSignInStatsByIdAsync(int statsId)
         {
-            try
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var command = new SqlCommand("SELECT * FROM UserSignInStats WHERE StatsID = @StatsId", connection);
+            command.Parameters.AddWithValue("@StatsId", statsId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
             {
-                return await _context.UserSignInStats
-                    .FirstOrDefaultAsync(s => s.StatsID == statsId);
+                return new UserSignInStats
+                {
+                    StatsID = reader.GetInt32("StatsID"),
+                    UserID = reader.GetInt32("UserID"),
+                    SignTime = reader.GetDateTime("SignTime"),
+                    PointsEarned = reader.GetInt32("PointsEarned"),
+                    PetExpEarned = reader.GetInt32("PetExpEarned"),
+                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
+                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                };
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得簽到統計 {StatsId} 時發生錯誤", statsId);
-                return null;
-            }
+            return null;
         }
 
-        public async Task<UserSignInStats?> GetTodaySignInAsync(int userId)
+        public async Task<bool> CreateSignInStatsAsync(UserSignInStats stats)
         {
-            try
-            {
-                var today = DateTime.Today;
-                var tomorrow = today.AddDays(1);
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
 
-                return await _context.UserSignInStats
-                    .Where(s => s.UserID == userId && s.SignTime >= today && s.SignTime < tomorrow)
-                    .FirstOrDefaultAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得使用者 {UserId} 今日簽到記錄時發生錯誤", userId);
-                return null;
-            }
+            var command = new SqlCommand(@"
+                INSERT INTO UserSignInStats (UserID, SignTime, PointsEarned, PetExpEarned, CouponEarned, ConsecutiveDays)
+                VALUES (@UserID, @SignTime, @PointsEarned, @PetExpEarned, @CouponEarned, @ConsecutiveDays)", connection);
+
+            command.Parameters.AddWithValue("@UserID", stats.UserID);
+            command.Parameters.AddWithValue("@SignTime", stats.SignTime);
+            command.Parameters.AddWithValue("@PointsEarned", stats.PointsEarned);
+            command.Parameters.AddWithValue("@PetExpEarned", stats.PetExpEarned);
+            command.Parameters.AddWithValue("@CouponEarned", (object?)stats.CouponEarned ?? DBNull.Value);
+            command.Parameters.AddWithValue("@ConsecutiveDays", stats.ConsecutiveDays);
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
         }
 
-        public async Task<UserSignInStats?> GetLatestSignInAsync(int userId)
+        public async Task<bool> UpdateSignInStatsAsync(UserSignInStats stats)
         {
-            try
-            {
-                return await _context.UserSignInStats
-                    .Where(s => s.UserID == userId)
-                    .OrderByDescending(s => s.SignTime)
-                    .FirstOrDefaultAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得使用者 {UserId} 最新簽到記錄時發生錯誤", userId);
-                return null;
-            }
-        }
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
 
-        public async Task<bool> CreateSignInStatsAsync(UserSignInStats signInStats)
-        {
-            try
-            {
-                _context.UserSignInStats.Add(signInStats);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("成功建立簽到統計記錄，使用者 {UserId}", signInStats.UserID);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "建立簽到統計記錄時發生錯誤");
-                return false;
-            }
-        }
+            var command = new SqlCommand(@"
+                UPDATE UserSignInStats SET 
+                    UserID = @UserID,
+                    SignTime = @SignTime,
+                    PointsEarned = @PointsEarned,
+                    PetExpEarned = @PetExpEarned,
+                    CouponEarned = @CouponEarned,
+                    ConsecutiveDays = @ConsecutiveDays
+                WHERE StatsID = @StatsID", connection);
 
-        public async Task<bool> UpdateSignInStatsAsync(UserSignInStats signInStats)
-        {
-            try
-            {
-                _context.UserSignInStats.Update(signInStats);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("成功更新簽到統計記錄 {StatsId}", signInStats.StatsID);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "更新簽到統計記錄 {StatsId} 時發生錯誤", signInStats.StatsID);
-                return false;
-            }
+            command.Parameters.AddWithValue("@StatsID", stats.StatsID);
+            command.Parameters.AddWithValue("@UserID", stats.UserID);
+            command.Parameters.AddWithValue("@SignTime", stats.SignTime);
+            command.Parameters.AddWithValue("@PointsEarned", stats.PointsEarned);
+            command.Parameters.AddWithValue("@PetExpEarned", stats.PetExpEarned);
+            command.Parameters.AddWithValue("@CouponEarned", (object?)stats.CouponEarned ?? DBNull.Value);
+            command.Parameters.AddWithValue("@ConsecutiveDays", stats.ConsecutiveDays);
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
         }
 
         public async Task<bool> DeleteSignInStatsAsync(int statsId)
         {
-            try
-            {
-                var signInStats = await _context.UserSignInStats.FindAsync(statsId);
-                if (signInStats == null) return false;
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
 
-                _context.UserSignInStats.Remove(signInStats);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("成功刪除簽到統計記錄 {StatsId}", statsId);
-                return true;
-            }
-            catch (Exception ex)
+            var command = new SqlCommand("DELETE FROM UserSignInStats WHERE StatsID = @StatsId", connection);
+            command.Parameters.AddWithValue("@StatsId", statsId);
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
+        public async Task<UserSignInStats?> GetTodaySignInAsync(int userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var command = new SqlCommand(@"
+                SELECT TOP 1 * FROM UserSignInStats 
+                WHERE UserID = @UserId 
+                AND CAST(SignTime AS DATE) = CAST(GETDATE() AS DATE)
+                ORDER BY SignTime DESC", connection);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
             {
-                _logger.LogError(ex, "刪除簽到統計記錄 {StatsId} 時發生錯誤", statsId);
-                return false;
+                return new UserSignInStats
+                {
+                    StatsID = reader.GetInt32("StatsID"),
+                    UserID = reader.GetInt32("UserID"),
+                    SignTime = reader.GetDateTime("SignTime"),
+                    PointsEarned = reader.GetInt32("PointsEarned"),
+                    PetExpEarned = reader.GetInt32("PetExpEarned"),
+                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
+                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                };
             }
+            return null;
+        }
+
+        public async Task<int> GetConsecutiveDaysAsync(int userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var command = new SqlCommand(@"
+                SELECT TOP 1 ConsecutiveDays FROM UserSignInStats 
+                WHERE UserID = @UserId 
+                ORDER BY SignTime DESC", connection);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            var result = await command.ExecuteScalarAsync();
+            return result != null ? (int)result : 0;
         }
 
         public async Task<bool> ProcessDailySignInAsync(int userId)
         {
-            try
+            // Check if user already signed in today
+            var todaySignIn = await GetTodaySignInAsync(userId);
+            if (todaySignIn != null)
             {
-                // 檢查今日是否已簽到
-                var todaySignIn = await GetTodaySignInAsync(userId);
-                if (todaySignIn != null)
-                {
-                    _logger.LogWarning("使用者 {UserId} 今日已簽到", userId);
-                    return false;
-                }
-
-                // 計算連續簽到天數
-                var consecutiveDays = await CalculateConsecutiveDaysAsync(userId);
-
-                // 計算獎勵
-                var (pointsEarned, petExpEarned, couponEarned) = CalculateSignInRewards(consecutiveDays);
-
-                // 建立簽到記錄
-                var signInStats = new UserSignInStats
-                {
-                    UserID = userId,
-                    SignTime = DateTime.Now,
-                    PointsEarned = pointsEarned,
-                    PetExpEarned = petExpEarned,
-                    CouponEarned = couponEarned,
-                    ConsecutiveDays = consecutiveDays
-                };
-
-                return await CreateSignInStatsAsync(signInStats);
+                return false; // Already signed in today
             }
-            catch (Exception ex)
+
+            // Get consecutive days
+            var consecutiveDays = await GetConsecutiveDaysAsync(userId);
+            
+            // Check if user signed in yesterday
+            var wasYesterday = await CheckYesterdaySignInAsync(userId);
+            if (!wasYesterday)
             {
-                _logger.LogError(ex, "處理使用者 {UserId} 每日簽到時發生錯誤", userId);
-                return false;
+                consecutiveDays = 1; // Reset consecutive days
             }
+            else
+            {
+                consecutiveDays++; // Increment consecutive days
+            }
+
+            // Calculate rewards based on consecutive days
+            var pointsEarned = CalculatePointsReward(consecutiveDays);
+            var petExpEarned = CalculatePetExpReward(consecutiveDays);
+            var couponEarned = ShouldGrantCoupon(consecutiveDays) ? 1 : (int?)null;
+
+            // Create sign-in record
+            var signInStats = new UserSignInStats
+            {
+                UserID = userId,
+                SignTime = DateTime.Now,
+                PointsEarned = pointsEarned,
+                PetExpEarned = petExpEarned,
+                CouponEarned = couponEarned,
+                ConsecutiveDays = consecutiveDays
+            };
+
+            return await CreateSignInStatsAsync(signInStats);
         }
 
-        public async Task<int> CalculateConsecutiveDaysAsync(int userId)
+        private async Task<bool> CheckYesterdaySignInAsync(int userId)
         {
-            try
-            {
-                var latestSignIn = await GetLatestSignInAsync(userId);
-                if (latestSignIn == null) return 1;
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
 
-                var yesterday = DateTime.Today.AddDays(-1);
-                var latestSignInDate = latestSignIn.SignTime.Date;
+            var command = new SqlCommand(@"
+                SELECT COUNT(*) FROM UserSignInStats 
+                WHERE UserID = @UserId 
+                AND CAST(SignTime AS DATE) = CAST(DATEADD(day, -1, GETDATE()) AS DATE)", connection);
+            command.Parameters.AddWithValue("@UserId", userId);
 
-                // 如果最後簽到是昨天，連續天數+1
-                if (latestSignInDate == yesterday)
-                {
-                    return latestSignIn.ConsecutiveDays + 1;
-                }
-                // 如果不是昨天，重新開始計算
-                else
-                {
-                    return 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "計算使用者 {UserId} 連續簽到天數時發生錯誤", userId);
-                return 1;
-            }
+            var result = await command.ExecuteScalarAsync();
+            return result != null && (int)result > 0;
         }
 
-        public async Task<int> GetSignInCountByUserIdAsync(int userId)
+        private int CalculatePointsReward(int consecutiveDays)
         {
-            try
-            {
-                return await _context.UserSignInStats
-                    .Where(s => s.UserID == userId)
-                    .CountAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得使用者 {UserId} 簽到次數時發生錯誤", userId);
-                return 0;
-            }
+            // Base reward: 5 points, +2 points per consecutive day, max 30 points
+            return Math.Min(5 + (consecutiveDays - 1) * 2, 30);
         }
 
-        public async Task<int> GetTotalPointsEarnedAsync(int userId)
+        private int CalculatePetExpReward(int consecutiveDays)
         {
-            try
-            {
-                return await _context.UserSignInStats
-                    .Where(s => s.UserID == userId)
-                    .SumAsync(s => s.PointsEarned);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得使用者 {UserId} 簽到總點數時發生錯誤", userId);
-                return 0;
-            }
+            // Base reward: 0 exp, +3 exp every 3 consecutive days, max 20 exp
+            return Math.Min((consecutiveDays / 3) * 3, 20);
         }
 
-        public async Task<bool> HasSignedInTodayAsync(int userId)
+        private bool ShouldGrantCoupon(int consecutiveDays)
         {
-            try
-            {
-                var todaySignIn = await GetTodaySignInAsync(userId);
-                return todaySignIn != null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "檢查使用者 {UserId} 今日簽到狀態時發生錯誤", userId);
-                return false;
-            }
-        }
-
-        private (int pointsEarned, int petExpEarned, int? couponEarned) CalculateSignInRewards(int consecutiveDays)
-        {
-            // 基礎點數獎勵
-            var basePoints = 10;
-            var bonusPoints = Math.Min(consecutiveDays - 1, 20); // 最多額外20點
-            var pointsEarned = basePoints + bonusPoints;
-
-            // 寵物經驗值獎勵（每5天連續簽到給予經驗值）
-            var petExpEarned = consecutiveDays % 5 == 0 ? 15 : 0;
-
-            // 優惠券獎勵（每7天連續簽到有機會獲得）
-            int? couponEarned = null;
-            if (consecutiveDays % 7 == 0)
-            {
-                var random = new Random();
-                if (random.NextDouble() < 0.3) // 30% 機率獲得優惠券
-                {
-                    couponEarned = 1;
-                }
-            }
-
-            return (pointsEarned, petExpEarned, couponEarned);
+            // Grant coupon every 7 consecutive days
+            return consecutiveDays % 7 == 0;
         }
     }
 }
