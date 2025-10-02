@@ -186,7 +186,7 @@ namespace GameSpace.Areas.MiniGame.Services
                         ChangeType = "SignIn",
                         PointsChanged = reward.Points,
                         ItemCode = "SIGNIN_REWARD",
-                        Description = $"簽到獎勵 (連續 {reward.ConsecutiveDayBonus > 0 ? "+" + reward.ConsecutiveDayBonus : ""}天加成)",
+                        Description = $"簽到獎勵 (連續 {(reward.ConsecutiveDayBonus > 0 ? "+" + reward.ConsecutiveDayBonus : "")}天加成)",
                         ChangeTime = DateTime.UtcNow
                     };
                     _context.WalletHistory.Add(history);

@@ -170,49 +170,37 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminManager/CreateRole
         public async Task<IActionResult> CreateRole()
         {
-            ViewBag.Permissions = await _context.ManagerPermission.ToListAsync();
+            // ManagerRolePermission 表已經包含所有角色和權限，無需額外的 ManagerPermission 表
             return View();
         }
 
         // POST: AdminManager/CreateRole
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateRole(AdminManagerRoleCreateViewModel model)
+        public async Task<IActionResult> CreateRole(string roleName, bool? administratorPrivilegesManagement, bool? userStatusManagement,
+            bool? shoppingPermissionManagement, bool? messagePermissionManagement, bool? petRightsManagement, bool? customerService)
         {
             if (ModelState.IsValid)
             {
                 var role = new ManagerRolePermission
                 {
-                    role_name = model.role_name,
-                    role_description = model.role_description,
-                    IsActive = model.IsActive,
-                    CreatedAt = DateTime.Now
+                    RoleName = roleName,
+                    AdministratorPrivilegesManagement = administratorPrivilegesManagement,
+                    UserStatusManagement = userStatusManagement,
+                    ShoppingPermissionManagement = shoppingPermissionManagement,
+                    MessagePermissionManagement = messagePermissionManagement,
+                    PetRightsManagement = petRightsManagement,
+                    CustomerService = customerService
                 };
 
                 _context.Add(role);
                 await _context.SaveChangesAsync();
 
-                // 分配權限
-                if (model.PermissionIds.Any())
-                {
-                    foreach (var permissionId in model.PermissionIds)
-                    {
-                        var rolePermission = new ManagerRolePermission
-                        {
-                            ManagerRole_Id = role.ManagerRole_Id,
-                            Permission_Id = permissionId
-                        };
-                        _context.Add(rolePermission);
-                    }
-                    await _context.SaveChangesAsync();
-                }
-
                 TempData["SuccessMessage"] = "角色建立成功";
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Permissions = await _context.ManagerPermission.ToListAsync();
-            return View(model);
+            return View();
         }
 
         // GET: AdminManager/Edit/5
@@ -223,97 +211,89 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var manager = await _context.Manager
+            var manager = await _context.ManagerData
                 .Include(m => m.ManagerRoles)
-                .FirstOrDefaultAsync(m => m.Manager_Id == id);
+                .FirstOrDefaultAsync(m => m.ManagerId == id);
 
             if (manager == null)
             {
                 return NotFound();
             }
 
-            var model = new AdminManagerEditViewModel
-            {
-                Manager_Id = manager.Manager_Id,
-                Manager_Name = manager.Manager_Name,
-                Manager_Account = manager.Manager_Account,
-                Manager_Email = manager.Manager_Email,
-                RoleIds = manager.ManagerRoles.Select(mr => mr.ManagerRole_Id).ToList()
-            };
-
-            ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-            return View(model);
+            ViewBag.Manager = manager;
+            ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+            return View();
         }
 
         // POST: AdminManager/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AdminManagerEditViewModel model)
+        public async Task<IActionResult> Edit(int id, string managerName, string managerAccount, string managerEmail,
+            string? newPassword, string? confirmNewPassword, List<int> roleIds)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var manager = await _context.Manager.FindAsync(id);
+                    var manager = await _context.ManagerData
+                        .Include(m => m.ManagerRoles)
+                        .FirstOrDefaultAsync(m => m.ManagerId == id);
+
                     if (manager == null)
                     {
                         return NotFound();
                     }
 
                     // 檢查帳號是否已被其他管理者使用
-                    if (await _context.Manager.AnyAsync(m => m.Manager_Account == model.Manager_Account && m.Manager_Id != id))
+                    if (await _context.ManagerData.AnyAsync(m => m.ManagerAccount == managerAccount && m.ManagerId != id))
                     {
-                        ModelState.AddModelError("Manager_Account", "此帳號已被其他管理者使用");
-                        ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-                        return View(model);
+                        ModelState.AddModelError("managerAccount", "此帳號已被其他管理者使用");
+                        ViewBag.Manager = manager;
+                        ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+                        return View();
                     }
 
                     // 檢查電子郵件是否已被其他管理者使用
-                    if (await _context.Manager.AnyAsync(m => m.Manager_Email == model.Manager_Email && m.Manager_Id != id))
+                    if (await _context.ManagerData.AnyAsync(m => m.ManagerEmail == managerEmail && m.ManagerId != id))
                     {
-                        ModelState.AddModelError("Manager_Email", "此電子郵件已被其他管理者使用");
-                        ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-                        return View(model);
+                        ModelState.AddModelError("managerEmail", "此電子郵件已被其他管理者使用");
+                        ViewBag.Manager = manager;
+                        ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+                        return View();
                     }
 
-                    manager.Manager_Name = model.Manager_Name;
-                    manager.Manager_Account = model.Manager_Account;
-                    manager.Manager_Email = model.Manager_Email;
+                    manager.ManagerName = managerName;
+                    manager.ManagerAccount = managerAccount;
+                    manager.ManagerEmail = managerEmail;
 
                     // 如果提供了新密碼，則更新密碼
-                    if (!string.IsNullOrEmpty(model.NewPassword))
+                    if (!string.IsNullOrEmpty(newPassword))
                     {
-                        if (model.NewPassword != model.ConfirmNewPassword)
+                        if (newPassword != confirmNewPassword)
                         {
-                            ModelState.AddModelError("ConfirmNewPassword", "新密碼和確認密碼不匹配");
-                            ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-                            return View(model);
+                            ModelState.AddModelError("confirmNewPassword", "新密碼和確認密碼不匹配");
+                            ViewBag.Manager = manager;
+                            ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+                            return View();
                         }
-                        manager.Manager_Password = HashPassword(model.NewPassword);
+                        manager.ManagerPassword = HashPassword(newPassword);
+                    }
+
+                    // 更新角色分配 - 清除現有並重新建立
+                    manager.ManagerRoles.Clear();
+                    if (roleIds != null && roleIds.Any())
+                    {
+                        var roles = await _context.ManagerRolePermissions
+                            .Where(r => roleIds.Contains(r.ManagerRoleId))
+                            .ToListAsync();
+
+                        foreach (var role in roles)
+                        {
+                            manager.ManagerRoles.Add(role);
+                        }
                     }
 
                     _context.Update(manager);
-
-                    // 更新角色分配
-                    var existingRoles = await _context.ManagerRole
-                        .Where(mr => mr.Manager_Id == id)
-                        .ToListAsync();
-
-                    _context.ManagerRole.RemoveRange(existingRoles);
-
-                    if (model.RoleIds.Any())
-                    {
-                        foreach (var roleId in model.RoleIds)
-                        {
-                            var managerRole = new ManagerRole
-                            {
-                                Manager_Id = id,
-                                ManagerRole_Id = roleId
-                            };
-                            _context.Add(managerRole);
-                        }
-                    }
-
                     await _context.SaveChangesAsync();
 
                     TempData["SuccessMessage"] = "管理者更新成功";
@@ -332,8 +312,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
             }
 
-            ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-            return View(model);
+            var mgr = await _context.ManagerData
+                .Include(m => m.ManagerRoles)
+                .FirstOrDefaultAsync(m => m.ManagerId == id);
+            ViewBag.Manager = mgr;
+            ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+            return View();
         }
 
         // GET: AdminManager/Delete/5
@@ -344,10 +328,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var manager = await _context.Manager
+            var manager = await _context.ManagerData
                 .Include(m => m.ManagerRoles)
-                .ThenInclude(mr => mr.ManagerRolePermission)
-                .FirstOrDefaultAsync(m => m.Manager_Id == id);
+                .FirstOrDefaultAsync(m => m.ManagerId == id);
 
             if (manager == null)
             {
@@ -362,10 +345,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var manager = await _context.Manager.FindAsync(id);
+            var manager = await _context.ManagerData.FindAsync(id);
             if (manager != null)
             {
-                _context.Manager.Remove(manager);
+                _context.ManagerData.Remove(manager);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "管理者刪除成功";
@@ -378,26 +361,26 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var manager = await _context.Manager.FindAsync(id);
+            var manager = await _context.ManagerData.FindAsync(id);
             if (manager != null)
             {
-                if (manager.Manager_LockoutEnabled && manager.Manager_LockoutEnd.HasValue && manager.Manager_LockoutEnd > DateTime.Now)
+                if (manager.ManagerLockoutEnabled && manager.ManagerLockoutEnd.HasValue && manager.ManagerLockoutEnd > DateTime.Now)
                 {
                     // 解鎖
-                    manager.Manager_LockoutEnabled = false;
-                    manager.Manager_LockoutEnd = null;
+                    manager.ManagerLockoutEnabled = false;
+                    manager.ManagerLockoutEnd = null;
                 }
                 else
                 {
                     // 鎖定
-                    manager.Manager_LockoutEnabled = true;
-                    manager.Manager_LockoutEnd = DateTime.Now.AddDays(30);
+                    manager.ManagerLockoutEnabled = true;
+                    manager.ManagerLockoutEnd = DateTime.Now.AddDays(30);
                 }
 
                 _context.Update(manager);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, isLocked = manager.Manager_LockoutEnabled });
+                return Json(new { success = true, isLocked = manager.ManagerLockoutEnabled });
             }
 
             return Json(new { success = false });
@@ -407,10 +390,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ResetPassword(int id, string newPassword)
         {
-            var manager = await _context.Manager.FindAsync(id);
+            var manager = await _context.ManagerData.FindAsync(id);
             if (manager != null)
             {
-                manager.Manager_Password = HashPassword(newPassword);
+                manager.ManagerPassword = HashPassword(newPassword);
                 _context.Update(manager);
                 await _context.SaveChangesAsync();
 
@@ -427,11 +410,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var now = DateTime.Now;
             var stats = new
             {
-                total = await _context.Manager.CountAsync(),
-                active = await _context.Manager.CountAsync(m => !m.Manager_LockoutEnabled || !m.Manager_LockoutEnd.HasValue || m.Manager_LockoutEnd <= now),
-                locked = await _context.Manager.CountAsync(m => m.Manager_LockoutEnabled && m.Manager_LockoutEnd.HasValue && m.Manager_LockoutEnd > now),
-                roles = await _context.ManagerRolePermission.CountAsync(),
-                todayLogins = await _context.Manager.CountAsync(m => m.LastLoginAt.HasValue && m.LastLoginAt.Value.Date == DateTime.Today)
+                total = await _context.ManagerData.CountAsync(),
+                active = await _context.ManagerData.CountAsync(m => !m.ManagerLockoutEnabled || !m.ManagerLockoutEnd.HasValue || m.ManagerLockoutEnd <= now),
+                locked = await _context.ManagerData.CountAsync(m => m.ManagerLockoutEnabled && m.ManagerLockoutEnd.HasValue && m.ManagerLockoutEnd > now),
+                roles = await _context.ManagerRolePermissions.CountAsync()
             };
 
             return Json(stats);
@@ -441,8 +423,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetRoleDistribution()
         {
-            var distribution = await _context.ManagerRole
-                .GroupBy(mr => mr.ManagerRolePermission.role_name)
+            var distribution = await _context.ManagerData
+                .SelectMany(m => m.ManagerRoles)
+                .GroupBy(r => r.RoleName)
                 .Select(g => new
                 {
                     role = g.Key,
@@ -454,30 +437,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(distribution);
         }
 
-        // 獲取登入趨勢
-        [HttpGet]
-        public async Task<IActionResult> GetLoginTrend(int days = 30)
-        {
-            var endDate = DateTime.Today;
-            var startDate = endDate.AddDays(-days);
-
-            var trend = await _context.Manager
-                .Where(m => m.LastLoginAt >= startDate)
-                .GroupBy(m => m.LastLoginAt.Value.Date)
-                .Select(g => new
-                {
-                    date = g.Key.ToString("yyyy-MM-dd"),
-                    count = g.Count()
-                })
-                .OrderBy(g => g.date)
-                .ToListAsync();
-
-            return Json(trend);
-        }
-
         private bool ManagerExists(int id)
         {
-            return _context.Manager.Any(e => e.Manager_Id == id);
+            return _context.ManagerData.Any(e => e.ManagerId == id);
         }
 
         private string HashPassword(string password)

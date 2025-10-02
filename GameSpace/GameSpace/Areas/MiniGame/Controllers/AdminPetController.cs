@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "AdminOnly")]
-    public class AdminPetController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class AdminPetController : MiniGameBaseController
     {
         private readonly IPetService _petService;
         private readonly IPetRulesService _petRulesService;
