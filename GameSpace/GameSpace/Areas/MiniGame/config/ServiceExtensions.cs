@@ -20,6 +20,18 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IMiniGameAdminAuthService, MiniGameAdminAuthService>();
             services.AddScoped<IMiniGameAdminGate, MiniGameAdminGate>();
 
+            // 註冊錢包服務
+            services.AddScoped<IUserWalletService, UserWalletService>();
+
+            // 註冊優惠券服務
+            services.AddScoped<ICouponService, CouponService>();
+
+            // 註冊電子禮券服務
+            services.AddScoped<IEVoucherService, EVoucherService>();
+
+            // 註冊簽到統計服務
+            services.AddScoped<ISignInStatsService, SignInStatsService>();
+
             // 註冊寵物換色/背景點數設定服務
             services.AddScoped<IPetSkinColorPointSettingService, PetSkinColorPointSettingService>();
             services.AddScoped<IPetBackgroundPointSettingService, PetBackgroundPointSettingService>();
