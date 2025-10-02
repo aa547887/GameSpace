@@ -3,3 +3,13 @@
 ################################################################################
 
 /Frontend/GamiPort/.vs/GamiPort
+
+# Visual Studio local cache
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# 常見建置輸出
+**/bin/
+**/obj/

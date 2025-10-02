@@ -8048,11 +8048,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\Frontend\\GamiPort\\GamiPort\\GamiPort.csproj",
+      "projectUniqueName": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\GamiPort.csproj",
       "projectName": "GamiPort",
-      "projectPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\Frontend\\GamiPort\\GamiPort\\GamiPort.csproj",
+      "projectPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\GamiPort.csproj",
       "packagesPath": "C:\\Users\\ispan\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\Frontend\\GamiPort\\GamiPort\\obj\\",
+      "outputPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

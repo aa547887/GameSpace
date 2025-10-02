@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d6fd7abfeb8e8f48a98b9d510364e913934eaa2b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+084427e20fd9b8aa07df53e593b3f53b655d749f")]
 [assembly: System.Reflection.AssemblyProductAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
