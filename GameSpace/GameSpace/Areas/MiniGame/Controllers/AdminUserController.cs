@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Models;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,59 +8,68 @@ using System.Text;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
+    [Authorize(Policy = "AdminOnly")]
     public class AdminUserController : Controller
     {
-        private readonly GameSpacedatabaseContext _context;
+        private readonly IUserService _userService;
+        private readonly IWalletService _walletService;
 
-        public AdminUserController(GameSpacedatabaseContext context)
+        public AdminUserController(IUserService userService, IWalletService walletService)
         {
-            _context = context;
+            _userService = userService;
+            _walletService = walletService;
         }
 
         // GET: AdminUser
         public async Task<IActionResult> Index(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.Users.AsQueryable();
-
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                query = query.Where(u => u.User_name.Contains(searchTerm) || 
-                                       u.User_account.Contains(searchTerm) || 
-                                       u.User_email.Contains(searchTerm));
-            }
+            IEnumerable<Users> users;
 
             // 狀態篩選
             if (!string.IsNullOrEmpty(status))
             {
                 if (status == "active")
-                    query = query.Where(u => u.IsActive);
+                    users = await _userService.GetActiveUsersAsync();
                 else if (status == "inactive")
-                    query = query.Where(u => !u.IsActive);
+                    users = await _userService.GetInactiveUsersAsync();
+                else
+                    users = await _userService.GetAllUsersAsync(1, 10000);
+            }
+            else
+            {
+                users = await _userService.GetAllUsersAsync(1, 10000);
+            }
+
+            // 搜尋功能
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                users = users.Where(u => u.User_Name.Contains(searchTerm) ||
+                                        u.User_Account.Contains(searchTerm) ||
+                                        u.User_Email.Contains(searchTerm));
             }
 
             // 排序
-            query = sortBy switch
+            users = sortBy switch
             {
-                "account" => query.OrderBy(u => u.User_account),
-                "email" => query.OrderBy(u => u.User_email),
-                "created" => query.OrderBy(u => u.User_registration_date),
-                "lastLogin" => query.OrderByDescending(u => u.LastLoginAt),
-                _ => query.OrderBy(u => u.User_name)
+                "account" => users.OrderBy(u => u.User_Account),
+                "email" => users.OrderBy(u => u.User_Email),
+                "created" => users.OrderBy(u => u.User_CreatedAt),
+                "lastLogin" => users.OrderByDescending(u => u.User_LockoutEnd),
+                _ => users.OrderBy(u => u.User_Name)
             };
 
             // 分頁
-            var totalCount = await query.CountAsync();
-            var users = await query
+            var totalCount = users.Count();
+            var pagedUsers = users
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
             var viewModel = new AdminUserIndexViewModel
             {
                 Users = new PagedResult<Users>
                 {
-                    Items = users,
+                    Items = pagedUsers,
                     TotalCount = totalCount,
                     PageNumber = page,
                     PageSize = pageSize
@@ -71,9 +80,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.Status = status;
             ViewBag.SortBy = sortBy;
-            ViewBag.TotalUsers = totalCount;
-            ViewBag.ActiveUsers = await _context.Users.CountAsync(u => u.IsActive);
-            ViewBag.InactiveUsers = await _context.Users.CountAsync(u => !u.IsActive);
+            ViewBag.TotalUsers = await _userService.GetTotalUsersCountAsync();
+            ViewBag.ActiveUsers = await _userService.GetActiveUsersCountAsync();
+            ViewBag.InactiveUsers = ViewBag.TotalUsers - ViewBag.ActiveUsers;
 
             return View(viewModel);
         }
@@ -86,17 +95,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
-                .Include(u => u.Wallets)
-                .Include(u => u.SignIns)
-                .Include(u => u.Pets)
-                .Include(u => u.GamePlayRecords)
-                .FirstOrDefaultAsync(m => m.User_Id == id);
+            var user = await _userService.GetUserByIdAsync(id.Value);
 
             if (user == null)
             {
                 return NotFound();
             }
+
+            // 取得額外資訊
+            var summary = await _walletService.GetPointsSummaryAsync(id.Value);
+            ViewBag.WalletSummary = summary;
 
             return View(user);
         }
@@ -115,14 +123,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
             if (ModelState.IsValid)
             {
                 // 檢查帳號是否已存在
-                if (await _context.Users.AnyAsync(u => u.User_account == model.User_account))
+                var existingAccount = await _userService.GetUserByAccountAsync(model.User_account);
+                if (existingAccount != null)
                 {
                     ModelState.AddModelError("User_account", "此帳號已存在");
                     return View(model);
                 }
 
                 // 檢查電子郵件是否已存在
-                if (await _context.Users.AnyAsync(u => u.User_email == model.User_email))
+                var existingEmail = await _userService.GetUserByEmailAsync(model.User_email);
+                if (existingEmail != null)
                 {
                     ModelState.AddModelError("User_email", "此電子郵件已存在");
                     return View(model);
@@ -130,36 +140,29 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 var user = new Users
                 {
-                    User_name = model.User_name,
-                    User_account = model.User_account,
-                    User_password = HashPassword(model.Password),
-                    User_email = model.User_email,
-                    User_phone = model.User_phone,
-                    User_birthday = model.User_birthday,
-                    User_gender = model.User_gender,
-                    User_address = model.User_address,
-                    IsActive = model.IsActive,
-                    User_registration_date = DateTime.Now,
-                    LastLoginAt = null
+                    User_Name = model.User_name,
+                    User_Account = model.User_account,
+                    User_Password = HashPassword(model.Password),
+                    User_Email = model.User_email,
+                    User_Phone = model.User_phone,
+                    User_Birthday = model.User_birthday,
+                    User_Gender = model.User_gender,
+                    User_Address = model.User_address,
+                    User_Status = model.IsActive ? "Active" : "Inactive",
+                    User_CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Add(user);
-                await _context.SaveChangesAsync();
+                var result = await _userService.CreateUserAsync(user);
 
-                // 建立初始錢包
-                var wallet = new Wallet
+                if (result)
                 {
-                    UserId = user.User_Id,
-                    Amount = 0,
-                    TransactionType = "initial",
-                    TransactionDate = DateTime.Now,
-                    Description = "初始錢包"
-                };
-                _context.Add(wallet);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "用戶建立成功";
-                return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = "用戶建立成功（已自動建立錢包）";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    ModelState.AddModelError("", "建立用戶失敗");
+                }
             }
 
             return View(model);
@@ -173,7 +176,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userService.GetUserByIdAsync(id.Value);
             if (user == null)
             {
                 return NotFound();
@@ -182,14 +185,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminUserEditViewModel
             {
                 User_Id = user.User_Id,
-                User_name = user.User_name,
-                User_account = user.User_account,
-                User_email = user.User_email,
-                User_phone = user.User_phone,
-                User_birthday = user.User_birthday,
-                User_gender = user.User_gender,
-                User_address = user.User_address,
-                IsActive = user.IsActive
+                User_name = user.User_Name,
+                User_account = user.User_Account,
+                User_email = user.User_Email,
+                User_phone = user.User_Phone,
+                User_birthday = user.User_Birthday,
+                User_gender = user.User_Gender,
+                User_address = user.User_Address,
+                IsActive = user.User_Status == "Active"
             };
 
             return View(model);
@@ -207,64 +210,58 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var user = await _userService.GetUserByIdAsync(id);
+                if (user == null)
                 {
-                    var user = await _context.Users.FindAsync(id);
-                    if (user == null)
-                    {
-                        return NotFound();
-                    }
+                    return NotFound();
+                }
 
-                    // 檢查帳號是否已被其他用戶使用
-                    if (await _context.Users.AnyAsync(u => u.User_account == model.User_account && u.User_Id != id))
+                // 檢查帳號是否已被其他用戶使用
+                var existingAccount = await _userService.GetUserByAccountAsync(model.User_account);
+                if (existingAccount != null && existingAccount.User_Id != id)
+                {
+                    ModelState.AddModelError("User_account", "此帳號已被其他用戶使用");
+                    return View(model);
+                }
+
+                // 檢查電子郵件是否已被其他用戶使用
+                var existingEmail = await _userService.GetUserByEmailAsync(model.User_email);
+                if (existingEmail != null && existingEmail.User_Id != id)
+                {
+                    ModelState.AddModelError("User_email", "此電子郵件已被其他用戶使用");
+                    return View(model);
+                }
+
+                user.User_Name = model.User_name;
+                user.User_Account = model.User_account;
+                user.User_Email = model.User_email;
+                user.User_Phone = model.User_phone;
+                user.User_Birthday = model.User_birthday;
+                user.User_Gender = model.User_gender;
+                user.User_Address = model.User_address;
+                user.User_Status = model.IsActive ? "Active" : "Inactive";
+
+                // 如果提供了新密碼，則更新密碼
+                if (!string.IsNullOrEmpty(model.NewPassword))
+                {
+                    if (model.NewPassword != model.ConfirmNewPassword)
                     {
-                        ModelState.AddModelError("User_account", "此帳號已被其他用戶使用");
+                        ModelState.AddModelError("ConfirmNewPassword", "新密碼和確認密碼不匹配");
                         return View(model);
                     }
+                    user.User_Password = HashPassword(model.NewPassword);
+                }
 
-                    // 檢查電子郵件是否已被其他用戶使用
-                    if (await _context.Users.AnyAsync(u => u.User_email == model.User_email && u.User_Id != id))
-                    {
-                        ModelState.AddModelError("User_email", "此電子郵件已被其他用戶使用");
-                        return View(model);
-                    }
+                var result = await _userService.UpdateUserAsync(user);
 
-                    user.User_name = model.User_name;
-                    user.User_account = model.User_account;
-                    user.User_email = model.User_email;
-                    user.User_phone = model.User_phone;
-                    user.User_birthday = model.User_birthday;
-                    user.User_gender = model.User_gender;
-                    user.User_address = model.User_address;
-                    user.IsActive = model.IsActive;
-
-                    // 如果提供了新密碼，則更新密碼
-                    if (!string.IsNullOrEmpty(model.NewPassword))
-                    {
-                        if (model.NewPassword != model.ConfirmNewPassword)
-                        {
-                            ModelState.AddModelError("ConfirmNewPassword", "新密碼和確認密碼不匹配");
-                            return View(model);
-                        }
-                        user.User_password = HashPassword(model.NewPassword);
-                    }
-
-                    _context.Update(user);
-                    await _context.SaveChangesAsync();
-
+                if (result)
+                {
                     TempData["SuccessMessage"] = "用戶更新成功";
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!UserExists(id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError("", "更新用戶失敗");
                 }
             }
 
@@ -279,12 +276,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
-                .Include(u => u.Wallets)
-                .Include(u => u.SignIns)
-                .Include(u => u.Pets)
-                .Include(u => u.GamePlayRecords)
-                .FirstOrDefaultAsync(m => m.User_Id == id);
+            var user = await _userService.GetUserByIdAsync(id.Value);
 
             if (user == null)
             {
@@ -299,15 +291,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user != null)
-            {
-                // 軟刪除：將用戶設為非活躍狀態
-                user.IsActive = false;
-                _context.Update(user);
-                await _context.SaveChangesAsync();
+            // 軟刪除：將用戶設為非活躍狀態
+            var result = await _userService.DeactivateUserAsync(id);
 
+            if (result)
+            {
                 TempData["SuccessMessage"] = "用戶已停用";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "停用用戶失敗";
             }
 
             return RedirectToAction(nameof(Index));
@@ -317,14 +310,24 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
             if (user != null)
             {
-                user.IsActive = !user.IsActive;
-                _context.Update(user);
-                await _context.SaveChangesAsync();
+                bool result;
+                if (user.User_Status == "Active")
+                {
+                    result = await _userService.DeactivateUserAsync(id);
+                }
+                else
+                {
+                    result = await _userService.ActivateUserAsync(id);
+                }
 
-                return Json(new { success = true, isActive = user.IsActive });
+                if (result)
+                {
+                    var updatedUser = await _userService.GetUserByIdAsync(id);
+                    return Json(new { success = true, isActive = updatedUser.User_Status == "Active" });
+                }
             }
 
             return Json(new { success = false });
@@ -334,22 +337,82 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ResetPassword(int id, string newPassword)
         {
-            var user = await _context.Users.FindAsync(id);
+            if (string.IsNullOrEmpty(newPassword))
+            {
+                return Json(new { success = false, message = "新密碼不能為空" });
+            }
+
+            var user = await _userService.GetUserByIdAsync(id);
             if (user != null)
             {
-                user.User_password = HashPassword(newPassword);
-                _context.Update(user);
-                await _context.SaveChangesAsync();
+                user.User_Password = HashPassword(newPassword);
+                var result = await _userService.UpdateUserAsync(user);
 
-                return Json(new { success = true });
+                if (result)
+                {
+                    return Json(new { success = true });
+                }
             }
 
             return Json(new { success = false });
         }
 
-        private bool UserExists(int id)
+        // 鎖定用戶
+        [HttpPost]
+        public async Task<IActionResult> LockUser(int id, int? days = null)
         {
-            return _context.Users.Any(e => e.User_Id == id);
+            DateTime? lockoutEnd = days.HasValue ? DateTime.UtcNow.AddDays(days.Value) : null;
+            var result = await _userService.LockUserAsync(id, lockoutEnd);
+
+            if (result)
+            {
+                return Json(new { success = true, message = "用戶已鎖定" });
+            }
+
+            return Json(new { success = false, message = "鎖定失敗" });
+        }
+
+        // 解鎖用戶
+        [HttpPost]
+        public async Task<IActionResult> UnlockUser(int id)
+        {
+            var result = await _userService.UnlockUserAsync(id);
+
+            if (result)
+            {
+                return Json(new { success = true, message = "用戶已解鎖" });
+            }
+
+            return Json(new { success = false, message = "解鎖失敗" });
+        }
+
+        // 獲取用戶統計
+        [HttpGet]
+        public async Task<IActionResult> GetUserStats(int userId)
+        {
+            var summary = await _walletService.GetPointsSummaryAsync(userId);
+            return Json(summary);
+        }
+
+        // 搜尋用戶
+        [HttpGet]
+        public async Task<IActionResult> SearchUsers(string term)
+        {
+            if (string.IsNullOrEmpty(term))
+            {
+                return Json(new List<object>());
+            }
+
+            var users = await _userService.SearchUsersAsync(term);
+            var result = users.Take(10).Select(u => new
+            {
+                id = u.User_Id,
+                name = u.User_Name,
+                account = u.User_Account,
+                email = u.User_Email
+            });
+
+            return Json(result);
         }
 
         private string HashPassword(string password)
@@ -362,4 +425,3 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
-
