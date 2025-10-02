@@ -32,10 +32,11 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊簽到統計服務
             services.AddScoped<ISignInStatsService, SignInStatsService>();
 
-            // 註冊寵物換色/背景點數設定服務
-            services.AddScoped<IPetSkinColorPointSettingService, PetSkinColorPointSettingService>();
-            services.AddScoped<IPetBackgroundPointSettingService, PetBackgroundPointSettingService>();
-            services.AddScoped<IPointSettingStorageService, PointSettingStorageService>();
+            // 註冊小遊戲服務
+            services.AddScoped<IMiniGameService, MiniGameService>();
+
+            // 註冊小遊戲服務
+            services.AddScoped<IMiniGameService, MiniGameService>();
 
             // 註冊寵物選項管理服務
             services.AddScoped<IPetColorOptionService, PetColorOptionService>();
@@ -47,28 +48,18 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊寵物升級獎勵設定服務
             services.AddScoped<IPetLevelRewardSettingService, PetLevelRewardSettingService>();
 
-            // 註冊寵物升級規則服務
-            services.AddScoped<IPetLevelUpRuleService, PetLevelUpRuleService>();
-
             // 註冊寵物升級規則驗證服務
             services.AddScoped<IPetLevelUpRuleValidationService, PetLevelUpRuleValidationService>();
 
-            // 註冊寵物互動增益規則服務
-            services.AddScoped<IPetInteractionBonusRuleService, PetInteractionBonusRuleService>();
-            services.AddScoped<IPetInteractionBonusRuleValidationService, PetInteractionBonusRuleValidationService>();
-            services.AddScoped<IPetInteractionBonusCalculationService, PetInteractionBonusCalculationService>();
-
             // 註冊每日遊戲次數限制服務
-            services.AddScoped<IDailyGameLimitSettingService, DailyGameLimitSettingService>();
+            services.AddScoped<IDailyGameLimitService, DailyGameLimitService>();
 
             // 註冊寵物成本設定服務
-            services.AddScoped<IPetColorCostSettingService, PetColorCostSettingService>();
+            services.AddScoped<IPetSkinColorCostSettingService, PetSkinColorCostSettingService>();
             services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();
 
-            // 註冊點數設定相關服務
+            // 註冊寵物換色/背景設定服務
             services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
-            services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
-            services.AddScoped<IPointsSettingsService, PointsSettingsService>();
 
             return services;
         }

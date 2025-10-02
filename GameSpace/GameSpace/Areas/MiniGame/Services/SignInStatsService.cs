@@ -29,9 +29,9 @@ namespace GameSpace.Areas.MiniGame.Services
         /// <summary>
         /// 根據ID取得簽到記錄
         /// </summary>
-        public async Task<UserSignInStats?> GetSignInStatsByIdAsync(int logId)
+        public async Task<UserSignInStats?> GetSignInStatsByIdAsync(int statsId)
         {
-            return await _context.UserSignInStats.FindAsync(logId);
+            return await _context.UserSignInStats.FindAsync(statsId);
         }
 
         /// <summary>
@@ -111,12 +111,10 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     UserID = userId,
                     SignTime = DateTime.Now,
-                    PointsGained = points,
-                    PointsGainedTime = DateTime.Now,
-                    ExpGained = exp,
-                    ExpGainedTime = DateTime.Now,
-                    CouponGained = coupon,
-                    CouponGainedTime = coupon > 0 ? DateTime.Now : null
+                    PointsEarned = points,
+                    PetExpEarned = exp,
+                    CouponEarned = coupon,
+                    ConsecutiveDays = await GetConsecutiveSignInDaysAsync(userId) + 1
                 };
 
                 return await CreateSignInStatsAsync(signInStats);
