@@ -4,296 +4,266 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GameSpace is an ASP.NET Core 8.0 MVC web application with a multi-area architecture for managing an online gaming platform. The project includes identity management, an online store, forums, social features, and a mini-game system with virtual pets and rewards.
+**GameSpace** is an ASP.NET Core 8.0 MVC web application featuring a multi-tenant gaming platform with admin management systems. The primary development focus is on the **MiniGame Area** - an admin backend system for managing user wallets, pets, mini-games, sign-in rewards, coupons, and e-vouchers.
 
-**Key Technologies:**
-- ASP.NET Core 8.0 MVC
-- Entity Framework Core 8.0 (SQL Server)
-- ASP.NET Core Identity
-- SignalR (real-time chat)
-- ClosedXML (Excel exports)
+## Build & Development Commands
 
-## Solution Structure
-
-```
-GameSpace/
-├── GameSpace/
-│   ├── GameSpace.sln
-│   └── GameSpace/
-│       ├── Program.cs              # Application entry point and DI configuration
-│       ├── Areas/                  # Feature-based organization
-│       │   ├── Forum/             # Forum system
-│       │   ├── Identity/          # User authentication/registration
-│       │   ├── MemberManagement/  # Member administration
-│       │   ├── MiniGame/          # Mini-game system (active development)
-│       │   ├── OnlineStore/       # E-commerce functionality
-│       │   └── social_hub/        # Social features and chat
-│       ├── Controllers/           # Root-level controllers
-│       ├── Data/                  # ApplicationDbContext (Identity)
-│       ├── Infrastructure/        # Cross-cutting concerns
-│       │   ├── Login/            # Unified login system
-│       │   └── Time/             # Time zone handling
-│       ├── Models/                # Shared EF models and GameSpacedatabaseContext
-│       ├── Views/                 # Shared views and layouts
-│       ├── Partials/             # Reusable partial views
-│       └── wwwroot/              # Static files (SB Admin, Bootstrap, etc.)
-└── schema/                        # Database documentation and specs
-```
-
-## Common Development Commands
-
-### Build and Run
-```bash
+### Building the Project
+```powershell
 # Build the solution
-dotnet build GameSpace/GameSpace/GameSpace.sln
+dotnet build GameSpace/GameSpace.sln
+
+# Build specific configuration
+dotnet build GameSpace/GameSpace.sln --configuration Release
 
 # Run the application
-dotnet run --project GameSpace/GameSpace/GameSpace/GameSpace.csproj
-
-# Run in watch mode (auto-reload on file changes)
-dotnet watch --project GameSpace/GameSpace/GameSpace/GameSpace.csproj
+dotnet run --project GameSpace/GameSpace/GameSpace.csproj
 ```
 
 ### Database Operations
-**IMPORTANT:** This project uses **database-first** approach with manual SQL Server management.
-- **DO NOT** use Entity Framework migrations (`dotnet ef migrations`)
-- Database schema is managed directly in SQL Server (SSMS)
-- Connection strings are in `appsettings.json`
+```powershell
+# Connect to SQL Server and query data
+sqlcmd -S "DESKTOP-8HQIS1S\SQLEXPRESS" -d "GameSpacedatabase" -E -Q "SELECT * FROM ManagerData"
 
-### Health Check
-```bash
-# Verify database connectivity
-curl http://localhost:5000/healthz/db
+# Query specific tables (use TOP 10 to limit results)
+sqlcmd -S "DESKTOP-8HQIS1S\SQLEXPRESS" -d "GameSpacedatabase" -E -Q "SELECT TOP 10 * FROM WalletHistory"
+sqlcmd -S "DESKTOP-8HQIS1S\SQLEXPRESS" -d "GameSpacedatabase" -E -Q "SELECT TOP 10 * FROM UserSignInStats"
+sqlcmd -S "DESKTOP-8HQIS1S\SQLEXPRESS" -d "GameSpacedatabase" -E -Q "SELECT TOP 10 * FROM Pet"
 ```
 
-## Architecture and Key Patterns
+## Architecture Overview
 
-### 1. Dual Authentication System
+### Multi-Context Database Architecture
+The application uses **two separate DbContexts**:
 
-The application uses **two authentication schemes**:
+1. **ApplicationDbContext** (`DefaultConnection`)
+   - ASP.NET Identity for user authentication
+   - Connection: `aspnet-GameSpace-38e0b594-8684-40b2-b330-7fb94b733c73`
 
-1. **Identity Cookie** (`Identity.Application`): For regular users
-   - Managed by ASP.NET Core Identity
-   - Used in public-facing areas
+2. **GameSpacedatabaseContext** (`GameSpace`)
+   - All business domain models (Users, Pets, MiniGames, Wallets, etc.)
+   - Connection: `GameSpacedatabase`
+   - Located at: `Models/GameSpacedatabaseContext.cs`
 
-2. **AdminCookie** (`GameSpace.Areas.social_hub.Auth.AuthConstants.AdminCookieScheme`): For administrators
-   - Custom cookie scheme for admin features
-   - 4-hour sliding expiration
-   - Configured in `Program.cs:127-170`
+### Area-Based Architecture
+The project follows ASP.NET Areas pattern with strict boundaries:
 
-**Login System:**
-- Centralized login at `/Login` (see `Controllers/LoginController.cs`)
-- Uses `Infrastructure/Login/ILoginIdentity` interface for abstraction
-- Implementation: `CookieAndAdminCookieLoginIdentity` handles both schemes
-- Areas should redirect to centralized login, not implement their own
-
-### 2. Area-Based Organization
-
-Each major feature is isolated in its own Area with:
-- **Controllers/** - Area-specific MVC controllers
-- **Views/** - Razor views (usually includes `_ViewStart.cshtml` and `Shared/_Sidebar.cshtml`)
-- **Models/** or **ViewModels/** - DTOs and view models
-- **Services/** - Business logic
-- **Data/** - Area-specific DbContext (if needed)
-- **config/** - Dependency injection setup (e.g., `ServiceExtensions.cs`)
-
-**MiniGame Area** is the most complete example of this pattern.
-
-### 3. Permission System
-
-Two permission models coexist:
-
-**A. Policy-Based Authorization** (Standard ASP.NET Core)
-- Defined in `Program.cs:173-181`
-- Policies: `CanManageShopping`, `CanAdmin`, `CanMessage`, `CanUserStatus`, `CanPet`, `CanCS`
-- Based on claims like `perm:Shopping`, `perm:Admin`, etc.
-- Used with `[Authorize(Policy="PolicyName")]`
-
-**B. Manager Permission System** (Custom)
-- Database tables: `ManagerData`, `ManagerRole`, `ManagerRolePermission`
-- Service: `Areas/social_hub/Permissions/ManagerPermissionService.cs`
-- Attribute: `RequireManagerPermissionsAttribute`
-- Used primarily in social_hub and MiniGame areas
-- Provides fine-grained, role-based permissions stored in database
-
-### 4. Database Context Strategy
-
-**Two DbContexts:**
-1. `ApplicationDbContext` (`Data/ApplicationDbContext.cs`): ASP.NET Identity tables only
-2. `GameSpacedatabaseContext` (`Models/GameSpacedatabaseContext.cs`): All business tables
-
-**Connection Strings** (from `appsettings.json`):
-```json
-{
-  "DefaultConnection": "...",  // For ApplicationDbContext
-  "GameSpace": "..."           // For GameSpacedatabaseContext
-}
+```
+Areas/
+├── Forum/              # Forum management
+├── Identity/           # ASP.NET Identity pages
+├── MemberManagement/   # Member management
+├── MiniGame/          # ⭐ PRIMARY WORK AREA - Admin backend system
+├── OnlineStore/       # E-commerce features
+└── social_hub/        # Social features & SignalR chat
 ```
 
-### 5. SignalR Real-Time Features
+### MiniGame Area Structure (Primary Development Focus)
 
-- Hub: `Areas/social_hub/Hubs/ChatHub.cs`
-- Endpoint: `/social_hub/chatHub` (configured in `Program.cs:234-240`)
-- Transports: WebSockets, Server-Sent Events, Long Polling
-- Services:
-  - `IMuteFilter` / `MuteFilter`: Profanity filtering with caching
-  - `INotificationService` / `NotificationService`: In-app notifications
+**⚠️ IMPORTANT CONSTRAINT**: All MiniGame development MUST stay within `Areas/MiniGame/`. Only add registrations to `Program.cs` - never modify other areas or vendor files.
 
-### 6. MiniGame Area Architecture
+```
+Areas/MiniGame/
+├── Controllers/          # Admin controllers (all inherit from MiniGameBaseController)
+│   ├── MiniGameBaseController.cs    # Base controller with auth & utilities
+│   ├── AdminHomeController.cs       # Dashboard & landing
+│   ├── AdminWalletController.cs     # Wallet & points management
+│   ├── AdminCouponController.cs     # Coupon management
+│   ├── AdminEVoucherController.cs   # E-voucher management
+│   ├── AdminPetController.cs        # Pet system management
+│   ├── AdminMiniGameController.cs   # Game records & rules
+│   ├── AdminSignInController.cs     # Sign-in rewards & stats
+│   ├── AdminUserController.cs       # User management
+│   └── AdminManagerController.cs    # Manager permissions
+│
+├── Services/            # Business logic layer (all registered in ServiceExtensions.cs)
+│   ├── Interface files (I*.cs)      # Service contracts
+│   ├── Implementation files         # Business logic
+│   ├── *ValidationService.cs        # Validation logic
+│   └── *RulesService.cs            # Rules & configuration
+│
+├── Models/              # ViewModels & DTOs (NOT EF entities)
+│   ├── ViewModels/                  # Request/Response models
+│   ├── Settings/                    # Configuration models
+│   └── ValidationResult.cs          # Validation results
+│
+├── Filters/             # Authorization & request filters
+│   ├── MiniGameAdminAuthorizeAttribute.cs      # Basic admin auth check
+│   ├── MiniGameModulePermissionAttribute.cs    # Fine-grained permissions
+│   ├── MiniGameAdminOnlyAttribute.cs           # Admin-only access
+│   ├── IdempotencyFilter.cs                    # Prevent duplicate operations
+│   └── MiniGameProblemDetailsFilter.cs         # Error handling
+│
+├── config/              # Startup configuration
+│   ├── ServiceExtensions.cs         # ALL service registrations
+│   └── StartupExtensions.cs         # Additional startup config
+│
+├── Views/               # Razor views (SB Admin template - DO NOT modify vendor)
+├── docs/                # Documentation & audit reports
+└── wwwroot/            # Static assets
+```
 
-The MiniGame area is actively developed and follows strict boundaries:
+### Authentication & Authorization System
 
-**Service Registration:**
-- All services registered via `Areas/MiniGame/config/ServiceExtensions.cs`
-- Uses extension method: `services.AddMiniGameServices(configuration)`
-- Called from `Program.cs`
+**Dual Cookie Scheme Architecture:**
+- **Identity Cookie**: Front-end user authentication (ASP.NET Identity)
+- **AdminCookie**: Backend manager authentication (custom claims-based)
 
-**Key Services:**
-- `IMiniGameAdminService` - Admin operations
-- `IMiniGamePermissionService` - Permission checks
-- `IUserWalletService` - Wallet and points management
-- `ICouponService` / `IEVoucherService` - Reward management
-- `ISignInStatsService` - Daily check-in tracking
-- `IMiniGameService` - Game session management
-- Pet-related services (color options, backgrounds, leveling, costs)
-- `IDailyGameLimitService` - Daily play limit enforcement
+#### Manager Authentication Flow
+1. Login via `LoginController` with `ManagerData` table credentials
+2. Claims populated from `ManagerRolePermission` table
+3. Cookie issued with 4-hour sliding expiration
+4. Email verification via OTP if first login
 
-**Controllers:** All admin controllers use:
-- `[Area("MiniGame")]`
-- `[Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]`
-- Base controller: `MiniGameBaseController.cs` (common functionality)
+#### Permission Model
+Manager permissions stored in `ManagerRolePermission` with boolean flags:
+- `AdministratorPrivilegesManagement` - Full system access (superuser)
+- `UserStatusManagement` - User.View, User.Edit
+- `ShoppingPermissionManagement` - Wallet.*, Coupon.*, EVoucher.*
+- `PetRightsManagement` - Pet.View, Pet.Edit
+- `MessagePermissionManagement` - Message.View, Message.Edit
+- `CustomerService` - CustomerService access
 
-**Database Tables:**
-- Wallet: `User_Wallet`, `WalletHistory`
-- Coupons: `CouponType`, `Coupon`, `EVoucherType`, `EVoucher`, `EVoucherToken`, `EVoucherRedeemLog`
-- Sign-in: `UserSignInStats`
-- Pets: `Pet` (includes attributes, levels, appearance)
-- Games: `MiniGame` (game sessions and rewards)
+**Permission Checking:**
+- Controllers inherit from `MiniGameBaseController`
+- Use `[Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]` attribute
+- Fine-grained checks via `MiniGameModulePermissionAttribute(string permission)`
+- Runtime checks: `await HasPermissionAsync("Module.Action")`
 
-## UI Framework and Styling
+### Service Registration Pattern
 
-**Admin Backend:** SB Admin template
-- Located in: `wwwroot/lib/sb-admin/`
-- **DO NOT modify vendor files**
-- Shared layout likely in `Views/Shared/_Layout.cshtml`
+All MiniGame services MUST be registered in `Areas/MiniGame/config/ServiceExtensions.cs`:
 
-**Public Frontend:** Bootstrap-based
-- Standard Bootstrap components
-- Located in: `wwwroot/lib/bootstrap/`
+```csharp
+services.AddScoped<IServiceInterface, ServiceImplementation>();
+```
 
-**Sidebars:**
-- Global: `Views/Shared/_Sidebar.cshtml`
-- Area-specific: `Areas/{AreaName}/Views/Shared/_Sidebar.cshtml`
-- Permission-based visibility (show/hide based on user claims/roles)
+Then in `Program.cs`, add ONE line:
+```csharp
+builder.Services.AddMiniGameServices(builder.Configuration);
+```
 
-## Critical Development Rules
+### Database Entities vs ViewModels
 
-### Boundaries and Constraints
+**CRITICAL DISTINCTION:**
+- **EF Core Entities**: Located in `Models/` (root level) - e.g., `Models/User.cs`, `Models/Pet.cs`
+- **ViewModels**: Located in `Areas/MiniGame/Models/ViewModels/` - for data transfer only
+- **Never mix**: Controllers use ViewModels, Services work with Entities
 
-1. **Area Isolation:**
-   - Each area should be self-contained
-   - Cross-area references allowed for reading (interfaces, models)
-   - **NEVER** modify code in other areas
-   - Exception: `Program.cs` for DI registration only (append, don't modify existing)
+Key tables in `GameSpacedatabaseContext`:
+```
+Users                   # User accounts
+ManagerData            # Admin accounts
+ManagerRolePermission  # Admin permission matrix
+User_Wallet            # User points balance
+WalletHistory          # Transaction log (Point/Coupon/EVoucher changes)
+Pet                    # Pet system (5 attributes: 健康/飽食/心情/乾淨/忠誠)
+MiniGame               # Game play records (win/lose/abort, rewards)
+UserSignInStats        # Daily sign-in tracking
+Coupon                 # User-owned coupons
+CouponType             # 20 coupon types (discount rules)
+EVoucher               # User-owned e-vouchers
+EVoucherType           # 20 e-voucher types (redemption rules)
+```
 
-2. **Database Schema:**
-   - **Database-first** approach
-   - Schema managed in SQL Server directly
-   - **DO NOT** run `dotnet ef migrations add/update`
-   - Models should match existing database schema exactly
-   - Reference: `schema/` directory contains documentation
+### Shared Infrastructure
 
-3. **Vendor Files:**
-   - Located in `wwwroot/lib/`
-   - **NEVER** modify these files
-   - Use custom CSS/JS files for customizations
+**Login System** (`Infrastructure/Login/`):
+- `ILoginIdentity` - Unified login interface
+- `CookieAndAdminCookieLoginIdentity` - Dual cookie implementation
+- Registered globally in `Program.cs`
 
-4. **Encoding:**
-   - All source files: **UTF-8 with BOM**
-   - Especially important for Chinese language content
+**Time Management** (`Infrastructure/Time/`):
+- `IAppClock` - Timezone-aware clock abstraction
+- `AppClock(TimeZones.Taipei)` - Taiwan timezone (UTC+8)
 
-### When Working on MiniGame Area
+**Social Hub Integration** (`Areas/social_hub/`):
+- SignalR `ChatHub` at `/social_hub/chatHub`
+- Mute filter service (profanity detection)
+- User context reader for social features
 
-If developing in `Areas/MiniGame/`:
+## Key Development Rules
 
-1. **Scope Restriction:**
-   - Only create/modify files within `Areas/MiniGame/`
-   - Exception: Add service registration to `Program.cs` (use `ServiceExtensions.cs` pattern)
+### Code Constraints
+1. **NEVER modify files outside `Areas/MiniGame/`** except adding service registrations to `Program.cs`
+2. **NEVER modify vendor files** (SB Admin template in wwwroot/vendor/)
+3. **NEVER modify `Program.cs` beyond service registrations** - do not change existing configuration
+4. **Use PowerShell** for all file operations and database queries
+5. **Use Traditional Chinese (繁體中文)** for all UI text and comments
 
-2. **Authentication:**
-   - Always redirect to `/Login` for authentication
-   - Never implement custom login flows
-   - Use `AdminCookie` scheme for admin features
+### Architecture Patterns
+1. **Controllers**: Inherit from `MiniGameBaseController` for auth & utilities
+2. **Services**: Register ALL services in `ServiceExtensions.cs`, use scoped lifetime
+3. **Permissions**: Use `MiniGameModulePermissionAttribute` for fine-grained access control
+4. **Validation**: Create separate `*ValidationService.cs` for complex business rules
+5. **ViewModels**: Define in `Areas/MiniGame/Models/ViewModels/`, never reuse entities
 
-3. **Implementation Order:**
-   - View → Model → Controller → Service → Filter → Config
-   - Complete all structures before fixing compilation errors
+### Database Access
+1. **Always use `GameSpacedatabaseContext`** (not ApplicationDbContext) for business logic
+2. **Use Windows Authentication** (`Integrated Security=True`) for SQL Server
+3. **Connection string key**: `"GameSpace"` (not "GameSpacedatabase")
+4. **Include navigation properties** when querying for permissions: `.Include(m => m.ManagerRoles)`
 
-4. **No Placeholders:**
-   - All features must be fully implemented
-   - No dummy data or placeholder text
-   - Must connect to actual database tables
+### Admin UI Standards
+1. **Template**: SB Admin 2 (Bootstrap-based)
+2. **Navigation**: Shared admin homepage → "小遊戲管理系統" tab → MiniGame area sidebar
+3. **Permission-based UI**: Hide unauthorized menu items and actions
+4. **Error pages**: Use global 403 page for access denied, redirect to login for unauthenticated
 
-## Session and Cookie Configuration
+## Common Pitfalls
 
-- **Session:** 30-minute idle timeout, HttpOnly, Essential, SameSite=Lax
-- **AdminCookie:** 4-hour sliding expiration, custom login/logout paths
-- **AJAX Handling:** Returns 401/403 status codes instead of redirects for AJAX requests
+1. **Wrong DbContext**: Using `ApplicationDbContext` instead of `GameSpacedatabaseContext`
+2. **Missing service registration**: Forgetting to add service in `ServiceExtensions.cs`
+3. **Entity/ViewModel confusion**: Passing entities to views or ViewModels to EF
+4. **Permission checks**: Not checking module-specific permissions in controllers
+5. **Navigation properties**: Forgetting `.Include()` when loading related data
+6. **Cookie scheme**: Using wrong authentication scheme (should be "AdminCookie")
 
-## Time Zone Handling
+## Test Accounts
 
-- Centralized via `Infrastructure/Time/IAppClock`
-- Implementation: `AppClock` with Taipei timezone
-- Configured in `Program.cs:85`
+Admin accounts in `ManagerData` table:
+```
+zhang_zhiming_01  / AdminPass001@   # Superuser (all permissions)
+li_xiaohua_02     / SecurePass002#  # User management
+wang_meiling_03   / StrongPwd003!   # Shopping & pet management
+```
 
-## CORS (Optional)
+## Project Specifics
 
-- Configured for chat functionality if `Cors:Chat:Origins` is set
-- Policy name: "chat"
-- Allows credentials, any header, any method
+### Game Rules System
+- Daily game limit: 3 plays per day (configurable via `DailyGameLimit`)
+- Rewards: Points, Pet EXP, or Coupons (configured in game rules)
+- Pet system: 5-dimensional attributes (Health, Hunger, Mood, Cleanliness, Loyalty)
+- Pet customization: Color change & background change (point-based costs)
 
-## Anti-Forgery Protection
+### Wallet System
+- Three transaction types: `Point`, `Coupon`, `EVoucher`
+- All changes logged in `WalletHistory` with timestamp & description
+- Coupons: Format `CPN-{YYMM}-{6-char-random}`
+- E-Vouchers: Format `EV-{TypeCode}-{4-char-random}-{6-digit-number}`
 
-- Enabled globally via `AutoValidateAntiforgeryTokenAttribute`
-- Header name: `RequestVerificationToken`
-- AJAX requests should include this header
+### Sign-In Rewards
+- Daily check-in with configurable reward rules
+- Consecutive day tracking for bonus rewards
+- Rewards include: Points, Pet EXP, Coupons
 
-## Status Code Pages
+## Session & State Management
 
-- Custom error handling: `/Home/Http{0}` (e.g., `/Home/Http404`)
-- Development: Developer exception page
-- Production: `/Home/Maintenance`
+- **Session**: Enabled with 30-minute idle timeout, used for OTP verification
+- **Anti-Forgery**: Auto-validated on POST actions (header: `RequestVerificationToken`)
+- **CORS**: Configurable for SignalR chat (section: `Cors:Chat:Origins`)
+- **Cache**: Memory cache for mute filter (30-second TTL)
 
-## Testing and Health Checks
+## Middleware Pipeline Order (in Program.cs)
 
-**Database Health Check:**
-- Endpoint: `/healthz/db` (see `Controllers/HealthController.cs`)
-- Should return: `{"status":"ok"}` or error details
-- Use this to verify database connectivity
-
-## Common Pitfalls to Avoid
-
-1. **Don't** use EF migrations (database is manually managed)
-2. **Don't** modify vendor files in `wwwroot/lib/`
-3. **Don't** cross area boundaries for code modifications
-4. **Don't** implement separate login systems per area
-5. **Don't** forget to register services in the appropriate `ServiceExtensions.cs`
-6. **Don't** use Singleton for `IUserContextReader` or services depending on `HttpContext`
-7. **Don't** mix authentication schemes without understanding the dual-cookie system
-8. **Don't** forget UTF-8 BOM encoding for files with Chinese content
-
-## Key Files to Reference
-
-- `Program.cs` - Complete DI configuration, middleware pipeline, routing
-- `Areas/social_hub/Auth/AuthConstants.cs` - Authentication scheme names
-- `Areas/social_hub/Permissions/ManagerPermissionService.cs` - Permission checking logic
-- `Infrastructure/Login/CookieAndAdminCookieLoginIdentity.cs` - Login implementation
-- `Areas/MiniGame/config/ServiceExtensions.cs` - Example of proper service registration
-- `Models/GameSpacedatabaseContext.cs` - Complete database schema (scaffolded from DB)
-
-## Git Workflow
-
-**Current Branch:** `minigame`
-**Main Branch:** `main`
-
-Recent commits show focus on MiniGame area development and audit fixes. Follow existing commit message patterns.
+1. Developer Exception Page / Exception Handler
+2. Status Code Pages with ReExecute
+3. HTTPS Redirection
+4. Static Files
+5. Routing
+6. CORS (if configured)
+7. Cookie Policy
+8. **Session** (must be before Authentication)
+9. Authentication
+10. Authorization
+11. MapControllers / MapHub / MapRazorPages

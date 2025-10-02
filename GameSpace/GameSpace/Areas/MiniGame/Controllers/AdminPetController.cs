@@ -4,6 +4,7 @@ using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -14,7 +15,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
         private readonly IPetService _petService;
         private readonly IPetRulesService _petRulesService;
 
-        public AdminPetController(IPetService petService, IPetRulesService petRulesService)
+        public AdminPetController(
+            GameSpacedatabaseContext context,
+            IPetService petService,
+            IPetRulesService petRulesService)
+            : base(context)
         {
             _petService = petService;
             _petRulesService = petRulesService;

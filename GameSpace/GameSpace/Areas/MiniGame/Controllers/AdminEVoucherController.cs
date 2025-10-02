@@ -12,19 +12,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
     public class AdminEVoucherController : MiniGameBaseController
     {
-        private readonly GameSpacedatabaseContext _context;
-
         public AdminEVoucherController(GameSpacedatabaseContext context)
+            : base(context)
         {
-            _context = context;
         }
 
         // GET: AdminEVoucher
         public async Task<IActionResult> Index(string searchTerm = "", string status = "", string evoucherType = "", string sortBy = "code", int page = 1, int pageSize = 10)
         {
-            var query = _context.EVoucher
-                .Include(e => e.Users)
-                .Include(e => e.EVoucherType)
+            var query = _context.Evouchers
+                .Include(e => e.User)
+                .Include(e => e.EvoucherType)
                 .AsQueryable();
 
             // 搜尋功能

@@ -16,7 +16,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // Pet 基本 CRUD
         public async Task<IEnumerable<Pet>> GetAllPetsAsync()
         {
-            return await _context.Pet
+            return await _context.Pets
                 .Include(p => p.Users)
                 .OrderByDescending(p => p.Level)
                 .ToListAsync();
@@ -24,14 +24,14 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<Pet?> GetPetByIdAsync(int petId)
         {
-            return await _context.Pet
+            return await _context.Pets
                 .Include(p => p.Users)
                 .FirstOrDefaultAsync(p => p.PetID == petId);
         }
 
         public async Task<Pet?> GetPetByUserIdAsync(int userId)
         {
-            return await _context.Pet
+            return await _context.Pets
                 .Include(p => p.Users)
                 .FirstOrDefaultAsync(p => p.UserID == userId);
         }
@@ -40,7 +40,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                _context.Pet.Add(pet);
+                _context.Pets.Add(pet);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -54,7 +54,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                _context.Pet.Update(pet);
+                _context.Pets.Update(pet);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -71,7 +71,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var pet = await GetPetByIdAsync(petId);
                 if (pet == null) return false;
 
-                _context.Pet.Remove(pet);
+                _context.Pets.Remove(pet);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -364,7 +364,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<Pet>> GetTopLevelPetsAsync(int count = 10)
         {
-            return await _context.Pet
+            return await _context.Pets
                 .Include(p => p.Users)
                 .OrderByDescending(p => p.Level)
                 .ThenByDescending(p => p.Experience)

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
-    public class MiniGameAdminAuthService
+    public class MiniGameAdminAuthService : IMiniGameAdminAuthService
     {
         private readonly GameSpacedatabaseContext _context;
 

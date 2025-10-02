@@ -12,17 +12,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
     public class AdminMiniGameController : MiniGameBaseController
     {
-        private readonly GameSpacedatabaseContext _context;
-
         public AdminMiniGameController(GameSpacedatabaseContext context)
+            : base(context)
         {
-            _context = context;
         }
 
         // GET: AdminMiniGame
         public async Task<IActionResult> Index(string searchTerm = "", string gameType = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.MiniGame.AsQueryable();
+            var query = _context.MiniGames.AsQueryable();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))

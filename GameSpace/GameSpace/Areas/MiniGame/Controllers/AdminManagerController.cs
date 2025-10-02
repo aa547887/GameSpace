@@ -12,11 +12,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
     public class AdminManagerController : MiniGameBaseController
     {
-        private readonly GameSpacedatabaseContext _context;
-
         public AdminManagerController(GameSpacedatabaseContext context)
+            : base(context)
         {
-            _context = context;
         }
 
         // GET: AdminManager

@@ -17,7 +17,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminCoupon
         public async Task<IActionResult> Index(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.Coupon
+            var query = _context.Coupons
                 .Include(c => c.CouponType)
                 .Include(c => c.Users)
                 .AsQueryable();
@@ -82,7 +82,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var coupon = await _context.Coupon
+            var coupon = await _context.Coupons
                 .Include(c => c.CouponType)
                 .Include(c => c.Users)
                 .FirstOrDefaultAsync(m => m.CouponId == id);
@@ -98,7 +98,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminCoupon/Create
         public IActionResult Create()
         {
-            ViewData["CouponTypeId"] = _context.CouponType.ToList();
+            ViewData["CouponTypeId"] = _context.CouponTypes.ToList();
             ViewData["UserId"] = _context.Users.ToList();
             return View();
         }
@@ -110,7 +110,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (await _context.Coupon.AnyAsync(c => c.CouponCode == coupon.CouponCode))
+                if (await _context.Coupons.AnyAsync(c => c.CouponCode == coupon.CouponCode))
                 {
                     ModelState.AddModelError("CouponCode", "此優惠券代碼已存在");
                     return View(coupon);
@@ -122,7 +122,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 TempData["SuccessMessage"] = "優惠券建立成功";
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CouponTypeId"] = _context.CouponType.ToList();
+            ViewData["CouponTypeId"] = _context.CouponTypes.ToList();
             ViewData["UserId"] = _context.Users.ToList();
             return View(coupon);
         }
@@ -135,12 +135,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var coupon = await _context.Coupon.FindAsync(id);
+            var coupon = await _context.Coupons.FindAsync(id);
             if (coupon == null)
             {
                 return NotFound();
             }
-            ViewData["CouponTypeId"] = _context.CouponType.ToList();
+            ViewData["CouponTypeId"] = _context.CouponTypes.ToList();
             ViewData["UserId"] = _context.Users.ToList();
             return View(coupon);
         }
@@ -159,7 +159,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 try
                 {
-                    if (await _context.Coupon.AnyAsync(c => c.CouponCode == coupon.CouponCode && c.CouponId != id))
+                    if (await _context.Coupons.AnyAsync(c => c.CouponCode == coupon.CouponCode && c.CouponId != id))
                     {
                         ModelState.AddModelError("CouponCode", "此優惠券代碼已被其他優惠券使用");
                         return View(coupon);
@@ -183,7 +183,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     }
                 }
             }
-            ViewData["CouponTypeId"] = _context.CouponType.ToList();
+            ViewData["CouponTypeId"] = _context.CouponTypes.ToList();
             ViewData["UserId"] = _context.Users.ToList();
             return View(coupon);
         }
@@ -196,7 +196,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var coupon = await _context.Coupon
+            var coupon = await _context.Coupons
                 .Include(c => c.CouponType)
                 .Include(c => c.Users)
                 .FirstOrDefaultAsync(m => m.CouponId == id);
@@ -214,10 +214,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var coupon = await _context.Coupon.FindAsync(id);
+            var coupon = await _context.Coupons.FindAsync(id);
             if (coupon != null)
             {
-                _context.Coupon.Remove(coupon);
+                _context.Coupons.Remove(coupon);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "優惠券刪除成功";
@@ -228,7 +228,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         private bool CouponExists(int id)
         {
-            return _context.Coupon.Any(e => e.CouponId == id);
+            return _context.Coupons.Any(e => e.CouponId == id);
         }
 
         #region CouponType Management
@@ -236,7 +236,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminCoupon/CouponTypes
         public async Task<IActionResult> CouponTypes(string searchTerm = "", string discountType = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.CouponType.AsQueryable();
+            var query = _context.CouponTypes.AsQueryable();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
@@ -351,7 +351,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var couponType = await _context.CouponType.FindAsync(id);
+            var couponType = await _context.CouponTypes.FindAsync(id);
             if (couponType == null)
             {
                 return NotFound();
@@ -442,7 +442,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var couponType = await _context.CouponType
+            var couponType = await _context.CouponTypes
                 .FirstOrDefaultAsync(m => m.CouponTypeId == id);
 
             if (couponType == null)
@@ -451,7 +451,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
 
             // 檢查是否有相關的優惠券
-            var relatedCouponsCount = await _context.Coupon.CountAsync(c => c.CouponTypeId == id);
+            var relatedCouponsCount = await _context.Coupons.CountAsync(c => c.CouponTypeId == id);
             ViewBag.RelatedCouponsCount = relatedCouponsCount;
 
             return View(couponType);
@@ -463,17 +463,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
         public async Task<IActionResult> DeleteCouponTypeConfirmed(int id)
         {
             // 檢查是否有相關的優惠券
-            var relatedCouponsCount = await _context.Coupon.CountAsync(c => c.CouponTypeId == id);
+            var relatedCouponsCount = await _context.Coupons.CountAsync(c => c.CouponTypeId == id);
             if (relatedCouponsCount > 0)
             {
                 TempData["ErrorMessage"] = $"無法刪除：此優惠券類型仍有 {relatedCouponsCount} 個相關優惠券";
                 return RedirectToAction(nameof(CouponTypes));
             }
 
-            var couponType = await _context.CouponType.FindAsync(id);
+            var couponType = await _context.CouponTypes.FindAsync(id);
             if (couponType != null)
             {
-                _context.CouponType.Remove(couponType);
+                _context.CouponTypes.Remove(couponType);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "優惠券類型刪除成功";
@@ -490,7 +490,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var couponType = await _context.CouponType
+            var couponType = await _context.CouponTypes
                 .FirstOrDefaultAsync(m => m.CouponTypeId == id);
 
             if (couponType == null)
@@ -499,7 +499,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
 
             // 取得使用此類型的優惠券統計
-            var relatedCoupons = await _context.Coupon
+            var relatedCoupons = await _context.Coupons
                 .Where(c => c.CouponTypeId == id)
                 .ToListAsync();
 
@@ -512,7 +512,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         private bool CouponTypeExists(int id)
         {
-            return _context.CouponType.Any(e => e.CouponTypeId == id);
+            return _context.CouponTypes.Any(e => e.CouponTypeId == id);
         }
 
         #endregion

@@ -6,9 +6,9 @@ namespace GameSpace.Areas.MiniGame.Services
 {
     public class UserWalletService : IUserWalletService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public UserWalletService(MiniGameDbContext context)
+        public UserWalletService(GameSpacedatabaseContext context)
         {
             _context = context;
         }
