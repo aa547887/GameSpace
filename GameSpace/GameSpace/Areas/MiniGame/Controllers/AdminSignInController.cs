@@ -6,11 +6,12 @@ using GameSpace.Data;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
+    [Authorize(Policy = "AdminOnly")]
     public class AdminSignInController : Controller
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public AdminSignInController(MiniGameDbContext context)
+        public AdminSignInController(GameSpacedatabaseContext context)
         {
             _context = context;
         }

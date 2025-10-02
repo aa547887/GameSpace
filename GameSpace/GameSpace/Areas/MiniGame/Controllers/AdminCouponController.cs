@@ -6,13 +6,11 @@ using GameSpace.Models;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    public class AdminCouponController : Controller
+    [Authorize(Policy = "AdminOnly")]
+    public class AdminCouponController : MiniGameBaseController
     {
-        private readonly GameSpacedatabaseContext _context;
-
-        public AdminCouponController(GameSpacedatabaseContext context)
+        public AdminCouponController(GameSpacedatabaseContext context) : base(context)
         {
-            _context = context;
         }
 
         // GET: AdminCoupon

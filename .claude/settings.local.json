@@ -1,12 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet --version)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\n📝 新增 CLAUDE.md 專案架構文件\n\n新增完整的專案架構指南文件，供 Claude Code 使用，包含：\n- 專案概述與技術堆疊\n- 解決方案結構說明\n- 開發常用指令\n- 雙重認證系統架構\n- Area 組織模式\n- 權限系統（Policy-based 與 Manager 權限）\n- MiniGame Area 詳細架構\n- 開發規則與限制\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)",
-      "Bash(sqlcmd:*)",
-      "Bash(mkdir:*)"
+      "Bash(Select-String -Pattern \"^    public class.*Controller : Controller$\" -Context 2,0)"
     ],
     "deny": [],
     "ask": []

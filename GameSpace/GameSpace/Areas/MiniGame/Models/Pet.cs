@@ -7,60 +7,88 @@ namespace GameSpace.Areas.MiniGame.Models
     public class Pet
     {
         [Key]
+        [Column("PetID")]
         public int PetID { get; set; }
 
         [Required]
+        [Column("UserID")]
         public int UserID { get; set; }
 
         [Required]
         [StringLength(50)]
+        [Column("PetName")]
         public string PetName { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(30)]
-        public string PetType { get; set; } = string.Empty;
+        [Column("Level")]
+        public int Level { get; set; } = 1;
 
         [Required]
-        public int PetLevel { get; set; } = 1;
+        [Column("LevelUpTime")]
+        public DateTime LevelUpTime { get; set; } = DateTime.UtcNow;
 
         [Required]
-        public int PetExp { get; set; } = 0;
+        [Column("Experience")]
+        public int Experience { get; set; } = 0;
 
         [Required]
-        [StringLength(30)]
-        public string PetSkin { get; set; } = "default";
-
-        [Required]
-        [StringLength(30)]
-        public string PetBackground { get; set; } = "default";
-
-        [Required]
+        [Column("Hunger")]
         public int Hunger { get; set; } = 100;
 
         [Required]
-        public int Happiness { get; set; } = 100;
+        [Column("Mood")]
+        public int Mood { get; set; } = 100;
 
         [Required]
-        public int Health { get; set; } = 100;
+        [Column("Stamina")]
+        public int Stamina { get; set; } = 100;
 
         [Required]
-        public int Energy { get; set; } = 100;
-
-        [Required]
+        [Column("Cleanliness")]
         public int Cleanliness { get; set; } = 100;
 
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        [Column("Health")]
+        public int Health { get; set; } = 100;
 
-        public DateTime? LastFed { get; set; }
+        [Required]
+        [StringLength(10)]
+        [Column("SkinColor", TypeName = "varchar(10)")]
+        public string SkinColor { get; set; } = "#FFFFFF";
 
-        public DateTime? LastPlayed { get; set; }
+        [Required]
+        [Column("SkinColorChangedTime")]
+        public DateTime SkinColorChangedTime { get; set; } = DateTime.UtcNow;
 
-        public DateTime? LastBathed { get; set; }
+        [Required]
+        [StringLength(20)]
+        [Column("BackgroundColor")]
+        public string BackgroundColor { get; set; } = "#F0F0F0";
 
-        public DateTime? LastSlept { get; set; }
+        [Required]
+        [Column("BackgroundColorChangedTime")]
+        public DateTime BackgroundColorChangedTime { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        [Column("PointsChanged_SkinColor")]
+        public int PointsChanged_SkinColor { get; set; } = 0;
+
+        [Required]
+        [Column("PointsChanged_BackgroundColor")]
+        public int PointsChanged_BackgroundColor { get; set; } = 0;
+
+        [Required]
+        [Column("PointsGained_LevelUp")]
+        public int PointsGained_LevelUp { get; set; } = 0;
+
+        [Required]
+        [Column("PointsGainedTime_LevelUp")]
+        public DateTime PointsGainedTime_LevelUp { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
-        public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
+        [ForeignKey("UserID")]
+        public virtual Users? Users { get; set; }
+
+        public virtual ICollection<MiniGame>? MiniGames { get; set; }
     }
 }

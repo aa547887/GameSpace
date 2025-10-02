@@ -6,13 +6,11 @@ using GameSpace.Data;
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    public class AdminWalletController : Controller
+    [Authorize(Policy = "AdminOnly")]
+    public class AdminWalletController : MiniGameBaseController
     {
-        private readonly GameSpacedatabaseContext _context;
-
-        public AdminWalletController(GameSpacedatabaseContext context)
+        public AdminWalletController(GameSpacedatabaseContext context) : base(context)
         {
-            _context = context;
         }
 
         // GET: AdminWallet
