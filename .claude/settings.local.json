@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build:*)",
-      "Bash(Select-String -Pattern \"error|warning|Build succeeded|Build FAILED\" -Context 0,2)"
+      "Bash(Select-String -Pattern \"error|warning|Build succeeded|Build FAILED\" -Context 0,2)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "Bash(for:*)",
+      "Bash(do sed -i 's/using GameSpace\\.Data;/using GameSpace.Models;/' \"$file\")",
+      "Bash(done)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

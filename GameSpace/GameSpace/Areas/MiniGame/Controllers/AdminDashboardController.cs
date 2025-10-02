@@ -1,17 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.social_hub.Auth;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "AdminOnly")]
-    public class AdminDashboardController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class AdminDashboardController : MiniGameBaseController
     {
         private readonly IDashboardService _dashboardService;
         private readonly ISignInService _signInService;
 
-        public AdminDashboardController(IDashboardService dashboardService, ISignInService signInService)
+        public AdminDashboardController(GameSpacedatabaseContext context, IDashboardService dashboardService, ISignInService signInService)
+            : base(context)
         {
             _dashboardService = dashboardService;
             _signInService = signInService;

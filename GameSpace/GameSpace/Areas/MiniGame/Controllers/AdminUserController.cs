@@ -1,20 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Models;
+using GameSpace.Areas.social_hub.Auth;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "AdminOnly")]
-    public class AdminUserController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class AdminUserController : MiniGameBaseController
     {
         private readonly IUserService _userService;
         private readonly IWalletService _walletService;
 
-        public AdminUserController(IUserService userService, IWalletService walletService)
+        public AdminUserController(GameSpacedatabaseContext context, IUserService userService, IWalletService walletService)
+            : base(context)
         {
             _userService = userService;
             _walletService = walletService;

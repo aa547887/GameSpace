@@ -1,7 +1,6 @@
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
-using GameSpace.Areas.MiniGame.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +18,6 @@ namespace GameSpace.Areas.MiniGame.Controllers
         private readonly ILogger<DailyGameLimitController> _logger;
 
         public DailyGameLimitController(
-            DailyGameLimitValidationService validationService,
             IDailyGameLimitService service,
             DailyGameLimitValidationService validationService,
             ILogger<DailyGameLimitController> logger)

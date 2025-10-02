@@ -43,12 +43,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
 
         // 獲取當前管理員信息
-        protected async Task<Manager> GetCurrentManagerAsync()
+        protected async Task<ManagerDatum> GetCurrentManagerAsync()
         {
             var managerId = GetCurrentManagerId();
             if (managerId.HasValue)
             {
-                return await _context.Managers.FindAsync(managerId.Value);
+                return await _context.ManagerData.FindAsync(managerId.Value);
             }
             return null;
         }
@@ -64,43 +64,34 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return await _permissionService.HasManagerPermissionAsync(managerId.Value, permission);
             }
 
-            // 後備方案：使用原有的權限檢查邏輯
+            // 後備方案：檢查管理員角色權限
             var manager = await GetCurrentManagerAsync();
             if (manager == null) return false;
 
-            return manager.Role switch
+            // 載入管理員的角色權限
+            var managerWithRoles = await _context.ManagerData
+                .Include(m => m.ManagerRoles)
+                .FirstOrDefaultAsync(m => m.ManagerId == manager.ManagerId);
+
+            if (managerWithRoles == null || !managerWithRoles.ManagerRoles.Any())
+                return false;
+
+            // 檢查是否有任何角色具有管理員權限（最高權限）
+            var hasAdminPrivilege = managerWithRoles.ManagerRoles
+                .Any(r => r.AdministratorPrivilegesManagement == true);
+
+            if (hasAdminPrivilege) return true;
+
+            // 根據權限類型檢查特定權限
+            return permission switch
             {
-                "SuperAdmin" => true,
-                "Admin" => permission switch
-                {
-                    "MiniGame.View" => true,
-                    "MiniGame.Edit" => true,
-                    "MiniGame.Delete" => true,
-                    "User.View" => true,
-                    "User.Edit" => true,
-                    "Wallet.View" => true,
-                    "Wallet.Edit" => true,
-                    "Pet.View" => true,
-                    "Pet.Edit" => true,
-                    "Game.View" => true,
-                    "Game.Edit" => true,
-                    "Coupon.View" => true,
-                    "Coupon.Edit" => true,
-                    "EVoucher.View" => true,
-                    "EVoucher.Edit" => true,
-                    _ => false
-                },
-                "Manager" => permission switch
-                {
-                    "MiniGame.View" => true,
-                    "User.View" => true,
-                    "Wallet.View" => true,
-                    "Pet.View" => true,
-                    "Game.View" => true,
-                    "Coupon.View" => true,
-                    "EVoucher.View" => true,
-                    _ => false
-                },
+                "MiniGame.View" or "MiniGame.Edit" or "MiniGame.Delete" => hasAdminPrivilege,
+                "User.View" or "User.Edit" => managerWithRoles.ManagerRoles.Any(r => r.UserStatusManagement == true) || hasAdminPrivilege,
+                "Wallet.View" or "Wallet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true) || hasAdminPrivilege,
+                "Pet.View" or "Pet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.PetRightsManagement == true) || hasAdminPrivilege,
+                "Coupon.View" or "Coupon.Edit" or "EVoucher.View" or "EVoucher.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true) || hasAdminPrivilege,
+                "Message.View" or "Message.Edit" => managerWithRoles.ManagerRoles.Any(r => r.MessagePermissionManagement == true) || hasAdminPrivilege,
+                "CustomerService" => managerWithRoles.ManagerRoles.Any(r => r.CustomerService == true) || hasAdminPrivilege,
                 _ => false
             };
         }

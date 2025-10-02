@@ -34,8 +34,11 @@ namespace GameSpace.Areas.MiniGame.Filters
 
             // 檢查管理員權限
             var dbContext = context.HttpContext.RequestServices.GetRequiredService<GameSpacedatabaseContext>();
-            var manager = dbContext.Managers.Find(managerId);
-            if (manager == null || !manager.IsActive)
+            var manager = dbContext.ManagerData
+                .Include(m => m.ManagerRoles)
+                .FirstOrDefault(m => m.ManagerId == managerId);
+
+            if (manager == null || manager.ManagerLockoutEnabled)
             {
                 context.Result = new RedirectToActionResult("AccessDenied", "Home", new { area = "" });
                 return;
@@ -50,24 +53,27 @@ namespace GameSpace.Areas.MiniGame.Filters
             }
         }
 
-        private bool CheckModulePermission(Manager manager, string requiredPermission)
+        private bool CheckModulePermission(ManagerDatum manager, string requiredPermission)
         {
-            // 根據管理員角色和權限檢查
-            return manager.Role switch
+            if (manager?.ManagerRoles == null || !manager.ManagerRoles.Any())
+                return false;
+
+            // 檢查是否有任何角色具有管理員權限（最高權限）
+            var hasAdminPrivilege = manager.ManagerRoles
+                .Any(r => r.AdministratorPrivilegesManagement == true);
+
+            if (hasAdminPrivilege) return true;
+
+            // 根據權限類型檢查特定權限
+            return requiredPermission switch
             {
-                "SuperAdmin" => true,
-                "Admin" => requiredPermission switch
-                {
-                    "MiniGame.View" => true,
-                    "MiniGame.Edit" => true,
-                    "MiniGame.Delete" => true,
-                    _ => false
-                },
-                "Manager" => requiredPermission switch
-                {
-                    "MiniGame.View" => true,
-                    _ => false
-                },
+                "MiniGame.View" or "MiniGame.Edit" or "MiniGame.Delete" => hasAdminPrivilege,
+                "User.View" or "User.Edit" => manager.ManagerRoles.Any(r => r.UserStatusManagement == true),
+                "Wallet.View" or "Wallet.Edit" => manager.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true),
+                "Pet.View" or "Pet.Edit" => manager.ManagerRoles.Any(r => r.PetRightsManagement == true),
+                "Coupon.View" or "Coupon.Edit" or "EVoucher.View" or "EVoucher.Edit" => manager.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true),
+                "Message.View" or "Message.Edit" => manager.ManagerRoles.Any(r => r.MessagePermissionManagement == true),
+                "CustomerService" => manager.ManagerRoles.Any(r => r.CustomerService == true),
                 _ => false
             };
         }

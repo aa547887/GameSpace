@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Areas.MiniGame.Models;
+using Microsoft.AspNetCore.Authorization;
 using GameSpace.Models;
+using GameSpace.Areas.social_hub.Auth;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
     public class AdminCouponController : MiniGameBaseController
     {
         public AdminCouponController(GameSpacedatabaseContext context) : base(context)

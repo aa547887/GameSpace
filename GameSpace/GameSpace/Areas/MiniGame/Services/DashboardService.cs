@@ -1,5 +1,5 @@
 using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Data;
+using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.MiniGame.Services
