@@ -1,0 +1,81 @@
+
+### 一. 前置章（最重要）
+**連線與讀取**：    一律用powershell終端寫檔  ///minigame area在此:C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame ///
+- 先讀取    C:\Users\n2029\Desktop\GameSpace\GameSpace\schema\資料庫連線與讀取流程_詳細版.md 並**連線到 SQL 資料庫**，讀取 **SSMS** 的**表、欄位、完整的種子資料**（包含 **minigame area** 和 **使用者權限 manager** 相關）。  
+- 專案內對應的 **schema 路徑**為：`GameSpace/GameSpace/schema/`，目前檔案（10 個）：  
+  1. index.txt  
+  2. MiniGame_Area_完整描述文件.md  
+  3. MiniGame_area功能彙整.txt  
+  4. README_合併版.md  
+  5. 專案規格敘述1.txt  
+  6. 專案規格敘述2.txt  
+  7. 管理者權限相關描述.txt  
+  8. 資料庫連線與讀取流程.md  
+  9. 資料庫連線與讀取流程_詳細版.md  
+  10. 這裡有MinGame Area和管理者權限相關資料庫結構及種子資料.sql
+
+
+### 二. 樣板與導覽（細分權限版）
+- **Admin 首頁與樣式為統一樣板（SB Admin）不可更動**。  
+- **Admin 後台採用 SB Admin 樣板（禁止修改 vendor 檔）**。  
+- **所有後台功能頁共用此樣板**；流程：  
+  **登入** → **共用首頁（左側有共用 sidebar）** → 點選 **「小遊戲管理系統」** 標籤按鈕 → **跳轉到 MiniGame area 首頁**（左側有 sidebar）。  
+- 進入 MiniGame Area 後，**需細分權限**：以 **Role／Claim／Policy** 控管**模組可見性**與**動作級存取**；左側 **sidebar 僅顯示被授權的第一層標籤**，展開後亦**僅顯示被授權的第二層按鈕**；**未授權的頁面與 API 必須回應 403（專案有全域共用 403 頁面）或導回登入/無權限頁**。  
+- **注意**：我們**只要做後台**，而且**只在 Areas/MiniGame 作業**（**不能逾越**）；`Program.cs` **只可以新增代碼（註冊器）**。
+
+### 三. MiniGame Area 後台（Admin）樣板與功能規範（細分權限版）
+#### A. 樣板與登入流程（強制）
+- **Admin 首頁與樣式為統一樣板（SB Admin）不可更動。**  
+- **Admin 後台採用 SB Admin 樣板，禁止修改 vendor 檔。**  
+- **所有後台功能頁共用此樣板**：  
+  **登入** → **共用首頁（左側為共用 sidebar）** → 點選「**小遊戲管理系統**」標籤 → **跳轉至 MiniGame Area 首頁**（左側仍有 sidebar）。  
+- 進入 MiniGame Area 後，**需細分權限**：依 **Role／Claim／Policy** 控制**模組可見性**與**動作級存取**；**未授權功能不顯示**，未授權請求回應 **403（我們的專案有全域共用的 403 頁面）／導回登入或無權限頁**。  
+- 左側 sidebar 的**第一層／第二層按鈕**，**僅對具備授權者顯示**；每個對應頁之 **Action／View／Model／Controller（或 Server／Filter／Config）** 皆需受 **Policy** 保護。  
+- **本期僅實作後台**；僅允許在 **`Areas/MiniGame/`** 內作業（不得逾越）。  
+- Program.cs **只可新增必要註冊碼**以註冊 MiniGame Area，**不得變更**他人既有註冊與設定。
+
+#### B. 功能最少顯示清單（僅後台 Admin）
+**1) 會員錢包系統（Admin）**  
+- 查詢會員點數  
+- 查詢會員擁有商城優惠券  
+- 查詢會員擁有電子禮券  
+- 發放會員點數  
+- 發放會員之商城優惠券（含發放流程）  
+- 調整會員之電子禮券（含發放／增減）  
+- 查看會員收支明細（含**會員點數得到／花費**；**商城優惠券得到／使用**；**電子優惠券得到／使用**之**時間／點數或張數／種類**等欄位）
+
+**2) 會員簽到系統（Admin）**  
+- 簽到規則設定（如獎勵規則、頻率、條件等）  
+- 查看會員簽到紀錄（含簽到時間、獎勵內容等）
+
+**3) 寵物系統（Admin）**  
+- 整體寵物系統規則設定  
+  - 升級規則  
+  - 互動狀態增益規則  
+  - 寵物顏色選項  
+  - **寵物換色所需點數**  
+  - 寵物背景選項  
+  - **寵物換背景所需點數**  
+- 會員個別寵物設定（手動調整）  
+  - 寵物名／膚色／背景  
+- 會員個別寵物清單與查詢  
+  - 基本資料：**寵物名、目前膚色、目前背景、目前經驗值、目前等級、目前五大狀態值**  
+  - **換膚色紀錄查詢**  
+  - **換背景紀錄查詢**
+
+**4) 小遊戲系統（Admin）**  
+- 遊戲規則設定  
+  - 獎勵種類（**會員點數／寵物經驗值／商城優惠券**）  
+  - **每日遊戲次數限制（預設一天三次）**  
+- 查看會員遊戲紀錄  
+  - 時間（`startTime`、`endTime`）  
+  - 結果（`win／lose／abort`）  
+  - **獲得獎勵**（會員點數／寵物經驗值／商城優惠券）
+
+---
+
+## 一、執行總則（強制）
+- **不用建立任何目錄**，目錄已既有存在。  
+- 僅在專案範圍內操作：`Areas/MiniGame` 及 Program.cs 的**必要註冊碼**；**禁止**修改其他 Area 與 **vendor 檔**。
+
+先git add . commit push 然後閱讀  C:\Users\n2029\Desktop\GameSpace\CLAUDE.md    C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\docs\COVERAGE_MATRIX.json   C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\docs\DATABASE_CONNECTION_REPORT.md   C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\docs\AUDIT_SSMS.md    先讀取 C:\Users\n2029\Desktop\GameSpace\GameSpace\schema\資料庫連線與讀取流程_詳細版.md 並**連線到 SQL 資料庫**，讀取 **SSMS** 的**表、欄位、完整的種子資料**（包含 **minigame area** 和 **使用者權限 manager** 相關）。    包含 **minigame area** 和 **使用者權限 manager** 相關包含 **minigame area** 和 **使用者權限 manager** 相關包含 **minigame area** 和 **使用者權限 manager** 相關包含 **minigame area** 和 **使用者權限 manager** 相關 並執行稽核報告的辦理修復事項  一律用powershell終端指令寫檔  一律用繁體中文  **只在 Areas/MiniGame 作業**（**不能逾越**）
