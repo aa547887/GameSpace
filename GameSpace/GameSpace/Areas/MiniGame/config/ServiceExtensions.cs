@@ -58,6 +58,41 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊寵物換色/背景設定服務
             services.AddScoped<IPetColorChangeSettingsService, PetColorChangeSettingsService>();
 
+            // ==================== Phase 1: 新增 11 個核心 Service ====================
+            // 註冊寵物管理服務
+            services.AddScoped<IPetService, PetService>();
+
+            // 註冊錢包管理服務
+            services.AddScoped<IWalletService, WalletService>();
+
+            // 註冊簽到管理服務
+            services.AddScoped<ISignInService, SignInService>();
+
+            // 註冊系統診斷服務
+            services.AddScoped<IDiagnosticsService, DiagnosticsService>();
+
+            // 註冊儀表板服務
+            services.AddScoped<IDashboardService, DashboardService>();
+
+            // 註冊使用者管理服務
+            services.AddScoped<IUserService, UserService>();
+
+            // 註冊管理員管理服務
+            services.AddScoped<IManagerService, ManagerService>();
+
+            // 註冊優惠券類型管理服務
+            services.AddScoped<ICouponTypeService, CouponTypeService>();
+
+            // 註冊電子禮券類型管理服務
+            services.AddScoped<IEVoucherTypeService, EVoucherTypeService>();
+
+            // 註冊寵物規則管理服務
+            services.AddScoped<IPetRulesService, PetRulesService>();
+
+            // 註冊遊戲規則管理服務
+            services.AddScoped<IGameRulesService, GameRulesService>();
+            // =========================================================================
+
             return services;
         }
     }
