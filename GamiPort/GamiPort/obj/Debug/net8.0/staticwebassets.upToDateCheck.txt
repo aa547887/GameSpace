@@ -1,5 +1,14 @@
+wwwroot\css\layout-shell.css
+wwwroot\css\right-rail.css
+wwwroot\css\sidebar.css
 wwwroot\css\site.css
+wwwroot\css\topbar1.css
+wwwroot\css\topbar2.css
 wwwroot\favicon.ico
+wwwroot\images\kirby.jpg
+wwwroot\images\logo.svg
+wwwroot\images\測試用圖.jpg
+wwwroot\js\sidebar.js
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
@@ -58,12 +67,3 @@ wwwroot\lib\jquery\dist\jquery.js
 wwwroot\lib\jquery\dist\jquery.min.js
 wwwroot\lib\jquery\dist\jquery.min.map
 wwwroot\lib\jquery\LICENSE.txt
-wwwroot\images\logo.svg
-wwwroot\images\測試用圖.jpg
-wwwroot\images\kirby.jpg
-wwwroot\css\sidebar.css
-wwwroot\css\topbar1.css
-wwwroot\css\layout-shell.css
-wwwroot\css\topbar2.css
-wwwroot\css\right-rail.css
-wwwroot\js\sidebar.js
