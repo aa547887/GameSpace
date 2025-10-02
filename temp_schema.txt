@@ -1,3 +1,0 @@
-Sqlcmd: 錯誤: Microsoft ODBC Driver 17 for SQL Server : SQL Server Network Interfaces: 尋找指定的伺服器/執行個體時發生錯誤 [xFFFFFFFF]. 。
-Sqlcmd: 錯誤: Microsoft ODBC Driver 17 for SQL Server : 登入逾時終止。
-Sqlcmd: 錯誤: Microsoft ODBC Driver 17 for SQL Server : 建立 SQL Server 的連接時發生網路相關或執行個體特定錯誤。找不到伺服器或是無法存取。檢查執行個體名稱是否正確以及 SQL Server 執行個體是否設定為允許遠端連接。如需詳細資訊，請參閱《SQL Server 線上叢書》。。

@@ -23,10 +23,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-// ---- MiniGame Area 相關服務 ----
-using GameSpace.Areas.MiniGame.Data;
-using GameSpace.Areas.MiniGame.config;
-
 // ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
 using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
@@ -100,9 +96,6 @@ namespace GameSpace
 
 			// 權限服務（Gate + 細權限）
 			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
-
-			// ========== 6.5) MiniGame Area 相關服務 ==========
-			builder.Services.AddMiniGameServices(builder.Configuration);
 
 			// ========== 7) CORS（可選） ==========
 			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
@@ -185,9 +178,6 @@ namespace GameSpace
 				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
 				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
 				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
-				// MiniGame Area 專用政策
-				options.AddPolicy("AdminOnly", p => p.RequireAuthenticatedUser()
-					.AddAuthenticationSchemes("AdminCookie"));
 			});
 
 			// ========== 12) Anti-Forgery 設定 ==========

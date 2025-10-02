@@ -1,5 +1,0 @@
-// 在 ServiceExtensions.cs 中添加新的服務註冊
-// 在現有的寵物選項相關服務之後添加：
-
-            // 註冊寵物換色所需點數設定服務
-            services.AddScoped<IPetColorCostSettingService, PetColorCostSettingService>();
