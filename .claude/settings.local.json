@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(Select-Object Name)",
-      "Bash(Sort-Object Name)"
+      "Bash(Sort-Object Name)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

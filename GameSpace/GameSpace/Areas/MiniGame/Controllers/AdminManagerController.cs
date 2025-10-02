@@ -1,18 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Data;
+using GameSpace.Models;
+using GameSpace.Areas.social_hub.Auth;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
-    public class AdminManagerController : Controller
+    [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme)]
+    public class AdminManagerController : MiniGameBaseController
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public AdminManagerController(MiniGameDbContext context)
+        public AdminManagerController(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -20,42 +22,40 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminManager
         public async Task<IActionResult> Index(string searchTerm = "", string status = "", string role = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.Manager
+            var query = _context.ManagerData
                 .Include(m => m.ManagerRoles)
-                .ThenInclude(mr => mr.ManagerRolePermission)
                 .AsQueryable();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(m => m.Manager_Name.Contains(searchTerm) || 
-                                       m.Manager_Account.Contains(searchTerm) || 
-                                       m.Manager_Email.Contains(searchTerm));
+                query = query.Where(m => (m.ManagerName != null && m.ManagerName.Contains(searchTerm)) ||
+                                       (m.ManagerAccount != null && m.ManagerAccount.Contains(searchTerm)) ||
+                                       m.ManagerEmail.Contains(searchTerm));
             }
 
             // 狀態篩選
             if (!string.IsNullOrEmpty(status))
             {
                 if (status == "active")
-                    query = query.Where(m => !m.Manager_LockoutEnabled || !m.Manager_LockoutEnd.HasValue || m.Manager_LockoutEnd <= DateTime.Now);
+                    query = query.Where(m => !m.ManagerLockoutEnabled || !m.ManagerLockoutEnd.HasValue || m.ManagerLockoutEnd <= DateTime.Now);
                 else if (status == "locked")
-                    query = query.Where(m => m.Manager_LockoutEnabled && m.Manager_LockoutEnd.HasValue && m.Manager_LockoutEnd > DateTime.Now);
+                    query = query.Where(m => m.ManagerLockoutEnabled && m.ManagerLockoutEnd.HasValue && m.ManagerLockoutEnd > DateTime.Now);
             }
 
             // 角色篩選
             if (!string.IsNullOrEmpty(role) && int.TryParse(role, out int roleId))
             {
-                query = query.Where(m => m.ManagerRoles.Any(mr => mr.ManagerRole_Id == roleId));
+                query = query.Where(m => m.ManagerRoles.Any(mr => mr.ManagerRoleId == roleId));
             }
 
             // 排序
             query = sortBy switch
             {
-                "account" => query.OrderBy(m => m.Manager_Account),
-                "email" => query.OrderBy(m => m.Manager_Email),
-                "created" => query.OrderBy(m => m.Administrator_registration_date),
-                "lastLogin" => query.OrderByDescending(m => m.LastLoginAt),
-                _ => query.OrderBy(m => m.Manager_Name)
+                "account" => query.OrderBy(m => m.ManagerAccount),
+                "email" => query.OrderBy(m => m.ManagerEmail),
+                "created" => query.OrderBy(m => m.AdministratorRegistrationDate),
+                _ => query.OrderBy(m => m.ManagerName)
             };
 
             // 分頁
@@ -65,29 +65,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var viewModel = new AdminManagerIndexViewModel
-            {
-                Managers = new PagedResult<Manager>
-                {
-                    Items = managers,
-                    TotalCount = totalCount,
-                    PageNumber = page,
-                    PageSize = pageSize
-                }
-            };
-
             // 設定 ViewBag 用於搜尋和篩選
             ViewBag.SearchTerm = searchTerm;
             ViewBag.Status = status;
             ViewBag.Role = role;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalManagers = totalCount;
-            ViewBag.ActiveManagers = await _context.Manager.CountAsync(m => !m.Manager_LockoutEnabled || !m.Manager_LockoutEnd.HasValue || m.Manager_LockoutEnd <= DateTime.Now);
-            ViewBag.TotalRoles = await _context.ManagerRolePermission.CountAsync();
-            ViewBag.TodayLogins = await _context.Manager.CountAsync(m => m.LastLoginAt.HasValue && m.LastLoginAt.Value.Date == DateTime.Today);
-            ViewBag.RoleList = await _context.ManagerRolePermission.ToListAsync();
+            ViewBag.ActiveManagers = await _context.ManagerData.CountAsync(m => !m.ManagerLockoutEnabled || !m.ManagerLockoutEnd.HasValue || m.ManagerLockoutEnd <= DateTime.Now);
+            ViewBag.TotalRoles = await _context.ManagerRolePermissions.CountAsync();
+            ViewBag.Managers = managers;
+            ViewBag.RoleList = await _context.ManagerRolePermissions.ToListAsync();
 
-            return View(viewModel);
+            return View();
         }
 
         // GET: AdminManager/Details/5
@@ -98,10 +87,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var manager = await _context.Manager
+            var manager = await _context.ManagerData
                 .Include(m => m.ManagerRoles)
-                .ThenInclude(mr => mr.ManagerRolePermission)
-                .FirstOrDefaultAsync(m => m.Manager_Id == id);
+                .FirstOrDefaultAsync(m => m.ManagerId == id);
 
             if (manager == null)
             {
@@ -114,59 +102,59 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminManager/Create
         public async Task<IActionResult> Create()
         {
-            ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
+            ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
             return View();
         }
 
         // POST: AdminManager/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AdminManagerCreateViewModel model)
+        public async Task<IActionResult> Create(string managerName, string managerAccount, string managerEmail, string password, List<int> roleIds)
         {
             if (ModelState.IsValid)
             {
                 // 檢查帳號是否已存在
-                if (await _context.Manager.AnyAsync(m => m.Manager_Account == model.Manager_Account))
+                if (await _context.ManagerData.AnyAsync(m => m.ManagerAccount == managerAccount))
                 {
-                    ModelState.AddModelError("Manager_Account", "此帳號已存在");
-                    ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-                    return View(model);
+                    ModelState.AddModelError("managerAccount", "此帳號已存在");
+                    ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+                    return View();
                 }
 
                 // 檢查電子郵件是否已存在
-                if (await _context.Manager.AnyAsync(m => m.Manager_Email == model.Manager_Email))
+                if (await _context.ManagerData.AnyAsync(m => m.ManagerEmail == managerEmail))
                 {
-                    ModelState.AddModelError("Manager_Email", "此電子郵件已存在");
-                    ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-                    return View(model);
+                    ModelState.AddModelError("managerEmail", "此電子郵件已存在");
+                    ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+                    return View();
                 }
 
-                var manager = new Manager
+                var manager = new ManagerDatum
                 {
-                    Manager_Name = model.Manager_Name,
-                    Manager_Account = model.Manager_Account,
-                    Manager_Password = HashPassword(model.Password),
-                    Manager_Email = model.Manager_Email,
-                    Administrator_registration_date = DateTime.Now,
-                    LastLoginAt = null,
-                    Manager_LockoutEnabled = false,
-                    Manager_LockoutEnd = null
+                    ManagerName = managerName,
+                    ManagerAccount = managerAccount,
+                    ManagerPassword = HashPassword(password),
+                    ManagerEmail = managerEmail,
+                    AdministratorRegistrationDate = DateTime.Now,
+                    ManagerLockoutEnabled = false,
+                    ManagerLockoutEnd = null,
+                    ManagerEmailConfirmed = false,
+                    ManagerAccessFailedCount = 0
                 };
 
                 _context.Add(manager);
                 await _context.SaveChangesAsync();
 
-                // 分配角色
-                if (model.RoleIds.Any())
+                // 分配角色 - 需要使用正確的關聯表
+                if (roleIds != null && roleIds.Any())
                 {
-                    foreach (var roleId in model.RoleIds)
+                    foreach (var roleId in roleIds)
                     {
-                        var managerRole = new ManagerRole
+                        var rolePermission = await _context.ManagerRolePermissions.FindAsync(roleId);
+                        if (rolePermission != null)
                         {
-                            Manager_Id = manager.Manager_Id,
-                            ManagerRole_Id = roleId
-                        };
-                        _context.Add(managerRole);
+                            manager.ManagerRoles.Add(rolePermission);
+                        }
                     }
                     await _context.SaveChangesAsync();
                 }
@@ -175,8 +163,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Roles = await _context.ManagerRolePermission.ToListAsync();
-            return View(model);
+            ViewBag.Roles = await _context.ManagerRolePermissions.ToListAsync();
+            return View();
         }
 
         // GET: AdminManager/CreateRole
