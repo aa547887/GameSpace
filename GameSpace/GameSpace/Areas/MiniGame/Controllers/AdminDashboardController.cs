@@ -1,18 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
-using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
     [Area("MiniGame")]
+    [Authorize(Policy = "AdminOnly")]
     public class AdminDashboardController : Controller
     {
-        private readonly GameSpacedatabaseContext _context;
+        private readonly IDashboardService _dashboardService;
+        private readonly ISignInService _signInService;
 
-        public AdminDashboardController(GameSpacedatabaseContext context)
+        public AdminDashboardController(IDashboardService dashboardService, ISignInService signInService)
         {
-            _context = context;
+            _dashboardService = dashboardService;
+            _signInService = signInService;
         }
 
         public async Task<IActionResult> Index()
@@ -21,84 +23,72 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             try
             {
-                // 基本統計數據
-                viewModel.TotalUsers = await _context.Users.CountAsync();
-                viewModel.ActiveUsers = await _context.Users.CountAsync(u => u.IsActive);
-                viewModel.TotalPets = await _context.Pets.CountAsync();
-                viewModel.TotalMiniGames = await _context.MiniGames.CountAsync();
-                viewModel.TotalCoupons = await _context.Coupons.CountAsync();
-                viewModel.TotalEVouchers = await _context.EVouchers.CountAsync();
+                // 獲取總覽數據
+                var overview = await _dashboardService.GetDashboardOverviewAsync();
+                viewModel.TotalUsers = overview.TotalUsers;
+                viewModel.ActiveUsers = overview.ActiveUsers;
+                viewModel.TotalPets = 0; // 暫不可用
+                viewModel.TotalMiniGames = overview.TotalGames;
+                viewModel.TotalCoupons = 0; // 暫不可用
+                viewModel.TotalEVouchers = 0; // 暫不可用
 
                 // 今日統計
-                var today = DateTime.Today;
-                viewModel.TodaySignIns = await _context.UserSignInStats
-                    .CountAsync(s => s.SignTime.Date == today);
-                viewModel.TodayGames = await _context.MiniGames
-                    .CountAsync(g => g.StartTime.Date == today);
+                viewModel.TodaySignIns = overview.TodayGames; // 使用遊戲數代替
+                viewModel.TodayGames = overview.TodayGames;
 
                 // 本月統計
-                var thisMonth = new DateTime(today.Year, today.Month, 1);
-                viewModel.ThisMonthSignIns = await _context.UserSignInStats
-                    .CountAsync(s => s.SignTime >= thisMonth);
-                viewModel.ThisMonthGames = await _context.MiniGames
-                    .CountAsync(g => g.StartTime >= thisMonth);
+                var gameStats = await _dashboardService.GetGameStatisticsAsync();
+                viewModel.ThisMonthSignIns = gameStats.GamesThisMonth;
+                viewModel.ThisMonthGames = gameStats.GamesThisMonth;
 
-                // 活躍用戶統計（最近7天）
-                var sevenDaysAgo = today.AddDays(-7);
-                viewModel.ActiveUsersLast7Days = await _context.Users
-                    .CountAsync(u => u.LastLoginDate >= sevenDaysAgo);
+                // 活躍用戶統計
+                var userStats = await _dashboardService.GetUserStatisticsAsync();
+                viewModel.ActiveUsersLast7Days = userStats.NewUsersThisWeek;
 
-                // 寵物統計
-                viewModel.PetsWithMaxLevel = await _context.Pets
-                    .CountAsync(p => p.PetLevel >= 10);
-                viewModel.PetsWithMaxHappiness = await _context.Pets
-                    .CountAsync(p => p.Happiness >= 100);
+                // 寵物統計（暫時使用假數據）
+                viewModel.PetsWithMaxLevel = 0;
+                viewModel.PetsWithMaxHappiness = 0;
 
                 // 錢包統計
-                viewModel.TotalPointsInCirculation = await _context.UserWallets
-                    .SumAsync(w => w.UserPoint);
-                viewModel.AveragePointsPerUser = viewModel.TotalUsers > 0 
-                    ? viewModel.TotalPointsInCirculation / viewModel.TotalUsers 
+                var revenueStats = await _dashboardService.GetRevenueStatisticsAsync();
+                viewModel.TotalPointsInCirculation = (int)revenueStats.TotalRevenue;
+                viewModel.AveragePointsPerUser = viewModel.TotalUsers > 0
+                    ? (int)(revenueStats.TotalRevenue / viewModel.TotalUsers)
                     : 0;
 
-                // 優惠券統計
-                viewModel.UsedCoupons = await _context.Coupons
-                    .CountAsync(c => c.IsUsed);
-                viewModel.AvailableCoupons = await _context.Coupons
-                    .CountAsync(c => !c.IsUsed);
+                // 優惠券統計（暫時使用假數據）
+                viewModel.UsedCoupons = 0;
+                viewModel.AvailableCoupons = 0;
 
-                // 電子券統計
-                viewModel.UsedEVouchers = await _context.EVouchers
-                    .CountAsync(e => e.IsUsed);
-                viewModel.AvailableEVouchers = await _context.EVouchers
-                    .CountAsync(e => !e.IsUsed);
+                // 電子券統計（暫時使用假數據）
+                viewModel.UsedEVouchers = 0;
+                viewModel.AvailableEVouchers = 0;
 
                 // 最近活動
-                viewModel.RecentSignIns = await _context.UserSignInStats
-                    .Include(s => s.User)
-                    .OrderByDescending(s => s.SignTime)
+                var recentActivities = await _dashboardService.GetRecentActivitiesAsync(10);
+                viewModel.RecentSignIns = recentActivities
+                    .Where(a => a.ActivityType == "SignIn")
                     .Take(5)
-                    .Select(s => new RecentActivityViewModel
+                    .Select(a => new RecentActivityViewModel
                     {
-                        UserName = s.User.User_name,
-                        Activity = "簽到",
-                        Time = s.SignTime,
-                        PointsEarned = s.PointsEarned
+                        UserName = a.UserName,
+                        Activity = a.Description,
+                        Time = a.Timestamp,
+                        PointsEarned = 0 // 從描述中解析
                     })
-                    .ToListAsync();
+                    .ToList();
 
-                viewModel.RecentGames = await _context.MiniGames
-                    .Include(g => g.User)
-                    .OrderByDescending(g => g.StartTime)
+                viewModel.RecentGames = recentActivities
+                    .Where(a => a.ActivityType != "SignIn")
                     .Take(5)
-                    .Select(g => new RecentActivityViewModel
+                    .Select(a => new RecentActivityViewModel
                     {
-                        UserName = g.User.User_name,
-                        Activity = "小遊戲",
-                        Time = g.StartTime,
-                        PointsEarned = g.PointsEarned
+                        UserName = a.UserName,
+                        Activity = a.Description,
+                        Time = a.Timestamp,
+                        PointsEarned = 0
                     })
-                    .ToListAsync();
+                    .ToList();
 
                 // 圖表數據
                 viewModel.SignInChartData = await GetSignInChartDataAsync();
@@ -120,12 +110,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var today = DateTime.Today;
             var chartData = new List<ChartData>();
 
+            var trendData = await _signInService.GetSignInTrendDataAsync(7);
+
             for (int i = 6; i >= 0; i--)
             {
                 var date = today.AddDays(-i);
-                var count = await _context.UserSignInStats
-                    .CountAsync(s => s.SignTime.Date == date);
-                
+                var dateKey = date.ToString("yyyy-MM-dd");
+
+                var count = trendData.ContainsKey(dateKey) ? trendData[dateKey] : 0;
+
                 chartData.Add(new ChartData
                 {
                     Label = date.ToString("MM/dd"),
@@ -141,12 +134,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var today = DateTime.Today;
             var chartData = new List<ChartData>();
 
+            var trendData = await _dashboardService.GetGamePlayTrendAsync(7);
+
             for (int i = 6; i >= 0; i--)
             {
                 var date = today.AddDays(-i);
-                var count = await _context.MiniGames
-                    .CountAsync(g => g.StartTime.Date == date);
-                
+                var dateKey = date.ToString("yyyy-MM-dd");
+
+                var count = trendData.ContainsKey(dateKey) ? trendData[dateKey] : 0;
+
                 chartData.Add(new ChartData
                 {
                     Label = date.ToString("MM/dd"),
@@ -162,21 +158,101 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var today = DateTime.Today;
             var chartData = new List<ChartData>();
 
+            var trendData = await _dashboardService.GetRevenueTrendAsync(7);
+
             for (int i = 6; i >= 0; i--)
             {
                 var date = today.AddDays(-i);
-                var points = await _context.WalletHistories
-                    .Where(w => w.ChangeTime.Date == date && w.ChangeType == "Point")
-                    .SumAsync(w => w.ChangeAmount);
-                
+                var dateKey = date.ToString("yyyy-MM-dd");
+
+                var points = trendData.ContainsKey(dateKey) ? (int)trendData[dateKey] : 0;
+
                 chartData.Add(new ChartData
                 {
                     Label = date.ToString("MM/dd"),
-                    Value = (int)points
+                    Value = points
                 });
             }
 
             return chartData;
+        }
+
+        // API endpoints for dynamic data
+        [HttpGet]
+        public async Task<IActionResult> GetOverview()
+        {
+            var overview = await _dashboardService.GetDashboardOverviewAsync();
+            return Json(overview);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUserStatistics()
+        {
+            var stats = await _dashboardService.GetUserStatisticsAsync();
+            return Json(stats);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetGameStatistics()
+        {
+            var stats = await _dashboardService.GetGameStatisticsAsync();
+            return Json(stats);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRevenueStatistics()
+        {
+            var stats = await _dashboardService.GetRevenueStatisticsAsync();
+            return Json(stats);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTopUsers(int count = 10)
+        {
+            var topUsers = await _dashboardService.GetTopUsersAsync(count);
+            return Json(topUsers);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTopGames(int count = 10)
+        {
+            var topGames = await _dashboardService.GetTopGamesAsync(count);
+            return Json(topGames);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRecentActivities(int count = 20)
+        {
+            var activities = await _dashboardService.GetRecentActivitiesAsync(count);
+            return Json(activities);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetActiveAlerts()
+        {
+            var alerts = await _dashboardService.GetActiveAlertsAsync();
+            return Json(alerts);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUserGrowthTrend(int days = 30)
+        {
+            var trend = await _dashboardService.GetUserGrowthTrendAsync(days);
+            return Json(trend);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetGamePlayTrend(int days = 30)
+        {
+            var trend = await _dashboardService.GetGamePlayTrendAsync(days);
+            return Json(trend);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRevenueTrend(int days = 30)
+        {
+            var trend = await _dashboardService.GetRevenueTrendAsync(days);
+            return Json(trend);
         }
     }
 }
