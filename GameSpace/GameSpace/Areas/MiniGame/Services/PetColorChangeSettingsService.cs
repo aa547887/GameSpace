@@ -91,6 +91,26 @@ namespace GameSpace.Areas.MiniGame.Services
             return await _context.PetColorChangeSettings
                 .FirstOrDefaultAsync(s => s.IsActive);
         }
+
+        /// <summary>
+        /// 切換設定的啟用狀態
+        /// </summary>
+        /// <param name="id">設定ID</param>
+        /// <returns>是否切換成功</returns>
+        public async Task<bool> ToggleActiveAsync(int id)
+        {
+            var setting = await _context.PetColorChangeSettings
+                .FirstOrDefaultAsync(s => s.SettingId == id);
+
+            if (setting == null)
+                return false;
+
+            setting.IsActive = !setting.IsActive;
+            setting.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }
 

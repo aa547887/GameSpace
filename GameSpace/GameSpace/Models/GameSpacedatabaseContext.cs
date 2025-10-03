@@ -190,6 +190,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<GameSpace.Areas.MiniGame.Models.Settings.PetBackgroundPointSettings> PetBackgroundPointSettings { get; set; }
 
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.Settings.PetColorChangeSettings> PetColorChangeSettings { get; set; }
+
     public virtual DbSet<GameSpace.Areas.MiniGame.Services.SignInRule> SignInRules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

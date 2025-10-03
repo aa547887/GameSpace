@@ -174,7 +174,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdjustEVouchersModel
     {
         public int UserID { get; set; }
-        public int EVoucherTypeID { get; set; }
+        public int EvoucherTypeId { get; set; }
         public int Quantity { get; set; }
         public string? Reason { get; set; }
         public decimal? CustomValue { get; set; }
@@ -225,7 +225,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class GrantEVouchersModel
     {
         public int UserID { get; set; }
-        public int EVoucherTypeID { get; set; }
+        public int EvoucherTypeId { get; set; }
         public int Quantity { get; set; }
     }
 
@@ -242,14 +242,29 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminCouponCreateViewModel
     {
         [Required]
-        public int UserID { get; set; }
-        
+        public int UserId { get; set; }
+
         [Required]
-        public int CouponTypeID { get; set; }
-        
+        public int CouponTypeId { get; set; }
+
         [Required]
         [StringLength(50)]
         public string CouponCode { get; set; } = string.Empty;
+
+        // 保留舊屬性名稱以支持向後相容
+        [Obsolete("請使用 UserId 屬性")]
+        public int UserID
+        {
+            get => UserId;
+            set => UserId = value;
+        }
+
+        [Obsolete("請使用 CouponTypeId 屬性")]
+        public int CouponTypeID
+        {
+            get => CouponTypeId;
+            set => CouponTypeId = value;
+        }
     }
 
     // 電子券相關 ViewModels
@@ -257,10 +272,10 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     {
         [Required]
         public int UserID { get; set; }
-        
+
         [Required]
-        public int EVoucherTypeID { get; set; }
-        
+        public int EvoucherTypeId { get; set; }
+
         [Required]
         [StringLength(50)]
         public string EVoucherCode { get; set; } = string.Empty;
@@ -292,16 +307,16 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     {
         [Required]
         public int UserID { get; set; }
-        
+
         [Required]
-        public int EVoucherTypeID { get; set; }
+        public int EvoucherTypeId { get; set; }
     }
 
     public class EVoucherEditVM
     {
-        public int EVoucherID { get; set; }
+        public int EvoucherId { get; set; }
         public int UserID { get; set; }
-        public int EVoucherTypeID { get; set; }
+        public int EvoucherTypeId { get; set; }
     }
 
     // 簽到相關 ViewModels

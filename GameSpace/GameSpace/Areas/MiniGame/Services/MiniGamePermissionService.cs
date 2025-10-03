@@ -27,7 +27,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var manager = await _context.Managers
+                var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
                     .ThenInclude(mr => mr.ManagerRole)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
@@ -63,10 +63,10 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<List<string>> GetManagerPermissionsAsync(int managerId)
         {
             var permissions = new List<string>();
-            
+
             try
             {
-                var manager = await _context.Managers
+                var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
                     .ThenInclude(mr => mr.ManagerRole)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
@@ -98,7 +98,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var manager = await _context.Managers
+                var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
                     .ThenInclude(mr => mr.ManagerRole)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);

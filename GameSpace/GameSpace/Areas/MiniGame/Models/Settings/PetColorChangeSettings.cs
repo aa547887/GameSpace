@@ -14,6 +14,36 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public int SettingId { get; set; }
 
         /// <summary>
+        /// ID - Alias for SettingId for view compatibility
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public int Id
+        {
+            get => SettingId;
+            set => SettingId = value;
+        }
+
+        /// <summary>
+        /// 顏色名稱 - Alias for SettingName for view compatibility
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string ColorName
+        {
+            get => SettingName;
+            set => SettingName = value;
+        }
+
+        /// <summary>
+        /// 所需點數 - Alias for PointsRequired for view compatibility
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public int RequiredPoints
+        {
+            get => PointsRequired;
+            set => PointsRequired = value;
+        }
+
+        /// <summary>
         /// 設定名稱
         /// </summary>
         [Required(ErrorMessage = "設定名稱為必填欄位")]

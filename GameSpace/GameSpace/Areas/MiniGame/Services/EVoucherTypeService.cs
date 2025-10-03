@@ -24,7 +24,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<EvoucherType?> GetEVoucherTypeByIdAsync(int evoucherTypeId)
         {
             return await _context.EvoucherTypes
-                .FirstOrDefaultAsync(evt => evt.EVoucherTypeID == evoucherTypeId);
+                .FirstOrDefaultAsync(evt => evt.EvoucherTypeId == evoucherTypeId);
         }
 
         public async Task<bool> CreateEVoucherTypeAsync(EvoucherType evoucherType)
@@ -219,7 +219,7 @@ namespace GameSpace.Areas.MiniGame.Services
             foreach (var evoucherType in evoucherTypes)
             {
                 var evouchers = await _context.Evouchers
-                    .Where(e => e.EVoucherTypeID == evoucherType.EVoucherTypeID)
+                    .Where(e => e.EvoucherTypeId == evoucherType.EvoucherTypeId)
                     .ToListAsync();
 
                 var totalIssued = evouchers.Count;
@@ -228,7 +228,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 stats.Add(new EVoucherTypeUsageStats
                 {
-                    EVoucherTypeId = evoucherType.EVoucherTypeID,
+                    EVoucherTypeId = evoucherType.EvoucherTypeId,
                     Name = evoucherType.EVoucherTypeName,
                     TotalIssued = totalIssued,
                     TotalUsed = totalUsed,

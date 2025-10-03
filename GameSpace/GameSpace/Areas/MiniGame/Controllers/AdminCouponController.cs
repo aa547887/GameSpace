@@ -56,7 +56,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                         IsUsed = c.IsUsed,
                         AcquiredTime = c.AcquiredTime,
                         UsedTime = c.UsedTime,
-                        UsedInOrderID = c.UsedInOrderID
+                        UsedInOrderID = c.UsedInOrderId
                     }).ToList(),
                     Page = page,
                     PageSize = pageSize,
@@ -106,7 +106,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // POST: AdminCoupon/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CouponId,CouponCode,UserId,CouponTypeId,IsUsed,AcquiredTime,UsedTime,UsedInOrderID")] Coupon coupon)
+        public async Task<IActionResult> Create([Bind("CouponId,CouponCode,UserId,CouponTypeId,IsUsed,AcquiredTime,UsedTime,UsedInOrderId")] Coupon coupon)
         {
             if (ModelState.IsValid)
             {
@@ -148,7 +148,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // POST: AdminCoupon/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("CouponId,CouponCode,UserId,CouponTypeId,IsUsed,AcquiredTime,UsedTime,UsedInOrderID")] Coupon coupon)
+        public async Task<IActionResult> Edit(int id, [Bind("CouponId,CouponCode,UserId,CouponTypeId,IsUsed,AcquiredTime,UsedTime,UsedInOrderId")] Coupon coupon)
         {
             if (id != coupon.CouponId)
             {

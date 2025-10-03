@@ -5,6 +5,23 @@ using System.ComponentModel.DataAnnotations;
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     /// <summary>
+    /// 用戶優惠券模型 (用於 AdminCouponController)
+    /// </summary>
+    public class UserCouponModel
+    {
+        public int CouponID { get; set; }
+        public string CouponCode { get; set; } = string.Empty;
+        public int UserID { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int CouponTypeID { get; set; }
+        public string CouponTypeName { get; set; } = string.Empty;
+        public bool IsUsed { get; set; }
+        public DateTime AcquiredTime { get; set; }
+        public DateTime? UsedTime { get; set; }
+        public int? UsedInOrderID { get; set; }
+    }
+
+    /// <summary>
     /// 用戶優惠券讀取模型
     /// </summary>
     public class UserCouponReadModel

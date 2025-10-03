@@ -46,6 +46,13 @@ namespace GameSpace.Areas.MiniGame.Services
         /// </summary>
         /// <returns>啟用的換色點數設定</returns>
         Task<PetColorChangeSettings?> GetActiveSettingAsync();
+
+        /// <summary>
+        /// 切換設定的啟用狀態
+        /// </summary>
+        /// <param name="id">設定ID</param>
+        /// <returns>是否切換成功</returns>
+        Task<bool> ToggleActiveAsync(int id);
     }
 }
 

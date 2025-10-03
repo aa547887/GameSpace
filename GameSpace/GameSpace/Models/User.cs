@@ -59,6 +59,13 @@ public partial class User
     public string? User_Status { get; set; }
     public DateTime? User_CreatedAt { get; set; }
 
+    // Alias for UserStatus (backward compatibility)
+    public string? UserStatus
+    {
+        get => User_Status;
+        set => User_Status = value;
+    }
+
     // Case-variant aliases for queries (User_Name vs User_name)
     public string User_Name
     {

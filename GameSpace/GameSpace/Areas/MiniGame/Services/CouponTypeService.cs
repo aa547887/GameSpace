@@ -24,7 +24,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<CouponType?> GetCouponTypeByIdAsync(int couponTypeId)
         {
             return await _context.CouponTypes
-                .FirstOrDefaultAsync(ct => ct.CouponTypeID == couponTypeId);
+                .FirstOrDefaultAsync(ct => ct.CouponTypeId == couponTypeId);
         }
 
         public async Task<bool> CreateCouponTypeAsync(CouponType couponType)
@@ -166,7 +166,7 @@ namespace GameSpace.Areas.MiniGame.Services
             foreach (var couponType in couponTypes)
             {
                 var coupons = await _context.Coupons
-                    .Where(c => c.CouponTypeID == couponType.CouponTypeID)
+                    .Where(c => c.CouponTypeId == couponType.CouponTypeId)
                     .ToListAsync();
 
                 var totalIssued = coupons.Count;
@@ -175,7 +175,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 stats.Add(new CouponTypeUsageStats
                 {
-                    CouponTypeId = couponType.CouponTypeID,
+                    CouponTypeId = couponType.CouponTypeId,
                     Name = couponType.CouponTypeName,
                     TotalIssued = totalIssued,
                     TotalUsed = totalUsed,

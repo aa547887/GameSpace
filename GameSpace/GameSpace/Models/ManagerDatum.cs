@@ -25,6 +25,10 @@ public partial class ManagerDatum
 
     public DateTime? ManagerLockoutEnd { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
+    public string? Role { get; set; }
+
     public virtual ICollection<CsAgent> CsAgentCreatedByManagerNavigations { get; set; } = new List<CsAgent>();
 
     public virtual CsAgent? CsAgentManager { get; set; }

@@ -21,9 +21,9 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                SELECT c.*, ct.Name as CouponTypeName 
-                FROM Coupon c 
-                LEFT JOIN CouponType ct ON c.CouponTypeID = ct.CouponTypeID
+                SELECT c.*, ct.Name as CouponTypeName
+                FROM Coupon c
+                LEFT JOIN CouponType ct ON c.CouponTypeId = ct.CouponTypeId
                 ORDER BY c.AcquiredTime DESC", connection);
 
             using var reader = await command.ExecuteReaderAsync();
@@ -31,14 +31,14 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 coupons.Add(new Coupon
                 {
-                    CouponID = reader.GetInt32("CouponID"),
+                    CouponId = reader.GetInt32("CouponId"),
                     CouponCode = reader.GetString("CouponCode"),
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
-                    UserID = reader.GetInt32("UserID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
+                    UserId = reader.GetInt32("UserId"),
                     IsUsed = reader.GetBoolean("IsUsed"),
                     AcquiredTime = reader.GetDateTime("AcquiredTime"),
                     UsedTime = reader.IsDBNull("UsedTime") ? null : reader.GetDateTime("UsedTime"),
-                    UsedInOrderID = reader.IsDBNull("UsedInOrderID") ? null : reader.GetInt32("UsedInOrderID")
+                    UsedInOrderId = reader.IsDBNull("UsedInOrderId") ? null : reader.GetInt32("UsedInOrderId")
                 });
             }
             return coupons;
@@ -51,10 +51,10 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                SELECT c.*, ct.Name as CouponTypeName 
-                FROM Coupon c 
-                LEFT JOIN CouponType ct ON c.CouponTypeID = ct.CouponTypeID
-                WHERE c.UserID = @UserId
+                SELECT c.*, ct.Name as CouponTypeName
+                FROM Coupon c
+                LEFT JOIN CouponType ct ON c.CouponTypeId = ct.CouponTypeId
+                WHERE c.UserId = @UserId
                 ORDER BY c.AcquiredTime DESC", connection);
             command.Parameters.AddWithValue("@UserId", userId);
 
@@ -63,14 +63,14 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 coupons.Add(new Coupon
                 {
-                    CouponID = reader.GetInt32("CouponID"),
+                    CouponId = reader.GetInt32("CouponId"),
                     CouponCode = reader.GetString("CouponCode"),
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
-                    UserID = reader.GetInt32("UserID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
+                    UserId = reader.GetInt32("UserId"),
                     IsUsed = reader.GetBoolean("IsUsed"),
                     AcquiredTime = reader.GetDateTime("AcquiredTime"),
                     UsedTime = reader.IsDBNull("UsedTime") ? null : reader.GetDateTime("UsedTime"),
-                    UsedInOrderID = reader.IsDBNull("UsedInOrderID") ? null : reader.GetInt32("UsedInOrderID")
+                    UsedInOrderId = reader.IsDBNull("UsedInOrderId") ? null : reader.GetInt32("UsedInOrderId")
                 });
             }
             return coupons;
@@ -81,7 +81,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var command = new SqlCommand("SELECT * FROM Coupon WHERE CouponID = @CouponId", connection);
+            var command = new SqlCommand("SELECT * FROM Coupon WHERE CouponId = @CouponId", connection);
             command.Parameters.AddWithValue("@CouponId", couponId);
 
             using var reader = await command.ExecuteReaderAsync();
@@ -89,14 +89,14 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 return new Coupon
                 {
-                    CouponID = reader.GetInt32("CouponID"),
+                    CouponId = reader.GetInt32("CouponId"),
                     CouponCode = reader.GetString("CouponCode"),
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
-                    UserID = reader.GetInt32("UserID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
+                    UserId = reader.GetInt32("UserId"),
                     IsUsed = reader.GetBoolean("IsUsed"),
                     AcquiredTime = reader.GetDateTime("AcquiredTime"),
                     UsedTime = reader.IsDBNull("UsedTime") ? null : reader.GetDateTime("UsedTime"),
-                    UsedInOrderID = reader.IsDBNull("UsedInOrderID") ? null : reader.GetInt32("UsedInOrderID")
+                    UsedInOrderId = reader.IsDBNull("UsedInOrderId") ? null : reader.GetInt32("UsedInOrderId")
                 };
             }
             return null;
@@ -115,14 +115,14 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 return new Coupon
                 {
-                    CouponID = reader.GetInt32("CouponID"),
+                    CouponId = reader.GetInt32("CouponId"),
                     CouponCode = reader.GetString("CouponCode"),
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
-                    UserID = reader.GetInt32("UserID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
+                    UserId = reader.GetInt32("UserId"),
                     IsUsed = reader.GetBoolean("IsUsed"),
                     AcquiredTime = reader.GetDateTime("AcquiredTime"),
                     UsedTime = reader.IsDBNull("UsedTime") ? null : reader.GetDateTime("UsedTime"),
-                    UsedInOrderID = reader.IsDBNull("UsedInOrderID") ? null : reader.GetInt32("UsedInOrderID")
+                    UsedInOrderId = reader.IsDBNull("UsedInOrderId") ? null : reader.GetInt32("UsedInOrderId")
                 };
             }
             return null;
@@ -134,16 +134,16 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                INSERT INTO Coupon (CouponCode, CouponTypeID, UserID, IsUsed, AcquiredTime, UsedTime, UsedInOrderID)
-                VALUES (@CouponCode, @CouponTypeID, @UserID, @IsUsed, @AcquiredTime, @UsedTime, @UsedInOrderID)", connection);
+                INSERT INTO Coupon (CouponCode, CouponTypeId, UserId, IsUsed, AcquiredTime, UsedTime, UsedInOrderId)
+                VALUES (@CouponCode, @CouponTypeId, @UserId, @IsUsed, @AcquiredTime, @UsedTime, @UsedInOrderId)", connection);
 
             command.Parameters.AddWithValue("@CouponCode", coupon.CouponCode);
-            command.Parameters.AddWithValue("@CouponTypeID", coupon.CouponTypeID);
-            command.Parameters.AddWithValue("@UserID", coupon.UserID);
+            command.Parameters.AddWithValue("@CouponTypeId", coupon.CouponTypeId);
+            command.Parameters.AddWithValue("@UserId", coupon.UserId);
             command.Parameters.AddWithValue("@IsUsed", coupon.IsUsed);
             command.Parameters.AddWithValue("@AcquiredTime", coupon.AcquiredTime);
             command.Parameters.AddWithValue("@UsedTime", (object?)coupon.UsedTime ?? DBNull.Value);
-            command.Parameters.AddWithValue("@UsedInOrderID", (object?)coupon.UsedInOrderID ?? DBNull.Value);
+            command.Parameters.AddWithValue("@UsedInOrderId", (object?)coupon.UsedInOrderId ?? DBNull.Value);
 
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
@@ -155,24 +155,24 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                UPDATE Coupon SET 
+                UPDATE Coupon SET
                     CouponCode = @CouponCode,
-                    CouponTypeID = @CouponTypeID,
-                    UserID = @UserID,
+                    CouponTypeId = @CouponTypeId,
+                    UserId = @UserId,
                     IsUsed = @IsUsed,
                     AcquiredTime = @AcquiredTime,
                     UsedTime = @UsedTime,
-                    UsedInOrderID = @UsedInOrderID
-                WHERE CouponID = @CouponID", connection);
+                    UsedInOrderId = @UsedInOrderId
+                WHERE CouponId = @CouponId", connection);
 
-            command.Parameters.AddWithValue("@CouponID", coupon.CouponID);
+            command.Parameters.AddWithValue("@CouponId", coupon.CouponId);
             command.Parameters.AddWithValue("@CouponCode", coupon.CouponCode);
-            command.Parameters.AddWithValue("@CouponTypeID", coupon.CouponTypeID);
-            command.Parameters.AddWithValue("@UserID", coupon.UserID);
+            command.Parameters.AddWithValue("@CouponTypeId", coupon.CouponTypeId);
+            command.Parameters.AddWithValue("@UserId", coupon.UserId);
             command.Parameters.AddWithValue("@IsUsed", coupon.IsUsed);
             command.Parameters.AddWithValue("@AcquiredTime", coupon.AcquiredTime);
             command.Parameters.AddWithValue("@UsedTime", (object?)coupon.UsedTime ?? DBNull.Value);
-            command.Parameters.AddWithValue("@UsedInOrderID", (object?)coupon.UsedInOrderID ?? DBNull.Value);
+            command.Parameters.AddWithValue("@UsedInOrderId", (object?)coupon.UsedInOrderId ?? DBNull.Value);
 
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
@@ -183,7 +183,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var command = new SqlCommand("DELETE FROM Coupon WHERE CouponID = @CouponId", connection);
+            var command = new SqlCommand("DELETE FROM Coupon WHERE CouponId = @CouponId", connection);
             command.Parameters.AddWithValue("@CouponId", couponId);
 
             var result = await command.ExecuteNonQueryAsync();
@@ -196,11 +196,11 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                UPDATE Coupon SET 
+                UPDATE Coupon SET
                     IsUsed = 1,
                     UsedTime = GETDATE(),
-                    UsedInOrderID = @OrderId
-                WHERE CouponID = @CouponId AND IsUsed = 0", connection);
+                    UsedInOrderId = @OrderId
+                WHERE CouponId = @CouponId AND IsUsed = 0", connection);
 
             command.Parameters.AddWithValue("@CouponId", couponId);
             command.Parameters.AddWithValue("@OrderId", orderId);
@@ -222,7 +222,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 couponTypes.Add(new CouponType
                 {
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
                     Name = reader.GetString("Name"),
                     DiscountType = reader.GetString("DiscountType"),
                     DiscountValue = reader.GetDecimal("DiscountValue"),
@@ -241,7 +241,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var command = new SqlCommand("SELECT * FROM CouponType WHERE CouponTypeID = @CouponTypeId", connection);
+            var command = new SqlCommand("SELECT * FROM CouponType WHERE CouponTypeId = @CouponTypeId", connection);
             command.Parameters.AddWithValue("@CouponTypeId", couponTypeId);
 
             using var reader = await command.ExecuteReaderAsync();
@@ -249,7 +249,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 return new CouponType
                 {
-                    CouponTypeID = reader.GetInt32("CouponTypeID"),
+                    CouponTypeId = reader.GetInt32("CouponTypeId"),
                     Name = reader.GetString("Name"),
                     DiscountType = reader.GetString("DiscountType"),
                     DiscountValue = reader.GetDecimal("DiscountValue"),
@@ -291,7 +291,7 @@ namespace GameSpace.Areas.MiniGame.Services
             await connection.OpenAsync();
 
             var command = new SqlCommand(@"
-                UPDATE CouponType SET 
+                UPDATE CouponType SET
                     Name = @Name,
                     DiscountType = @DiscountType,
                     DiscountValue = @DiscountValue,
@@ -300,9 +300,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     ValidTo = @ValidTo,
                     PointsCost = @PointsCost,
                     Description = @Description
-                WHERE CouponTypeID = @CouponTypeID", connection);
+                WHERE CouponTypeId = @CouponTypeId", connection);
 
-            command.Parameters.AddWithValue("@CouponTypeID", couponType.CouponTypeID);
+            command.Parameters.AddWithValue("@CouponTypeId", couponType.CouponTypeId);
             command.Parameters.AddWithValue("@Name", couponType.Name);
             command.Parameters.AddWithValue("@DiscountType", couponType.DiscountType);
             command.Parameters.AddWithValue("@DiscountValue", couponType.DiscountValue);
@@ -321,7 +321,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var command = new SqlCommand("DELETE FROM CouponType WHERE CouponTypeID = @CouponTypeId", connection);
+            var command = new SqlCommand("DELETE FROM CouponType WHERE CouponTypeId = @CouponTypeId", connection);
             command.Parameters.AddWithValue("@CouponTypeId", couponTypeId);
 
             var result = await command.ExecuteNonQueryAsync();
@@ -336,8 +336,8 @@ namespace GameSpace.Areas.MiniGame.Services
             var coupon = new Coupon
             {
                 CouponCode = couponCode,
-                CouponTypeID = couponTypeId,
-                UserID = userId,
+                CouponTypeId = couponTypeId,
+                UserId = userId,
                 IsUsed = false,
                 AcquiredTime = DateTime.Now
             };

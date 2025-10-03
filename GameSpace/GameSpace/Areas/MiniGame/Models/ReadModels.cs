@@ -3,7 +3,7 @@
     // 優惠券讀取模型
     public class CouponReadModel
     {
-        public int CouponID { get; set; }
+        public int CouponId { get; set; }
         public string CouponCode { get; set; } = string.Empty;
         public string CouponTypeName { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
@@ -23,7 +23,7 @@
     // 電子券讀取模型
     public class EVoucherReadModel
     {
-        public int EVoucherID { get; set; }
+        public int EvoucherId { get; set; }
         public string EVoucherCode { get; set; } = string.Empty;
         public string EVoucherTypeName { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;

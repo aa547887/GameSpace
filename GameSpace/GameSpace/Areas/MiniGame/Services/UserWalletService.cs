@@ -124,7 +124,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     ChangeType = "Coupon",
                     ChangeTime = DateTime.Now,
                     Description = description,
-                    ItemCode = coupon.CouponId
+                    ItemCode = coupon.CouponId.ToString()
                 };
 
                 _context.WalletHistories.Add(history);
@@ -145,20 +145,20 @@ namespace GameSpace.Areas.MiniGame.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var evoucherType = await _context.EVoucherTypes.FindAsync(evoucherTypeId);
+                var evoucherType = await _context.EvoucherTypes.FindAsync(evoucherTypeId);
                 if (evoucherType == null) return false;
 
-                var evoucher = new EVoucher
+                var evoucher = new Evoucher
                 {
-                    EVoucherCode = GenerateEVoucherCode(evoucherType.Name),
-                    EVoucherTypeId = evoucherTypeId,
+                    EvoucherCode = GenerateEVoucherCode(evoucherType.EvoucherTypeName),
+                    EvoucherTypeId = evoucherTypeId,
                     UserId = userId,
                     IsUsed = false,
                     AcquiredTime = DateTime.Now,
                     UsedTime = null
                 };
 
-                _context.EVouchers.Add(evoucher);
+                _context.Evouchers.Add(evoucher);
 
                 // 記錄交易歷史
                 var history = new WalletHistory
@@ -304,8 +304,8 @@ namespace GameSpace.Areas.MiniGame.Services
             foreach (var record in data)
             {
                 var userName = record.User?.UserName ?? "未知用戶";
-                var changeAmount = record.PointsChanged?.ToString() ?? "0";
-                var pointsChanged = record.PointsChanged?.ToString() ?? "0";
+                var changeAmount = record.PointsChanged.ToString();
+                var pointsChanged = record.PointsChanged.ToString();
                 var relatedId = record.ItemCode?.ToString() ?? "";
                 var itemCode = record.ItemCode ?? "";
                 var description = EscapeCsvField(record.Description ?? "");
@@ -336,8 +336,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 sb.AppendLine($"歷史ID: {record.LogId}");
                 sb.AppendLine($"用戶: {userName} (ID: {record.UserId})");
                 sb.AppendLine($"變更類型: {record.ChangeType}");
-                sb.AppendLine($"變更金額: {record.PointsChanged ?? 0}");
-                sb.AppendLine($"點數變更: {record.PointsChanged ?? 0}");
+                sb.AppendLine($"變更金額: {record.PointsChanged}");
+                sb.AppendLine($"點數變更: {record.PointsChanged}");
                 sb.AppendLine($"變更時間: {record.ChangeTime:yyyy-MM-dd HH:mm:ss}");
                 sb.AppendLine($"描述: {record.Description ?? "無"}");
 

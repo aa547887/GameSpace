@@ -32,7 +32,7 @@ namespace GameSpace.Areas.MiniGame.Filters
             if (int.TryParse(managerIdClaim.Value, out int managerId))
             {
                 var dbContext = httpContext.RequestServices.GetRequiredService<GameSpacedatabaseContext>();
-                var manager = dbContext.Managers.Find(managerId);
+                var manager = dbContext.ManagerData.Find(managerId);
                 
                 if (manager == null || !manager.IsActive)
                 {

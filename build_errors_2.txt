@@ -1,0 +1,23 @@
+  正在判斷要還原的專案...
+  所有專案都在最新狀態，可進行還原。
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(100,13): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(103,62): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(110,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(111,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(112,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(147,44): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ManagerRole.cs(25,24): error CS0246: 找不到類型或命名空間名稱 'ManagerRolePermission' (是否遺漏了 using 指示詞或組件參考?) [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+
+建置失敗。
+
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(100,13): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(103,62): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(110,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(111,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(112,36): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Views\EVouchers\Edit.cshtml(147,44): error RZ1005: "�" is not valid at the start of a code block.  Only identifiers, keywords, comments, "(" and "{" are valid. [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ManagerRole.cs(25,24): error CS0246: 找不到類型或命名空間名稱 'ManagerRolePermission' (是否遺漏了 using 指示詞或組件參考?) [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+    0 個警告
+    7 個錯誤
+
+經過時間 00:00:03.01
