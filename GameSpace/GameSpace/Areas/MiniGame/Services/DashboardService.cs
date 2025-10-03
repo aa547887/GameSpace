@@ -61,9 +61,9 @@ namespace GameSpace.Areas.MiniGame.Services
             var stats = new GameStatistics
             {
                 TotalGamesPlayed = await _context.UserSignInStats.CountAsync(),
-                GamesToday = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= today),
-                GamesThisWeek = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= weekAgo),
-                GamesThisMonth = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= monthAgo),
+                GamesToday = await _context.UserSignInStats.CountAsync(s => s.SignTime >= today),
+                GamesThisWeek = await _context.UserSignInStats.CountAsync(s => s.SignTime >= weekAgo),
+                GamesThisMonth = await _context.UserSignInStats.CountAsync(s => s.SignTime >= monthAgo),
                 AverageGameDuration = 0,
                 MostPopularGame = "寵物養成"
             };
@@ -120,8 +120,8 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
             var signIns = await _context.UserSignInStats
-                .Where(s => s.SignInTime >= startDate)
-                .GroupBy(s => s.SignInTime.Date)
+                .Where(s => s.SignTime >= startDate)
+                .GroupBy(s => s.SignTime.Date)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .ToListAsync();
 
@@ -156,11 +156,11 @@ namespace GameSpace.Areas.MiniGame.Services
                     (u, w) => new { User = u, Wallet = w })
                 .GroupJoin(_context.Pets,
                     uw => uw.User.User_Id,
-                    p => p.UserID,
+                    p => p.UserId,
                     (uw, pets) => new { uw.User, uw.Wallet, Pet = pets.FirstOrDefault() })
                 .GroupJoin(_context.UserSignInStats,
                     uwp => uwp.User.User_Id,
-                    s => s.UserID,
+                    s => s.UserId,
                     (uwp, signIns) => new TopUser
                     {
                         UserId = uwp.User.User_Id,
@@ -208,8 +208,8 @@ namespace GameSpace.Areas.MiniGame.Services
 
             // 最近簽到
             var recentSignIns = await _context.UserSignInStats
-                .Include(s => s.Users)
-                .OrderByDescending(s => s.SignInTime)
+                .Include(s => s.User)
+                .OrderByDescending(s => s.SignTime)
                 .Take(count / 2)
                 .ToListAsync();
 
@@ -217,8 +217,8 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 ActivityType = "SignIn",
                 Description = $"完成簽到，獲得 {s.PointsGained} 點數",
-                UserName = s.Users.User_Account,
-                Timestamp = s.SignInTime
+                UserName = s.User.User_Account,
+                Timestamp = s.SignTime
             }));
 
             // 最近錢包變動

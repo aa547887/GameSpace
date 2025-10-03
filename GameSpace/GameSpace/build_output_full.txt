@@ -1,0 +1,23 @@
+  正在判斷要還原的專案...
+  所有專案都在最新狀態，可進行還原。
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.GetAllAsync()' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.GetByIdAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.CreateAsync(PetBackgroundChangeSettings)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.UpdateAsync(int, PetBackgroundChangeSettings)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.DeleteAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.ToggleActiveAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetColorChangeSettingsService.cs(10,50): error CS0535: 'PetColorChangeSettingsService' 未實作介面成員 'IPetColorChangeSettingsService.GetAllAsync()' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+
+建置失敗。
+
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.GetAllAsync()' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.GetByIdAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.CreateAsync(PetBackgroundChangeSettings)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.UpdateAsync(int, PetBackgroundChangeSettings)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.DeleteAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetBackgroundChangeSettingsService.cs(10,55): error CS0535: 'PetBackgroundChangeSettingsService' 未實作介面成員 'IPetBackgroundChangeSettingsService.ToggleActiveAsync(int)' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Services\PetColorChangeSettingsService.cs(10,50): error CS0535: 'PetColorChangeSettingsService' 未實作介面成員 'IPetColorChangeSettingsService.GetAllAsync()' [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+    0 個警告
+    7 個錯誤
+
+經過時間 00:00:03.99

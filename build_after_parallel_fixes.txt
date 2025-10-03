@@ -1,0 +1,2 @@
+MSBUILD : error MSB1009: 專案檔不存在。
+參數: GameSpace.sln

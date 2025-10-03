@@ -26,31 +26,30 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
 
         // GET: AdminPet
-        public async Task<IActionResult> Index(string searchTerm = "", string rarity = "", string sortBy = "name", int page = 1, int pageSize = 10)
+        // Note: Pet entity only has basic properties (PetName, Level, Experience, etc.), not PetType/Description/Rarity
+        public async Task<IActionResult> Index(string searchTerm = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
             var pets = await _petService.GetAllPetsAsync();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                pets = pets.Where(p => p.PetName.Contains(searchTerm) ||
-                                      p.PetType.Contains(searchTerm) ||
-                                      p.PetDescription.Contains(searchTerm));
-            }
-
-            // 稀有度篩選
-            if (!string.IsNullOrEmpty(rarity))
-            {
-                pets = pets.Where(p => p.Rarity == rarity);
+                if (int.TryParse(searchTerm, out int userId))
+                {
+                    pets = pets.Where(p => p.UserId == userId);
+                }
+                else
+                {
+                    pets = pets.Where(p => p.PetName.Contains(searchTerm));
+                }
             }
 
             // 排序
             pets = sortBy switch
             {
-                "type" => pets.OrderBy(p => p.PetType),
-                "rarity" => pets.OrderBy(p => p.Rarity),
-                "rate" => pets.OrderByDescending(p => p.DropRate),
-                "created" => pets.OrderByDescending(p => p.CreatedAt),
+                "level" => pets.OrderByDescending(p => p.Level),
+                "exp" => pets.OrderByDescending(p => p.Experience),
+                "health" => pets.OrderByDescending(p => p.Health),
                 _ => pets.OrderBy(p => p.PetName)
             };
 
@@ -63,7 +62,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var viewModel = new AdminPetIndexViewModel
             {
-                Pets = new PagedResult<Pet>
+                Pets = new PagedResult<GameSpace.Models.Pet>
                 {
                     Items = pagedPets,
                     TotalCount = totalCount,
@@ -75,13 +74,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 設定 ViewBag 用於搜尋和篩選
             var allPets = await _petService.GetAllPetsAsync();
             ViewBag.SearchTerm = searchTerm;
-            ViewBag.Rarity = rarity;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalPets = allPets.Count();
-            ViewBag.CommonPets = allPets.Count(p => p.Rarity == "普通");
-            ViewBag.RarePets = allPets.Count(p => p.Rarity == "稀有");
-            ViewBag.EpicPets = allPets.Count(p => p.Rarity == "史詩");
-            ViewBag.LegendaryPets = allPets.Count(p => p.Rarity == "傳說");
+            ViewBag.HighLevelPets = allPets.Count(p => p.Level >= 10);
+            ViewBag.HealthyPets = allPets.Count(p => p.Health >= 80);
+            ViewBag.AverageLevel = allPets.Any() ? allPets.Average(p => (double)p.Level) : 0;
+            ViewBag.AverageHealth = allPets.Any() ? allPets.Average(p => (double)p.Health) : 0;
 
             return View(viewModel);
         }
@@ -117,24 +115,27 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                var pet = new Pet
+                var pet = new GameSpace.Models.Pet
                 {
+                    UserId = model.UserId,
                     PetName = model.PetName,
-                    PetDescription = model.PetDescription,
-                    PetType = model.PetType,
-                    Rarity = model.Rarity,
-                    DropRate = model.DropRate,
-                    PetImageUrl = model.PetImageUrl,
-                    IsActive = model.IsActive,
-                    CreatedAt = DateTime.UtcNow,
+                    SkinColor = model.SkinColor,
+                    SkinColorChangedTime = DateTime.Now,
+                    BackgroundColor = model.BackgroundColor,
+                    BackgroundColorChangedTime = DateTime.Now,
                     // 初始化寵物狀態
                     Level = 1,
+                    LevelUpTime = DateTime.Now,
                     Experience = 0,
                     Hunger = 100,
                     Mood = 100,
                     Stamina = 100,
                     Cleanliness = 100,
-                    Health = 100
+                    Health = 100,
+                    PointsChangedSkinColor = 0,
+                    PointsChangedBackgroundColor = 0,
+                    PointsGainedLevelUp = 0,
+                    PointsGainedTimeLevelUp = DateTime.Now
                 };
 
                 var result = await _petService.CreatePetAsync(pet);
@@ -169,13 +170,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var model = new AdminPetCreateViewModel
             {
+                UserId = pet.UserId,
                 PetName = pet.PetName,
-                PetDescription = pet.PetDescription,
-                PetType = pet.PetType,
-                Rarity = pet.Rarity,
-                DropRate = pet.DropRate,
-                PetImageUrl = pet.PetImageUrl,
-                IsActive = pet.IsActive
+                SkinColor = pet.SkinColor,
+                BackgroundColor = pet.BackgroundColor
             };
 
             return View(model);
@@ -194,13 +192,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return NotFound();
                 }
 
+                pet.UserId = model.UserId;
                 pet.PetName = model.PetName;
-                pet.PetDescription = model.PetDescription;
-                pet.PetType = model.PetType;
-                pet.Rarity = model.Rarity;
-                pet.DropRate = model.DropRate;
-                pet.PetImageUrl = model.PetImageUrl;
-                pet.IsActive = model.IsActive;
+                pet.SkinColor = model.SkinColor;
+                pet.BackgroundColor = model.BackgroundColor;
 
                 var result = await _petService.UpdatePetAsync(pet);
 
@@ -255,24 +250,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // 切換寵物狀態
-        [HttpPost]
-        public async Task<IActionResult> ToggleStatus(int id)
-        {
-            var pet = await _petService.GetPetByIdAsync(id);
-            if (pet != null)
-            {
-                pet.IsActive = !pet.IsActive;
-                var result = await _petService.UpdatePetAsync(pet);
-
-                if (result)
-                {
-                    return Json(new { success = true, isActive = pet.IsActive });
-                }
-            }
-
-            return Json(new { success = false });
-        }
+        // 切換寵物狀態 - Pet entity doesn't have IsActive property, removed this functionality
+        // [HttpPost]
+        // public async Task<IActionResult> ToggleStatus(int id)
+        // Note: Pet entity doesn't have IsActive property - this method is disabled
 
         // 獲取寵物統計數據
         [HttpGet]
@@ -282,47 +263,45 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var stats = new
             {
                 total = allPets.Count(),
-                active = allPets.Count(p => p.IsActive),
-                common = allPets.Count(p => p.Rarity == "普通"),
-                rare = allPets.Count(p => p.Rarity == "稀有"),
-                epic = allPets.Count(p => p.Rarity == "史詩"),
-                legendary = allPets.Count(p => p.Rarity == "傳說")
+                highLevel = allPets.Count(p => p.Level >= 10),
+                healthy = allPets.Count(p => p.Health >= 80),
+                hungry = allPets.Count(p => p.Hunger < 30),
+                avgLevel = allPets.Any() ? allPets.Average(p => (double)p.Level) : 0,
+                avgHealth = allPets.Any() ? allPets.Average(p => (double)p.Health) : 0
             };
 
             return Json(stats);
         }
 
-        // 獲取寵物稀有度分佈
+        // 獲取寵物等級分佈
         [HttpGet]
         public async Task<IActionResult> GetPetRarityDistribution()
         {
             var allPets = await _petService.GetAllPetsAsync();
-            var total = allPets.Count();
 
             var distribution = allPets
-                .GroupBy(p => p.Rarity)
+                .GroupBy(p => p.Level / 10 * 10) // Group by 10-level ranges (0-9, 10-19, etc.)
                 .Select(g => new
                 {
-                    rarity = g.Key,
-                    count = g.Count(),
-                    percentage = total > 0 ? (double)g.Count() / total * 100 : 0
+                    levelRange = $"Level {g.Key}-{g.Key + 9}",
+                    count = g.Count()
                 })
                 .ToList();
 
             return Json(distribution);
         }
 
-        // 獲取寵物類型分佈
+        // 獲取寵物皮膚顏色分佈
         [HttpGet]
         public async Task<IActionResult> GetPetTypeDistribution()
         {
             var allPets = await _petService.GetAllPetsAsync();
 
             var distribution = allPets
-                .GroupBy(p => p.PetType)
+                .GroupBy(p => p.SkinColor)
                 .Select(g => new
                 {
-                    type = g.Key,
+                    skinColor = g.Key,
                     count = g.Count()
                 })
                 .OrderByDescending(g => g.count)
@@ -331,22 +310,20 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(distribution);
         }
 
-        // 獲取寵物獲得率統計
+        // 獲取寵物健康度統計
         [HttpGet]
         public async Task<IActionResult> GetPetDropRateStats()
         {
             var allPets = await _petService.GetAllPetsAsync();
 
-            var stats = allPets
-                .GroupBy(p => p.Rarity)
-                .Select(g => new
-                {
-                    rarity = g.Key,
-                    avgDropRate = g.Average(p => p.DropRate),
-                    minDropRate = g.Min(p => p.DropRate),
-                    maxDropRate = g.Max(p => p.DropRate)
-                })
-                .ToList();
+            var stats = new
+            {
+                avgHealth = allPets.Any() ? allPets.Average(p => (double)p.Health) : 0,
+                avgHunger = allPets.Any() ? allPets.Average(p => (double)p.Hunger) : 0,
+                avgMood = allPets.Any() ? allPets.Average(p => (double)p.Mood) : 0,
+                avgStamina = allPets.Any() ? allPets.Average(p => (double)p.Stamina) : 0,
+                avgCleanliness = allPets.Any() ? allPets.Average(p => (double)p.Cleanliness) : 0
+            };
 
             return Json(stats);
         }

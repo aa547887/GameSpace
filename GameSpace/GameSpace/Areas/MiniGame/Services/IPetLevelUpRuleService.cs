@@ -1,4 +1,5 @@
 ﻿using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -42,6 +43,37 @@ namespace GameSpace.Areas.MiniGame.Services
         /// 驗證規則
         /// </summary>
         Task<(bool IsValid, string ErrorMessage)> ValidateRuleAsync(PetRuleReadModel rule);
+
+        // 控制器專用方法
+        /// <summary>
+        /// 獲取所有升級規則（返回實體）
+        /// </summary>
+        Task<List<PetLevelUpRule>> GetAllLevelUpRulesAsync();
+
+        /// <summary>
+        /// 根據ID獲取升級規則（返回實體）
+        /// </summary>
+        Task<PetLevelUpRule?> GetLevelUpRuleByIdAsync(int id);
+
+        /// <summary>
+        /// 創建升級規則
+        /// </summary>
+        Task<bool> CreateLevelUpRuleAsync(PetLevelUpRuleCreateViewModel model, int createdBy);
+
+        /// <summary>
+        /// 更新升級規則
+        /// </summary>
+        Task<bool> UpdateLevelUpRuleAsync(PetLevelUpRuleEditViewModel model, int updatedBy);
+
+        /// <summary>
+        /// 刪除升級規則
+        /// </summary>
+        Task<bool> DeleteLevelUpRuleAsync(int id);
+
+        /// <summary>
+        /// 切換升級規則狀態
+        /// </summary>
+        Task<bool> ToggleLevelUpRuleStatusAsync(int id);
     }
 }
 

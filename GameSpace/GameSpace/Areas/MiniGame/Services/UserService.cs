@@ -140,7 +140,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (user == null) return false;
 
                 user.UserStatus = "Locked";
-                user.User_LockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
+                user.UserLockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -158,7 +158,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (user == null) return false;
 
                 user.UserStatus = "Active";
-                user.User_LockoutEnd = null;
+                user.UserLockoutEnd = null;
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -199,7 +199,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.Users
                 .Where(u => u.UserStatus == "Locked")
-                .OrderByDescending(u => u.User_LockoutEnd)
+                .OrderByDescending(u => u.UserLockoutEnd)
                 .ToListAsync();
         }
 
@@ -223,8 +223,9 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
             var users = await _context.Users
-                .Where(u => u.User_CreatedAt >= startDate)
-                .GroupBy(u => u.User_CreatedAt.Date)
+                .Where(u => u.User_CreatedAt.HasValue && u.User_CreatedAt.Value >= startDate)
+                .Select(u => u.User_CreatedAt!.Value.Date)
+                .GroupBy(d => d)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .ToListAsync();
 
@@ -242,19 +243,42 @@ namespace GameSpace.Areas.MiniGame.Services
                 var user = await GetUserByIdAsync(userId);
                 if (user == null) return false;
 
-                // 檢查是否已有此權限
-                var existingRight = await _context.UserRights
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.User_RightName == rightName);
+                // 取得或建立使用者權限記錄
+                var userRight = await _context.UserRights
+                    .FirstOrDefaultAsync(r => r.UserId == userId);
 
-                if (existingRight != null) return true; // 已有權限
-
-                var right = new GameSpace.Models.UserRight
+                if (userRight == null)
                 {
-                    UserId = userId,
-                    User_RightName = rightName,
-                    User_GrantedAt = DateTime.UtcNow
-                };
-                _context.UserRights.Add(right);
+                    userRight = new GameSpace.Models.UserRight
+                    {
+                        UserId = userId,
+                        UserStatus = true,
+                        ShoppingPermission = false,
+                        MessagePermission = false,
+                        SalesAuthority = false
+                    };
+                    _context.UserRights.Add(userRight);
+                }
+
+                // 根據權限名稱設定對應欄位
+                switch (rightName.ToLower())
+                {
+                    case "shopping":
+                        userRight.ShoppingPermission = true;
+                        break;
+                    case "message":
+                        userRight.MessagePermission = true;
+                        break;
+                    case "sales":
+                        userRight.SalesAuthority = true;
+                        break;
+                    case "status":
+                        userRight.UserStatus = true;
+                        break;
+                    default:
+                        return false;
+                }
+
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -268,12 +292,30 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var right = await _context.UserRights
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.User_RightName == rightName);
+                var userRight = await _context.UserRights
+                    .FirstOrDefaultAsync(r => r.UserId == userId);
 
-                if (right == null) return false;
+                if (userRight == null) return false;
 
-                _context.UserRights.Remove(right);
+                // 根據權限名稱撤銷對應欄位
+                switch (rightName.ToLower())
+                {
+                    case "shopping":
+                        userRight.ShoppingPermission = false;
+                        break;
+                    case "message":
+                        userRight.MessagePermission = false;
+                        break;
+                    case "sales":
+                        userRight.SalesAuthority = false;
+                        break;
+                    case "status":
+                        userRight.UserStatus = false;
+                        break;
+                    default:
+                        return false;
+                }
+
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -285,16 +327,35 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<string>> GetUserRightsAsync(int userId)
         {
-            return await _context.UserRights
-                .Where(r => r.UserId == userId)
-                .Select(r => r.User_RightName)
-                .ToListAsync();
+            var userRight = await _context.UserRights
+                .FirstOrDefaultAsync(r => r.UserId == userId);
+
+            if (userRight == null) return new List<string>();
+
+            var rights = new List<string>();
+            if (userRight.UserStatus == true) rights.Add("Status");
+            if (userRight.ShoppingPermission == true) rights.Add("Shopping");
+            if (userRight.MessagePermission == true) rights.Add("Message");
+            if (userRight.SalesAuthority == true) rights.Add("Sales");
+
+            return rights;
         }
 
         public async Task<bool> HasRightAsync(int userId, string rightName)
         {
-            return await _context.UserRights
-                .AnyAsync(r => r.UserId == userId && r.User_RightName == rightName);
+            var userRight = await _context.UserRights
+                .FirstOrDefaultAsync(r => r.UserId == userId);
+
+            if (userRight == null) return false;
+
+            return rightName.ToLower() switch
+            {
+                "shopping" => userRight.ShoppingPermission == true,
+                "message" => userRight.MessagePermission == true,
+                "sales" => userRight.SalesAuthority == true,
+                "status" => userRight.UserStatus == true,
+                _ => false
+            };
         }
     }
 }

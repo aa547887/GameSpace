@@ -5,8 +5,8 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
 {
     public class PointsSettingsIndexViewModel
     {
-        public List<PetColorChangeSettings> ColorSettings { get; set; } = new List<PetColorChangeSettings>();
-        public List<PetBackgroundChangeSettings> BackgroundSettings { get; set; } = new List<PetBackgroundChangeSettings>();
+        public List<PetColorChangeSettingsViewModel> ColorSettings { get; set; } = new List<PetColorChangeSettingsViewModel>();
+        public List<PetBackgroundChangeSettingsViewModel> BackgroundSettings { get; set; } = new List<PetBackgroundChangeSettingsViewModel>();
     }
 
     public class PointsSettingsStatisticsViewModel

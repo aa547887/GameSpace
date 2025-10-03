@@ -207,8 +207,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 轉換為 Wallet 格式
             var wallets = walletHistory.Select(h => new Wallet
             {
-                WalletId = h.HistoryID,
-                UserId = h.UserID,
+                WalletId = h.LogId,
+                UserId = h.UserId,
                 Amount = Math.Abs(h.PointsChanged),
                 TransactionType = h.PointsChanged > 0 ? "earn" : "spend",
                 TransactionDate = h.ChangeTime,
@@ -229,7 +229,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             return Json(new
             {
-                currentPoints = summary["CurrentPoints"],
+                CurrentPoints = summary["CurrentPoints"],
                 earnedPoints = summary["TotalEarned"],
                 spentPoints = summary["TotalSpent"]
             });
@@ -299,9 +299,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 leaderboard.Add(new
                 {
                     userId = user.User_Id,
-                    userName = user.User_Name,
+                    UserName = user.User_Name,
                     userAccount = user.User_Account,
-                    currentPoints = summary["CurrentPoints"]
+                    CurrentPoints = summary["CurrentPoints"]
                 });
             }
 

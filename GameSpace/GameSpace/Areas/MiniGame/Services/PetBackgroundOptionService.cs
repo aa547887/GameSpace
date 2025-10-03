@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
@@ -238,19 +238,22 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<PetBackgroundOptionViewModel>> GetAllBackgroundOptionsAsync()
         {
             var options = await GetAllAsync();
-            return options.Select(MapToViewModel);
+            return await MapToViewModelsAsync(options);
         }
 
         public async Task<IEnumerable<PetBackgroundOptionViewModel>> GetActiveBackgroundOptionsAsync()
         {
             var options = await GetActiveOptionsAsync();
-            return options.Select(MapToViewModel);
+            return await MapToViewModelsAsync(options);
         }
 
         public async Task<PetBackgroundOptionViewModel?> GetBackgroundOptionByIdAsync(int id)
         {
             var option = await GetByIdAsync(id);
-            return option != null ? MapToViewModel(option) : null;
+            if (option == null) return null;
+
+            var usageCount = await _context.Pets.CountAsync(p => p.BackgroundColor == option.BackgroundCode);
+            return MapToViewModel(option, usageCount);
         }
 
         public async Task<bool> CreateBackgroundOptionAsync(PetBackgroundOptionViewModel viewModel, int managerId)
@@ -357,7 +360,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 .ThenBy(o => o.BackgroundName)
                 .ToListAsync();
 
-            return options.Select(MapToViewModel);
+            return await MapToViewModelsAsync(options);
         }
 
         public async Task<object> GetBackgroundOptionStatisticsAsync()
@@ -391,13 +394,10 @@ namespace GameSpace.Areas.MiniGame.Services
         }
 
         /// <summary>
-        /// 將 Entity 映射為 ViewModel
+        /// 將 Entity 映射為 ViewModel (單個對象，需要提供使用數量)
         /// </summary>
-        private PetBackgroundOptionViewModel MapToViewModel(PetBackgroundOptionEntity entity)
+        private PetBackgroundOptionViewModel MapToViewModel(PetBackgroundOptionEntity entity, int usageCount)
         {
-            // 計算使用此背景的寵物數量
-            var usageCount = _context.Pets.Count(p => p.BackgroundColor == entity.BackgroundCode);
-
             return new PetBackgroundOptionViewModel
             {
                 BackgroundOptionId = entity.BackgroundOptionId,
@@ -410,6 +410,44 @@ namespace GameSpace.Areas.MiniGame.Services
                 UpdatedAt = entity.UpdatedAt,
                 UsageCount = usageCount
             };
+        }
+
+        /// <summary>
+        /// 批量將 Entity 集合映射為 ViewModel 集合 (優化查詢性能，避免 N+1 問題)
+        /// </summary>
+        private async Task<List<PetBackgroundOptionViewModel>> MapToViewModelsAsync(IEnumerable<PetBackgroundOptionEntity> entities)
+        {
+            var entityList = entities.ToList();
+            if (!entityList.Any())
+            {
+                return new List<PetBackgroundOptionViewModel>();
+            }
+
+            // 收集所有背景代碼
+            var backgroundCodes = entityList.Select(e => e.BackgroundCode).Distinct().ToList();
+
+            // 一次性查詢所有使用數量
+            var usageCounts = await _context.Pets
+                .Where(p => backgroundCodes.Contains(p.BackgroundColor))
+                .GroupBy(p => p.BackgroundColor)
+                .Select(g => new { BackgroundCode = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var usageDict = usageCounts.ToDictionary(x => x.BackgroundCode, x => x.Count);
+
+            // 映射為 ViewModel
+            return entityList.Select(entity => new PetBackgroundOptionViewModel
+            {
+                BackgroundOptionId = entity.BackgroundOptionId,
+                BackgroundName = entity.BackgroundName,
+                BackgroundCode = entity.BackgroundCode,
+                BackgroundType = "Color",
+                IsActive = entity.IsActive,
+                DisplayOrder = entity.SortOrder,
+                CreatedAt = entity.CreatedAt,
+                UpdatedAt = entity.UpdatedAt,
+                UsageCount = usageDict.ContainsKey(entity.BackgroundCode) ? usageDict[entity.BackgroundCode] : 0
+            }).ToList();
         }
     }
 }

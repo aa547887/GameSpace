@@ -100,8 +100,7 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
                     ActiveColorSettings = activeColorSettings,
                     ActiveBackgroundSettings = activeBackgroundSettings,
                     TotalColorPoints = totalColorPoints,
-                    TotalBackgroundPoints = totalBackgroundPoints,
-                    TotalPoints = totalPoints
+                    TotalBackgroundPoints = totalBackgroundPoints
                 };
 
                 return View(viewModel);

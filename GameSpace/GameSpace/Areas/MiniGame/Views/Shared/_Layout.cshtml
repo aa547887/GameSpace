@@ -280,9 +280,9 @@
     
     <script>
         // 全域JavaScript功能
-        .ready(function() {
+        $(document).ready(function() {
             // 初始化DataTables
-            .data-table.DataTable({
+            $('.data-table').DataTable({
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json'
                 },
@@ -290,55 +290,54 @@
                 pageLength: 25,
                 order: [[0, 'desc']]
             });
-            
+
             // 自動隱藏Alert
             setTimeout(function() {
-                .alert.fadeOut();
+                $('.alert').fadeOut();
             }, 5000);
-            
+
             // 確認刪除對話框
-            .btn-delete.click(function(e) {
+            $('.btn-delete').click(function(e) {
                 if (!confirm('確定要刪除這筆資料嗎？此操作無法復原。')) {
                     e.preventDefault();
                 }
             });
-            
+
             // 載入動畫
-            form.submit(function() {
-                #loadingOverlay.addClass('show');
+            $('form').submit(function() {
+                $('#loadingOverlay').addClass('show');
             });
         });
-        
+
         // 工具函數
         function showLoading() {
-            #loadingOverlay.addClass('show');
+            $('#loadingOverlay').addClass('show');
         }
-        
+
         function hideLoading() {
-            #loadingOverlay.removeClass('show');
+            $('#loadingOverlay').removeClass('show');
         }
-        
+
         function showAlert(message, type = 'info') {
-            const alertClass = type === 'success' ? 'alert-success' : 
-                              type === 'error' ? 'alert-danger' : 
+            const alertClass = type === 'success' ? 'alert-success' :
+                              type === 'error' ? 'alert-danger' :
                               type === 'warning' ? 'alert-warning' : 'alert-info';
-            
-            const icon = type === 'success' ? 'fa-check-circle' : 
-                        type === 'error' ? 'fa-exclamation-circle' : 
+
+            const icon = type === 'success' ? 'fa-check-circle' :
+                        type === 'error' ? 'fa-exclamation-circle' :
                         type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
-            
-            const alertHtml = 
-                <div class="alert  alert-dismissible fade show" role="alert">
-                    <i class="fas  me-2"></i>
-                    
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            ;
-            
-            main.prepend(alertHtml);
-            
+
+            const alertHtml =
+                '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
+                    '<i class="fas ' + icon + ' me-2"></i>' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>';
+
+            $('main').prepend(alertHtml);
+
             setTimeout(function() {
-                .alert.fadeOut();
+                $('.alert').fadeOut();
             }, 5000);
         }
     </script>

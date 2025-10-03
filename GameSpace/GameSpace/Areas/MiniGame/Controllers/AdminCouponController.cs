@@ -19,12 +19,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             var query = _context.Coupons
                 .Include(c => c.CouponType)
-                .Include(c => c.Users)
+                .Include(c => c.User)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(c => c.CouponCode.Contains(searchTerm) || c.Users.User_name.Contains(searchTerm));
+                query = query.Where(c => c.CouponCode.Contains(searchTerm) || c.User.User_name.Contains(searchTerm));
             }
 
             if (!string.IsNullOrEmpty(status))
@@ -50,7 +50,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                         CouponID = c.CouponId,
                         CouponCode = c.CouponCode,
                         UserID = c.UserId,
-                        UserName = c.Users?.User_name ?? "Unknown",
+                        UserName = c.User?.User_name ?? "Unknown",
                         CouponTypeID = c.CouponTypeId,
                         CouponTypeName = c.CouponType?.Name ?? "Unknown",
                         IsUsed = c.IsUsed,
@@ -84,7 +84,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var coupon = await _context.Coupons
                 .Include(c => c.CouponType)
-                .Include(c => c.Users)
+                .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.CouponId == id);
 
             if (coupon == null)
@@ -198,7 +198,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var coupon = await _context.Coupons
                 .Include(c => c.CouponType)
-                .Include(c => c.Users)
+                .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.CouponId == id);
 
             if (coupon == null)

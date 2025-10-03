@@ -40,8 +40,8 @@ namespace GameSpace.Areas.MiniGame.Services
             var today = DateTime.UtcNow.Date;
 
             // 使用簽到次數作為遊戲次數的簡化版
-            var count = await _context.User_SignInStats
-                .CountAsync(s => s.UserID == userId && s.SignInTime >= today);
+            var count = await _context.UserSignInStats
+                .CountAsync(s => s.UserId == userId && s.SignTime >= today);
 
             return count;
         }

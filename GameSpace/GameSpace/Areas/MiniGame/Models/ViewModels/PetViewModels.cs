@@ -349,8 +349,23 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [Range(0, int.MaxValue, ErrorMessage = "所需經驗值必須大於等於 0")]
         public int RequiredExp { get; set; }
 
+        /// <summary>
+        /// 所需經驗值（別名，用於向後相容）
+        /// </summary>
+        public int ExperienceRequired
+        {
+            get => RequiredExp;
+            set => RequiredExp = value;
+        }
+
         [Range(0, 100000, ErrorMessage = "點數獎勵必須在 0-100000 之間")]
         public int PointsReward { get; set; } = 0;
+
+        /// <summary>
+        /// 經驗值獎勵（升級後獲得的額外經驗值）
+        /// </summary>
+        [Range(0, 10000, ErrorMessage = "經驗值獎勵必須在 0-10000 之間")]
+        public int ExpReward { get; set; } = 0;
 
         [Range(0, 10, ErrorMessage = "屬性加成必須在 0-10 之間")]
         public int HealthBonus { get; set; } = 0;
@@ -392,8 +407,23 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [Range(0, int.MaxValue, ErrorMessage = "所需經驗值必須大於等於 0")]
         public int RequiredExp { get; set; }
 
+        /// <summary>
+        /// 所需經驗值（別名，用於向後相容）
+        /// </summary>
+        public int ExperienceRequired
+        {
+            get => RequiredExp;
+            set => RequiredExp = value;
+        }
+
         [Range(0, 100000, ErrorMessage = "點數獎勵必須在 0-100000 之間")]
         public int PointsReward { get; set; } = 0;
+
+        /// <summary>
+        /// 經驗值獎勵（升級後獲得的額外經驗值）
+        /// </summary>
+        [Range(0, 10000, ErrorMessage = "經驗值獎勵必須在 0-10000 之間")]
+        public int ExpReward { get; set; } = 0;
 
         [Range(0, 10, ErrorMessage = "屬性加成必須在 0-10 之間")]
         public int HealthBonus { get; set; } = 0;
@@ -417,6 +447,15 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
         [StringLength(100, ErrorMessage = "特殊獎勵描述長度不可超過 100 字元")]
         public string? SpecialReward { get; set; }
+
+        /// <summary>
+        /// 備註（別名，用於向後相容）
+        /// </summary>
+        public string? Remarks
+        {
+            get => SpecialReward;
+            set => SpecialReward = value;
+        }
 
         public bool IsActive { get; set; } = true;
 

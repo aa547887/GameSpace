@@ -2,18 +2,20 @@
 ### 一. 前置章（最重要）
 **連線與讀取**：    一律用powershell終端寫檔  ///minigame area在此:C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame ///
 - 先讀取    C:\Users\n2029\Desktop\GameSpace\GameSpace\schema\資料庫連線與讀取流程_詳細版.md 並**連線到 SQL 資料庫**，讀取 **SSMS** 的**表、欄位、完整的種子資料**（包含 **minigame area** 和 **使用者權限 manager** 相關）。  
-- 專案內對應的 **schema 路徑**為：`GameSpace/GameSpace/schema/`，目前檔案（10 個）：  
-  1. index.txt  
-  2. MiniGame_Area_完整描述文件.md  
-  3. MiniGame_area功能彙整.txt  
-  4. README_合併版.md  
-  5. 專案規格敘述1.txt  
-  6. 專案規格敘述2.txt  
-  7. 管理者權限相關描述.txt  
-  8. 資料庫連線與讀取流程.md  
-  9. 資料庫連線與讀取流程_詳細版.md  
-  10. 這裡有MinGame Area和管理者權限相關資料庫結構及種子資料.sql
-
+- 專案內對應的 **schema 路徑**為：`GameSpace/GameSpace/schema/`，目前檔案（13 個）：  
+1. **Area註冊架構說明.md**
+2. **index.txt**
+3. **MiniGame_Area_完整描述文件.md**
+4. **MiniGame_area功能彙整.txt**
+5. **README_合併版.md**
+6. **SQL_Server_連線操作完整手冊_AI適用.md**
+7. **專案規格敘述1.txt**
+8. **專案規格敘述2.txt**
+9. **這裡有MinGame Area和管理者權限相關資料庫結構及種子資料.sql**
+10. **資料庫連線與讀取流程.md**
+11. **資料庫連線與讀取流程_詳細版.md**
+12. **管理者權限相關描述.txt**
+13. **數據連接驗證報告_2025-10-03.md**
 
 ### 二. 樣板與導覽（細分權限版）
 - **Admin 首頁與樣式為統一樣板（SB Admin）不可更動**。  

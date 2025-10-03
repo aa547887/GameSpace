@@ -482,6 +482,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 票券ID
         /// </summary>
         [Required(ErrorMessage = "票券ID為必填")]
+        [Display(Name = "票券ID")]
         public int Id { get; set; }
 
         /// <summary>
@@ -489,55 +490,74 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// </summary>
         [Required(ErrorMessage = "票券代碼為必填")]
         [StringLength(50, ErrorMessage = "票券代碼長度不可超過 50 字元")]
+        [Display(Name = "票券代碼")]
         public string EVoucherCode { get; set; } = string.Empty;
 
         /// <summary>
         /// 用戶ID
         /// </summary>
         [Required(ErrorMessage = "用戶ID為必填")]
+        [Display(Name = "用戶ID")]
         public int UserId { get; set; }
 
         /// <summary>
-        /// 票券類型ID
+        /// 票券類型ID（主屬性，使用小寫 Id 以符合資料庫欄位命名）
         /// </summary>
         [Required(ErrorMessage = "票券類型ID為必填")]
-        public int EVoucherTypeID { get; set; }
+        [Display(Name = "票券類型")]
+        public int EvoucherTypeId { get; set; }
+
+        /// <summary>
+        /// 票券類型ID（別名屬性，用於向後相容）
+        /// </summary>
+        public int EVoucherTypeID
+        {
+            get => EvoucherTypeId;
+            set => EvoucherTypeId = value;
+        }
 
         /// <summary>
         /// 票券價值
         /// </summary>
         [Range(0.01, 1000000, ErrorMessage = "票券價值必須在 0.01-1000000 之間")]
+        [Display(Name = "票券價值")]
         public decimal? Value { get; set; }
 
         /// <summary>
         /// 有效期限
         /// </summary>
+        [Display(Name = "有效期限")]
         public DateTime? ExpiryDate { get; set; }
 
         /// <summary>
         /// 是否已使用
         /// </summary>
+        [Display(Name = "使用狀態")]
         public bool IsUsed { get; set; }
 
         /// <summary>
         /// 使用日期
         /// </summary>
+        [Display(Name = "使用日期")]
         public DateTime? UsedDate { get; set; }
 
         /// <summary>
         /// 描述
         /// </summary>
         [StringLength(1000, ErrorMessage = "描述長度不可超過 1000 字元")]
+        [Display(Name = "描述")]
         public string? Description { get; set; }
 
         /// <summary>
         /// 建立時間
         /// </summary>
+        [Display(Name = "建立時間")]
         public DateTime? CreatedAt { get; set; }
 
         /// <summary>
         /// 更新時間
         /// </summary>
+        [Display(Name = "更新時間")]
         public DateTime? UpdatedAt { get; set; }
     }
 }

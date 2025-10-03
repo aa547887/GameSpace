@@ -18,28 +18,45 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             var queryable = _context.UserWallets.AsQueryable();
 
-            // 使用者ID篩選
+            // Filter by user ID
             if (query.UserId.HasValue)
             {
                 queryable = queryable.Where(w => w.UserId == query.UserId.Value);
             }
 
-            // 點數範圍篩選（使用 MinAmount 和 MaxAmount，不是 MinPoints/MaxPoints）
+            // Filter by amount range
             if (query.MinAmount.HasValue)
+            {
                 queryable = queryable.Where(w => w.UserPoint >= query.MinAmount.Value);
+            }
             if (query.MaxAmount.HasValue)
+            {
                 queryable = queryable.Where(w => w.UserPoint <= query.MaxAmount.Value);
+            }
 
+            // Calculate total count
             var totalCount = await queryable.CountAsync();
 
-            // 排序
-            if (query.Descending)
-                queryable = queryable.OrderByDescending(w => w.UserPoint);
-            else
-                queryable = queryable.OrderBy(w => w.UserPoint);
+            // Sorting
+            switch (query.SortBy?.ToLower())
+            {
+                case "points_desc":
+                    queryable = queryable.OrderByDescending(w => w.UserPoint);
+                    break;
+                case "points_asc":
+                    queryable = queryable.OrderBy(w => w.UserPoint);
+                    break;
+                case "userid_desc":
+                    queryable = queryable.OrderByDescending(w => w.UserId);
+                    break;
+                case "userid_asc":
+                default:
+                    queryable = queryable.OrderBy(w => w.UserId);
+                    break;
+            }
 
+            // Pagination
             var items = await queryable
-                .Include(w => w.User)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();
@@ -48,358 +65,267 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 Items = items,
                 TotalCount = totalCount,
-                PageNumber = query.PageNumber,
+                CurrentPage = query.PageNumber,
                 PageSize = query.PageSize
             };
         }
 
         public async Task<UserWallet> GetUserWalletAsync(int userId)
         {
-            return await _context.UserWallets
-                .Include(w => w.User)
+            var wallet = await _context.UserWallets
                 .FirstOrDefaultAsync(w => w.UserId == userId);
+
+            if (wallet == null)
+            {
+                // Create new wallet if it does not exist
+                wallet = new UserWallet
+                {
+                    UserId = userId,
+                    UserPoint = 0
+                };
+                _context.UserWallets.Add(wallet);
+                await _context.SaveChangesAsync();
+            }
+
+            return wallet;
         }
 
         public async Task<bool> UpdateUserPointsAsync(int userId, int points, string description)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var wallet = await _context.UserWallets.FindAsync(userId);
-                if (wallet == null) return false;
+                var wallet = await GetUserWalletAsync(userId);
 
-                var oldPoints = wallet.UserPoint;
+                // Check if user has enough points when deducting
+                if (points < 0 && wallet.UserPoint < Math.Abs(points))
+                {
+                    return false;
+                }
+
                 wallet.UserPoint += points;
 
-                // 記錄交易歷史
+                // Record history
                 var history = new WalletHistory
                 {
                     UserId = userId,
+                    ChangeType = points > 0 ? "Admin_Add" : "Admin_Deduct",
                     PointsChanged = points,
-                    ChangeType = "Point",
-                    ChangeTime = DateTime.Now,
+                    ItemCode = "ADMIN_MANUAL",
                     Description = description,
-                    ItemCode = null
+                    ChangeTime = DateTime.UtcNow
                 };
-
                 _context.WalletHistories.Add(history);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
                 return false;
             }
         }
 
         public async Task<bool> IssueCouponAsync(int userId, int couponTypeId, string description)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var couponType = await _context.CouponTypes.FindAsync(couponTypeId);
-                if (couponType == null) return false;
+                var couponType = await _context.CouponTypes
+                    .FirstOrDefaultAsync(ct => ct.CouponTypeId == couponTypeId);
 
+                if (couponType == null)
+                {
+                    return false;
+                }
+
+                // Generate unique coupon code
+                var couponCode = $"CPN-{userId}-{DateTime.UtcNow.Ticks}";
+
+                // Create coupon
                 var coupon = new Coupon
                 {
-                    CouponCode = GenerateCouponCode(),
-                    CouponTypeId = couponTypeId,
                     UserId = userId,
-                    IsUsed = false,
-                    AcquiredTime = DateTime.Now,
-                    UsedTime = null,
-                    UsedInOrderId = null
+                    CouponTypeId = couponTypeId,
+                    CouponCode = couponCode,
+                    IsUsed = false
                 };
-
                 _context.Coupons.Add(coupon);
 
-                // 記錄交易歷史
+                // Record history
                 var history = new WalletHistory
                 {
                     UserId = userId,
-                    PointsChanged = 1,
-                    ChangeType = "Coupon",
-                    ChangeTime = DateTime.Now,
+                    ChangeType = "Coupon_Issue",
+                    PointsChanged = 0,
+                    ItemCode = $"COUPON_{couponTypeId}",
                     Description = description,
-                    ItemCode = coupon.CouponId.ToString()
+                    ChangeTime = DateTime.UtcNow
                 };
-
                 _context.WalletHistories.Add(history);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
                 return false;
             }
         }
 
         public async Task<bool> IssueEVoucherAsync(int userId, int evoucherTypeId, string description)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var evoucherType = await _context.EvoucherTypes.FindAsync(evoucherTypeId);
-                if (evoucherType == null) return false;
+                var evoucherType = await _context.EvoucherTypes
+                    .FirstOrDefaultAsync(et => et.EvoucherTypeId == evoucherTypeId);
 
+                if (evoucherType == null)
+                {
+                    return false;
+                }
+
+                // Generate unique eVoucher code
+                var evoucherCode = $"EVC-{userId}-{DateTime.UtcNow.Ticks}";
+
+                // Create eVoucher
                 var evoucher = new Evoucher
                 {
-                    EvoucherCode = GenerateEVoucherCode(evoucherType.EvoucherTypeName),
-                    EvoucherTypeId = evoucherTypeId,
                     UserId = userId,
-                    IsUsed = false,
-                    AcquiredTime = DateTime.Now,
-                    UsedTime = null
+                    EvoucherTypeId = evoucherTypeId,
+                    EvoucherCode = evoucherCode,
+                    IsUsed = false
                 };
-
                 _context.Evouchers.Add(evoucher);
 
-                // 記錄交易歷史
+                // Record history
                 var history = new WalletHistory
                 {
                     UserId = userId,
-                    PointsChanged = 1,
-                    ChangeType = "EVoucher",
-                    ChangeTime = DateTime.Now,
+                    ChangeType = "EVoucher_Issue",
+                    PointsChanged = 0,
+                    ItemCode = $"EVOUCHER_{evoucherTypeId}",
                     Description = description,
-                    ItemCode = evoucher.EvoucherId
+                    ChangeTime = DateTime.UtcNow
                 };
-
                 _context.WalletHistories.Add(history);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
                 return false;
             }
         }
 
         public async Task<PagedResult<WalletHistory>> GetWalletHistoryAsync(WalletHistoryQueryModel query)
         {
-            try
+            var queryable = _context.WalletHistories.AsQueryable();
+
+            // Filter by user ID
+            if (query.UserId.HasValue)
             {
-                var queryable = _context.WalletHistories.AsQueryable();
-
-                // 用戶篩選
-                if (query.UserId.HasValue)
-                    queryable = queryable.Where(h => h.UserId == query.UserId.Value);
-
-                // 交易類型篩選
-                if (!string.IsNullOrEmpty(query.ChangeType))
-                    queryable = queryable.Where(h => h.ChangeType == query.ChangeType);
-
-                // 日期範圍篩選
-                if (query.StartDate.HasValue)
-                    queryable = queryable.Where(h => h.ChangeTime >= query.StartDate.Value);
-                if (query.EndDate.HasValue)
-                    queryable = queryable.Where(h => h.ChangeTime <= query.EndDate.Value);
-
-                var totalCount = await queryable.CountAsync();
-
-                // 排序
-                if (query.Descending)
-                    queryable = queryable.OrderByDescending(h => h.ChangeTime);
-                else
-                    queryable = queryable.OrderBy(h => h.ChangeTime);
-
-                var items = await queryable
-                    .Include(h => h.User)
-                    .Skip((query.PageNumber - 1) * query.PageSize)
-                    .Take(query.PageSize)
-                    .ToListAsync();
-
-                return new PagedResult<WalletHistory>
-                {
-                    Items = items,
-                    TotalCount = totalCount,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+                queryable = queryable.Where(h => h.UserId == query.UserId.Value);
             }
-            catch (Exception)
+
+            // Filter by change type
+            if (!string.IsNullOrWhiteSpace(query.ChangeType))
             {
-                return new PagedResult<WalletHistory>
-                {
-                    Items = new List<WalletHistory>(),
-                    TotalCount = 0,
-                    PageNumber = query.PageNumber,
-                    PageSize = query.PageSize
-                };
+                queryable = queryable.Where(h => h.ChangeType == query.ChangeType);
             }
+
+            // Filter by date range
+            if (query.StartDate.HasValue)
+            {
+                queryable = queryable.Where(h => h.ChangeTime >= query.StartDate.Value);
+            }
+            if (query.EndDate.HasValue)
+            {
+                queryable = queryable.Where(h => h.ChangeTime <= query.EndDate.Value);
+            }
+
+            // Calculate total count
+            var totalCount = await queryable.CountAsync();
+
+            // Sort by time descending
+            queryable = queryable.OrderByDescending(h => h.ChangeTime);
+
+            // Pagination
+            var items = await queryable
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<WalletHistory>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                CurrentPage = query.PageNumber,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<bool> ExportWalletHistoryAsync(WalletHistoryQueryModel query, string filePath)
         {
             try
             {
-                // 取得所有符合條件的資料（不分頁）
                 var queryable = _context.WalletHistories.AsQueryable();
 
-                // 用戶篩選
+                // Apply same filters
                 if (query.UserId.HasValue)
+                {
                     queryable = queryable.Where(h => h.UserId == query.UserId.Value);
-
-                // 交易類型篩選
-                if (!string.IsNullOrEmpty(query.ChangeType))
+                }
+                if (!string.IsNullOrWhiteSpace(query.ChangeType))
+                {
                     queryable = queryable.Where(h => h.ChangeType == query.ChangeType);
-
-                // 日期範圍篩選
+                }
                 if (query.StartDate.HasValue)
+                {
                     queryable = queryable.Where(h => h.ChangeTime >= query.StartDate.Value);
+                }
                 if (query.EndDate.HasValue)
+                {
                     queryable = queryable.Where(h => h.ChangeTime <= query.EndDate.Value);
+                }
 
-                // 排序
-                if (query.Descending)
-                    queryable = queryable.OrderByDescending(h => h.ChangeTime);
-                else
-                    queryable = queryable.OrderBy(h => h.ChangeTime);
-
-                var allData = await queryable
-                    .Include(h => h.User)
+                var histories = await queryable
+                    .OrderByDescending(h => h.ChangeTime)
                     .ToListAsync();
 
-                // 根據副檔名決定匯出格式
-                var extension = Path.GetExtension(filePath).ToLowerInvariant();
+                // Export to CSV file
+                var csv = new StringBuilder();
 
-                if (extension == ".csv")
+                // Add header row
+                csv.AppendLine("Log ID,User ID,Change Type,Points Changed,Item Code,Description,Change Time");
+
+                // Add data rows
+                foreach (var history in histories)
                 {
-                    await ExportToCsvAsync(allData, filePath);
+                    csv.AppendLine($"{history.LogId},{history.UserId},{EscapeCsv(history.ChangeType)},{history.PointsChanged},{EscapeCsv(history.ItemCode ?? string.Empty)},{EscapeCsv(history.Description ?? string.Empty)},{history.ChangeTime:yyyy-MM-dd HH:mm:ss}");
                 }
-                else if (extension == ".txt")
-                {
-                    await ExportToTextAsync(allData, filePath);
-                }
-                else
-                {
-                    // 預設使用 CSV 格式
-                    await ExportToCsvAsync(allData, filePath);
-                }
+
+                // Write to file
+                await File.WriteAllTextAsync(filePath, csv.ToString(), Encoding.UTF8);
 
                 return true;
             }
-            catch (Exception)
+            catch
             {
                 return false;
             }
         }
 
-        private async Task ExportToCsvAsync(List<WalletHistory> data, string filePath)
+        private string EscapeCsv(string value)
         {
-            var sb = new StringBuilder();
-
-            // CSV 標題行（繁體中文）
-            sb.AppendLine("歷史ID,用戶ID,用戶名稱,變更類型,變更金額,點數變更,變更時間,描述,相關ID,項目代碼");
-
-            foreach (var record in data)
-            {
-                var userName = record.User?.UserName ?? "未知用戶";
-                var changeAmount = record.PointsChanged.ToString();
-                var pointsChanged = record.PointsChanged.ToString();
-                var relatedId = record.ItemCode?.ToString() ?? "";
-                var itemCode = record.ItemCode ?? "";
-                var description = EscapeCsvField(record.Description ?? "");
-
-                sb.AppendLine($"{record.LogId},{record.UserId},{EscapeCsvField(userName)},{record.ChangeType},{changeAmount},{pointsChanged},{record.ChangeTime:yyyy-MM-dd HH:mm:ss},{description},{relatedId},{itemCode}");
-            }
-
-            // 使用 UTF-8 with BOM 以支援 Excel 正確顯示中文
-            var encoding = new UTF8Encoding(true);
-            await File.WriteAllTextAsync(filePath, sb.ToString(), encoding);
-        }
-
-        private async Task ExportToTextAsync(List<WalletHistory> data, string filePath)
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine("========================================");
-            sb.AppendLine("錢包歷史記錄匯出");
-            sb.AppendLine($"匯出時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            sb.AppendLine($"總記錄數: {data.Count}");
-            sb.AppendLine("========================================");
-            sb.AppendLine();
-
-            foreach (var record in data)
-            {
-                var userName = record.User?.UserName ?? "未知用戶";
-
-                sb.AppendLine($"歷史ID: {record.LogId}");
-                sb.AppendLine($"用戶: {userName} (ID: {record.UserId})");
-                sb.AppendLine($"變更類型: {record.ChangeType}");
-                sb.AppendLine($"變更金額: {record.PointsChanged}");
-                sb.AppendLine($"點數變更: {record.PointsChanged}");
-                sb.AppendLine($"變更時間: {record.ChangeTime:yyyy-MM-dd HH:mm:ss}");
-                sb.AppendLine($"描述: {record.Description ?? "無"}");
-
-                if (!string.IsNullOrEmpty(record.ItemCode))
-                    sb.AppendLine($"相關ID: {record.ItemCode}");
-
-                if (!string.IsNullOrEmpty(record.ItemCode))
-                    sb.AppendLine($"項目代碼: {record.ItemCode}");
-
-                sb.AppendLine("----------------------------------------");
-                sb.AppendLine();
-            }
-
-            var encoding = new UTF8Encoding(true);
-            await File.WriteAllTextAsync(filePath, sb.ToString(), encoding);
-        }
-
-        private string EscapeCsvField(string field)
-        {
-            if (string.IsNullOrEmpty(field))
+            if (string.IsNullOrEmpty(value))
                 return string.Empty;
 
-            // 如果欄位包含逗號、雙引號或換行符號，需要用雙引號包圍並轉義雙引號
-            if (field.Contains(',') || field.Contains('"') || field.Contains('\n') || field.Contains('\r'))
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
             {
-                return $"\"{field.Replace("\"", "\"\"")}\"";
+                return $"\"{value.Replace("\"", "\"\"")}\"";
             }
 
-            return field;
-        }
-
-        private string GenerateCouponCode()
-        {
-            var now = DateTime.Now;
-            var random = new Random();
-            var randomCode = random.Next(100000, 999999);
-            return $"CPN-{now:yyyyMM}-{randomCode}";
-        }
-
-        private string GenerateEVoucherCode(string typeName)
-        {
-            var typeCode = GetTypeCode(typeName);
-            var random = new Random();
-            var randomCode = random.Next(1000, 9999);
-            var numberCode = random.Next(100000, 999999);
-            return $"EV-{typeCode}-{randomCode}-{numberCode}";
-        }
-
-        private string GetTypeCode(string typeName)
-        {
-            return typeName.ToUpper() switch
-            {
-                "現金券" => "CASH",
-                "電影券" => "MOVIE",
-                "美食券" => "FOOD",
-                "加油券" => "GAS",
-                "商店券" => "STORE",
-                "咖啡券" => "COFFEE",
-                _ => "CASH"
-            };
+            return value;
         }
     }
 }
-
-

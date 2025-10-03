@@ -52,6 +52,30 @@ namespace GameSpace.Areas.MiniGame.Services
         public int PointsReward { get; set; }
         public string? UnlockFeature { get; set; }
         public bool IsActive { get; set; }
+
+        // 額外屬性以支援控制器和驗證服務
+        /// <summary>
+        /// 所需經驗值（與 RequiredExp 同義，用於向後兼容）
+        /// </summary>
+        public int ExperienceRequired
+        {
+            get => RequiredExp;
+            set => RequiredExp = value;
+        }
+
+        /// <summary>
+        /// 經驗值獎勵（升級後獲得的額外經驗值）
+        /// </summary>
+        public int ExpReward { get; set; }
+
+        /// <summary>
+        /// 備註（與 UnlockFeature 同義，用於向後兼容）
+        /// </summary>
+        public string? Remarks
+        {
+            get => UnlockFeature;
+            set => UnlockFeature = value;
+        }
     }
 }
 

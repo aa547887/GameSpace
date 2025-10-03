@@ -40,16 +40,15 @@ namespace GameSpace.Areas.MiniGame.Services
                 var reward = await CalculateSignInRewardAsync(userId);
 
                 // 新增簽到記錄
-                var signInLog = new UserSignInStats
+                var signInLog = new UserSignInStat
                 {
                     UserId = userId,
-                    SignInTime = DateTime.UtcNow,
-                    ConsecutiveDays = consecutiveDays,
+                    SignTime = DateTime.UtcNow,
                     PointsGained = reward.Points,
                     ExpGained = reward.Experience,
-                    CouponGained = reward.CouponCode
+                    CouponGained = reward.CouponCode ?? string.Empty
                 };
-                _context.UserSignInStats.Add(signInLog);
+                _context.UserSignInStat.Add(signInLog);
 
                 // 發放獎勵
                 await GrantSignInRewardAsync(userId, reward);
@@ -66,67 +65,136 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> CanSignInTodayAsync(int userId)
         {
             var today = DateTime.UtcNow.Date;
-            var signedInToday = await _context.UserSignInStats
-                .AnyAsync(s => s.UserId == userId && s.SignInTime.Date == today);
+            var signedInToday = await _context.UserSignInStat
+                .AnyAsync(s => s.UserId == userId && s.SignTime.Date == today);
 
             return !signedInToday;
         }
 
         public async Task<DateTime?> GetLastSignInDateAsync(int userId)
         {
-            var lastSignIn = await _context.UserSignInStats
+            var lastSignIn = await _context.UserSignInStat
                 .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.SignInTime)
+                .OrderByDescending(s => s.SignTime)
                 .FirstOrDefaultAsync();
 
-            return lastSignIn?.SignInTime;
+            return lastSignIn?.SignTime;
         }
 
         public async Task<int> GetConsecutiveDaysAsync(int userId)
         {
-            var lastSignIn = await _context.UserSignInStats
+            var signIns = await _context.UserSignInStat
                 .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.SignInTime)
-                .FirstOrDefaultAsync();
+                .OrderByDescending(s => s.SignTime)
+                .ToListAsync();
 
-            return lastSignIn?.ConsecutiveDays ?? 0;
+            if (!signIns.Any()) return 0;
+
+            int consecutiveDays = 1;
+            var currentDate = signIns.First().SignTime.Date;
+
+            for (int i = 1; i < signIns.Count; i++)
+            {
+                var previousDate = signIns[i].SignTime.Date;
+                if (currentDate.AddDays(-1) == previousDate)
+                {
+                    consecutiveDays++;
+                    currentDate = previousDate;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return consecutiveDays;
         }
 
         // 簽到記錄查詢
         public async Task<IEnumerable<UserSignInStats>> GetSignInHistoryAsync(int userId, int pageNumber = 1, int pageSize = 20)
         {
-            return await _context.UserSignInStats
+            var signIns = await _context.UserSignInStat
                 .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.SignInTime)
+                .OrderByDescending(s => s.SignTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // 轉換為ViewModel
+            return signIns.Select(s => new UserSignInStats
+            {
+                StatsID = s.LogId,
+                UserID = s.UserId,
+                SignTime = s.SignTime,
+                PointsEarned = s.PointsGained,
+                PetExpEarned = s.ExpGained,
+                CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? (int?)null : int.TryParse(s.CouponGained, out var couponId) ? couponId : (int?)null,
+                ConsecutiveDays = 0 // 需要動態計算
+            });
         }
 
         public async Task<IEnumerable<UserSignInStats>> GetAllSignInsAsync(int pageNumber = 1, int pageSize = 50)
         {
-            return await _context.UserSignInStats
+            var signIns = await _context.UserSignInStat
                 .Include(s => s.User)
-                .OrderByDescending(s => s.SignInTime)
+                .OrderByDescending(s => s.SignTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // 轉換為ViewModel
+            return signIns.Select(s => new UserSignInStats
+            {
+                StatsID = s.LogId,
+                UserID = s.UserId,
+                SignTime = s.SignTime,
+                PointsEarned = s.PointsGained,
+                PetExpEarned = s.ExpGained,
+                CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? (int?)null : int.TryParse(s.CouponGained, out var couponId) ? couponId : (int?)null,
+                ConsecutiveDays = 0 // 需要動態計算
+            });
         }
 
         public async Task<IEnumerable<UserSignInStats>> GetSignInsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            return await _context.UserSignInStats
+            var signIns = await _context.UserSignInStat
                 .Include(s => s.User)
-                .Where(s => s.SignInTime >= startDate && s.SignInTime <= endDate)
-                .OrderByDescending(s => s.SignInTime)
+                .Where(s => s.SignTime >= startDate && s.SignTime <= endDate)
+                .OrderByDescending(s => s.SignTime)
                 .ToListAsync();
+
+            // 轉換為ViewModel
+            return signIns.Select(s => new UserSignInStats
+            {
+                StatsID = s.LogId,
+                UserID = s.UserId,
+                SignTime = s.SignTime,
+                PointsEarned = s.PointsGained,
+                PetExpEarned = s.ExpGained,
+                CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? (int?)null : int.TryParse(s.CouponGained, out var couponId) ? couponId : (int?)null,
+                ConsecutiveDays = 0 // 需要動態計算
+            });
         }
 
         public async Task<UserSignInStats?> GetSignInDetailAsync(int logId)
         {
-            return await _context.UserSignInStats
+            var signIn = await _context.UserSignInStat
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.LogId == logId);
+
+            if (signIn == null) return null;
+
+            // 轉換為ViewModel
+            return new UserSignInStats
+            {
+                StatsID = signIn.LogId,
+                UserID = signIn.UserId,
+                SignTime = signIn.SignTime,
+                PointsEarned = signIn.PointsGained,
+                PetExpEarned = signIn.ExpGained,
+                CouponEarned = string.IsNullOrEmpty(signIn.CouponGained) ? (int?)null : int.TryParse(signIn.CouponGained, out var couponId) ? couponId : (int?)null,
+                ConsecutiveDays = await GetConsecutiveDaysAsync(signIn.UserId)
+            };
         }
 
         // 簽到獎勵
@@ -203,7 +271,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (!string.IsNullOrEmpty(reward.CouponCode))
                 {
                     // 查找對應的優惠券類型
-                    var couponType = await _context.CouponTypes.FirstOrDefaultAsync(ct => ct.IsActive);
+                    var couponType = await _context.CouponTypes.FirstOrDefaultAsync(ct => (ct.ValidFrom <= DateTime.UtcNow && ct.ValidTo >= DateTime.UtcNow));
                     if (couponType != null)
                     {
                         var coupon = new Coupon
@@ -211,8 +279,7 @@ namespace GameSpace.Areas.MiniGame.Services
                             UserId = userId,
                             CouponTypeId = couponType.CouponTypeId,
                             CouponCode = $"{reward.CouponCode}_{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}",
-                            IssueTime = DateTime.UtcNow,
-                            ExpiryTime = DateTime.UtcNow.AddDays(30),
+                            AcquiredTime = DateTime.UtcNow,
                             IsUsed = false
                         };
                         _context.Coupons.Add(coupon);
@@ -244,9 +311,9 @@ namespace GameSpace.Areas.MiniGame.Services
         // 簽到統計
         public async Task<SignInStatistics> GetUserSignInStatisticsAsync(int userId)
         {
-            var allSignIns = await _context.UserSignInStats
+            var allSignIns = await _context.UserSignInStat
                 .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.SignInTime)
+                .OrderByDescending(s => s.SignTime)
                 .ToListAsync();
 
             var stats = new SignInStatistics
@@ -259,36 +326,34 @@ namespace GameSpace.Areas.MiniGame.Services
                 TotalCouponsEarned = allSignIns.Count(s => !string.IsNullOrEmpty(s.CouponGained))
             };
 
-            // 計算最長連續簽到
-            stats.LongestStreak = allSignIns.Any()
-                ? allSignIns.Max(s => s.ConsecutiveDays)
-                : 0;
+            // 計算最長連續簽到 (需要遍歷所有記錄計算)
+            stats.LongestStreak = await GetConsecutiveDaysAsync(userId);
 
             return stats;
         }
 
         public async Task<SignInStatistics> GetGlobalSignInStatisticsAsync()
         {
-            var allSignIns = await _context.UserSignInStats.ToListAsync();
+            var allSignIns = await _context.UserSignInStat.ToListAsync();
 
             return new SignInStatistics
             {
                 TotalSignIns = allSignIns.Count,
                 CurrentStreak = 0, // 全域統計不適用
-                LongestStreak = allSignIns.Any() ? allSignIns.Max(s => s.ConsecutiveDays) : 0,
+                LongestStreak = 0, // 全域統計中最長連續需要針對每個用戶計算
                 TotalPointsEarned = allSignIns.Sum(s => s.PointsGained),
                 TotalExpEarned = allSignIns.Sum(s => s.ExpGained),
                 TotalCouponsEarned = allSignIns.Count(s => !string.IsNullOrEmpty(s.CouponGained)),
-                LastSignInDate = allSignIns.Any() ? allSignIns.Max(s => s.SignInTime) : null
+                LastSignInDate = allSignIns.Any() ? allSignIns.Max(s => s.SignTime) : null
             };
         }
 
         public async Task<Dictionary<string, int>> GetSignInTrendDataAsync(int days = 30)
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
-            var signIns = await _context.UserSignInStats
-                .Where(s => s.SignInTime >= startDate)
-                .GroupBy(s => s.SignInTime.Date)
+            var signIns = await _context.UserSignInStat
+                .Where(s => s.SignTime >= startDate)
+                .GroupBy(s => s.SignTime.Date)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .ToListAsync();
 
@@ -300,30 +365,44 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<UserSignInRanking>> GetSignInLeaderboardAsync(int count = 10)
         {
-            var rankings = await _context.UserSignInStats
-                .Include(s => s.User)
-                .GroupBy(s => s.UserId)
-                .Select(g => new UserSignInRanking
-                {
-                    UserId = g.Key,
-                    UserName = g.First().User.User_Account,
-                    SignInCount = g.Count(),
-                    ConsecutiveDays = g.Max(s => s.ConsecutiveDays),
-                    TotalPoints = g.Sum(s => s.PointsGained)
-                })
-                .OrderByDescending(r => r.SignInCount)
-                .ThenByDescending(r => r.ConsecutiveDays)
-                .Take(count)
+            var userIds = await _context.UserSignInStat
+                .Select(s => s.UserId)
+                .Distinct()
                 .ToListAsync();
 
-            return rankings;
+            var rankings = new List<UserSignInRanking>();
+
+            foreach (var userId in userIds)
+            {
+                var userSignIns = await _context.UserSignInStat
+                    .Include(s => s.User)
+                    .Where(s => s.UserId == userId)
+                    .ToListAsync();
+
+                if (userSignIns.Any())
+                {
+                    rankings.Add(new UserSignInRanking
+                    {
+                        UserId = userId,
+                        UserName = userSignIns.First().User.User_Account,
+                        SignInCount = userSignIns.Count,
+                        ConsecutiveDays = await GetConsecutiveDaysAsync(userId),
+                        TotalPoints = userSignIns.Sum(s => s.PointsGained)
+                    });
+                }
+            }
+
+            return rankings
+                .OrderByDescending(r => r.SignInCount)
+                .ThenByDescending(r => r.ConsecutiveDays)
+                .Take(count);
         }
 
         // 簽到規則管理
         public async Task<IEnumerable<SignInRule>> GetAllSignInRulesAsync()
         {
             return await _context.SignInRules
-                .OrderBy(r => r.ConsecutiveDays)
+                .OrderBy(r => r.DayNumber)
                 .ToListAsync();
         }
 

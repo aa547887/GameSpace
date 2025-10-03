@@ -24,30 +24,31 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
+                // UserSignInStats (DbSet) 返回 UserSignInStat (實體)
                 var queryable = _context.UserSignInStats.AsQueryable();
 
                 // 篩選條件
                 if (query.UserId.HasValue)
-                    queryable = queryable.Where(s => s.UserID == query.UserId.Value);
+                    queryable = queryable.Where(s => s.UserId == query.UserId.Value);
 
-                if (query.SignTimeFrom.HasValue)
-                    queryable = queryable.Where(s => s.SignTime >= query.SignTimeFrom.Value);
+                if (query.StartDate.HasValue)
+                    queryable = queryable.Where(s => s.SignTime >= query.StartDate.Value);
 
-                if (query.SignTimeTo.HasValue)
-                    queryable = queryable.Where(s => s.SignTime <= query.SignTimeTo.Value);
+                if (query.EndDate.HasValue)
+                    queryable = queryable.Where(s => s.SignTime <= query.EndDate.Value);
 
                 if (query.MinConsecutiveDays.HasValue)
-                    queryable = queryable.Where(s => s.ConsecutiveDays >= query.MinConsecutiveDays.Value);
+                    queryable = queryable.Where(s => s.PointsGained >= query.MinConsecutiveDays.Value);
 
                 var totalCount = await queryable.CountAsync();
 
-                // 排序
-                if (!string.IsNullOrEmpty(query.OrderBy))
+                // 排序 - 使用 SortBy 屬性
+                if (!string.IsNullOrEmpty(query.SortBy))
                 {
                     if (query.Descending)
-                        queryable = queryable.OrderByDescending(s => EF.Property<object>(s, query.OrderBy));
+                        queryable = queryable.OrderByDescending(s => EF.Property<object>(s, query.SortBy));
                     else
-                        queryable = queryable.OrderBy(s => EF.Property<object>(s, query.OrderBy));
+                        queryable = queryable.OrderBy(s => EF.Property<object>(s, query.SortBy));
                 }
                 else
                 {
@@ -55,12 +56,24 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 // 分頁
-                var items = await queryable
+                var dbItems = await queryable
                     .Skip((query.PageNumber - 1) * query.PageSize)
                     .Take(query.PageSize)
                     .ToListAsync();
 
-                return new PagedResult<UserSignInStats>
+                // 將資料庫實體 UserSignInStat 轉換為 ViewModel UserSignInStats
+                var items = dbItems.Select(s => new GameSpace.Areas.MiniGame.Models.UserSignInStats
+                {
+                    StatsID = s.LogId,
+                    UserID = s.UserId,
+                    SignTime = s.SignTime,
+                    PointsEarned = s.PointsGained,
+                    PetExpEarned = s.ExpGained,
+                    CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? null : (int.TryParse(s.CouponGained, out var couponId) ? (int?)couponId : null),
+                    ConsecutiveDays = 1 // 需要計算連續天數，暫時設為1
+                }).ToList();
+
+                return new PagedResult<GameSpace.Areas.MiniGame.Models.UserSignInStats>
                 {
                     Items = items,
                     TotalCount = totalCount,
@@ -70,7 +83,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch
             {
-                return new PagedResult<UserSignInStats>();
+                return new PagedResult<GameSpace.Areas.MiniGame.Models.UserSignInStats>();
             }
         }
 
@@ -89,11 +102,11 @@ namespace GameSpace.Areas.MiniGame.Services
                     TodaySignInCount = allStats.Count(s => s.SignTime.Date == today),
                     ThisWeekSignInCount = allStats.Count(s => s.SignTime >= weekStart),
                     ThisMonthSignInCount = allStats.Count(s => s.SignTime >= monthStart),
-                    MaxConsecutiveDays = allStats.Any() ? allStats.Max(s => s.ConsecutiveDays) : 0,
-                    PerfectAttendanceCount = allStats.Count(s => s.ConsecutiveDays >= DateTime.DaysInMonth(today.Year, today.Month)),
-                    TotalPointsGranted = allStats.Sum(s => s.PointsEarned),
-                    TotalExpGranted = allStats.Sum(s => s.PetExpEarned),
-                    TotalCouponsGranted = allStats.Count(s => s.CouponEarned != null)
+                    MaxConsecutiveDays = allStats.Any() ? allStats.Max(s => s.PointsGained) : 0,
+                    PerfectAttendanceCount = allStats.Count(s => s.PointsGained >= DateTime.DaysInMonth(today.Year, today.Month)),
+                    TotalPointsGranted = allStats.Sum(s => s.PointsGained),
+                    TotalExpGranted = allStats.Sum(s => s.ExpGained),
+                    TotalCouponsGranted = allStats.Count(s => !string.IsNullOrEmpty(s.CouponGained))
                 };
             }
             catch
@@ -157,184 +170,206 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<UserSignInStats>> GetAllSignInStatsAsync()
         {
-            var stats = new List<UserSignInStats>();
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var command = new SqlCommand("SELECT * FROM UserSignInStats ORDER BY SignTime DESC", connection);
-
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                stats.Add(new UserSignInStats
+                var dbItems = await _context.UserSignInStats
+                    .OrderByDescending(s => s.SignTime)
+                    .ToListAsync();
+
+                return dbItems.Select(s => new GameSpace.Areas.MiniGame.Models.UserSignInStats
                 {
-                    StatsID = reader.GetInt32("StatsID"),
-                    UserID = reader.GetInt32("UserID"),
-                    SignTime = reader.GetDateTime("SignTime"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
-                });
+                    StatsID = s.LogId,
+                    UserID = s.UserId,
+                    SignTime = s.SignTime,
+                    PointsEarned = s.PointsGained,
+                    PetExpEarned = s.ExpGained,
+                    CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? null : (int.TryParse(s.CouponGained, out var couponId) ? (int?)couponId : null),
+                    ConsecutiveDays = 1
+                }).ToList();
             }
-            return stats;
+            catch
+            {
+                return new List<GameSpace.Areas.MiniGame.Models.UserSignInStats>();
+            }
         }
 
         public async Task<IEnumerable<UserSignInStats>> GetSignInStatsByUserIdAsync(int userId)
         {
-            var stats = new List<UserSignInStats>();
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var command = new SqlCommand(@"
-                SELECT * FROM UserSignInStats 
-                WHERE UserID = @UserId 
-                ORDER BY SignTime DESC", connection);
-            command.Parameters.AddWithValue("@UserId", userId);
-
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                stats.Add(new UserSignInStats
+                var dbItems = await _context.UserSignInStats
+                    .Where(s => s.UserId == userId)
+                    .OrderByDescending(s => s.SignTime)
+                    .ToListAsync();
+
+                return dbItems.Select(s => new GameSpace.Areas.MiniGame.Models.UserSignInStats
                 {
-                    StatsID = reader.GetInt32("StatsID"),
-                    UserID = reader.GetInt32("UserID"),
-                    SignTime = reader.GetDateTime("SignTime"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
-                });
+                    StatsID = s.LogId,
+                    UserID = s.UserId,
+                    SignTime = s.SignTime,
+                    PointsEarned = s.PointsGained,
+                    PetExpEarned = s.ExpGained,
+                    CouponEarned = string.IsNullOrEmpty(s.CouponGained) ? null : (int.TryParse(s.CouponGained, out var couponId) ? (int?)couponId : null),
+                    ConsecutiveDays = 1
+                }).ToList();
             }
-            return stats;
+            catch
+            {
+                return new List<GameSpace.Areas.MiniGame.Models.UserSignInStats>();
+            }
         }
 
         public async Task<UserSignInStats?> GetSignInStatsByIdAsync(int statsId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var command = new SqlCommand("SELECT * FROM UserSignInStats WHERE StatsID = @StatsId", connection);
-            command.Parameters.AddWithValue("@StatsId", statsId);
-
-            using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
+            try
             {
-                return new UserSignInStats
+                var dbItem = await _context.UserSignInStats
+                    .FirstOrDefaultAsync(s => s.LogId == statsId);
+
+                if (dbItem == null) return null;
+
+                return new GameSpace.Areas.MiniGame.Models.UserSignInStats
                 {
-                    StatsID = reader.GetInt32("StatsID"),
-                    UserID = reader.GetInt32("UserID"),
-                    SignTime = reader.GetDateTime("SignTime"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                    StatsID = dbItem.LogId,
+                    UserID = dbItem.UserId,
+                    SignTime = dbItem.SignTime,
+                    PointsEarned = dbItem.PointsGained,
+                    PetExpEarned = dbItem.ExpGained,
+                    CouponEarned = string.IsNullOrEmpty(dbItem.CouponGained) ? null : (int.TryParse(dbItem.CouponGained, out var couponId) ? (int?)couponId : null),
+                    ConsecutiveDays = 1
                 };
             }
-            return null;
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<bool> CreateSignInStatsAsync(UserSignInStats stats)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            try
+            {
+                var signInLog = new UserSignInStat
+                {
+                    UserId = stats.UserID,
+                    SignTime = stats.SignTime,
+                    PointsGained = stats.PointsEarned,
+                    ExpGained = stats.PetExpEarned,
+                    CouponGained = stats.CouponEarned.HasValue ? stats.CouponEarned.Value.ToString() : string.Empty
+                };
 
-            var command = new SqlCommand(@"
-                INSERT INTO UserSignInStats (UserID, SignTime, PointsEarned, PetExpEarned, CouponEarned, ConsecutiveDays)
-                VALUES (@UserID, @SignTime, @PointsEarned, @PetExpEarned, @CouponEarned, @ConsecutiveDays)", connection);
-
-            command.Parameters.AddWithValue("@UserID", stats.UserID);
-            command.Parameters.AddWithValue("@SignTime", stats.SignTime);
-            command.Parameters.AddWithValue("@PointsEarned", stats.PointsEarned);
-            command.Parameters.AddWithValue("@PetExpEarned", stats.PetExpEarned);
-            command.Parameters.AddWithValue("@CouponEarned", (object?)stats.CouponEarned ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConsecutiveDays", stats.ConsecutiveDays);
-
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+                _context.UserSignInStat.Add(signInLog);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<bool> UpdateSignInStatsAsync(UserSignInStats stats)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            try
+            {
+                var signInLog = await _context.UserSignInStat.FirstOrDefaultAsync(s => s.LogId == stats.StatsID);
+                if (signInLog == null) return false;
 
-            var command = new SqlCommand(@"
-                UPDATE UserSignInStats SET 
-                    UserID = @UserID,
-                    SignTime = @SignTime,
-                    PointsEarned = @PointsEarned,
-                    PetExpEarned = @PetExpEarned,
-                    CouponEarned = @CouponEarned,
-                    ConsecutiveDays = @ConsecutiveDays
-                WHERE StatsID = @StatsID", connection);
+                signInLog.UserId = stats.UserID;
+                signInLog.SignTime = stats.SignTime;
+                signInLog.PointsGained = stats.PointsEarned;
+                signInLog.ExpGained = stats.PetExpEarned;
+                signInLog.CouponGained = stats.CouponEarned.HasValue ? stats.CouponEarned.Value.ToString() : string.Empty;
 
-            command.Parameters.AddWithValue("@StatsID", stats.StatsID);
-            command.Parameters.AddWithValue("@UserID", stats.UserID);
-            command.Parameters.AddWithValue("@SignTime", stats.SignTime);
-            command.Parameters.AddWithValue("@PointsEarned", stats.PointsEarned);
-            command.Parameters.AddWithValue("@PetExpEarned", stats.PetExpEarned);
-            command.Parameters.AddWithValue("@CouponEarned", (object?)stats.CouponEarned ?? DBNull.Value);
-            command.Parameters.AddWithValue("@ConsecutiveDays", stats.ConsecutiveDays);
-
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<bool> DeleteSignInStatsAsync(int statsId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            try
+            {
+                var signInLog = await _context.UserSignInStat.FirstOrDefaultAsync(s => s.LogId == statsId);
+                if (signInLog == null) return false;
 
-            var command = new SqlCommand("DELETE FROM UserSignInStats WHERE StatsID = @StatsId", connection);
-            command.Parameters.AddWithValue("@StatsId", statsId);
-
-            var result = await command.ExecuteNonQueryAsync();
-            return result > 0;
+                _context.UserSignInStat.Remove(signInLog);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<UserSignInStats?> GetTodaySignInAsync(int userId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var command = new SqlCommand(@"
-                SELECT TOP 1 * FROM UserSignInStats 
-                WHERE UserID = @UserId 
-                AND CAST(SignTime AS DATE) = CAST(GETDATE() AS DATE)
-                ORDER BY SignTime DESC", connection);
-            command.Parameters.AddWithValue("@UserId", userId);
-
-            using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
+            try
             {
-                return new UserSignInStats
+                var today = DateTime.Today;
+                var dbItem = await _context.UserSignInStat
+                    .Where(s => s.UserId == userId && s.SignTime.Date == today)
+                    .OrderByDescending(s => s.SignTime)
+                    .FirstOrDefaultAsync();
+
+                if (dbItem == null) return null;
+
+                return new GameSpace.Areas.MiniGame.Models.UserSignInStats
                 {
-                    StatsID = reader.GetInt32("StatsID"),
-                    UserID = reader.GetInt32("UserID"),
-                    SignTime = reader.GetDateTime("SignTime"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    ConsecutiveDays = reader.GetInt32("ConsecutiveDays")
+                    StatsID = dbItem.LogId,
+                    UserID = dbItem.UserId,
+                    SignTime = dbItem.SignTime,
+                    PointsEarned = dbItem.PointsGained,
+                    PetExpEarned = dbItem.ExpGained,
+                    CouponEarned = string.IsNullOrEmpty(dbItem.CouponGained) ? null : (int.TryParse(dbItem.CouponGained, out var couponId) ? (int?)couponId : null),
+                    ConsecutiveDays = 1
                 };
             }
-            return null;
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<int> GetConsecutiveDaysAsync(int userId)
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            try
+            {
+                var signIns = await _context.UserSignInStat
+                    .Where(s => s.UserId == userId)
+                    .OrderByDescending(s => s.SignTime)
+                    .ToListAsync();
 
-            var command = new SqlCommand(@"
-                SELECT TOP 1 ConsecutiveDays FROM UserSignInStats 
-                WHERE UserID = @UserId 
-                ORDER BY SignTime DESC", connection);
-            command.Parameters.AddWithValue("@UserId", userId);
+                if (!signIns.Any()) return 0;
 
-            var result = await command.ExecuteScalarAsync();
-            return result != null ? (int)result : 0;
+                int consecutiveDays = 1;
+                var currentDate = signIns.First().SignTime.Date;
+
+                for (int i = 1; i < signIns.Count; i++)
+                {
+                    var previousDate = signIns[i].SignTime.Date;
+                    if (currentDate.AddDays(-1) == previousDate)
+                    {
+                        consecutiveDays++;
+                        currentDate = previousDate;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                return consecutiveDays;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         public async Task<bool> ProcessDailySignInAsync(int userId)

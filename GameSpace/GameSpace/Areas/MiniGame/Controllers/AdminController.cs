@@ -215,7 +215,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             try
             {
                 var user = await _context.Users
-                    .Include(u => u.UserWallet)
+                    .Include(u => u)
                     .Include(u => u.Pets)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
@@ -229,7 +229,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     userAccount = user.UserAccount,
                     emailConfirmed = user.UserEmailConfirmed,
                     phoneConfirmed = user.UserPhoneNumberConfirmed,
-                    points = user.UserWallet?.UserPoint ?? 0,
+                    points = UserWallet?.UserPoint ?? 0,
                     petCount = user.Pets.Count(),
                     lastSignIn = await _context.UserSignInStats
                         .Where(s => s.UserId == userId)

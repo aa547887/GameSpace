@@ -124,10 +124,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
                         // 後備方案：直接記錄到資料庫
                         var log = new AdminOperationLog
                         {
-                            ManagerId = managerId,
-                            Operation = operation,
-                            Details = details,
-                            TargetUserId = targetUserId,
+                            ManagerId = managerId.Value,
+                            OperationType = operation,
+                            OperationDetails = details,
+                            // TargetUserId = targetUserId,
                             OperationTime = DateTime.Now,
                             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
                         };

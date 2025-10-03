@@ -18,33 +18,30 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
 
         // GET: AdminMiniGame
-        public async Task<IActionResult> Index(string searchTerm = "", string gameType = "", string sortBy = "name", int page = 1, int pageSize = 10)
+        // Note: MiniGame entity represents game play records, not game definitions
+        public async Task<IActionResult> Index(string searchTerm = "", string result = "", string sortBy = "recent", int page = 1, int pageSize = 10)
         {
-            var query = _context.MiniGames.AsQueryable();
+            var query = _context.MiniGames.Include(g => g.User).AsQueryable();
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 搜尋功能 - 依使用者ID或結果
+            if (!string.IsNullOrEmpty(searchTerm) && int.TryParse(searchTerm, out int userId))
             {
-                query = query.Where(g => g.GameName.Contains(searchTerm) || 
-                                       g.GameDescription.Contains(searchTerm) || 
-                                       g.GameType.Contains(searchTerm));
+                query = query.Where(g => g.UserId == userId);
             }
 
-            // 遊戲類型篩選
-            if (!string.IsNullOrEmpty(gameType))
+            // 遊戲結果篩選
+            if (!string.IsNullOrEmpty(result))
             {
-                query = query.Where(g => g.GameType == gameType);
+                query = query.Where(g => g.Result == result);
             }
 
             // 排序
             query = sortBy switch
             {
-                "type" => query.OrderBy(g => g.GameType),
-                "cost" => query.OrderBy(g => g.CostPoints),
-                "reward" => query.OrderByDescending(g => g.RewardPoints),
-                "plays" => query.OrderByDescending(g => g.MaxPlayCount),
-                "created" => query.OrderByDescending(g => g.CreatedAt),
-                _ => query.OrderBy(g => g.GameName)
+                "level" => query.OrderByDescending(g => g.Level),
+                "points" => query.OrderByDescending(g => g.PointsGained),
+                "exp" => query.OrderByDescending(g => g.ExpGained),
+                _ => query.OrderByDescending(g => g.StartTime)
             };
 
             // 分頁
@@ -56,7 +53,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var viewModel = new AdminMiniGameIndexViewModel
             {
-                MiniGames = new PagedResult<MiniGame>
+                MiniGames = new PagedResult<GameSpace.Models.MiniGame>
                 {
                     Items = miniGames,
                     TotalCount = totalCount,
@@ -67,13 +64,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 設定 ViewBag 用於搜尋和篩選
             ViewBag.SearchTerm = searchTerm;
-            ViewBag.GameType = gameType;
+            ViewBag.Result = result;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalGames = totalCount;
-            ViewBag.ActiveGames = await _context.MiniGame.CountAsync(g => g.IsActive);
-            ViewBag.PuzzleGames = await _context.MiniGame.CountAsync(g => g.GameType == "益智");
-            ViewBag.ActionGames = await _context.MiniGame.CountAsync(g => g.GameType == "動作");
-            ViewBag.StrategyGames = await _context.MiniGame.CountAsync(g => g.GameType == "策略");
+            ViewBag.CompletedGames = await _context.MiniGames.CountAsync(g => g.Result == "勝利" || g.Result == "Win");
+            ViewBag.AbortedGames = await _context.MiniGames.CountAsync(g => g.Aborted);
+            ViewBag.TotalPointsAwarded = await _context.MiniGames.SumAsync(g => (int?)g.PointsGained) ?? 0;
+            ViewBag.TotalExpAwarded = await _context.MiniGames.SumAsync(g => (int?)g.ExpGained) ?? 0;
 
             return View(viewModel);
         }
@@ -86,9 +83,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var miniGame = await _context.MiniGame
-                .Include(g => g.GamePlayRecords)
-                .FirstOrDefaultAsync(m => m.GameId == id);
+            var miniGame = await _context.MiniGames
+                .Include(g => g.User)
+                .FirstOrDefaultAsync(m => m.PlayId == id);
 
             if (miniGame == null)
             {
@@ -101,6 +98,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminMiniGame/Create
         public IActionResult Create()
         {
+            ViewBag.Users = _context.Users.OrderBy(u => u.UserId).ToList();
             return View();
         }
 
@@ -111,26 +109,37 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                var miniGame = new MiniGame
+                var miniGame = new GameSpace.Models.MiniGame
                 {
-                    GameName = model.GameName,
-                    GameDescription = model.GameDescription,
-                    GameType = model.GameType,
-                    CostPoints = model.CostPoints,
-                    RewardPoints = model.RewardPoints,
-                    MaxPlayCount = model.MaxPlayCount,
-                    GameImageUrl = model.GameImageUrl,
-                    IsActive = model.IsActive,
-                    CreatedAt = DateTime.Now
+                    UserId = model.UserId,
+                    PetId = model.PetID,
+                    Level = 1,
+                    MonsterCount = 0,
+                    SpeedMultiplier = 1.0m,
+                    Result = model.Result ?? "進行中",
+                    ExpGained = model.ExpEarned,
+                    ExpGainedTime = DateTime.Now,
+                    PointsGained = model.PointsEarned,
+                    PointsGainedTime = DateTime.Now,
+                    CouponGained = "",
+                    CouponGainedTime = DateTime.Now,
+                    HungerDelta = 0,
+                    MoodDelta = 0,
+                    StaminaDelta = 0,
+                    CleanlinessDelta = 0,
+                    StartTime = model.StartTime,
+                    EndTime = model.EndTime,
+                    Aborted = false
                 };
 
                 _context.Add(miniGame);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "遊戲建立成功";
+                TempData["SuccessMessage"] = "遊戲記錄建立成功";
                 return RedirectToAction(nameof(Index));
             }
 
+            ViewBag.Users = _context.Users.OrderBy(u => u.UserId).ToList();
             return View(model);
         }
 
@@ -142,7 +151,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var miniGame = await _context.MiniGame.FindAsync(id);
+            var miniGame = await _context.MiniGames.FindAsync(id);
             if (miniGame == null)
             {
                 return NotFound();
@@ -150,16 +159,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var model = new AdminMiniGameCreateViewModel
             {
-                GameName = miniGame.GameName,
-                GameDescription = miniGame.GameDescription,
-                GameType = miniGame.GameType,
-                CostPoints = miniGame.CostPoints,
-                RewardPoints = miniGame.RewardPoints,
-                MaxPlayCount = miniGame.MaxPlayCount,
-                GameImageUrl = miniGame.GameImageUrl,
-                IsActive = miniGame.IsActive
+                UserId = miniGame.UserId,
+                PetID = miniGame.PetId,
+                StartTime = miniGame.StartTime,
+                EndTime = miniGame.EndTime,
+                Result = miniGame.Result,
+                PointsEarned = miniGame.PointsGained,
+                ExpEarned = miniGame.ExpGained,
+                CouponEarned = 0
             };
 
+            ViewBag.Users = _context.Users.OrderBy(u => u.UserId).ToList();
             return View(model);
         }
 
@@ -172,25 +182,26 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 try
                 {
-                    var miniGame = await _context.MiniGame.FindAsync(id);
+                    var miniGame = await _context.MiniGames.FindAsync(id);
                     if (miniGame == null)
                     {
                         return NotFound();
                     }
 
-                    miniGame.GameName = model.GameName;
-                    miniGame.GameDescription = model.GameDescription;
-                    miniGame.GameType = model.GameType;
-                    miniGame.CostPoints = model.CostPoints;
-                    miniGame.RewardPoints = model.RewardPoints;
-                    miniGame.MaxPlayCount = model.MaxPlayCount;
-                    miniGame.GameImageUrl = model.GameImageUrl;
-                    miniGame.IsActive = model.IsActive;
+                    miniGame.UserId = model.UserId;
+                    miniGame.PetId = model.PetID;
+                    miniGame.StartTime = model.StartTime;
+                    miniGame.EndTime = model.EndTime;
+                    miniGame.Result = model.Result ?? miniGame.Result;
+                    miniGame.PointsGained = model.PointsEarned;
+                    miniGame.PointsGainedTime = DateTime.Now;
+                    miniGame.ExpGained = model.ExpEarned;
+                    miniGame.ExpGainedTime = DateTime.Now;
 
                     _context.Update(miniGame);
                     await _context.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = "遊戲更新成功";
+                    TempData["SuccessMessage"] = "遊戲記錄更新成功";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
@@ -206,6 +217,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
             }
 
+            ViewBag.Users = _context.Users.OrderBy(u => u.UserId).ToList();
             return View(model);
         }
 
@@ -217,9 +229,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var miniGame = await _context.MiniGame
-                .Include(g => g.GamePlayRecords)
-                .FirstOrDefaultAsync(m => m.GameId == id);
+            var miniGame = await _context.MiniGames
+                .Include(g => g.User)
+                .FirstOrDefaultAsync(m => m.PlayId == id);
 
             if (miniGame == null)
             {
@@ -234,30 +246,34 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var miniGame = await _context.MiniGame.FindAsync(id);
+            var miniGame = await _context.MiniGames.FindAsync(id);
             if (miniGame != null)
             {
-                _context.MiniGame.Remove(miniGame);
+                _context.MiniGames.Remove(miniGame);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "遊戲刪除成功";
+                TempData["SuccessMessage"] = "遊戲記錄刪除成功";
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-        // 切換遊戲狀態
+        // 切換遊戲狀態 - 改為標記遊戲為中止
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var miniGame = await _context.MiniGame.FindAsync(id);
+            var miniGame = await _context.MiniGames.FindAsync(id);
             if (miniGame != null)
             {
-                miniGame.IsActive = !miniGame.IsActive;
+                miniGame.Aborted = !miniGame.Aborted;
+                if (miniGame.Aborted && miniGame.EndTime == null)
+                {
+                    miniGame.EndTime = DateTime.Now;
+                }
                 _context.Update(miniGame);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, isActive = miniGame.IsActive });
+                return Json(new { success = true, isAborted = miniGame.Aborted });
             }
 
             return Json(new { success = false });
@@ -269,23 +285,23 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             var stats = new
             {
-                total = await _context.MiniGame.CountAsync(),
-                active = await _context.MiniGame.CountAsync(g => g.IsActive),
-                puzzle = await _context.MiniGame.CountAsync(g => g.GameType == "益智"),
-                action = await _context.MiniGame.CountAsync(g => g.GameType == "動作"),
-                strategy = await _context.MiniGame.CountAsync(g => g.GameType == "策略"),
-                totalPlays = await _context.GamePlayRecord.CountAsync()
+                total = await _context.MiniGames.CountAsync(),
+                completed = await _context.MiniGames.CountAsync(g => g.Result == "勝利" || g.Result == "Win"),
+                aborted = await _context.MiniGames.CountAsync(g => g.Aborted),
+                inProgress = await _context.MiniGames.CountAsync(g => g.EndTime == null && !g.Aborted),
+                totalPointsAwarded = await _context.MiniGames.SumAsync(g => (int?)g.PointsGained) ?? 0,
+                totalExpAwarded = await _context.MiniGames.SumAsync(g => (int?)g.ExpGained) ?? 0
             };
 
             return Json(stats);
         }
 
-        // 獲取遊戲類型分佈
+        // 獲取遊戲結果分佈
         [HttpGet]
         public async Task<IActionResult> GetGameTypeDistribution()
         {
-            var distribution = await _context.MiniGame
-                .GroupBy(g => g.GameType)
+            var distribution = await _context.MiniGames
+                .GroupBy(g => g.Result)
                 .Select(g => new
                 {
                     type = g.Key,
@@ -297,19 +313,20 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(distribution);
         }
 
-        // 獲取遊戲遊玩次數統計
+        // 獲取遊戲遊玩統計 (前10名使用者)
         [HttpGet]
         public async Task<IActionResult> GetGamePlayStats()
         {
-            var stats = await _context.GamePlayRecord
-                .GroupBy(g => g.GameId)
+            var stats = await _context.MiniGames
+                .GroupBy(g => g.UserId)
                 .Select(g => new
                 {
-                    gameId = g.Key,
-                    gameName = _context.MiniGame.Where(m => m.GameId == g.Key).Select(m => m.GameName).FirstOrDefault(),
+                    userId = g.Key,
+                    userName = _context.Users.Where(u => u.UserId == g.Key).Select(u => u.UserName).FirstOrDefault(),
                     playCount = g.Count(),
-                    totalScore = g.Sum(x => x.Score),
-                    avgScore = g.Average(x => x.Score)
+                    totalPoints = g.Sum(x => x.PointsGained),
+                    totalExp = g.Sum(x => x.ExpGained),
+                    avgLevel = g.Average(x => (double)x.Level)
                 })
                 .OrderByDescending(g => g.playCount)
                 .Take(10)
@@ -318,28 +335,32 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(stats);
         }
 
-        // 獲取遊戲收益統計
+        // 獲取遊戲獎勵統計
         [HttpGet]
         public async Task<IActionResult> GetGameRevenueStats()
         {
-            var stats = await _context.MiniGame
+            var stats = await _context.MiniGames
+                .Where(g => g.EndTime != null)
+                .GroupBy(g => g.EndTime.Value.Date)
                 .Select(g => new
                 {
-                    gameId = g.GameId,
-                    gameName = g.GameName,
-                    costPoints = g.CostPoints,
-                    rewardPoints = g.RewardPoints,
-                    playCount = _context.GamePlayRecord.Count(r => r.GameId == g.GameId),
-                    totalCost = g.CostPoints * _context.GamePlayRecord.Count(r => r.GameId == g.GameId),
-                    totalReward = g.RewardPoints * _context.GamePlayRecord.Count(r => r.GameId == g.GameId)
+                    date = g.Key,
+                    playCount = g.Count(),
+                    totalPoints = g.Sum(x => x.PointsGained),
+                    totalExp = g.Sum(x => x.ExpGained),
+                    completedGames = g.Count(x => x.Result == "勝利" || x.Result == "Win")
                 })
-                .OrderByDescending(g => g.totalCost)
+                .OrderByDescending(g => g.date)
+                .Take(30)
                 .ToListAsync();
 
             return Json(stats);
         }
 
         // 新增：每日遊戲次數限制設定
+        // NOTE: DailyGameLimits DbSet doesn't exist - commented out
+        // TODO: Create DailyGameLimit entity and add DbSet if this functionality is needed
+        /*
         [HttpGet]
         public async Task<IActionResult> GetDailyGameLimit()
         {
@@ -351,7 +372,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     // 如果沒有設定，返回預設值（一天三次）
                     return Json(new { success = true, data = new { dailyLimit = 3 } });
                 }
-                
+
                 return Json(new { success = true, data = new { dailyLimit = limit.DailyLimit } });
             }
             catch (Exception ex)
@@ -390,8 +411,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+        */
 
         // 新增：獎勵種類詳細設定
+        // NOTE: GameRewardSettings DbSet doesn't exist - commented out
+        // TODO: Create GameRewardSettings entity and add DbSet if this functionality is needed
+        /*
         [HttpGet]
         public async Task<IActionResult> GetGameRewardSettings()
         {
@@ -401,29 +426,29 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 if (settings == null)
                 {
                     // 如果沒有設定，返回預設值
-                    return Json(new { 
-                        success = true, 
-                        data = new { 
-                            pointsRewardRate = 0.1, 
-                            expRewardRate = 0.05, 
+                    return Json(new {
+                        success = true,
+                        data = new {
+                            pointsRewardRate = 0.1,
+                            expRewardRate = 0.05,
                             couponRewardRate = 0.02,
                             pointsRewardEnabled = true,
                             expRewardEnabled = true,
                             couponRewardEnabled = true
-                        } 
+                        }
                     });
                 }
-                
-                return Json(new { 
-                    success = true, 
-                    data = new { 
+
+                return Json(new {
+                    success = true,
+                    data = new {
                         pointsRewardRate = settings.PointsRewardRate,
                         expRewardRate = settings.ExpRewardRate,
                         couponRewardRate = settings.CouponRewardRate,
                         pointsRewardEnabled = settings.PointsRewardEnabled,
                         expRewardEnabled = settings.ExpRewardEnabled,
                         couponRewardEnabled = settings.CouponRewardEnabled
-                    } 
+                    }
                 });
             }
             catch (Exception ex)
@@ -434,8 +459,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         [HttpPost]
         public async Task<IActionResult> UpdateGameRewardSettings(
-            decimal pointsRewardRate, 
-            decimal expRewardRate, 
+            decimal pointsRewardRate,
+            decimal expRewardRate,
             decimal couponRewardRate,
             bool pointsRewardEnabled,
             bool expRewardEnabled,
@@ -481,10 +506,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+        */
 
         private bool MiniGameExists(int id)
         {
-            return _context.MiniGame.Any(e => e.GameId == id);
+            return _context.MiniGames.Any(e => e.PlayId == id);
         }
     }
 }

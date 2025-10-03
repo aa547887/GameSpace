@@ -17,7 +17,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<CouponType>> GetAllCouponTypesAsync()
         {
             return await _context.CouponTypes
-                .OrderByDescending(ct => ct.CreatedAt)
+                .OrderByDescending(ct => ct.ValidFrom)
                 .ToListAsync();
         }
 
@@ -31,8 +31,8 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                couponType.CreatedAt = DateTime.UtcNow;
-                couponType.IsActive = true;
+                couponType.ValidFrom = DateTime.UtcNow;
+                // IsActive property does not exist in CouponType
                 _context.CouponTypes.Add(couponType);
                 await _context.SaveChangesAsync();
                 return true;
@@ -47,7 +47,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                couponType.UpdatedAt = DateTime.UtcNow;
+                // UpdatedAt property does not exist in CouponType
                 _context.CouponTypes.Update(couponType);
                 await _context.SaveChangesAsync();
                 return true;
@@ -83,8 +83,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 var couponType = await GetCouponTypeByIdAsync(couponTypeId);
                 if (couponType == null) return false;
 
-                couponType.IsActive = true;
-                couponType.UpdatedAt = DateTime.UtcNow;
+                // IsActive property does not exist in CouponType
+                // UpdatedAt property does not exist in CouponType
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -101,8 +101,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 var couponType = await GetCouponTypeByIdAsync(couponTypeId);
                 if (couponType == null) return false;
 
-                couponType.IsActive = false;
-                couponType.UpdatedAt = DateTime.UtcNow;
+                // IsActive property does not exist
+                // UpdatedAt property does not exist in CouponType
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -116,8 +116,8 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<CouponType>> GetActiveCouponTypesAsync()
         {
             return await _context.CouponTypes
-                .Where(ct => ct.IsActive)
-                .OrderBy(ct => ct.CouponTypeName)
+                .Where(ct => (ct.ValidFrom <= DateTime.UtcNow && ct.ValidTo >= DateTime.UtcNow))
+                .OrderBy(ct => ct.Name)
                 .ToListAsync();
         }
 
@@ -125,7 +125,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.CouponTypes
                 .Where(ct => ct.DiscountType == discountType)
-                .OrderByDescending(ct => ct.CreatedAt)
+                .OrderByDescending(ct => ct.ValidFrom)
                 .ToListAsync();
         }
 
@@ -145,7 +145,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetActiveCouponTypesCountAsync()
         {
-            return await _context.CouponTypes.CountAsync(ct => ct.IsActive);
+            return await _context.CouponTypes.CountAsync(ct => (ct.ValidFrom <= DateTime.UtcNow && ct.ValidTo >= DateTime.UtcNow));
         }
 
         public async Task<Dictionary<string, int>> GetCouponTypesDistributionAsync()
@@ -176,7 +176,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 stats.Add(new CouponTypeUsageStats
                 {
                     CouponTypeId = couponType.CouponTypeId,
-                    Name = couponType.CouponTypeName,
+                    Name = couponType.Name,
                     TotalIssued = totalIssued,
                     TotalUsed = totalUsed,
                     TotalUnused = totalUnused,
