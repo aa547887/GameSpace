@@ -1,4 +1,6 @@
-﻿// Infrastructure/Login/CookieAndAdminCookieLoginIdentity.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,82 +9,102 @@ using Microsoft.AspNetCore.Http;
 
 namespace GameSpace.Infrastructure.Login
 {
-	/// <summary>
-	/// 登入身分解析：
-	/// 1) 優先從 AdminCookie（外部系統）解析 claims；
-	/// 2) 解析不到再退回舊制 cookies：gs_id / gs_kind；
-	/// 3) 不查資料庫、不改外部登入流程。
-	/// </summary>
-	public class CookieAndAdminCookieLoginIdentity : ILoginIdentity
+	/// <summary>從 HttpContext（含 AdminCookie）讀取身分與授權資訊。</summary>
+	public sealed class CookieAndAdminCookieLoginIdentity : ILoginIdentity
 	{
-		private readonly IHttpContextAccessor _http;
+		private readonly IHttpContextAccessor _httpContextAccessor;
+		private readonly IAuthenticationSchemeProvider _schemeProvider;
+
 		private const string AdminCookieScheme = "AdminCookie";
 
-		public CookieAndAdminCookieLoginIdentity(IHttpContextAccessor http) => _http = http;
+		public CookieAndAdminCookieLoginIdentity(
+			IHttpContextAccessor httpContextAccessor,
+			IAuthenticationSchemeProvider schemeProvider)
+		{
+			_httpContextAccessor = httpContextAccessor;
+			_schemeProvider = schemeProvider;
+		}
 
-		/// <summary>
-		/// 取得目前請求的登入身分（介面需要 CancellationToken 參數）。
-		/// </summary>
 		public async Task<LoginIdentityResult> GetAsync(CancellationToken ct = default)
 		{
-			var ctx = _http.HttpContext;
-			if (ctx == null || ct.IsCancellationRequested) return new LoginIdentityResult();
+			var http = _httpContextAccessor.HttpContext;
+			if (http == null) return new LoginIdentityResult();
 
-			// ① 優先：外部 AdminCookie（claims 來源可靠）
-			var auth = await ctx.AuthenticateAsync(AdminCookieScheme);
-			if (auth.Succeeded && auth.Principal != null)
+			// 先用管線還原的 User；必要時再顯式 Authenticate 一次
+			var principal = http.User;
+			if (principal?.Identities?.Any(i => i.IsAuthenticated) != true)
 			{
-				var p = auth.Principal;
-
-				// 取 id：優先 NameIdentifier；其次 mgr:id / usr:id
-				int? id = null;
-				var idStr = p.FindFirst(ClaimTypes.NameIdentifier)?.Value
-							?? p.FindFirst("mgr:id")?.Value
-							?? p.FindFirst("usr:id")?.Value;
-				if (int.TryParse(idStr, out var parsed)) id = parsed;
-
-				// 推導 kind：
-				// - IsManager=true
-				// - 或 perm:Admin=true
-				// - 或存在 mgr:id
-				var isManager =
-					string.Equals(p.FindFirst("IsManager")?.Value, "true", System.StringComparison.OrdinalIgnoreCase) ||
-					string.Equals(p.FindFirst("perm:Admin")?.Value, "true", System.StringComparison.OrdinalIgnoreCase) ||
-					p.HasClaim(c => c.Type == "mgr:id");
-
-				if (id.HasValue)
+				var schemes = await _schemeProvider.GetAllSchemesAsync();
+				if (schemes.Any(s => string.Equals(s.Name, AdminCookieScheme, StringComparison.Ordinal)))
 				{
-					if (isManager)
-						return new LoginIdentityResult
-						{
-							ManagerId = id.Value,
-							Kind = "manager",
-							DisplayName = $"Manager#{id.Value}"
-						};
-
-					return new LoginIdentityResult
-					{
-						UserId = id.Value,
-						Kind = "user",
-						DisplayName = $"User#{id.Value}"
-					};
+					var auth = await http.AuthenticateAsync(AdminCookieScheme);
+					if (auth?.Succeeded == true && auth.Principal != null)
+						principal = auth.Principal;
 				}
-				// 有登入但沒有可解析的 id → 視為 guest
 			}
 
-			// ② 退回舊制 cookies（gs_id / gs_kind）
-			var idCookie = ctx.Request.Cookies["gs_id"];
-			var kindCookie = ctx.Request.Cookies["gs_kind"]?.ToLowerInvariant();
+			if (principal?.Identities?.Any(i => i.IsAuthenticated) != true)
+				return new LoginIdentityResult(); // guest
 
-			if (int.TryParse(idCookie, out var id2) && !string.IsNullOrWhiteSpace(kindCookie))
+			// 常見 claims
+			string? nameId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+			string? mgrIdStr = principal.FindFirstValue("mgr:id");
+			string? usrIdStr = principal.FindFirstValue("usr:id"); // 若前台也走同機制可用
+			string? name = principal.Identity?.Name;
+			string? email = principal.FindFirstValue(ClaimTypes.Email);
+
+			bool isManagerFlag =
+				principal.HasClaim(c => string.Equals(c.Type, "IsManager", StringComparison.OrdinalIgnoreCase)) ||
+				!string.IsNullOrEmpty(mgrIdStr) ||
+				principal.Claims.Any(c => c.Type.StartsWith("perm:", StringComparison.OrdinalIgnoreCase));
+
+			int? mgrId = TryParseInt(mgrIdStr) ?? (isManagerFlag ? TryParseInt(nameId) : null);
+			int? usrId = TryParseInt(usrIdStr) ?? (!isManagerFlag ? TryParseInt(nameId) : null);
+
+			// 角色（Role + "role" 去重）
+			var roles = principal.Claims
+				.Where(c => c.Type == ClaimTypes.Role || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase))
+				.Select(c => (c.Value ?? "").Trim())
+				.Where(v => !string.IsNullOrWhiteSpace(v))
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+
+			// perms：「出現即 true」
+			var perms = principal.Claims
+				.Where(c => c.Type.StartsWith("perm:", StringComparison.OrdinalIgnoreCase))
+				.GroupBy(c => c.Type, StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(g => g.Key, _ => true, StringComparer.OrdinalIgnoreCase);
+
+			// 票證屬性（可選）
+			DateTimeOffset? expires = null;
+			string? schemeUsed = null;
+			var authResult = await http.AuthenticateAsync(AdminCookieScheme);
+			if (authResult?.Succeeded == true)
 			{
-				return kindCookie == "manager"
-					? new LoginIdentityResult { ManagerId = id2, Kind = "manager", DisplayName = $"Manager#{id2}" }
-					: new LoginIdentityResult { UserId = id2, Kind = "user", DisplayName = $"User#{id2}" };
+				expires = authResult.Properties?.ExpiresUtc;
+				schemeUsed = AdminCookieScheme;
 			}
 
-			// ③ 都沒有 → guest
-			return new LoginIdentityResult();
+			var all = principal.Claims.Select(c => (c.Type, c.Value ?? "")).ToArray();
+			var kind = isManagerFlag ? "manager" : (usrId.HasValue ? "user" : "guest");
+
+			return new LoginIdentityResult
+			{
+				UserId = usrId,
+				ManagerId = mgrId,
+				Kind = kind,
+				DisplayName = name,
+				Email = email,
+				IsManager = isManagerFlag,
+				Roles = roles,
+				Perms = perms,
+				AuthScheme = schemeUsed,
+				ExpiresUtc = expires,
+				AllClaims = all
+			};
 		}
+
+		private static int? TryParseInt(string? s)
+			=> int.TryParse(s, out var v) ? v : (int?)null;
 	}
 }

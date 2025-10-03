@@ -19,6 +19,10 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<CouponType> CouponTypes { get; set; }
 
+    public virtual DbSet<CsAgent> CsAgents { get; set; }
+
+    public virtual DbSet<CsAgentPermission> CsAgentPermissions { get; set; }
+
     public virtual DbSet<DmConversation> DmConversations { get; set; }
 
     public virtual DbSet<DmMessage> DmMessages { get; set; }
@@ -157,6 +161,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<UserWallet> UserWallets { get; set; }
 
+    public virtual DbSet<VCsEligibleAgent> VCsEligibleAgents { get; set; }
+
     public virtual DbSet<WalletHistory> WalletHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -200,25 +206,25 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<Coupon>(entity =>
         {
-            entity.ToTable("Coupon");
+            entity
+                .HasNoKey()
+                .ToTable("Coupon");
 
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.CouponId }, "Coupon_index_26");
 
-            entity.Property(e => e.CouponId)
-                .ValueGeneratedNever()
-                .HasColumnName("CouponID");
             entity.Property(e => e.CouponCode)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.CouponId).HasColumnName("CouponID");
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.UsedInOrderId).HasColumnName("UsedInOrderID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.UsedInOrder).WithMany(p => p.Coupons)
+            entity.HasOne(d => d.UsedInOrder).WithMany()
                 .HasForeignKey(d => d.UsedInOrderId)
                 .HasConstraintName("FK__Coupon__UsedInOr__6991A7CB");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Coupons)
+            entity.HasOne(d => d.User).WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Coupon__UserID__689D8392");
@@ -226,7 +232,9 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<CouponType>(entity =>
         {
-            entity.ToTable("CouponType");
+            entity
+                .HasNoKey()
+                .ToTable("CouponType");
 
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -234,6 +242,69 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.MinSpend).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Name).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<CsAgent>(entity =>
+        {
+            entity.HasKey(e => e.AgentId);
+
+            entity.ToTable("CS_Agent", tb => tb.HasTrigger("trg_CS_Agent_EnsureEligible"));
+
+            entity.HasIndex(e => e.IsActive, "IX_CS_Agent_IsActive");
+
+            entity.HasIndex(e => e.ManagerId, "UQ_CS_Agent_Manager").IsUnique();
+
+            entity.Property(e => e.AgentId).HasColumnName("agent_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedByManager).HasColumnName("created_by_manager");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.ManagerId).HasColumnName("manager_id");
+            entity.Property(e => e.MaxConcurrent)
+                .HasDefaultValue((byte)5)
+                .HasColumnName("max_concurrent");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.UpdatedByManager).HasColumnName("updated_by_manager");
+
+            entity.HasOne(d => d.CreatedByManagerNavigation).WithMany(p => p.CsAgentCreatedByManagerNavigations)
+                .HasForeignKey(d => d.CreatedByManager)
+                .HasConstraintName("FK_CS_Agent_CreatedBy");
+
+            entity.HasOne(d => d.Manager).WithOne(p => p.CsAgentManager)
+                .HasForeignKey<CsAgent>(d => d.ManagerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CS_Agent_Manager");
+
+            entity.HasOne(d => d.UpdatedByManagerNavigation).WithMany(p => p.CsAgentUpdatedByManagerNavigations)
+                .HasForeignKey(d => d.UpdatedByManager)
+                .HasConstraintName("FK_CS_Agent_UpdatedBy");
+        });
+
+        modelBuilder.Entity<CsAgentPermission>(entity =>
+        {
+            entity.HasKey(e => e.AgentPermissionId);
+
+            entity.ToTable("CS_Agent_Permission");
+
+            entity.HasIndex(e => e.CanAssign, "IX_CS_Perm_CanAssign");
+
+            entity.HasIndex(e => e.CanEditMuteAll, "IX_CS_Perm_EditAll");
+
+            entity.HasIndex(e => e.AgentId, "UQ_CS_Perm_Agent").IsUnique();
+
+            entity.Property(e => e.AgentPermissionId).HasColumnName("agent_permission_id");
+            entity.Property(e => e.AgentId).HasColumnName("agent_id");
+            entity.Property(e => e.CanAccept).HasColumnName("can_accept");
+            entity.Property(e => e.CanAssign).HasColumnName("can_assign");
+            entity.Property(e => e.CanEditMuteAll).HasColumnName("can_edit_mute_all");
+            entity.Property(e => e.CanTransfer).HasColumnName("can_transfer");
+
+            entity.HasOne(d => d.Agent).WithOne(p => p.CsAgentPermission)
+                .HasForeignKey<CsAgentPermission>(d => d.AgentId)
+                .HasConstraintName("FK_CS_Perm_Agent");
         });
 
         modelBuilder.Entity<DmConversation>(entity =>
@@ -2119,6 +2190,13 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__User_Wall__User___6CA31EA0");
+        });
+
+        modelBuilder.Entity<VCsEligibleAgent>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vCS_EligibleAgents");
         });
 
         modelBuilder.Entity<WalletHistory>(entity =>

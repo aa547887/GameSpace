@@ -29,7 +29,7 @@
                     </a>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post" id="notifyForm">
+                    <form asp-area="social_hub" asp-controller="MessageCenter"  asp-action="Create" method="post" id="notifyForm">
                         @Html.AntiForgeryToken()
 
                         @if (ViewBag.AllErrors != null)
