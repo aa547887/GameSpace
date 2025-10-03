@@ -1,4 +1,4 @@
-@model IEnumerable<GameSpace.Areas.MiniGame.Models.ViewModels.PetLevelRewardSettingListViewModel>
+﻿@model IEnumerable<GameSpace.Areas.MiniGame.Models.ViewModels.PetLevelRewardSettingListViewModel>
 @{
     ViewData["Title"] = "寵物升級獎勵設定管理";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
@@ -105,8 +105,8 @@
                             <label for="IsEnabled">啟用狀態</label>
                             <select class="form-control" name="IsEnabled">
                                 <option value="">全部</option>
-                                <option value="true" @(ViewBag.IsEnabled == true ? "selected" : "")>啟用</option>
-                                <option value="false" @(ViewBag.IsEnabled == false ? "selected" : "")>停用</option>
+                                <option value="true" selected="@(ViewBag.IsEnabled == true ? "selected" : null)">啟用</option>
+                                <option value="false" selected="@(ViewBag.IsEnabled == false ? "selected" : null)">停用</option>
                             </select>
                         </div>
                     </div>
@@ -122,9 +122,9 @@
                         <div class="form-group">
                             <label for="PageSize">每頁筆數</label>
                             <select class="form-control" name="PageSize">
-                                <option value="10" @(ViewBag.PageSize == 10 ? "selected" : "")>10</option>
-                                <option value="25" @(ViewBag.PageSize == 25 ? "selected" : "")>25</option>
-                                <option value="50" @(ViewBag.PageSize == 50 ? "selected" : "")>50</option>
+                                <option value="10" selected="@(ViewBag.PageSize == 10 ? "selected" : null)">10</option>
+                                <option value="25" selected="@(ViewBag.PageSize == 25 ? "selected" : null)">25</option>
+                                <option value="50" selected="@(ViewBag.PageSize == 50 ? "selected" : null)">50</option>
                             </select>
                         </div>
                     </div>
@@ -306,3 +306,4 @@
         }
     </script>
 }
+

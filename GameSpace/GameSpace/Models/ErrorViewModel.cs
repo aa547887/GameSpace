@@ -1,4 +1,4 @@
-namespace GameSpace.Models
+﻿namespace GameSpace.Models
 {
     public class ErrorViewModel
     {
@@ -7,3 +7,4 @@ namespace GameSpace.Models
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
     }
 }
+

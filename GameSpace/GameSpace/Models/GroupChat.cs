@@ -19,3 +19,4 @@ public partial class GroupChat
 
     public virtual User SenderUser { get; set; } = null!;
 }
+

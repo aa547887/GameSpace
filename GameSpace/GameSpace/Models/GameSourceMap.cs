@@ -19,3 +19,4 @@ public partial class GameSourceMap
 
     public virtual MetricSource? Source { get; set; }
 }
+

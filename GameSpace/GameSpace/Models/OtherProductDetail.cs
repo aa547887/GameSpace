@@ -35,3 +35,4 @@ public partial class OtherProductDetail
 
     public virtual Supplier Supplier { get; set; } = null!;
 }
+

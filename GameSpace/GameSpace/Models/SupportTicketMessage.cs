@@ -27,3 +27,4 @@ public partial class SupportTicketMessage
 
     public virtual SupportTicket Ticket { get; set; } = null!;
 }
+

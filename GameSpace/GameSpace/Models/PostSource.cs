@@ -17,3 +17,4 @@ public partial class PostSource
 
     public virtual Post? Post { get; set; }
 }
+

@@ -1,20 +1,20 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
     public interface IManagerService
     {
         // Manager 基本 CRUD
-        Task<IEnumerable<Manager>> GetAllManagersAsync(int pageNumber = 1, int pageSize = 50);
-        Task<Manager?> GetManagerByIdAsync(int managerId);
-        Task<Manager?> GetManagerByAccountAsync(string account);
-        Task<Manager?> GetManagerByEmailAsync(string email);
-        Task<bool> CreateManagerAsync(Manager manager, string password);
-        Task<bool> UpdateManagerAsync(Manager manager);
+        Task<IEnumerable<ManagerDatum>> GetAllManagersAsync(int pageNumber = 1, int pageSize = 50);
+        Task<ManagerDatum?> GetManagerByIdAsync(int managerId);
+        Task<ManagerDatum?> GetManagerByAccountAsync(string account);
+        Task<ManagerDatum?> GetManagerByEmailAsync(string email);
+        Task<bool> CreateManagerAsync(ManagerDatum manager, string password);
+        Task<bool> UpdateManagerAsync(ManagerDatum manager);
         Task<bool> DeleteManagerAsync(int managerId);
 
         // Manager 認證
-        Task<Manager?> AuthenticateAsync(string account, string password);
+        Task<ManagerDatum?> AuthenticateAsync(string account, string password);
         Task<bool> ChangePasswordAsync(int managerId, string oldPassword, string newPassword);
         Task<bool> ResetPasswordAsync(int managerId, string newPassword);
 
@@ -24,7 +24,7 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> ConfirmEmailAsync(int managerId);
 
         // Manager 角色管理
-        Task<IEnumerable<ManagerRole>> GetManagerRolesAsync(int managerId);
+        Task<ManagerRolePermission?> GetManagerRoleAsync(int managerId);
         Task<bool> AssignRoleAsync(int managerId, int roleId);
         Task<bool> RemoveRoleAsync(int managerId, int roleId);
         Task<IEnumerable<string>> GetManagerPermissionsAsync(int managerId);
@@ -50,3 +50,4 @@ namespace GameSpace.Areas.MiniGame.Services
         public DateTime CreatedAt { get; set; }
     }
 }
+

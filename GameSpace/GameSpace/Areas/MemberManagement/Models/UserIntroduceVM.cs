@@ -33,3 +33,4 @@ namespace GameSpace.Areas.MemberManagement.Models
 		}
 	
 }
+

@@ -1,4 +1,7 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.Settings;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -33,10 +36,10 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> ToggleInteractionRuleAsync(int ruleId);
 
         // Pet 顏色選項管理
-        Task<IEnumerable<PetColorOptions>> GetAllColorOptionsAsync();
-        Task<IEnumerable<PetColorOptions>> GetActiveColorOptionsAsync();
-        Task<bool> CreateColorOptionAsync(PetColorOptions option);
-        Task<bool> UpdateColorOptionAsync(PetColorOptions option);
+        Task<IEnumerable<PetColorOption>> GetAllColorOptionsAsync();
+        Task<IEnumerable<PetColorOption>> GetActiveColorOptionsAsync();
+        Task<bool> CreateColorOptionAsync(PetColorOption option);
+        Task<bool> UpdateColorOptionAsync(PetColorOption option);
         Task<bool> DeleteColorOptionAsync(int optionId);
         Task<bool> ToggleColorOptionAsync(int optionId);
     }
@@ -51,3 +54,4 @@ namespace GameSpace.Areas.MiniGame.Services
         public bool IsActive { get; set; }
     }
 }
+

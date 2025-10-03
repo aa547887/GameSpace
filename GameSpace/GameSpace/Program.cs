@@ -29,6 +29,7 @@ using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificat
 using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Permissions.ManagerPermissionService;
 using MuteFilterAlias = GameSpace.Areas.social_hub.Services.MuteFilter;
 using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.NotificationService;
+using GameSpace.Areas.MiniGame.config;
 
 namespace GameSpace
 {
@@ -46,10 +47,13 @@ namespace GameSpace
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-			// ========== 2) DbContexts ==========
-			builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
-			builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
-			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+            // ========== 2) DbContexts ==========
+            builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
+            builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
+            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+            // Register MiniGame area services to use shared GameSpacedatabaseContext
+            builder.Services.AddMiniGameServices(builder.Configuration);
 
 			// ========== 3) Identity ==========
 			builder.Services
@@ -244,3 +248,4 @@ namespace GameSpace
 		}
 	}
 }
+

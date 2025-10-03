@@ -17,3 +17,4 @@ public partial class PlayerMarketTradeMsg
 
     public virtual PlayerMarketOrderTradepage? POrderTradepage { get; set; }
 }
+

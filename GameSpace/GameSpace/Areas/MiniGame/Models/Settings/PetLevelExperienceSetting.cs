@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Areas.MiniGame.Models.Settings
@@ -39,3 +39,4 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }
+

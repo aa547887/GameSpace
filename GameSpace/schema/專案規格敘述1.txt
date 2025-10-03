@@ -1,4 +1,4 @@
-GameSpace 遊戲論壇平台專案規格書
+﻿GameSpace 遊戲論壇平台專案規格書
 〈術語表／名詞統一〉
 會員錢包系統術語
 •	禮券（E-voucher）：會員可扣會員點數獲得的電子券，用於兌換實體商品或折抵現金
@@ -691,4 +691,5 @@ ________________________________________
 •	Service： GameRuleService 處理遊戲規則配置
 •	Repository： GameRepository 處理遊戲資料存取
 •	Analytics： 整合 Power BI 或自建工具進行數據分析
+
 

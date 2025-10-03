@@ -23,3 +23,4 @@ public partial class CouponType
 
     public string? Description { get; set; }
 }
+

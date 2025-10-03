@@ -31,3 +31,4 @@ public partial class Group
 
     public virtual User OwnerUser { get; set; } = null!;
 }
+

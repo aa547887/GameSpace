@@ -45,3 +45,4 @@ public partial class Pet
 
     public virtual User User { get; set; } = null!;
 }
+

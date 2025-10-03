@@ -11,3 +11,4 @@ public partial class UserSalesInformation
 
     public virtual User User { get; set; } = null!;
 }
+

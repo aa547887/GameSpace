@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -28,10 +28,12 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> ChangeSkinColorAsync(int petId, string colorCode, int pointsCost);
         Task<bool> ChangeBackgroundColorAsync(int petId, string colorCode, int pointsCost);
         Task<IEnumerable<PetColorOption>> GetAvailableColorsAsync();
-        Task<IEnumerable<PetBackgroundOption>> GetAvailableBackgroundsAsync();
+        Task<IEnumerable<GameSpace.Areas.MiniGame.Models.ViewModels.PetBackgroundOption>> GetAvailableBackgroundsAsync();
 
         // Pet 統計
         Task<Dictionary<string, int>> GetPetStatsSummaryAsync(int petId);
         Task<IEnumerable<Pet>> GetTopLevelPetsAsync(int count = 10);
     }
 }
+
+

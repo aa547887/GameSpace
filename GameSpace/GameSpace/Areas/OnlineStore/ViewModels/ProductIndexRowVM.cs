@@ -32,3 +32,4 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
         public DateTime ChangedAt { get; set; }
     }
 }
+

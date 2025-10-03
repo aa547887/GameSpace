@@ -29,3 +29,4 @@ namespace GameSpace.Areas.social_hub.Permissions
 		public const string NoPermission = "no_permission";
 	}
 }
+

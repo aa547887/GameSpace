@@ -27,3 +27,4 @@ public partial class GameMetricDaily
 
     public virtual Metric? Metric { get; set; }
 }
+

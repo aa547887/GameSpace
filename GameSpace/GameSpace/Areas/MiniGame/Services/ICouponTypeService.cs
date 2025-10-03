@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -38,3 +38,4 @@ namespace GameSpace.Areas.MiniGame.Services
         public decimal UsageRate { get; set; }
     }
 }
+

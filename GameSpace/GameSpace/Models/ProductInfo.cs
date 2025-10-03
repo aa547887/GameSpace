@@ -41,3 +41,4 @@ public partial class ProductInfo
 
     public virtual ManagerDatum? ProductUpdatedByNavigation { get; set; }
 }
+

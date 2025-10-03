@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
@@ -128,3 +128,4 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int PageSize { get; set; } = 10;
     }
 }
+

@@ -1,4 +1,5 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,12 +57,12 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> DeleteLevelUpRuleAsync(int ruleId)
+        public async Task<bool> DeleteLevelUpRuleAsync(int RuleId)
         {
             try
             {
                 var rule = await _context.PetLevelUpRules
-                    .FirstOrDefaultAsync(r => r.Id == ruleId);
+                    .FirstOrDefaultAsync(r => r.Id == RuleId);
                 if (rule == null) return false;
 
                 _context.PetLevelUpRules.Remove(rule);
@@ -198,12 +199,12 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> DeleteInteractionRuleAsync(int ruleId)
+        public async Task<bool> DeleteInteractionRuleAsync(int RuleId)
         {
             try
             {
                 var rule = await _context.PetInteractionBonusRules
-                    .FirstOrDefaultAsync(r => r.RuleID == ruleId);
+                    .FirstOrDefaultAsync(r => r.RuleId == RuleId);
                 if (rule == null) return false;
 
                 _context.PetInteractionBonusRules.Remove(rule);
@@ -216,12 +217,12 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> ToggleInteractionRuleAsync(int ruleId)
+        public async Task<bool> ToggleInteractionRuleAsync(int RuleId)
         {
             try
             {
                 var rule = await _context.PetInteractionBonusRules
-                    .FirstOrDefaultAsync(r => r.RuleID == ruleId);
+                    .FirstOrDefaultAsync(r => r.RuleId == RuleId);
                 if (rule == null) return false;
 
                 rule.IsActive = !rule.IsActive;
@@ -235,22 +236,22 @@ namespace GameSpace.Areas.MiniGame.Services
         }
 
         // Pet 顏色選項管理
-        public async Task<IEnumerable<PetColorOptions>> GetAllColorOptionsAsync()
+        public async Task<IEnumerable<PetColorOption>> GetAllColorOptionsAsync()
         {
             return await _context.PetColorOptions
-                .OrderBy(o => o.DisplayOrder)
+                .OrderBy(o => o.SortOrder)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<PetColorOptions>> GetActiveColorOptionsAsync()
+        public async Task<IEnumerable<PetColorOption>> GetActiveColorOptionsAsync()
         {
             return await _context.PetColorOptions
                 .Where(o => o.IsActive)
-                .OrderBy(o => o.DisplayOrder)
+                .OrderBy(o => o.SortOrder)
                 .ToListAsync();
         }
 
-        public async Task<bool> CreateColorOptionAsync(PetColorOptions option)
+        public async Task<bool> CreateColorOptionAsync(PetColorOption option)
         {
             try
             {
@@ -265,7 +266,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
-        public async Task<bool> UpdateColorOptionAsync(PetColorOptions option)
+        public async Task<bool> UpdateColorOptionAsync(PetColorOption option)
         {
             try
             {
@@ -284,7 +285,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 var option = await _context.PetColorOptions
-                    .FirstOrDefaultAsync(o => o.OptionID == optionId);
+                    .FirstOrDefaultAsync(o => o.ColorOptionId == optionId);
                 if (option == null) return false;
 
                 _context.PetColorOptions.Remove(option);
@@ -302,7 +303,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 var option = await _context.PetColorOptions
-                    .FirstOrDefaultAsync(o => o.OptionID == optionId);
+                    .FirstOrDefaultAsync(o => o.ColorOptionId == optionId);
                 if (option == null) return false;
 
                 option.IsActive = !option.IsActive;
@@ -316,3 +317,5 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+
+

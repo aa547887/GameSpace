@@ -37,3 +37,4 @@ public partial class Post
 
     public virtual ICollection<PostSource> PostSources { get; set; } = new List<PostSource>();
 }
+

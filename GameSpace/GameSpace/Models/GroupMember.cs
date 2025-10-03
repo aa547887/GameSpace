@@ -21,3 +21,4 @@ public partial class GroupMember
 
     public virtual User User { get; set; } = null!;
 }
+

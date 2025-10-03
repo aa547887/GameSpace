@@ -9,3 +9,4 @@ namespace GameSpace.Infrastructure.Login
 		Task<LoginIdentityResult> GetAsync(CancellationToken ct = default);
 	}
 }
+

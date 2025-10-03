@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Models;
 using System.Security.Claims;
@@ -51,3 +51,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> HasPermissionAsync(HttpContext context, string permissionType);
     }
 }
+

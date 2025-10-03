@@ -19,3 +19,4 @@ public partial class DmConversation
 
     public virtual ICollection<DmMessage> DmMessages { get; set; } = new List<DmMessage>();
 }
+

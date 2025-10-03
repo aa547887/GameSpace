@@ -21,3 +21,4 @@ public partial class WalletHistory
 
     public virtual User User { get; set; } = null!;
 }
+

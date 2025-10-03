@@ -35,3 +35,4 @@ public partial class Notification
 
     public virtual NotificationSource Source { get; set; } = null!;
 }
+

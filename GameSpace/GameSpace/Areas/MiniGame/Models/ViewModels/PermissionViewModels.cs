@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
@@ -285,10 +285,5 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginTime { get; set; }
     }
-
-    // ========== 分頁結果 ViewModel ==========
-
-    /// <summary>
-    /// 分頁結果 ViewModel
-    /// </summary>
 }
+

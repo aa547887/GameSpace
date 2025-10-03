@@ -21,3 +21,4 @@ public partial class PostMetricSnapshot
 
     public virtual Post Post { get; set; } = null!;
 }
+

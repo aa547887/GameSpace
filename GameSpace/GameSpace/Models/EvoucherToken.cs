@@ -15,3 +15,4 @@ public partial class EvoucherToken
 
     public bool IsRevoked { get; set; }
 }
+

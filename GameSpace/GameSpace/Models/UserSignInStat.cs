@@ -25,3 +25,4 @@ public partial class UserSignInStat
 
     public virtual User User { get; set; } = null!;
 }
+

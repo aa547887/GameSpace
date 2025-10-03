@@ -19,3 +19,4 @@ public partial class Forum
 
     public virtual ICollection<Thread> Threads { get; set; } = new List<Thread>();
 }
+

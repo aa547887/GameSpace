@@ -29,3 +29,4 @@ public partial class UserIntroduce
 
     public virtual User User { get; set; } = null!;
 }
+

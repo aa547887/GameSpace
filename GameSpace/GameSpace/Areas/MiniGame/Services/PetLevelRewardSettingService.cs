@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -7,10 +7,10 @@ namespace GameSpace.Areas.MiniGame.Services
 {
     public class PetLevelRewardSettingService : IPetLevelRewardSettingService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<PetLevelRewardSettingService> _logger;
 
-        public PetLevelRewardSettingService(MiniGameDbContext context, ILogger<PetLevelRewardSettingService> logger)
+        public PetLevelRewardSettingService(GameSpacedatabaseContext context, ILogger<PetLevelRewardSettingService> logger)
         {
             _context = context;
             _logger = logger;
@@ -415,3 +415,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

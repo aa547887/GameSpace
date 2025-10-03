@@ -1,4 +1,4 @@
-
+﻿
 
 <!DOCTYPE html>
 <html lang="zh-Hant">
@@ -878,3 +878,4 @@ function drawEye(x,y,h){ ctx.fillStyle='#fff'; ctx.fillRect(x-1,y-1,5,h+2); ctx.
   </script>
 </body>
 </html>
+

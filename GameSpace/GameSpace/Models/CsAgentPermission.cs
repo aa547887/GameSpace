@@ -19,3 +19,4 @@ public partial class CsAgentPermission
 
     public virtual CsAgent Agent { get; set; } = null!;
 }
+

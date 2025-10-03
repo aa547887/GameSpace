@@ -251,3 +251,4 @@
 
 ## 14. 變更紀錄
 - 2025-09-25：**整合新版規格**（Admin-only、`AdminCookie`、Login 重導、第二層按鈕定名）、補齊 DB 覆蓋與稽核流程、UTF-8 with BOM 要求。
+

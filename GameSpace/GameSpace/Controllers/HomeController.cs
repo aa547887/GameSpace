@@ -1,4 +1,4 @@
-// Controllers/HomeController.cs
+ï»¿// Controllers/HomeController.cs
 using System;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GameSpace.Controllers
 {
-	[AllowAnonymous] // Åý¥¼µn¤Jªº³X«È¤]¯à¬Ý¨ìºû­×­¶
+	[AllowAnonymous] // ï¿½ï¿½ï¿½ï¿½ï¿½nï¿½Jï¿½ï¿½ï¿½Xï¿½È¤]ï¿½ï¿½Ý¨ï¿½ï¿½ï¿½×­ï¿½
 	public class HomeController : Controller
 	{
 		private readonly ILogger<HomeController> _logger;
@@ -20,14 +20,14 @@ namespace GameSpace.Controllers
 			{
 				if (User?.Identity?.IsAuthenticated == true && User.HasClaim(c => c.Type == "ManagerId"))
 				{
-					// ­Y AdminDashboard ¦b¬Y­Ó Area¡A§ï¦¨¡Gnew { area = "MemberManagement" }
+					// ï¿½Y AdminDashboard ï¿½bï¿½Yï¿½ï¿½ Areaï¿½Aï¿½ï¦¨ï¿½Gnew { area = "MemberManagement" }
 					return RedirectToAction("Index", "AdminDashboard");
 				}
 				return View();
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Home/Index µo¥Í¨Ò¥~¡A§ï¾Éºû­×­¶");
+				_logger.LogError(ex, "Home/Index ï¿½oï¿½Í¨Ò¥~ï¿½Aï¿½ï¿½Éºï¿½ï¿½×­ï¿½");
 				return RedirectToAction(nameof(Maintenance));
 			}
 		}
@@ -40,16 +40,16 @@ namespace GameSpace.Controllers
 
 		public IActionResult Dashboard() => View();
 
-		// ===== ºû­×­¶ =====
+		// ===== ï¿½ï¿½ï¿½×­ï¿½ =====
 		[HttpGet]
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 		public IActionResult Maintenance()
 		{
 			Response.StatusCode = 503; // Service Unavailable
-			return View();             // ¹ïÀ³ Views/Home/Maintenance.cshtml
+			return View();             // ï¿½ï¿½ï¿½ï¿½ Views/Home/Maintenance.cshtml
 		}
 
-		// ²Î¤@³B²zª¬ºA½X¡]°t¦X Program.cs ªº UseStatusCodePagesWithReExecute("/Home/Http{0}")¡^
+		// ï¿½Î¤@ï¿½Bï¿½zï¿½ï¿½ï¿½Aï¿½Xï¿½]ï¿½tï¿½X Program.cs ï¿½ï¿½ UseStatusCodePagesWithReExecute("/Home/Http{0}")ï¿½^
 		[HttpGet("Home/Http{code:int}")]
 		public IActionResult Http(int code)
 		{
@@ -58,11 +58,12 @@ namespace GameSpace.Controllers
 				Response.StatusCode = 503;
 				return View("Maintenance");
 			}
-			return View("Error"); // 404 µ¥¥i¥Î§A²{¦³ªº Error.cshtml
+			return View("Error"); // 404 ï¿½ï¿½ï¿½iï¿½Î§Aï¿½{ï¿½ï¿½ï¿½ï¿½ Error.cshtml
 		}
 
-		// ´ú¸Õ¡G³y¤@­Ó¥¼³B²z¨Ò¥~¡]ÂsÄý /Home/Boom À³¾É¦Vºû­×­¶¡^
+		// ï¿½ï¿½ï¿½Õ¡Gï¿½yï¿½@ï¿½Ó¥ï¿½ï¿½Bï¿½zï¿½Ò¥~ï¿½]ï¿½sï¿½ï¿½ /Home/Boom ï¿½ï¿½ï¿½É¦Vï¿½ï¿½ï¿½×­ï¿½ï¿½^
 		[HttpGet("Home/Force500")]
 		public IActionResult Force500() => StatusCode(500);
 	}
 }
+

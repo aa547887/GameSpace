@@ -25,3 +25,4 @@ public partial class PlayerMarketOrderTradepage
 
     public virtual ICollection<PlayerMarketTradeMsg> PlayerMarketTradeMsgs { get; set; } = new List<PlayerMarketTradeMsg>();
 }
+

@@ -1,4 +1,4 @@
-# 新增功能說明
+﻿# 新增功能說明
 
 ## 已完成的檔案
 
@@ -103,3 +103,4 @@ public DbSet<GameRewardSettings> GameRewardSettings { get; set; } = null!;
 - 包含完整的錯誤處理和成功提示
 - 所有表單都有適當的驗證
 - 使用 UTF-8 編碼確保中文顯示正常
+

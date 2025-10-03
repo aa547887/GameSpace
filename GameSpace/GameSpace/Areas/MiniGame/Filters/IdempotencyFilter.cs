@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -102,3 +102,4 @@ namespace GameSpace.Areas.MiniGame.Filters
         }
     }
 }
+

@@ -1,6 +1,7 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using GameSpace.Models;
 
-namespace GameSpace.Areas.MiniGame.Models
+namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     // 管理員相關 ViewModels
     public class AdminManagerCreateViewModel
@@ -112,6 +113,12 @@ namespace GameSpace.Areas.MiniGame.Models
         public string Description { get; set; } = string.Empty;
     }
 
+    // EVoucher Index page model
+    public class AdminEVoucherIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.Evoucher> Evouchers { get; set; } = new();
+    }
+
     public class AdjustEVouchersModel
     {
         public int UserID { get; set; }
@@ -191,7 +198,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public string? Description { get; set; }
     }
 
-    public class EVoucherCreateModel
+    public class EVoucherCreateVM
     {
         [Required]
         public int UserID { get; set; }
@@ -200,7 +207,7 @@ namespace GameSpace.Areas.MiniGame.Models
         public int EVoucherTypeID { get; set; }
     }
 
-    public class EVoucherEditModel
+    public class EVoucherEditVM
     {
         public int EVoucherID { get; set; }
         public int UserID { get; set; }
@@ -319,4 +326,38 @@ namespace GameSpace.Areas.MiniGame.Models
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
     }
+
+    // 系統統計模型
+    public class SystemStatsModel
+    {
+        public int TotalUsers { get; set; }
+        public int ActiveUsers { get; set; }
+        public int TotalPets { get; set; }
+        public int TotalPoints { get; set; }
+        public int TotalCoupons { get; set; }
+        public int TotalEVouchers { get; set; }
+        public int TodaySignIns { get; set; }
+        public int ThisMonthSignIns { get; set; }
+    }
+
+    // 圖表數據模型
+    public class ChartData
+    {
+        public string Label { get; set; } = string.Empty;
+        public int Value { get; set; }
+    }
+
+    // 最近錢包交易模型
+    public class RecentWalletTransactionModel
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string ChangeType { get; set; } = string.Empty;
+        public int PointsChanged { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public DateTime ChangeTime { get; set; }
+    }
+
 }
+
+

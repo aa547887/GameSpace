@@ -38,3 +38,4 @@ namespace GameSpace.Infrastructure.Login
 		public IReadOnlyList<(string Type, string Value)> AllClaims { get; init; } = Array.Empty<(string, string)>();
 	}
 }
+

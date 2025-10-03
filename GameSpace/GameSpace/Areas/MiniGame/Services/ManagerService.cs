@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,317 +14,632 @@ namespace GameSpace.Areas.MiniGame.Services
             _context = context;
         }
 
-        // Manager 基本 CRUD
-        public async Task<IEnumerable<Manager>> GetAllManagersAsync(int pageNumber = 1, int pageSize = 50)
-        {
-            return await _context.Manager
-                .OrderByDescending(m => m.Manager_CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-        }
+        #region Manager 基本 CRUD
 
-        public async Task<Manager?> GetManagerByIdAsync(int managerId)
-        {
-            return await _context.Manager
-                .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
-        }
-
-        public async Task<Manager?> GetManagerByAccountAsync(string account)
-        {
-            return await _context.Manager
-                .FirstOrDefaultAsync(m => m.Manager_Account == account);
-        }
-
-        public async Task<Manager?> GetManagerByEmailAsync(string email)
-        {
-            return await _context.Manager
-                .FirstOrDefaultAsync(m => m.Manager_Email == email);
-        }
-
-        public async Task<bool> CreateManagerAsync(Manager manager, string password)
+        /// <summary>
+        /// 取得所有管理員列表（分頁）
+        /// </summary>
+        public async Task<IEnumerable<ManagerDatum>> GetAllManagersAsync(int pageNumber = 1, int pageSize = 50)
         {
             try
             {
-                manager.Manager_Password = HashPassword(password);
-                manager.Manager_CreatedAt = DateTime.UtcNow;
-                manager.Manager_EmailConfirmed = false;
-                manager.Manager_LockoutEnabled = true;
+                return await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .OrderByDescending(m => m.AdministratorRegistrationDate)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                // 記錄錯誤（生產環境應使用日誌系統）
+                Console.WriteLine($"取得管理員列表時發生錯誤: {ex.Message}");
+                return new List<ManagerDatum>();
+            }
+        }
 
-                _context.Manager.Add(manager);
+        /// <summary>
+        /// 根據管理員 ID 取得管理員資料
+        /// </summary>
+        public async Task<ManagerDatum?> GetManagerByIdAsync(int managerId)
+        {
+            try
+            {
+                return await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerId == managerId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得管理員資料時發生錯誤: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 根據帳號取得管理員資料
+        /// </summary>
+        public async Task<ManagerDatum?> GetManagerByAccountAsync(string account)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(account))
+                    return null;
+
+                return await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerAccount == account);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"根據帳號取得管理員資料時發生錯誤: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 根據電子郵件取得管理員資料
+        /// </summary>
+        public async Task<ManagerDatum?> GetManagerByEmailAsync(string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return null;
+
+                return await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerEmail == email);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"根據電子郵件取得管理員資料時發生錯誤: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 建立新管理員
+        /// </summary>
+        public async Task<bool> CreateManagerAsync(ManagerDatum manager, string password)
+        {
+            try
+            {
+                // 驗證必填欄位
+                if (string.IsNullOrWhiteSpace(manager.ManagerAccount))
+                    return false;
+
+                if (string.IsNullOrWhiteSpace(password))
+                    return false;
+
+                // 檢查帳號是否已存在
+                var existingManager = await GetManagerByAccountAsync(manager.ManagerAccount);
+                if (existingManager != null)
+                    return false;
+
+                // 檢查電子郵件是否已存在
+                if (!string.IsNullOrWhiteSpace(manager.ManagerEmail))
+                {
+                    var existingEmail = await GetManagerByEmailAsync(manager.ManagerEmail);
+                    if (existingEmail != null)
+                        return false;
+                }
+
+                // 設定密碼雜湊
+                manager.ManagerPassword = HashPassword(password);
+
+                // 設定預設值
+                manager.AdministratorRegistrationDate = DateTime.Now;
+                manager.ManagerEmailConfirmed = false;
+                manager.ManagerAccessFailedCount = 0;
+                manager.ManagerLockoutEnabled = true;
+                manager.ManagerLockoutEnd = null;
+
+                _context.ManagerData.Add(manager);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"建立管理員時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
-        public async Task<bool> UpdateManagerAsync(Manager manager)
+        /// <summary>
+        /// 更新管理員資料
+        /// </summary>
+        public async Task<bool> UpdateManagerAsync(ManagerDatum manager)
         {
             try
             {
-                _context.Manager.Update(manager);
+                if (manager == null || manager.ManagerId <= 0)
+                    return false;
+
+                // 確認管理員存在
+                var existingManager = await GetManagerByIdAsync(manager.ManagerId);
+                if (existingManager == null)
+                    return false;
+
+                // 如果更改帳號，檢查新帳號是否已被使用
+                if (existingManager.ManagerAccount != manager.ManagerAccount)
+                {
+                    var accountExists = await _context.ManagerData
+                        .AnyAsync(m => m.ManagerAccount == manager.ManagerAccount && m.ManagerId != manager.ManagerId);
+                    if (accountExists)
+                        return false;
+                }
+
+                // 如果更改電子郵件，檢查新電子郵件是否已被使用
+                if (existingManager.ManagerEmail != manager.ManagerEmail)
+                {
+                    var emailExists = await _context.ManagerData
+                        .AnyAsync(m => m.ManagerEmail == manager.ManagerEmail && m.ManagerId != manager.ManagerId);
+                    if (emailExists)
+                        return false;
+                }
+
+                _context.Entry(existingManager).CurrentValues.SetValues(manager);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"更新管理員資料時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 刪除管理員
+        /// </summary>
         public async Task<bool> DeleteManagerAsync(int managerId)
         {
             try
             {
                 var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
+                if (manager == null)
+                    return false;
 
-                _context.Manager.Remove(manager);
+                _context.ManagerData.Remove(manager);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"刪除管理員時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
-        // Manager 認證
-        public async Task<Manager?> AuthenticateAsync(string account, string password)
+        #endregion
+
+        #region Manager 認證
+
+        /// <summary>
+        /// 管理員登入驗證
+        /// </summary>
+        public async Task<ManagerDatum?> AuthenticateAsync(string account, string password)
         {
-            var manager = await GetManagerByAccountAsync(account);
-            if (manager == null) return null;
-
-            // 檢查鎖定狀態
-            if (manager.Manager_LockoutEnabled &&
-                manager.Manager_LockoutEnd.HasValue &&
-                manager.Manager_LockoutEnd.Value > DateTime.UtcNow)
+            try
             {
-                return null;
-            }
+                if (string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(password))
+                    return null;
 
-            // 驗證密碼
-            if (!VerifyPassword(password, manager.Manager_Password))
-            {
-                // 記錄失敗次數
-                manager.Manager_AccessFailedCount++;
-                if (manager.Manager_AccessFailedCount >= 5)
+                var manager = await GetManagerByAccountAsync(account);
+                if (manager == null)
+                    return null;
+
+                // 檢查帳號是否被鎖定
+                if (manager.ManagerLockoutEnabled &&
+                    manager.ManagerLockoutEnd.HasValue &&
+                    manager.ManagerLockoutEnd.Value > DateTime.Now)
                 {
-                    manager.Manager_LockoutEnd = DateTime.UtcNow.AddMinutes(30);
+                    return null;
                 }
+
+                // 驗證密碼
+                if (string.IsNullOrEmpty(manager.ManagerPassword) ||
+                    !VerifyPassword(password, manager.ManagerPassword))
+                {
+                    // 記錄失敗次數
+                    manager.ManagerAccessFailedCount++;
+
+                    // 連續失敗 5 次則鎖定帳號 30 分鐘
+                    if (manager.ManagerAccessFailedCount >= 5)
+                    {
+                        manager.ManagerLockoutEnd = DateTime.Now.AddMinutes(30);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return null;
+                }
+
+                // 登入成功，重置失敗次數
+                manager.ManagerAccessFailedCount = 0;
+                manager.ManagerLockoutEnd = null;
                 await _context.SaveChangesAsync();
+
+                return manager;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"管理員認證時發生錯誤: {ex.Message}");
                 return null;
             }
-
-            // 成功登入，重置失敗次數
-            manager.Manager_AccessFailedCount = 0;
-            manager.Manager_LockoutEnd = null;
-            await _context.SaveChangesAsync();
-
-            return manager;
         }
 
+        /// <summary>
+        /// 變更管理員密碼（需要提供舊密碼）
+        /// </summary>
         public async Task<bool> ChangePasswordAsync(int managerId, string oldPassword, string newPassword)
         {
             try
             {
-                var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
-
-                // 驗證舊密碼
-                if (!VerifyPassword(oldPassword, manager.Manager_Password))
+                if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword))
                     return false;
 
-                manager.Manager_Password = HashPassword(newPassword);
+                var manager = await GetManagerByIdAsync(managerId);
+                if (manager == null || string.IsNullOrEmpty(manager.ManagerPassword))
+                    return false;
+
+                // 驗證舊密碼
+                if (!VerifyPassword(oldPassword, manager.ManagerPassword))
+                    return false;
+
+                // 設定新密碼
+                manager.ManagerPassword = HashPassword(newPassword);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"變更密碼時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 重設管理員密碼（不需要舊密碼，由超級管理員執行）
+        /// </summary>
         public async Task<bool> ResetPasswordAsync(int managerId, string newPassword)
         {
             try
             {
-                var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
+                if (string.IsNullOrWhiteSpace(newPassword))
+                    return false;
 
-                manager.Manager_Password = HashPassword(newPassword);
-                manager.Manager_AccessFailedCount = 0;
-                manager.Manager_LockoutEnd = null;
+                var manager = await GetManagerByIdAsync(managerId);
+                if (manager == null)
+                    return false;
+
+                // 設定新密碼並重置相關狀態
+                manager.ManagerPassword = HashPassword(newPassword);
+                manager.ManagerAccessFailedCount = 0;
+                manager.ManagerLockoutEnd = null;
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"重設密碼時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
-        // Manager 狀態管理
+        #endregion
+
+        #region Manager 狀態管理
+
+        /// <summary>
+        /// 鎖定管理員帳號
+        /// </summary>
         public async Task<bool> LockManagerAsync(int managerId, DateTime? lockoutEnd = null)
         {
             try
             {
                 var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
+                if (manager == null)
+                    return false;
 
-                manager.Manager_LockoutEnabled = true;
-                manager.Manager_LockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
+                manager.ManagerLockoutEnabled = true;
+                manager.ManagerLockoutEnd = lockoutEnd ?? DateTime.Now.AddDays(30);
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"鎖定管理員帳號時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 解除管理員帳號鎖定
+        /// </summary>
         public async Task<bool> UnlockManagerAsync(int managerId)
         {
             try
             {
                 var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
+                if (manager == null)
+                    return false;
 
-                manager.Manager_LockoutEnabled = false;
-                manager.Manager_LockoutEnd = null;
-                manager.Manager_AccessFailedCount = 0;
+                manager.ManagerLockoutEnabled = false;
+                manager.ManagerLockoutEnd = null;
+                manager.ManagerAccessFailedCount = 0;
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"解除管理員帳號鎖定時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 確認管理員電子郵件
+        /// </summary>
         public async Task<bool> ConfirmEmailAsync(int managerId)
         {
             try
             {
                 var manager = await GetManagerByIdAsync(managerId);
-                if (manager == null) return false;
+                if (manager == null)
+                    return false;
 
-                manager.Manager_EmailConfirmed = true;
+                manager.ManagerEmailConfirmed = true;
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"確認電子郵件時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
-        // Manager 角色管理
-        public async Task<IEnumerable<ManagerRole>> GetManagerRolesAsync(int managerId)
+        #endregion
+
+        #region Manager 角色管理
+
+        /// <summary>
+        /// 取得管理員的角色權限
+        /// </summary>
+        public async Task<ManagerRolePermission?> GetManagerRoleAsync(int managerId)
         {
-            return await _context.ManagerRole
-                .Where(r => r.ManagerId == managerId)
-                .ToListAsync();
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerId == managerId);
+
+                if (manager == null)
+                    return null;
+
+                // 返回第一個角色（假設一個管理員只有一個角色）
+                return manager.ManagerRoles.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得管理員角色時發生錯誤: {ex.Message}");
+                return null;
+            }
         }
 
+        /// <summary>
+        /// 指派角色給管理員
+        /// </summary>
         public async Task<bool> AssignRoleAsync(int managerId, int roleId)
         {
             try
             {
-                var existingRole = await _context.ManagerRole
-                    .FirstOrDefaultAsync(r => r.ManagerId == managerId && r.RoleId == roleId);
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
-                if (existingRole != null) return true; // 已有角色
+                if (manager == null)
+                    return false;
 
-                var role = new ManagerRole
-                {
-                    ManagerId = managerId,
-                    RoleId = roleId,
-                    AssignedAt = DateTime.UtcNow
-                };
-                _context.ManagerRole.Add(role);
+                // 檢查角色是否存在
+                var role = await _context.ManagerRolePermissions
+                    .FirstOrDefaultAsync(r => r.ManagerRoleId == roleId);
+
+                if (role == null)
+                    return false;
+
+                // 檢查是否已經有此角色
+                if (manager.ManagerRoles.Any(r => r.ManagerRoleId == roleId))
+                    return true;
+
+                // 清除現有角色（假設一個管理員只能有一個角色）
+                manager.ManagerRoles.Clear();
+
+                // 加入新角色
+                manager.ManagerRoles.Add(role);
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"指派角色時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 移除管理員的角色
+        /// </summary>
         public async Task<bool> RemoveRoleAsync(int managerId, int roleId)
         {
             try
             {
-                var role = await _context.ManagerRole
-                    .FirstOrDefaultAsync(r => r.ManagerId == managerId && r.RoleId == roleId);
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
-                if (role == null) return false;
+                if (manager == null)
+                    return false;
 
-                _context.ManagerRole.Remove(role);
+                var roleToRemove = manager.ManagerRoles.FirstOrDefault(r => r.ManagerRoleId == roleId);
+                if (roleToRemove == null)
+                    return false;
+
+                manager.ManagerRoles.Remove(roleToRemove);
+
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"移除角色時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 取得管理員的所有權限列表
+        /// </summary>
         public async Task<IEnumerable<string>> GetManagerPermissionsAsync(int managerId)
         {
-            var roles = await GetManagerRolesAsync(managerId);
-
-            // 簡化版：根據角色返回權限
-            var permissions = new List<string>();
-            foreach (var role in roles)
+            try
             {
-                // 實際應從 Role-Permission 表查詢
-                // 這裡使用簡化邏輯
-                if (role.RoleId == 1) // Admin
-                {
-                    permissions.AddRange(new[] { "ViewUsers", "EditUsers", "DeleteUsers", "ManageSystem" });
-                }
-                else if (role.RoleId == 2) // Moderator
-                {
-                    permissions.AddRange(new[] { "ViewUsers", "EditUsers" });
-                }
-            }
+                var role = await GetManagerRoleAsync(managerId);
+                if (role == null)
+                    return new List<string>();
 
-            return permissions.Distinct();
+                var permissions = new List<string>();
+
+                // 根據角色的布林欄位轉換為權限字串
+                if (role.AdministratorPrivilegesManagement == true)
+                {
+                    // 超級管理員擁有所有權限
+                    permissions.Add("Administrator.Full");
+                    permissions.Add("User.View");
+                    permissions.Add("User.Edit");
+                    permissions.Add("User.Delete");
+                    permissions.Add("Wallet.View");
+                    permissions.Add("Wallet.Edit");
+                    permissions.Add("Coupon.View");
+                    permissions.Add("Coupon.Edit");
+                    permissions.Add("EVoucher.View");
+                    permissions.Add("EVoucher.Edit");
+                    permissions.Add("Pet.View");
+                    permissions.Add("Pet.Edit");
+                    permissions.Add("Message.View");
+                    permissions.Add("Message.Edit");
+                    permissions.Add("CustomerService");
+                    permissions.Add("Manager.View");
+                    permissions.Add("Manager.Edit");
+                }
+                else
+                {
+                    // 根據各個權限欄位添加對應權限
+                    if (role.UserStatusManagement == true)
+                    {
+                        permissions.Add("User.View");
+                        permissions.Add("User.Edit");
+                    }
+
+                    if (role.ShoppingPermissionManagement == true)
+                    {
+                        permissions.Add("Wallet.View");
+                        permissions.Add("Wallet.Edit");
+                        permissions.Add("Coupon.View");
+                        permissions.Add("Coupon.Edit");
+                        permissions.Add("EVoucher.View");
+                        permissions.Add("EVoucher.Edit");
+                    }
+
+                    if (role.PetRightsManagement == true)
+                    {
+                        permissions.Add("Pet.View");
+                        permissions.Add("Pet.Edit");
+                    }
+
+                    if (role.MessagePermissionManagement == true)
+                    {
+                        permissions.Add("Message.View");
+                        permissions.Add("Message.Edit");
+                    }
+
+                    if (role.CustomerService == true)
+                    {
+                        permissions.Add("CustomerService");
+                    }
+                }
+
+                return permissions.Distinct();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得管理員權限時發生錯誤: {ex.Message}");
+                return new List<string>();
+            }
         }
 
+        /// <summary>
+        /// 檢查管理員是否擁有特定權限
+        /// </summary>
         public async Task<bool> HasPermissionAsync(int managerId, string permission)
         {
-            var permissions = await GetManagerPermissionsAsync(managerId);
-            return permissions.Contains(permission);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(permission))
+                    return false;
+
+                var permissions = await GetManagerPermissionsAsync(managerId);
+
+                // 檢查是否有完整權限或超級管理員權限
+                return permissions.Contains(permission) ||
+                       permissions.Contains("Administrator.Full");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"檢查管理員權限時發生錯誤: {ex.Message}");
+                return false;
+            }
         }
 
-        // Manager 活動日誌
+        #endregion
+
+        #region Manager 活動日誌
+
+        /// <summary>
+        /// 取得管理員的活動日誌（分頁）
+        /// </summary>
         public async Task<IEnumerable<ManagerActivityLog>> GetManagerActivitiesAsync(int managerId, int pageNumber = 1, int pageSize = 20)
         {
-            // 實際需要自訂活動日誌表
-            // 這裡返回空列表作為預設實作
+            // 目前資料庫尚未建立活動日誌表，返回空列表
+            // 未來實作時需要建立 ManagerActivityLog 資料表並實作此功能
             await Task.CompletedTask;
             return new List<ManagerActivityLog>();
         }
 
+        /// <summary>
+        /// 記錄管理員活動
+        /// </summary>
         public async Task<bool> LogActivityAsync(int managerId, string action, string details)
         {
             try
             {
-                // 實際需要自訂活動日誌表
-                // 範例：
+                // 目前資料庫尚未建立活動日誌表
+                // 未來實作時需要建立 ManagerActivityLog 資料表並實作此功能
+                //
+                // 範例實作：
                 // var log = new ManagerActivityLog
                 // {
                 //     ManagerId = managerId,
                 //     Action = action,
                 //     Details = details,
-                //     IpAddress = "0.0.0.0",
-                //     CreatedAt = DateTime.UtcNow
+                //     IpAddress = "0.0.0.0", // 需要從 HttpContext 取得
+                //     CreatedAt = DateTime.Now
                 // };
                 // _context.ManagerActivityLogs.Add(log);
                 // await _context.SaveChangesAsync();
@@ -332,40 +647,100 @@ namespace GameSpace.Areas.MiniGame.Services
                 await Task.CompletedTask;
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"記錄管理員活動時發生錯誤: {ex.Message}");
                 return false;
             }
         }
 
-        // Manager 統計
+        #endregion
+
+        #region Manager 統計
+
+        /// <summary>
+        /// 取得管理員總數
+        /// </summary>
         public async Task<int> GetTotalManagersCountAsync()
         {
-            return await _context.Manager.CountAsync();
+            try
+            {
+                return await _context.ManagerData.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得管理員總數時發生錯誤: {ex.Message}");
+                return 0;
+            }
         }
 
+        /// <summary>
+        /// 取得活躍管理員數量（未被鎖定或鎖定已過期）
+        /// </summary>
         public async Task<int> GetActiveManagersCountAsync()
         {
-            return await _context.Manager.CountAsync(m =>
-                !m.Manager_LockoutEnabled ||
-                !m.Manager_LockoutEnd.HasValue ||
-                m.Manager_LockoutEnd.Value <= DateTime.UtcNow);
+            try
+            {
+                return await _context.ManagerData.CountAsync(m =>
+                    !m.ManagerLockoutEnabled ||
+                    !m.ManagerLockoutEnd.HasValue ||
+                    m.ManagerLockoutEnd.Value <= DateTime.Now);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得活躍管理員數量時發生錯誤: {ex.Message}");
+                return 0;
+            }
         }
 
+        /// <summary>
+        /// 取得各角色的管理員統計
+        /// </summary>
         public async Task<Dictionary<string, int>> GetManagerStatsByRoleAsync()
         {
-            var roleStats = await _context.ManagerRole
-                .GroupBy(r => r.RoleId)
-                .Select(g => new { RoleId = g.Key, Count = g.Count() })
-                .ToListAsync();
+            try
+            {
+                var stats = new Dictionary<string, int>();
 
-            return roleStats.ToDictionary(
-                x => $"Role_{x.RoleId}",
-                x => x.Count
-            );
+                // 取得所有角色
+                var roles = await _context.ManagerRolePermissions.ToListAsync();
+
+                foreach (var role in roles)
+                {
+                    // 計算擁有此角色的管理員數量
+                    var count = await _context.ManagerData
+                        .Include(m => m.ManagerRoles)
+                        .CountAsync(m => m.ManagerRoles.Any(r => r.ManagerRoleId == role.ManagerRoleId));
+
+                    stats[role.RoleName] = count;
+                }
+
+                // 計算沒有角色的管理員數量
+                var noRoleCount = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .CountAsync(m => !m.ManagerRoles.Any());
+
+                if (noRoleCount > 0)
+                {
+                    stats["無角色"] = noRoleCount;
+                }
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"取得管理員角色統計時發生錯誤: {ex.Message}");
+                return new Dictionary<string, int>();
+            }
         }
 
-        // 密碼處理輔助方法
+        #endregion
+
+        #region 密碼處理輔助方法
+
+        /// <summary>
+        /// 使用 SHA256 雜湊密碼
+        /// </summary>
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
@@ -375,10 +750,16 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
+        /// <summary>
+        /// 驗證密碼是否正確
+        /// </summary>
         private bool VerifyPassword(string password, string hashedPassword)
         {
             var hashOfInput = HashPassword(password);
             return hashOfInput == hashedPassword;
         }
+
+        #endregion
     }
 }
+

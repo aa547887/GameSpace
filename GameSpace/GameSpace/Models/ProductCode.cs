@@ -11,3 +11,4 @@ public partial class ProductCode
 
     public virtual ProductInfo Product { get; set; } = null!;
 }
+

@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -9,3 +9,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<ManagerDatum?> GetManagerDatumAsync(int managerId);
     }
 }
+

@@ -17,3 +17,4 @@ public partial class UserRight
 
     public virtual User User { get; set; } = null!;
 }
+

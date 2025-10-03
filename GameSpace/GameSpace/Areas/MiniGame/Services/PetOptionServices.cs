@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -105,3 +105,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<(int total, int active, int inactive)> GetBackgroundOptionStatisticsAsync();
     }
 }
+

@@ -1,4 +1,5 @@
-namespace GameSpace.Areas.MiniGame.Services
+﻿namespace GameSpace.Areas.MiniGame.Services
 {
     public class MiniGameAdminGate : IMiniGameAdminGate { /* compile-only */ }
 }
+

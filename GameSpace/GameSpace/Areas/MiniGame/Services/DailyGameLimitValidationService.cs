@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -217,3 +217,4 @@ namespace GameSpace.Areas.MiniGame.Services
         public bool IsDefaultLimit { get; set; }
     }
 }
+

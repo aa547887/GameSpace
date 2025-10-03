@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -161,7 +161,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         // ========== 用戶權限管理 ==========
 
-        public async Task<List<UserRight>> GetUserRightsAsync(int userId)
+        public async Task<List<GameSpace.Models.UserRight>> GetUserRightsAsync(int userId)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch
             {
-                return new List<UserRight>();
+                return new List<GameSpace.Models.UserRight>();
             }
         }
 
@@ -215,7 +215,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 else
                 {
                     // 創建新權限
-                    var userRight = new UserRight
+                    var userRight = new GameSpace.Models.UserRight
                     {
                         UserId = userId,
                         RightName = rightName,
@@ -616,3 +616,5 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+
+

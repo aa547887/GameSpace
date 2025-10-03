@@ -21,3 +21,4 @@ public partial class Evoucher
 
     public virtual User User { get; set; } = null!;
 }
+

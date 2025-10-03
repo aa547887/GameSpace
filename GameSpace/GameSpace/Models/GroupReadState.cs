@@ -17,3 +17,4 @@ public partial class GroupReadState
 
     public virtual User User { get; set; } = null!;
 }
+

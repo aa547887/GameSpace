@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using GameSpace.Models;
 
@@ -247,3 +247,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public string ActiveRatioDisplay => $"{ActiveRatio:F1}%";
     }
 }
+

@@ -13,3 +13,4 @@ public partial class NotificationAction
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }
+

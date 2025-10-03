@@ -15,3 +15,4 @@ public partial class RelationStatus
 
     public virtual ICollection<Relation> Relations { get; set; } = new List<Relation>();
 }
+

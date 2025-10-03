@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
@@ -533,7 +533,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         // 更新互動獎勵規則
         [HttpPost]
-        public async Task<IActionResult> UpdatePetInteractionBonusRules(List<PetInteractionBonusRule> rules)
+        public async Task<IActionResult> UpdatePetInteractionBonusRules(List<PetInteractionBonusRules> rules)
         {
             try
             {
@@ -645,3 +645,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+

@@ -17,3 +17,4 @@ public partial class Bookmark
 
     public virtual User? User { get; set; }
 }
+

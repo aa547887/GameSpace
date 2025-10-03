@@ -47,3 +47,4 @@ public partial class ManagerDatumVM
 	public ICollection<ManagerRoleEntry> ManagerRoles { get; set; } = new List<ManagerRoleEntry>();
 
 }
+

@@ -11,3 +11,4 @@ public partial class BannedWord
 
     public DateTime? CreatedAt { get; set; }
 }
+

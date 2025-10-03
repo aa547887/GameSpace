@@ -22,3 +22,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 			=> new PagedResult<T> { Items = Array.Empty<T>(), Page = page, PageSize = pageSize, TotalCount = 0 };
 	}
 }
+

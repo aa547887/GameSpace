@@ -31,3 +31,4 @@ namespace GameSpace.Areas.social_hub.Permissions
 			CancellationToken ct = default);
 	}
 }
+

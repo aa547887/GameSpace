@@ -125,3 +125,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public bool InitCanEditMuteAll { get; set; } = false;
 	}
 }
+

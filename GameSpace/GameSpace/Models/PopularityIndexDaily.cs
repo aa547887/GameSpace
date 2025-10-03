@@ -17,3 +17,4 @@ public partial class PopularityIndexDaily
 
     public virtual Game? Game { get; set; }
 }
+

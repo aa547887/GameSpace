@@ -15,3 +15,4 @@ public partial class Supplier
 
     public virtual ICollection<OtherProductDetail> OtherProductDetails { get; set; } = new List<OtherProductDetail>();
 }
+

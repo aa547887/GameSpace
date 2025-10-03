@@ -25,3 +25,4 @@ public partial class ProductInfoAuditLog
 
     public virtual ProductInfo Product { get; set; } = null!;
 }
+

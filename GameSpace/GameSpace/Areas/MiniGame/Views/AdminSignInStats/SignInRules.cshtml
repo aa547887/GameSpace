@@ -1,4 +1,4 @@
-@model GameSpace.Areas.MiniGame.Models.AdminSignInRulesViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.AdminSignInRulesViewModel
 @{
     ViewData["Title"] = "簽到規則設定";
 }
@@ -61,8 +61,8 @@
                                 <div class="form-group">
                                     <label for="isActive">是否啟用</label>
                                     <select class="form-control" id="isActive" name="isActive">
-                                        <option value="true" @(Model.SignInRule.IsActive ? "selected" : "")>啟用</option>
-                                        <option value="false" @(!Model.SignInRule.IsActive ? "selected" : "")>停用</option>
+                                        <option value="true" selected="@(Model.SignInRule.IsActive ? "selected" : null)">啟用</option>
+                                        <option value="false" selected="@(!Model.SignInRule.IsActive ? "selected" : null)">停用</option>
                                     </select>
                                 </div>
                             </div>
@@ -145,3 +145,4 @@
         </div>
     </div>
 </div>
+

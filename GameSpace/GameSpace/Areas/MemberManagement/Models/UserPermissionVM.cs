@@ -23,3 +23,4 @@ namespace GameSpace.Areas.MemberManagement.Models
 		public bool SalesAuthority { get; set; }
 	}
 }
+

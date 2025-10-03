@@ -25,3 +25,4 @@ public partial class PlayerMarketRanking
 
     public virtual PlayerMarketProductInfo? PProduct { get; set; }
 }
+

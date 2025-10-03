@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "管理者管理";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
@@ -119,8 +119,8 @@
                             <label for="status">狀態</label>
                             <select class="form-control" id="status" name="status">
                                 <option value="">全部</option>
-                                <option value="active" selected="@(ViewBag.Status == "active" ? "selected" : "")">啟用</option>
-                                <option value="locked" selected="@(ViewBag.Status == "locked" ? "selected" : "")">鎖定</option>
+                                <option value="active" selected="@(ViewBag.Status == "active" ? "selected" : null)">啟用</option>
+                                <option value="locked" selected="@(ViewBag.Status == "locked" ? "selected" : null)">鎖定</option>
                             </select>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
                                 {
                                     @foreach (var role in ViewBag.RoleList)
                                     {
-                                        <option value="@role.ManagerRole_Id" @(ViewBag.Role == role.ManagerRole_Id.ToString() ? "selected" : "")>@role.role_name</option>
+                                        <option value="@role.ManagerRole_Id" selected="@(ViewBag.Role == role.ManagerRole_Id.ToString() ? "selected" : null)">@role.role_name</option>
                                     }
                                 }
                             </select>
@@ -143,10 +143,10 @@
                         <div class="form-group">
                             <label for="sortBy">排序方式</label>
                             <select class="form-control" id="sortBy" name="sortBy">
-                                <option value="name" @(ViewBag.SortBy == "name" ? "selected" : "")>管理者名稱</option>
-                                <option value="account" @(ViewBag.SortBy == "account" ? "selected" : "")>帳號</option>
-                                <option value="created" @(ViewBag.SortBy == "created" ? "selected" : "")>註冊時間</option>
-                                <option value="lastLogin" @(ViewBag.SortBy == "lastLogin" ? "selected" : "")>最後登入</option>
+                                <option value="name" selected="@(ViewBag.SortBy == "name" ? "selected" : null)">管理者名稱</option>
+                                <option value="account" selected="@(ViewBag.SortBy == "account" ? "selected" : null)">帳號</option>
+                                <option value="created" selected="@(ViewBag.SortBy == "created" ? "selected" : null)">註冊時間</option>
+                                <option value="lastLogin" selected="@(ViewBag.SortBy == "lastLogin" ? "selected" : null)">最後登入</option>
                             </select>
                         </div>
                     </div>
@@ -295,4 +295,5 @@
         });
     </script>
 }
+
 

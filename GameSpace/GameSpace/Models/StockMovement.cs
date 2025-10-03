@@ -19,3 +19,4 @@ public partial class StockMovement
 
     public string? Note { get; set; }
 }
+

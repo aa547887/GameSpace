@@ -1,4 +1,4 @@
-@model GameSpace.Areas.MiniGame.Models.PetColorChangeQueryModel
+﻿@model GameSpace.Areas.MiniGame.Models.PetColorChangeQueryModel
 @{
     ViewData["Title"] = "寵物皮膚/背景更換歷史";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
@@ -29,8 +29,8 @@
                     <label for="ChangeType" class="form-label">更換類型</label>
                     <select class="form-control" id="ChangeType" name="ChangeType">
                         <option value="">全部</option>
-                        <option value="Skin" @(Model.ChangeType == "Skin" ? "selected" : "")>皮膚</option>
-                        <option value="Background" @(Model.ChangeType == "Background" ? "selected" : "")>背景</option>
+                        <option value="Skin" selected="@(Model.ChangeType == "Skin" ? "selected" : null)">皮膚</option>
+                        <option value="Background" selected="@(Model.ChangeType == "Background" ? "selected" : null)">背景</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -44,9 +44,9 @@
                 <div class="col-md-3">
                     <label for="PageSize" class="form-label">每頁筆數</label>
                     <select class="form-control" id="PageSize" name="PageSize">
-                        <option value="10" @(Model.PageSize == 10 ? "selected" : "")>10</option>
-                        <option value="20" @(Model.PageSize == 20 ? "selected" : "")>20</option>
-                        <option value="50" @(Model.PageSize == 50 ? "selected" : "")>50</option>
+                        <option value="10" selected="@(Model.PageSize == 10 ? "selected" : null)">10</option>
+                        <option value="20" selected="@(Model.PageSize == 20 ? "selected" : null)">20</option>
+                        <option value="50" selected="@(Model.PageSize == 50 ? "selected" : null)">50</option>
                     </select>
                 </div>
                 <div class="col-md-12">
@@ -159,3 +159,4 @@ function resetForm() {
     document.getElementById("PageSize").value = "10";
 }
 </script>
+

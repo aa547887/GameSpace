@@ -22,3 +22,4 @@ namespace GameSpace.Areas.MemberManagement.Models
 		public ManagerRolePermission ManagerRolePermission { get; set; }
 	}
 }
+

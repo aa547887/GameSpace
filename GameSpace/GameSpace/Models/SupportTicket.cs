@@ -35,3 +35,4 @@ public partial class SupportTicket
 
     public virtual User User { get; set; } = null!;
 }
+

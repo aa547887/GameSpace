@@ -13,3 +13,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public bool IsRead { get; set; }  // 我發出的訊息：代表對方是否已讀
 	}
 }
+

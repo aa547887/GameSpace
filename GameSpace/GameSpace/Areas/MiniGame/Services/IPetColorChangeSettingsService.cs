@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models.Settings;
+﻿using GameSpace.Areas.MiniGame.Models.Settings;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -48,3 +48,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<PetColorChangeSettings?> GetActiveSettingAsync();
     }
 }
+

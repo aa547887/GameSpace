@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Net;
 using System.Text.Json;
@@ -56,3 +56,4 @@ namespace GameSpace.Areas.MiniGame.Filters
         }
     }
 }
+

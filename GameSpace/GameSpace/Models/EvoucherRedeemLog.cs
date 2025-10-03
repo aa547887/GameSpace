@@ -19,3 +19,4 @@ public partial class EvoucherRedeemLog
 
     public virtual User User { get; set; } = null!;
 }
+

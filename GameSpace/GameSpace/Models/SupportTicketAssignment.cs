@@ -27,3 +27,4 @@ public partial class SupportTicketAssignment
 
     public virtual ManagerDatum ToManager { get; set; } = null!;
 }
+

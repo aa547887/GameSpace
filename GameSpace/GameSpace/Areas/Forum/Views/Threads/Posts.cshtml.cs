@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GameSpace.Areas.Forum.Views.Threads
@@ -10,3 +10,4 @@ namespace GameSpace.Areas.Forum.Views.Threads
         }
     }
 }
+

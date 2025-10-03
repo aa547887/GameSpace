@@ -2240,3 +2240,4 @@ public partial class GameSpacedatabaseContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+

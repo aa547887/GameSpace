@@ -25,3 +25,4 @@ public partial class Coupon
 
     public virtual User User { get; set; } = null!;
 }
+

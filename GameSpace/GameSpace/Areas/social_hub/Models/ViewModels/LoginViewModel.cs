@@ -19,3 +19,4 @@ namespace GameSpace.Areas.social_hub.Models
 		public string? ReturnUrl { get; set; }
 	}
 }
+

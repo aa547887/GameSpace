@@ -15,3 +15,4 @@ public partial class MemberSalesProfile
 
     public virtual User User { get; set; } = null!;
 }
+

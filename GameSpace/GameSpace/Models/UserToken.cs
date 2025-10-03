@@ -19,3 +19,4 @@ public partial class UserToken
 
     public virtual User User { get; set; } = null!;
 }
+

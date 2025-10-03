@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "優惠券管理";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
@@ -119,9 +119,9 @@
                             <label for="status">狀態</label>
                             <select class="form-control" id="status" name="status">
                                 <option value="">全部</option>
-                                <option value="unused" selected="@(ViewBag.Status == "unused" ? "selected" : "")">未使用</option>
-                                <option value="used" @(ViewBag.Status == "used" ? "selected" : "")>已使用</option>
-                                <option value="expired" @(ViewBag.Status == "expired" ? "selected" : "")>已過期</option>
+                                <option value="unused" selected="@(ViewBag.Status == "unused" ? "selected" : null)">未使用</option>
+                                <option value="used" selected="@(ViewBag.Status == "used" ? "selected" : null)">已使用</option>
+                                <option value="expired" selected="@(ViewBag.Status == "expired" ? "selected" : null)">已過期</option>
                             </select>
                         </div>
                     </div>
@@ -134,7 +134,7 @@
                                 {
                                     @foreach (var type in ViewBag.CouponTypeList)
                                     {
-                                        <option value="@type.CouponTypeID" @(ViewBag.CouponType == type.CouponTypeID.ToString() ? "selected" : "")>@type.Name</option>
+                                        <option value="@type.CouponTypeID" selected="@(ViewBag.CouponType == type.CouponTypeID.ToString() ? "selected" : null)">@type.Name</option>
                                     }
                                 }
                             </select>
@@ -144,10 +144,10 @@
                         <div class="form-group">
                             <label for="sortBy">排序方式</label>
                             <select class="form-control" id="sortBy" name="sortBy">
-                                <option value="code" @(ViewBag.SortBy == "code" ? "selected" : "")>優惠券代碼</option>
-                                <option value="type" @(ViewBag.SortBy == "type" ? "selected" : "")>類型</option>
-                                <option value="acquired" @(ViewBag.SortBy == "acquired" ? "selected" : "")>獲得時間</option>
-                                <option value="used" @(ViewBag.SortBy == "used" ? "selected" : "")>使用時間</option>
+                                <option value="code" selected="@(ViewBag.SortBy == "code" ? "selected" : null)">優惠券代碼</option>
+                                <option value="type" selected="@(ViewBag.SortBy == "type" ? "selected" : null)">類型</option>
+                                <option value="acquired" selected="@(ViewBag.SortBy == "acquired" ? "selected" : null)">獲得時間</option>
+                                <option value="used" selected="@(ViewBag.SortBy == "used" ? "selected" : null)">使用時間</option>
                             </select>
                         </div>
                     </div>
@@ -288,3 +288,4 @@
         });
     </script>
 }
+

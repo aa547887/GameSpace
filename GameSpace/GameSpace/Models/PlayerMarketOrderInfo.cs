@@ -37,3 +37,4 @@ public partial class PlayerMarketOrderInfo
 
     public virtual User? Seller { get; set; }
 }
+

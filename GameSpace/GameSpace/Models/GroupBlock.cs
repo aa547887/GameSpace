@@ -25,3 +25,4 @@ public partial class GroupBlock
 
     public virtual User User { get; set; } = null!;
 }
+

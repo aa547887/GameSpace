@@ -1,4 +1,5 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -9,7 +10,7 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<UserWallet?> GetUserPointsAsync(int userId);
         Task<List<UserWallet>> GetAllUserPointsAsync();
         Task<bool> UpdateUserPointsAsync(int userId, int points);
-        Task<PagedResult<UserWallet>> QueryUserPointsAsync(CouponQueryModel query);
+        Task<GameSpace.Areas.MiniGame.Models.ViewModels.PagedResult<UserWallet>> QueryUserPointsAsync(CouponQueryModel query);
         Task<List<GameSpace.Models.User>> GetUsersAsync();
         Task<bool> AdjustUserPointsAsync(int userId, int points, string reason);
 
@@ -20,7 +21,7 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<List<GameSpace.Models.CouponType>> GetCouponTypesAsync();
         Task<bool> IssueCouponToUserAsync(int userId, int couponTypeId, int quantity);
         Task<bool> RemoveCouponFromUserAsync(int userId, int couponTypeId);
-        Task<PagedResult<UserCouponReadModel>> QueryUserCouponsAsync(CouponQueryModel query);
+        Task<GameSpace.Areas.MiniGame.Models.ViewModels.PagedResult<UserCouponReadModel>> QueryUserCouponsAsync(CouponQueryModel query);
 
         // 電子優惠券系統
         Task<List<Evoucher>> GetUserEVouchersAsync(int userId);
@@ -29,13 +30,13 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<List<EvoucherType>> GetEVoucherTypesAsync();
         Task<bool> IssueEVoucherToUserAsync(int userId, int evoucherTypeId, int quantity);
         Task<bool> RemoveEVoucherFromUserAsync(int userId, int evoucherTypeId);
-        Task<PagedResult<Evoucher>> QueryUserEVouchersAsync(EVoucherQueryModel query);
+        Task<GameSpace.Areas.MiniGame.Models.ViewModels.PagedResult<Evoucher>> QueryUserEVouchersAsync(EVoucherQueryModel query);
 
         // 簽到系統
         Task<List<UserSignInStat>> GetUserSignInRecordsAsync(int userId);
         Task<bool> AddSignInRecordAsync(int userId, DateTime signInDate);
         Task<bool> RemoveSignInRecordAsync(int signInId);
-        Task<PagedResult<UserSignInStat>> GetSignInStatsAsync();
+        Task<GameSpace.Areas.MiniGame.Models.ViewModels.PagedResult<UserSignInStat>> GetSignInStatsAsync();
         Task<SignInRuleReadModel> GetSignInRuleAsync();
         Task<bool> AddUserSignInRecordAsync(int userId, DateTime signInDate);
         Task<bool> RemoveUserSignInRecordAsync(int userId, DateTime signInDate);
@@ -66,7 +67,7 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<WalletSummary> GetWalletSummaryAsync();
 
         // 交易記錄
-        Task<PagedResult<WalletTransaction>> QueryWalletTransactionsAsync(CouponQueryModel query);
+        Task<GameSpace.Areas.MiniGame.Models.ViewModels.PagedResult<WalletTransaction>> QueryWalletTransactionsAsync(CouponQueryModel query);
 
         // 規則設定
         SignInRuleReadModel GetSignInRule();
@@ -77,3 +78,6 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> UpdateGameRuleAsync(GameRuleUpdateModel model);
     }
 }
+
+
+

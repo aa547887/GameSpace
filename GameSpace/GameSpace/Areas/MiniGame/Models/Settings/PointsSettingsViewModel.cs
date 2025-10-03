@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.Settings
@@ -33,3 +33,4 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public int TotalPoints => TotalColorPoints + TotalBackgroundPoints;
     }
 }
+

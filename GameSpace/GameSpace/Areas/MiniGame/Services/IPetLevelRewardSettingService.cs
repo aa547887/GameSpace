@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -18,3 +18,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<IEnumerable<string>> GetRewardTypesAsync();
     }
 }
+

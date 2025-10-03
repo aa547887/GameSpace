@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using GameSpace.Models;
 
@@ -39,3 +39,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public virtual User User { get; set; } = null!;
     }
 }
+

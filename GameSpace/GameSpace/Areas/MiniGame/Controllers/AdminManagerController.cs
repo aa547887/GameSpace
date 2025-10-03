@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Models;
 using GameSpace.Areas.social_hub.Auth;
@@ -450,3 +450,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+

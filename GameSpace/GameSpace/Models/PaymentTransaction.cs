@@ -27,3 +27,4 @@ public partial class PaymentTransaction
 
     public string? Meta { get; set; }
 }
+

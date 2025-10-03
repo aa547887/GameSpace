@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models
+﻿namespace GameSpace.Areas.MiniGame.Models
 {
     /// <summary>
     /// 驗證結果類別
@@ -11,3 +11,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
     }
 }
+

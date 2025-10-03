@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models
+﻿namespace GameSpace.Areas.MiniGame.Models
 {
     // 優惠券讀取模型
     public class CouponReadModel
@@ -158,3 +158,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public decimal TotalPointsUsed { get; set; }
     }
 }
+

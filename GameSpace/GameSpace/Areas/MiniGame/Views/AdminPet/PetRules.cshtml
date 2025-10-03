@@ -1,4 +1,4 @@
-@model GameSpace.Areas.MiniGame.Models.AdminPetRulesViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.AdminPetRulesViewModel
 @{
     ViewData["Title"] = "寵物系統規則設定";
 }
@@ -70,8 +70,8 @@
                                 <div class="form-group">
                                     <label for="isActive">是否啟用</label>
                                     <select class="form-control" id="isActive" name="isActive">
-                                        <option value="true" @(Model.PetRule.IsActive ? "selected" : "")>啟用</option>
-                                        <option value="false" @(!Model.PetRule.IsActive ? "selected" : "")>停用</option>
+                                        <option value="true" selected="@(Model.PetRule.IsActive ? "selected" : null)">啟用</option>
+                                        <option value="false" selected="@(!Model.PetRule.IsActive ? "selected" : null)">停用</option>
                                     </select>
                                 </div>
                             </div>
@@ -162,3 +162,4 @@
         </div>
     </div>
 </div>
+

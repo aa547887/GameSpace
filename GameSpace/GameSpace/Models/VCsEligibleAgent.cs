@@ -7,3 +7,4 @@ public partial class VCsEligibleAgent
 {
     public int ManagerId { get; set; }
 }
+

@@ -13,3 +13,4 @@ public partial class PlayerMarketProductImg
 
     public virtual PlayerMarketProductInfo? PProduct { get; set; }
 }
+

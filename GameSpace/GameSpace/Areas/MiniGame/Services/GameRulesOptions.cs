@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -13,3 +13,4 @@ namespace GameSpace.Areas.MiniGame.Services
         public DateTime? UpdatedAt { get; set; }
     }
 }
+

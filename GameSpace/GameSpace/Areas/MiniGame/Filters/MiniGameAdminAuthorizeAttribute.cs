@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Services;
+﻿using GameSpace.Areas.MiniGame.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
@@ -61,3 +61,4 @@ namespace GameSpace.Areas.MiniGame.Filters
         }
     }
 }
+

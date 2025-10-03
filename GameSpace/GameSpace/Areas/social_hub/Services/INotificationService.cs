@@ -27,3 +27,4 @@ namespace GameSpace.Areas.social_hub.Services
 			int? senderManagerId);
 	}
 }
+

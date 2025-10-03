@@ -1,4 +1,5 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models
@@ -424,17 +425,12 @@ namespace GameSpace.Areas.MiniGame.Models
         /// 用戶排名
         /// </summary>
         public MiniGameLeaderboardEntry? UserRank { get; set; }
-        
+
         /// <summary>
         /// 總玩家數
         /// </summary>
         public int TotalPlayers { get; set; }
-        
-        /// <summary>
-        /// 用戶排名
-        /// </summary>
-        public int UserRank { get; set; }
-        
+
         /// <summary>
         /// 排行榜類型
         /// </summary>
@@ -994,3 +990,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public string RuleStatus { get; set; } = string.Empty;
     }
 }
+

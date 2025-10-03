@@ -29,3 +29,4 @@ public partial class ThreadPost
 
     public virtual Thread? Thread { get; set; }
 }
+

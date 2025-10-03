@@ -1,3 +1,4 @@
+﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,9 +35,9 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class PetSkinColorCostSettingService : IPetSkinColorCostSettingService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public PetSkinColorCostSettingService(MiniGameDbContext context)
+        public PetSkinColorCostSettingService(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -124,9 +125,9 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class PetBackgroundCostSettingService : IPetBackgroundCostSettingService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public PetBackgroundCostSettingService(MiniGameDbContext context)
+        public PetBackgroundCostSettingService(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -209,3 +210,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

@@ -21,3 +21,4 @@ public partial class OrderAddress
 
     public string Country { get; set; } = null!;
 }
+

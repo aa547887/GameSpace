@@ -8,3 +8,4 @@ namespace GameSpace.Infrastructure.Login
 			=> principal?.FindFirst(claimType)?.Value;
 	}
 }
+

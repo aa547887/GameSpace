@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -215,17 +215,6 @@ namespace GameSpace.Areas.MiniGame.Models
     }
 
     /// <summary>
-    /// 優惠券查詢模型
-    /// </summary>
-    public class CouponQueryModel : BaseQueryModel
-    {
-        public int? UserId { get; set; }
-        public int? CouponTypeId { get; set; }
-        public bool? IsUsed { get; set; }
-        public DateTime? ExpiryDate { get; set; }
-    }
-
-    /// <summary>
     /// 電子券查詢模型
     /// </summary>
     public class EVoucherQueryModel : BaseQueryModel
@@ -248,4 +237,45 @@ namespace GameSpace.Areas.MiniGame.Models
         public string SkinColor { get; set; } = string.Empty;
         public string BackgroundColor { get; set; } = string.Empty;
     }
+
+    /// <summary>
+    /// 管理員寵物索引 ViewModel
+    /// </summary>
+    public class AdminPetIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.Pet> Pets { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 管理員小遊戲索引 ViewModel
+    /// </summary>
+    public class AdminMiniGameIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.MiniGame> MiniGames { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 管理員簽到索引 ViewModel
+    /// </summary>
+    public class AdminSignInIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.UserSignInStat> SignIns { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 管理員電子券索引 ViewModel
+    /// </summary>
+    public class AdminEVoucherIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.Evoucher> EVouchers { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 管理員用戶索引 ViewModel
+    /// </summary>
+    public class AdminUserIndexViewModel
+    {
+        public PagedResult<GameSpace.Models.User> Users { get; set; } = new();
+    }
 }
+

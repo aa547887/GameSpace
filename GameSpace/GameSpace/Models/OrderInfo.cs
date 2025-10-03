@@ -27,3 +27,4 @@ public partial class OrderInfo
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }
+

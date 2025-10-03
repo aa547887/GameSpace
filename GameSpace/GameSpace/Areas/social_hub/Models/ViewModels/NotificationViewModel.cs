@@ -24,3 +24,4 @@
 		public bool IsRead => ReadAt != null;
 	}
 }
+

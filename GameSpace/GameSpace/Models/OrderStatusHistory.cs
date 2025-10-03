@@ -19,3 +19,4 @@ public partial class OrderStatusHistory
 
     public string? Note { get; set; }
 }
+

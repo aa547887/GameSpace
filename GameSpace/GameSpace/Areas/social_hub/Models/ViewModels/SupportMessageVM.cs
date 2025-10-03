@@ -24,3 +24,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public bool IsMine { get; set; }
 	}
 }
+

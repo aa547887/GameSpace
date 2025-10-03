@@ -32,3 +32,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public int TotalPages => PageSize <= 0 ? 1 : (int)Math.Ceiling((double)TotalMessages / PageSize);
 	}
 }
+

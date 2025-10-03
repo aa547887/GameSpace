@@ -19,3 +19,4 @@ public partial class Mute
 
     public virtual ManagerDatum? Manager { get; set; }
 }
+

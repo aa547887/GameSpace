@@ -47,3 +47,4 @@ public partial class MiniGame
 
     public virtual User User { get; set; } = null!;
 }
+

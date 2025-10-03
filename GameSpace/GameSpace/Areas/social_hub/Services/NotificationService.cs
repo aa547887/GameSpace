@@ -119,3 +119,4 @@ namespace GameSpace.Areas.social_hub.Services
 			=> CreateAsync(notification, userIds, Enumerable.Empty<int>(), senderUserId, senderManagerId);
 	}
 }
+

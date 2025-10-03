@@ -18,3 +18,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public IReadOnlyList<int> CandidateManagerIds { get; set; } = new List<int>();
 	}
 }
+

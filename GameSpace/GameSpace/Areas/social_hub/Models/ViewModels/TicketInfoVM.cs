@@ -13,3 +13,4 @@
 		public string? CloseNote { get; set; }
 	}
 }
+

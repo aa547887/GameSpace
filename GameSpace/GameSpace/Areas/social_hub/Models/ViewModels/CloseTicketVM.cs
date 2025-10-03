@@ -16,3 +16,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public string? CloseNote { get; set; }
 	}
 }
+

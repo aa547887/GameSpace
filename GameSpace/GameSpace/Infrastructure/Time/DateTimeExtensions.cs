@@ -22,3 +22,4 @@ namespace GameSpace.Infrastructure.Time
 			utc.HasValue ? utc.Value.ToTaipei() : (DateTime?)null;
 	}
 }
+

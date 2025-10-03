@@ -47,3 +47,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public List<SimpleChatMessageVM> Messages { get; set; } = new();
 	}
 }
+

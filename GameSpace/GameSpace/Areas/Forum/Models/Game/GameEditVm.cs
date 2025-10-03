@@ -24,3 +24,4 @@ namespace GameSpace.Areas.Forum.Models.Game
         public string? Genre { get; set; }
     }
 }
+

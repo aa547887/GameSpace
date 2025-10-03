@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -330,3 +330,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
     }
 
 }
+

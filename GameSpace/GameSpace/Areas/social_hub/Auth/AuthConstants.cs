@@ -30,3 +30,4 @@ namespace GameSpace.Areas.social_hub.Auth
 		};
 	}
 }
+

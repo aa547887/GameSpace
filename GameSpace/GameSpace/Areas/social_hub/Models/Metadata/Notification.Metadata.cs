@@ -16,3 +16,4 @@ public class NotificationMetadata
 	[ValidateNever] public Group? Group { get; set; }
 	[ValidateNever] public ICollection<NotificationRecipient> NotificationRecipients { get; set; } = default!;
 }
+

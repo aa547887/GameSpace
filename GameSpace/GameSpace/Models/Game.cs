@@ -29,3 +29,4 @@ public partial class Game
 
     public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 }
+

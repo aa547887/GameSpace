@@ -21,3 +21,4 @@ public partial class NotificationRecipient
 
     public virtual User? User { get; set; }
 }
+

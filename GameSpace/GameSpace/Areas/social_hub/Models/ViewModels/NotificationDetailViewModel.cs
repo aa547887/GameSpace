@@ -38,3 +38,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public Dictionary<string, string>? Links { get; set; }
 	}
 }
+

@@ -21,3 +21,4 @@ public partial class DmMessage
 
     public virtual DmConversation Conversation { get; set; } = null!;
 }
+

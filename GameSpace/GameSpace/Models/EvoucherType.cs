@@ -21,3 +21,4 @@ public partial class EvoucherType
 
     public string? Description { get; set; }
 }
+

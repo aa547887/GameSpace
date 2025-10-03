@@ -11,3 +11,4 @@ public partial class MerchType
 
     public virtual ICollection<OtherProductDetail> OtherProductDetails { get; set; } = new List<OtherProductDetail>();
 }
+

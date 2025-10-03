@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using GameSpace.Areas.MiniGame.Services;
 
@@ -17,3 +17,4 @@ namespace GameSpace.Areas.MiniGame.config
         }
     }
 }
+

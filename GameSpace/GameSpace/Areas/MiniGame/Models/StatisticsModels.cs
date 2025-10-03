@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -76,3 +76,4 @@ namespace GameSpace.Areas.MiniGame.Models
         }
     }
 }
+

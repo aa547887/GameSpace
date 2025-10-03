@@ -17,3 +17,4 @@ public partial class ProductImage
 
     public virtual ProductInfo Product { get; set; } = null!;
 }
+

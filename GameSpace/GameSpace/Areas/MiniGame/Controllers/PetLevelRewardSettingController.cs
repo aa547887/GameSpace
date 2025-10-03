@@ -1,4 +1,4 @@
-using GameSpace.Areas.MiniGame.Models.ViewModels;
+﻿using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Models;
@@ -304,3 +304,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+

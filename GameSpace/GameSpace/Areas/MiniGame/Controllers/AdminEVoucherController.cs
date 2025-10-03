@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Models;
@@ -28,9 +28,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(e => e.EVoucherCode.Contains(searchTerm) || 
-                                       e.Users.User_name.Contains(searchTerm) || 
-                                       e.EVoucherType.Name.Contains(searchTerm));
+                query = query.Where(e => e.EvoucherCode.Contains(searchTerm) || 
+                                       e.User.UserName.Contains(searchTerm) || 
+                                       e.EvoucherType.Name.Contains(searchTerm));
             }
 
             // 狀態篩選
@@ -39,9 +39,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 var now = DateTime.Now;
                 query = status switch
                 {
-                    "unused" => query.Where(e => !e.IsUsed && e.EVoucherType.ValidTo >= now),
+                    "unused" => query.Where(e => !e.IsUsed && e.EvoucherType.ValidTo >= now),
                     "used" => query.Where(e => e.IsUsed),
-                    "expired" => query.Where(e => !e.IsUsed && e.EVoucherType.ValidTo < now),
+                    "expired" => query.Where(e => !e.IsUsed && e.EvoucherType.ValidTo < now),
                     _ => query
                 };
             }
@@ -49,17 +49,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 禮券類型篩選
             if (!string.IsNullOrEmpty(evoucherType) && int.TryParse(evoucherType, out int typeId))
             {
-                query = query.Where(e => e.EVoucherTypeID == typeId);
+                query = query.Where(e => e.EvoucherTypeId == typeId);
             }
 
             // 排序
             query = sortBy switch
             {
-                "type" => query.OrderBy(e => e.EVoucherType.Name),
-                "user" => query.OrderBy(e => e.Users.User_name),
+                "type" => query.OrderBy(e => e.EvoucherType.Name),
+                "user" => query.OrderBy(e => e.User.UserName),
                 "acquired" => query.OrderByDescending(e => e.AcquiredTime),
                 "used" => query.OrderByDescending(e => e.UsedTime),
-                _ => query.OrderBy(e => e.EVoucherCode)
+                _ => query.OrderBy(e => e.EvoucherCode)
             };
 
             // 分頁
@@ -71,7 +71,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var viewModel = new AdminEVoucherIndexViewModel
             {
-                EVouchers = new PagedResult<EVoucher>
+                Evouchers = new PagedResult<Evoucher>
                 {
                     Items = evouchers,
                     TotalCount = totalCount,
@@ -83,13 +83,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 設定 ViewBag 用於搜尋和篩選
             ViewBag.SearchTerm = searchTerm;
             ViewBag.Status = status;
-            ViewBag.EVoucherType = evoucherType;
+            ViewBag.EvoucherType = evoucherType;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalEVouchers = totalCount;
-            ViewBag.UsedEVouchers = await _context.EVoucher.CountAsync(e => e.IsUsed);
-            ViewBag.UnusedEVouchers = await _context.EVoucher.CountAsync(e => !e.IsUsed);
-            ViewBag.EVoucherTypes = await _context.EVoucherType.CountAsync();
-            ViewBag.EVoucherTypeList = await _context.EVoucherType.ToListAsync();
+            ViewBag.UsedEVouchers = await _context.Evouchers.CountAsync(e => e.IsUsed);
+            ViewBag.UnusedEVouchers = await _context.Evouchers.CountAsync(e => !e.IsUsed);
+            ViewBag.EvoucherTypes = await _context.EvoucherTypes.CountAsync();
+            ViewBag.EvoucherTypeList = await _context.EvoucherTypes.ToListAsync();
 
             return View(viewModel);
         }
@@ -102,10 +102,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var eVoucher = await _context.EVoucher
-                .Include(e => e.Users)
-                .Include(e => e.EVoucherType)
-                .FirstOrDefaultAsync(m => m.EVoucherID == id);
+            var eVoucher = await _context.Evouchers
+                .Include(e => e.User)
+                .Include(e => e.EvoucherType)
+                .FirstOrDefaultAsync(m => m.EvoucherId == id);
 
             if (eVoucher == null)
             {
@@ -118,35 +118,35 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminEVoucher/Create
         public async Task<IActionResult> Create()
         {
-            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            ViewBag.EvoucherTypes = await _context.EvoucherTypes.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
             return View();
         }
 
         // POST: AdminEVoucher/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AdminEVoucherCreateViewModel model)
+        public async Task<IActionResult> Create([Bind("EvoucherCode,UserId,EvoucherTypeId,AcquiredTime")] EVoucherCreateModel model)
         {
             if (ModelState.IsValid)
             {
                 // 檢查禮券代碼是否已存在
-                if (await _context.EVoucher.AnyAsync(e => e.EVoucherCode == model.EVoucherCode))
+                if (await _context.Evouchers.AnyAsync(e => e.EvoucherCode == model.EvoucherCode))
                 {
-                    ModelState.AddModelError("EVoucherCode", "此禮券代碼已存在");
-                    ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-                    ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+                    ModelState.AddModelError("EvoucherCode", "此禮券代碼已存在");
+                    ViewBag.EvoucherTypes = await _context.EvoucherTypes.ToListAsync();
+                    ViewBag.Users = await _context.Users.ToListAsync();
                     return View(model);
                 }
 
-                var eVoucher = new EVoucher
+                var eVoucher = new Evoucher
                 {
-                    EVoucherTypeID = model.EVoucherTypeID,
-                    UserID = model.UserID,
-                    EVoucherCode = model.EVoucherCode,
+                    EvoucherTypeId = model.EvoucherTypeId,
+                    UserId = model.UserId,
+                    EvoucherCode = model.EvoucherCode,
                     AcquiredTime = model.AcquiredTime ?? DateTime.Now,
-                    UsedTime = model.UsedTime,
-                    IsUsed = model.IsUsed
+                    UsedTime = null,
+                    IsUsed = false
                 };
 
                 _context.Add(eVoucher);
@@ -156,8 +156,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            ViewBag.EvoucherTypes = await _context.EvoucherTypes.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
             return View(model);
         }
 
@@ -174,15 +174,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             if (ModelState.IsValid)
             {
-                var eVoucherType = new EVoucherType
+                var eVoucherType = new EvoucherType
                 {
                     Name = model.Name,
                     Description = model.Description,
                     ValueAmount = model.ValueAmount,
-                    ValidDays = model.ValidDays,
-                    ImageUrl = model.ImageUrl,
-                    IsActive = model.IsActive,
-                    CreatedAt = DateTime.Now
+                    ValidFrom = model.ValidFrom,
+                    ValidTo = model.ValidTo,
+                    PointsCost = model.PointsCost,
+                    TotalAvailable = model.TotalAvailable
                 };
 
                 _context.Add(eVoucherType);
@@ -203,7 +203,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var eVoucher = await _context.EVoucher.FindAsync(id);
+            var eVoucher = await _context.Evouchers.FindAsync(id);
             if (eVoucher == null)
             {
                 return NotFound();
@@ -211,49 +211,49 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var model = new AdminEVoucherCreateViewModel
             {
-                EVoucherTypeID = eVoucher.EVoucherTypeID,
+                EvoucherTypeId = eVoucher.EvoucherTypeId,
                 UserID = eVoucher.UserID,
-                EVoucherCode = eVoucher.EVoucherCode,
+                EvoucherCode = eVoucher.EvoucherCode,
                 AcquiredTime = eVoucher.AcquiredTime,
                 UsedTime = eVoucher.UsedTime,
                 IsUsed = eVoucher.IsUsed
             };
 
-            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            ViewBag.EvoucherTypes = await _context.EvoucherTypes.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
             return View(model);
         }
 
         // POST: AdminEVoucher/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AdminEVoucherCreateViewModel model)
+        public async Task<IActionResult> Edit(int id, [Bind("UserId,EvoucherTypeId")] EVoucherEditModel model)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var eVoucher = await _context.EVoucher.FindAsync(id);
+                    var eVoucher = await _context.Evouchers.FindAsync(id);
                     if (eVoucher == null)
                     {
                         return NotFound();
                     }
 
-                    // 檢查禮券代碼是否已被其他禮券使用
-                    if (await _context.EVoucher.AnyAsync(e => e.EVoucherCode == model.EVoucherCode && e.EVoucherID != id))
-                    {
-                        ModelState.AddModelError("EVoucherCode", "此禮券代碼已被其他禮券使用");
-                        ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-                        ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
-                        return View(model);
-                    }
-
-                    eVoucher.EVoucherTypeID = model.EVoucherTypeID;
-                    eVoucher.UserID = model.UserID;
-                    eVoucher.EVoucherCode = model.EVoucherCode;
-                    eVoucher.AcquiredTime = model.AcquiredTime ?? DateTime.Now;
-                    eVoucher.UsedTime = model.UsedTime;
-                    eVoucher.IsUsed = model.IsUsed;
+                    // 只允許變更關聯（User、Type），券碼與使用狀態由其他動作管理
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    eVoucher.EvoucherTypeId = model.EvoucherTypeId;
+                    eVoucher.UserId = model.UserId;
+                    
+                    
+                    
+                    
 
                     _context.Update(eVoucher);
                     await _context.SaveChangesAsync();
@@ -274,8 +274,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
             }
 
-            ViewBag.EVoucherTypes = await _context.EVoucherType.Where(et => et.IsActive).ToListAsync();
-            ViewBag.Users = await _context.Users.Where(u => u.IsActive).ToListAsync();
+            ViewBag.EvoucherTypes = await _context.EvoucherTypes.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
             return View(model);
         }
 
@@ -287,10 +287,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            var eVoucher = await _context.EVoucher
+            var eVoucher = await _context.Evouchers
                 .Include(e => e.Users)
-                .Include(e => e.EVoucherType)
-                .FirstOrDefaultAsync(m => m.EVoucherID == id);
+                .Include(e => e.EvoucherType)
+                .FirstOrDefaultAsync(m => m.EvoucherId == id);
 
             if (eVoucher == null)
             {
@@ -305,10 +305,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var eVoucher = await _context.EVoucher.FindAsync(id);
+            var eVoucher = await _context.Evouchers.FindAsync(id);
             if (eVoucher != null)
             {
-                _context.EVoucher.Remove(eVoucher);
+                _context.Evouchers.Remove(eVoucher);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "電子禮券刪除成功";
@@ -321,7 +321,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleUsage(int id)
         {
-            var eVoucher = await _context.EVoucher.FindAsync(id);
+            var eVoucher = await _context.Evouchers.FindAsync(id);
             if (eVoucher != null)
             {
                 eVoucher.IsUsed = !eVoucher.IsUsed;
@@ -350,11 +350,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var now = DateTime.Now;
             var stats = new
             {
-                total = await _context.EVoucher.CountAsync(),
-                used = await _context.EVoucher.CountAsync(e => e.IsUsed),
-                unused = await _context.EVoucher.CountAsync(e => !e.IsUsed),
-                expired = await _context.EVoucher.CountAsync(e => !e.IsUsed && e.EVoucherType.ValidTo < now),
-                types = await _context.EVoucherType.CountAsync()
+                total = await _context.Evouchers.CountAsync(),
+                used = await _context.Evouchers.CountAsync(e => e.IsUsed),
+                unused = await _context.Evouchers.CountAsync(e => !e.IsUsed),
+                expired = await _context.Evouchers.CountAsync(e => !e.IsUsed && e.EvoucherType.ValidTo < now),
+                types = await _context.EvoucherTypes.CountAsync()
             };
 
             return Json(stats);
@@ -362,10 +362,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         // 獲取禮券類型分佈
         [HttpGet]
-        public async Task<IActionResult> GetEVoucherTypeDistribution()
+        public async Task<IActionResult> GetEvoucherTypeDistribution()
         {
-            var distribution = await _context.EVoucher
-                .GroupBy(e => e.EVoucherType.Name)
+            var distribution = await _context.Evouchers
+                .GroupBy(e => e.EvoucherType.Name)
                 .Select(g => new
                 {
                     type = g.Key,
@@ -384,7 +384,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var endDate = DateTime.Today;
             var startDate = endDate.AddDays(-days);
 
-            var trend = await _context.EVoucher
+            var trend = await _context.Evouchers
                 .Where(e => e.UsedTime >= startDate)
                 .GroupBy(e => e.UsedTime.Value.Date)
                 .Select(g => new
@@ -398,17 +398,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(trend);
         }
 
-        private bool EVoucherExists(int id)
+        private bool EvoucherExists(int id)
         {
-            return _context.EVoucher.Any(e => e.EVoucherID == id);
+            return _context.Evouchers.Any(e => e.EvoucherId == id);
         }
 
-        #region EVoucherType Management
+        #region EvoucherType Management
 
-        // GET: AdminEVoucher/EVoucherTypes
-        public async Task<IActionResult> EVoucherTypes(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
+        // GET: AdminEVoucher/EvoucherTypes
+        public async Task<IActionResult> EvoucherTypes(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            var query = _context.EVoucherType.AsQueryable();
+            var query = _context.EvoucherTypes.AsQueryable();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
@@ -449,9 +449,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 計算每個類型的使用統計
             foreach (var item in items)
             {
-                var typeId = item.EVoucherTypeId;
-                var totalVouchers = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == typeId);
-                var usedVouchers = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == typeId && e.IsUsed);
+                var typeId = item.EvoucherTypeId;
+                var totalVouchers = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == typeId);
+                var usedVouchers = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == typeId && e.IsUsed);
 
                 ViewData[$"TotalVouchers_{typeId}"] = totalVouchers;
                 ViewData[$"UsedVouchers_{typeId}"] = usedVouchers;
@@ -469,16 +469,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return View(items);
         }
 
-        // GET: AdminEVoucher/CreateEVoucherType
-        public IActionResult CreateEVoucherType()
+        // GET: AdminEVoucher/CreateEvoucherType
+        public IActionResult CreateEvoucherType()
         {
             return View();
         }
 
-        // POST: AdminEVoucher/CreateEVoucherType
+        // POST: AdminEVoucher/CreateEvoucherType
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateEVoucherType([Bind("EVoucherTypeId,Name,ValueAmount,ValidFrom,ValidTo,PointsCost,TotalAvailable,Description")] EVoucherType eVoucherType)
+        public async Task<IActionResult> CreateEvoucherType([Bind("EvoucherTypeId,Name,ValueAmount,ValidFrom,ValidTo,PointsCost,TotalAvailable,Description")] EvoucherType eVoucherType)
         {
             if (ModelState.IsValid)
             {
@@ -508,7 +508,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
 
                 // 檢查名稱是否重複
-                if (await _context.EVoucherType.AnyAsync(et => et.Name == eVoucherType.Name))
+                if (await _context.EvoucherTypes.AnyAsync(et => et.Name == eVoucherType.Name))
                 {
                     ModelState.AddModelError("Name", "此禮券類型名稱已存在");
                     return View(eVoucherType);
@@ -518,21 +518,21 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "電子禮券類型建立成功";
-                return RedirectToAction(nameof(EVoucherTypes));
+                return RedirectToAction(nameof(EvoucherTypes));
             }
 
             return View(eVoucherType);
         }
 
-        // GET: AdminEVoucher/EditEVoucherType/5
-        public async Task<IActionResult> EditEVoucherType(int? id)
+        // GET: AdminEVoucher/EditEvoucherType/5
+        public async Task<IActionResult> EditEvoucherType(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var eVoucherType = await _context.EVoucherType.FindAsync(id);
+            var eVoucherType = await _context.EvoucherTypes.FindAsync(id);
             if (eVoucherType == null)
             {
                 return NotFound();
@@ -541,12 +541,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return View(eVoucherType);
         }
 
-        // POST: AdminEVoucher/EditEVoucherType/5
+        // POST: AdminEVoucher/EditEvoucherType/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditEVoucherType(int id, [Bind("EVoucherTypeId,Name,ValueAmount,ValidFrom,ValidTo,PointsCost,TotalAvailable,Description")] EVoucherType eVoucherType)
+        public async Task<IActionResult> EditEvoucherType(int id, [Bind("EvoucherTypeId,Name,ValueAmount,ValidFrom,ValidTo,PointsCost,TotalAvailable,Description")] EvoucherType eVoucherType)
         {
-            if (id != eVoucherType.EVoucherTypeId)
+            if (id != eVoucherType.EvoucherTypeId)
             {
                 return NotFound();
             }
@@ -579,7 +579,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
 
                 // 檢查名稱是否與其他類型重複
-                if (await _context.EVoucherType.AnyAsync(et => et.Name == eVoucherType.Name && et.EVoucherTypeId != id))
+                if (await _context.EvoucherTypes.AnyAsync(et => et.Name == eVoucherType.Name && et.EvoucherTypeId != id))
                 {
                     ModelState.AddModelError("Name", "此禮券類型名稱已被其他類型使用");
                     return View(eVoucherType);
@@ -591,11 +591,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     await _context.SaveChangesAsync();
 
                     TempData["SuccessMessage"] = "電子禮券類型更新成功";
-                    return RedirectToAction(nameof(EVoucherTypes));
+                    return RedirectToAction(nameof(EvoucherTypes));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EVoucherTypeExists(eVoucherType.EVoucherTypeId))
+                    if (!EvoucherTypeExists(eVoucherType.EvoucherTypeId))
                     {
                         return NotFound();
                     }
@@ -609,16 +609,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return View(eVoucherType);
         }
 
-        // GET: AdminEVoucher/DeleteEVoucherType/5
-        public async Task<IActionResult> DeleteEVoucherType(int? id)
+        // GET: AdminEVoucher/DeleteEvoucherType/5
+        public async Task<IActionResult> DeleteEvoucherType(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var eVoucherType = await _context.EVoucherType
-                .FirstOrDefaultAsync(m => m.EVoucherTypeId == id);
+            var eVoucherType = await _context.EvoucherTypes
+                .FirstOrDefaultAsync(m => m.EvoucherTypeId == id);
 
             if (eVoucherType == null)
             {
@@ -626,47 +626,47 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
 
             // 檢查是否有相關的電子禮券
-            var relatedVouchersCount = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == id);
+            var relatedVouchersCount = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == id);
             ViewBag.RelatedVouchersCount = relatedVouchersCount;
 
             return View(eVoucherType);
         }
 
-        // POST: AdminEVoucher/DeleteEVoucherType/5
-        [HttpPost, ActionName("DeleteEVoucherType")]
+        // POST: AdminEVoucher/DeleteEvoucherType/5
+        [HttpPost, ActionName("DeleteEvoucherType")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteEVoucherTypeConfirmed(int id)
+        public async Task<IActionResult> DeleteEvoucherTypeConfirmed(int id)
         {
             // 檢查是否有相關的電子禮券
-            var relatedVouchersCount = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == id);
+            var relatedVouchersCount = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == id);
             if (relatedVouchersCount > 0)
             {
                 TempData["ErrorMessage"] = $"無法刪除：此禮券類型仍有 {relatedVouchersCount} 個相關電子禮券";
-                return RedirectToAction(nameof(EVoucherTypes));
+                return RedirectToAction(nameof(EvoucherTypes));
             }
 
-            var eVoucherType = await _context.EVoucherType.FindAsync(id);
+            var eVoucherType = await _context.EvoucherTypes.FindAsync(id);
             if (eVoucherType != null)
             {
-                _context.EVoucherType.Remove(eVoucherType);
+                _context.EvoucherTypes.Remove(eVoucherType);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "電子禮券類型刪除成功";
             }
 
-            return RedirectToAction(nameof(EVoucherTypes));
+            return RedirectToAction(nameof(EvoucherTypes));
         }
 
-        // GET: AdminEVoucher/EVoucherTypeDetails/5
-        public async Task<IActionResult> EVoucherTypeDetails(int? id)
+        // GET: AdminEVoucher/EvoucherTypeDetails/5
+        public async Task<IActionResult> EvoucherTypeDetails(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var eVoucherType = await _context.EVoucherType
-                .FirstOrDefaultAsync(m => m.EVoucherTypeId == id);
+            var eVoucherType = await _context.EvoucherTypes
+                .FirstOrDefaultAsync(m => m.EvoucherTypeId == id);
 
             if (eVoucherType == null)
             {
@@ -674,9 +674,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
 
             // 取得使用此類型的電子禮券統計
-            var relatedVouchers = await _context.EVoucher
+            var relatedVouchers = await _context.Evouchers
                 .Include(e => e.Users)
-                .Where(e => e.EVoucherTypeID == id)
+                .Where(e => e.EvoucherTypeId == id)
                 .ToListAsync();
 
             var now = DateTime.Now;
@@ -703,7 +703,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateAvailability(int id, int totalAvailable)
         {
-            var eVoucherType = await _context.EVoucherType.FindAsync(id);
+            var eVoucherType = await _context.EvoucherTypes.FindAsync(id);
             if (eVoucherType != null)
             {
                 if (totalAvailable < 0)
@@ -721,39 +721,39 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return Json(new { success = false, message = "找不到該禮券類型" });
         }
 
-        // GET: AdminEVoucher/GetEVoucherTypeStats
+        // GET: AdminEVoucher/GetEvoucherTypeStats
         [HttpGet]
-        public async Task<IActionResult> GetEVoucherTypeStats()
+        public async Task<IActionResult> GetEvoucherTypeStats()
         {
             var now = DateTime.Now;
             var stats = new
             {
-                totalTypes = await _context.EVoucherType.CountAsync(),
-                activeTypes = await _context.EVoucherType.CountAsync(et => et.ValidFrom <= now && et.ValidTo >= now),
-                upcomingTypes = await _context.EVoucherType.CountAsync(et => et.ValidFrom > now),
-                expiredTypes = await _context.EVoucherType.CountAsync(et => et.ValidTo < now),
-                totalValue = await _context.EVoucherType.SumAsync(et => et.ValueAmount * et.TotalAvailable),
-                totalAvailable = await _context.EVoucherType.SumAsync(et => et.TotalAvailable)
+                totalTypes = await _context.EvoucherTypes.CountAsync(),
+                activeTypes = await _context.EvoucherTypes.CountAsync(et => et.ValidFrom <= now && et.ValidTo >= now),
+                upcomingTypes = await _context.EvoucherTypes.CountAsync(et => et.ValidFrom > now),
+                expiredTypes = await _context.EvoucherTypes.CountAsync(et => et.ValidTo < now),
+                totalValue = await _context.EvoucherTypes.SumAsync(et => et.ValueAmount * et.TotalAvailable),
+                totalAvailable = await _context.EvoucherTypes.SumAsync(et => et.TotalAvailable)
             };
 
             return Json(stats);
         }
 
-        // GET: AdminEVoucher/GetTopEVoucherTypes
+        // GET: AdminEVoucher/GetTopEvoucherTypes
         [HttpGet]
-        public async Task<IActionResult> GetTopEVoucherTypes(int top = 5)
+        public async Task<IActionResult> GetTopEvoucherTypes(int top = 5)
         {
             var typeStats = new List<object>();
 
-            var types = await _context.EVoucherType
+            var types = await _context.EvoucherTypes
                 .OrderByDescending(et => et.TotalAvailable)
                 .Take(top)
                 .ToListAsync();
 
             foreach (var type in types)
             {
-                var totalVouchers = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == type.EVoucherTypeId);
-                var usedVouchers = await _context.EVoucher.CountAsync(e => e.EVoucherTypeID == type.EVoucherTypeId && e.IsUsed);
+                var totalVouchers = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == type.EvoucherTypeId);
+                var usedVouchers = await _context.Evouchers.CountAsync(e => e.EvoucherTypeId == type.EvoucherTypeId && e.IsUsed);
 
                 typeStats.Add(new
                 {
@@ -774,23 +774,23 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkIssueVouchers(int typeId, int quantity, List<int> userIds)
         {
-            var eVoucherType = await _context.EVoucherType.FindAsync(typeId);
+            var eVoucherType = await _context.EvoucherTypes.FindAsync(typeId);
             if (eVoucherType == null)
             {
                 TempData["ErrorMessage"] = "找不到該禮券類型";
-                return RedirectToAction(nameof(EVoucherTypes));
+                return RedirectToAction(nameof(EvoucherTypes));
             }
 
             if (quantity <= 0)
             {
                 TempData["ErrorMessage"] = "發放數量必須大於 0";
-                return RedirectToAction(nameof(EVoucherTypeDetails), new { id = typeId });
+                return RedirectToAction(nameof(EvoucherTypeDetails), new { id = typeId });
             }
 
             if (eVoucherType.TotalAvailable < quantity * userIds.Count)
             {
                 TempData["ErrorMessage"] = $"可用數量不足。需要 {quantity * userIds.Count}，但只有 {eVoucherType.TotalAvailable} 可用";
-                return RedirectToAction(nameof(EVoucherTypeDetails), new { id = typeId });
+                return RedirectToAction(nameof(EvoucherTypeDetails), new { id = typeId });
             }
 
             var issuedCount = 0;
@@ -803,16 +803,16 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     var code = $"EV-{eVoucherType.Name.Substring(0, Math.Min(4, eVoucherType.Name.Length)).ToUpper()}-{random.Next(1000, 9999)}-{random.Next(100000, 999999)}";
 
                     // 確保代碼唯一
-                    while (await _context.EVoucher.AnyAsync(e => e.EVoucherCode == code))
+                    while (await _context.Evouchers.AnyAsync(e => e.EvoucherCode == code))
                     {
                         code = $"EV-{eVoucherType.Name.Substring(0, Math.Min(4, eVoucherType.Name.Length)).ToUpper()}-{random.Next(1000, 9999)}-{random.Next(100000, 999999)}";
                     }
 
-                    var voucher = new EVoucher
+                    var voucher = new Evoucher
                     {
-                        EVoucherTypeID = typeId,
+                        EvoucherTypeId = typeId,
                         UserID = userId,
-                        EVoucherCode = code,
+                        EvoucherCode = code,
                         AcquiredTime = DateTime.Now,
                         IsUsed = false
                     };
@@ -829,14 +829,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"成功發放 {issuedCount} 張電子禮券給 {userIds.Count} 位用戶";
-            return RedirectToAction(nameof(EVoucherTypeDetails), new { id = typeId });
+            return RedirectToAction(nameof(EvoucherTypeDetails), new { id = typeId });
         }
 
-        private bool EVoucherTypeExists(int id)
+        private bool EvoucherTypeExists(int id)
         {
-            return _context.EVoucherType.Any(e => e.EVoucherTypeId == id);
+            return _context.EvoucherTypes.Any(e => e.EvoucherTypeId == id);
         }
 
         #endregion
     }
 }
+
+
+
+

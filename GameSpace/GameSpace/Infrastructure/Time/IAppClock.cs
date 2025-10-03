@@ -30,3 +30,4 @@ namespace GameSpace.Infrastructure.Time
 		string FormatApp(DateTimeOffset? utc, string format = "yyyy-MM-dd HH:mm");
 	}
 }
+

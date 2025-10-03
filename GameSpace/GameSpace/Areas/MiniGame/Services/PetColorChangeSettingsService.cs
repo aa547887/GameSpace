@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +9,9 @@ namespace GameSpace.Areas.MiniGame.Services
     /// </summary>
     public class PetColorChangeSettingsService : IPetColorChangeSettingsService
     {
-        private readonly MiniGameDbContext _context;
+        private readonly GameSpacedatabaseContext _context;
 
-        public PetColorChangeSettingsService(MiniGameDbContext context)
+        public PetColorChangeSettingsService(GameSpacedatabaseContext context)
         {
             _context = context;
         }
@@ -93,3 +93,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

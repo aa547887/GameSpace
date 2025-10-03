@@ -29,3 +29,4 @@ public partial class CsAgent
 
     public virtual ManagerDatum? UpdatedByManagerNavigation { get; set; }
 }
+

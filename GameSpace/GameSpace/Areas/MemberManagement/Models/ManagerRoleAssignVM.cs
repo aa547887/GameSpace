@@ -20,3 +20,4 @@ namespace GameSpace.Areas.MemberManagement.Models
 		public IEnumerable<SelectListItem> Roles { get; set; } = new List<SelectListItem>();
 	}
 }
+

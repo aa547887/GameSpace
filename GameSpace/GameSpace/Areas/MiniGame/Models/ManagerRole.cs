@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Areas.MiniGame.Models
@@ -25,3 +25,4 @@ namespace GameSpace.Areas.MiniGame.Models
         public virtual ManagerRolePermission ManagerRolePermission { get; set; } = null!;
     }
 }
+

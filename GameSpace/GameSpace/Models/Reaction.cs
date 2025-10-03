@@ -19,3 +19,4 @@ public partial class Reaction
 
     public virtual User? User { get; set; }
 }
+

@@ -11,3 +11,4 @@
         public string? GameName { get; set; }
     }
 }
+

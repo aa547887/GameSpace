@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +36,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var roleInfo = await _permissionService.GetManagerRoleInfoAsync(managerId.Value);
             var statistics = await _permissionService.GetPermissionStatisticsAsync();
 
-            var viewModel = new ViewModels.AdminPermissionIndexViewModel
+            var viewModel = new AdminPermissionIndexViewModel
             {
                 ManagerRoleInfo = roleInfo,
                 Statistics = statistics
@@ -65,7 +66,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 更新管理員權限
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> UpdateManagerPermissions([FromBody] ViewModels.UpdateManagerPermissionsRequest request)
+        public async Task<IActionResult> UpdateManagerPermissions([FromBody] UpdateManagerPermissionsRequest request)
         {
             try
             {
@@ -101,7 +102,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             try
             {
-                var query = new ViewModels.UserRightsQuery
+                var query = new UserRightsQuery
                 {
                     UserId = userId,
                     RightName = rightName,
@@ -115,7 +116,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 var users = await _permissionService.GetAllUsersAsync();
                 var rightTypes = await _permissionService.GetRightTypesAsync();
 
-                var viewModel = new ViewModels.UserRightsIndexViewModel
+                var viewModel = new UserRightsIndexViewModel
                 {
                     UserRights = userRights,
                     Users = users,
@@ -128,7 +129,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"載入用戶權限失敗: {ex.Message}";
-                return View(new ViewModels.UserRightsIndexViewModel());
+                return View(new UserRightsIndexViewModel());
             }
         }
 
@@ -136,7 +137,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 添加用戶權限
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> AddUserRight([FromBody] ViewModels.AddUserRightRequest request)
+        public async Task<IActionResult> AddUserRight([FromBody] AddUserRightRequest request)
         {
             try
             {
@@ -178,7 +179,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 移除用戶權限
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> RemoveUserRight([FromBody] ViewModels.RemoveUserRightRequest request)
+        public async Task<IActionResult> RemoveUserRight([FromBody] RemoveUserRightRequest request)
         {
             try
             {
@@ -216,7 +217,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 更新用戶權限
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> UpdateUserRight([FromBody] ViewModels.UpdateUserRightRequest request)
+        public async Task<IActionResult> UpdateUserRight([FromBody] UpdateUserRightRequest request)
         {
             try
             {
@@ -307,7 +308,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"載入權限類型失敗: {ex.Message}";
-                return View(new List<ViewModels.RightTypeViewModel>());
+                return View(new List<RightTypeViewModel>());
             }
         }
 
@@ -315,7 +316,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 添加權限類型
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> AddRightType([FromBody] ViewModels.AddRightTypeRequest request)
+        public async Task<IActionResult> AddRightType([FromBody] AddRightTypeRequest request)
         {
             try
             {
@@ -353,7 +354,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 更新權限類型
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> UpdateRightType([FromBody] ViewModels.UpdateRightTypeRequest request)
+        public async Task<IActionResult> UpdateRightType([FromBody] UpdateRightTypeRequest request)
         {
             try
             {
@@ -391,7 +392,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         /// 刪除權限類型
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> DeleteRightType([FromBody] ViewModels.DeleteRightTypeRequest request)
+        public async Task<IActionResult> DeleteRightType([FromBody] DeleteRightTypeRequest request)
         {
             try
             {
@@ -436,7 +437,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"載入操作日誌失敗: {ex.Message}";
-                return View(new PagedResult<ViewModels.OperationLogViewModel>());
+                return View(new PagedResult<OperationLogViewModel>());
             }
         }
 
@@ -477,7 +478,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"載入統計資料失敗: {ex.Message}";
-                return View(new ViewModels.PermissionStatisticsViewModel());
+                return View(new PermissionStatisticsViewModel());
             }
         }
 
@@ -499,3 +500,4 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
     }
 }
+

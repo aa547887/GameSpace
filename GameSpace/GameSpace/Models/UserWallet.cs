@@ -11,3 +11,4 @@ public partial class UserWallet
 
     public virtual User User { get; set; } = null!;
 }
+

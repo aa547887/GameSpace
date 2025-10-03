@@ -1,16 +1,16 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
     public interface IUserService
     {
         // 使用者基本 CRUD
-        Task<IEnumerable<Users>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 50);
-        Task<Users?> GetUserByIdAsync(int userId);
-        Task<Users?> GetUserByAccountAsync(string account);
-        Task<Users?> GetUserByEmailAsync(string email);
-        Task<bool> CreateUserAsync(Users user);
-        Task<bool> UpdateUserAsync(Users user);
+        Task<IEnumerable<User>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 50);
+        Task<User?> GetUserByIdAsync(int userId);
+        Task<User?> GetUserByAccountAsync(string account);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<bool> CreateUserAsync(User user);
+        Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int userId);
 
         // 使用者狀態管理
@@ -20,10 +20,10 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> UnlockUserAsync(int userId);
 
         // 使用者搜尋與篩選
-        Task<IEnumerable<Users>> SearchUsersAsync(string searchTerm);
-        Task<IEnumerable<Users>> GetActiveUsersAsync();
-        Task<IEnumerable<Users>> GetInactiveUsersAsync();
-        Task<IEnumerable<Users>> GetLockedUsersAsync();
+        Task<IEnumerable<User>> SearchUsersAsync(string searchTerm);
+        Task<IEnumerable<User>> GetActiveUsersAsync();
+        Task<IEnumerable<User>> GetInactiveUsersAsync();
+        Task<IEnumerable<User>> GetLockedUsersAsync();
 
         // 使用者統計
         Task<int> GetTotalUsersCountAsync();
@@ -38,3 +38,4 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> HasRightAsync(int userId, string rightName);
     }
 }
+

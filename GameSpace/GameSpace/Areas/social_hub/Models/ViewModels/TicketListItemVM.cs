@@ -32,3 +32,4 @@ namespace GameSpace.Areas.social_hub.Models.ViewModels
 		public DateTime LastActivityAt => LastMessageAt ?? CreatedAt;
 	}
 }
+

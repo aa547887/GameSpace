@@ -23,3 +23,4 @@ public partial class ManagerRolePermission
 
     public virtual ICollection<ManagerDatum> Managers { get; set; } = new List<ManagerDatum>();
 }
+

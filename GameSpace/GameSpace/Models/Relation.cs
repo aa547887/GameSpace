@@ -29,3 +29,4 @@ public partial class Relation
 
     public virtual User UserIdSmallNavigation { get; set; } = null!;
 }
+

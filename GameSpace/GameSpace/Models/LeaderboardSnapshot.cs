@@ -21,3 +21,4 @@ public partial class LeaderboardSnapshot
 
     public virtual Game? Game { get; set; }
 }
+

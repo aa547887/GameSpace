@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using GameSpace.Models;
@@ -10,9 +10,8 @@ namespace GameSpace.Areas.MiniGame.config
     {
         public static IServiceCollection AddMiniGameServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // 註冊 MiniGameDbContext - 使用 GameSpace 連線字串
-            services.AddDbContext<MiniGameDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("GameSpace")));
+            // MiniGame Area 使用共享的 GameSpacedatabaseContext (已在 Program.cs 註冊)
+            // 不需要在此註冊 DbContext
 
             // 註冊核心管理服務
             services.AddScoped<IMiniGameAdminService, MiniGameAdminService>();
@@ -93,7 +92,20 @@ namespace GameSpace.Areas.MiniGame.config
             services.AddScoped<IGameRulesService, GameRulesService>();
             // =========================================================================
 
+            // ==================== Phase 2: 新增額外服務 ====================
+            // 註冊寵物等級提升規則服務
+            services.AddScoped<IPetLevelUpRuleService, PetLevelUpRuleService>();
+
+            // 註冊寵物背景變更設定服務
+            services.AddScoped<IPetBackgroundChangeSettingsService, PetBackgroundChangeSettingsService>();
+
+            // 註冊點數設定統計服務
+            services.AddScoped<IPointsSettingsStatisticsService, PointsSettingsStatisticsService>();
+            // ===============================================================
+
             return services;
         }
     }
 }
+
+

@@ -25,3 +25,4 @@ public partial class Thread
 
     public virtual ICollection<ThreadPost> ThreadPosts { get; set; } = new List<ThreadPost>();
 }
+

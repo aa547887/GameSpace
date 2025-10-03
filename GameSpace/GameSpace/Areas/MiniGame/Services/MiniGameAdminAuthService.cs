@@ -1,4 +1,4 @@
-using GameSpace.Models;
+﻿using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -45,3 +45,4 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+

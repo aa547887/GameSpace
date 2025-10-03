@@ -23,3 +23,4 @@ public partial class Metric
 
     public virtual MetricSource? Source { get; set; }
 }
+

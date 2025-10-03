@@ -1,4 +1,5 @@
-using GameSpace.Areas.MiniGame.Models;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -12,10 +13,10 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> TransferPointsAsync(int fromUserId, int toUserId, int points, string description);
 
         // 錢包歷史查詢
-        Task<IEnumerable<WalletHistory>> GetWalletHistoryAsync(int userId, int pageNumber = 1, int pageSize = 20);
-        Task<IEnumerable<WalletHistory>> GetWalletHistoryByTypeAsync(int userId, string changeType);
-        Task<IEnumerable<WalletHistory>> GetWalletHistoryByDateRangeAsync(int userId, DateTime startDate, DateTime endDate);
-        Task<WalletHistory?> GetHistoryDetailAsync(int logId);
+        Task<IEnumerable<GameSpace.Models.WalletHistory>> GetWalletHistoryAsync(int userId, int pageNumber = 1, int pageSize = 20);
+        Task<IEnumerable<GameSpace.Models.WalletHistory>> GetWalletHistoryByTypeAsync(int userId, string changeType);
+        Task<IEnumerable<GameSpace.Models.WalletHistory>> GetWalletHistoryByDateRangeAsync(int userId, DateTime startDate, DateTime endDate);
+        Task<GameSpace.Models.WalletHistory?> GetHistoryDetailAsync(int logId);
         Task<int> GetTotalHistoryCountAsync(int userId);
 
         // 錢包統計
@@ -31,6 +32,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 管理功能
         Task<bool> AdjustUserPointsAsync(int userId, int points, string reason, int? managerId = null);
         Task<bool> ResetUserPointsAsync(int userId, string reason, int? managerId = null);
-        Task<IEnumerable<WalletHistory>> GetAllHistoryAsync(int pageNumber = 1, int pageSize = 50);
+        Task<IEnumerable<GameSpace.Models.WalletHistory>> GetAllHistoryAsync(int pageNumber = 1, int pageSize = 50);
     }
 }
+

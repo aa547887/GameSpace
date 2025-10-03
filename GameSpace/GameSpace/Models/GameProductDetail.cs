@@ -25,3 +25,4 @@ public partial class GameProductDetail
 
     public virtual Supplier Supplier { get; set; } = null!;
 }
+

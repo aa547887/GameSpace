@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc.Filters;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,3 +24,4 @@ namespace GameSpace.Areas.MiniGame.Filters
         }
     }
 }
+

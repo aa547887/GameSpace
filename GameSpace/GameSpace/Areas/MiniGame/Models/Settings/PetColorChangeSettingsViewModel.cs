@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.Settings
 {
@@ -66,3 +66,4 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public string? Remarks { get; set; }
     }
 }
+

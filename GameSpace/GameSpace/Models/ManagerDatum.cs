@@ -57,3 +57,4 @@ public partial class ManagerDatum
 
     public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
 }
+
