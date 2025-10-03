@@ -25,6 +25,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<User?> GetUserByIdAsync(int userId)
         {
             return await _context.Users
+                .Include(u => u.WalletHistories)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 

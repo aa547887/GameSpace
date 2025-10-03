@@ -56,6 +56,12 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public bool IsActive { get; set; } = true;
 
         /// <summary>
+        /// 權限範圍
+        /// </summary>
+        [StringLength(200, ErrorMessage = "權限範圍長度不可超過 200 字元")]
+        public string? RightScope { get; set; }
+
+        /// <summary>
         /// 更新時間
         /// </summary>
         public DateTime? UpdatedAt { get; set; }

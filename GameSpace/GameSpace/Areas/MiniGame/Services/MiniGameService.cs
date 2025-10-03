@@ -25,17 +25,17 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 games.Add(new MiniGameEntity
                 {
-                    GameID = reader.GetInt32("GameID"),
-                    UserID = reader.GetInt32("UserID"),
-                    PetID = reader.GetInt32("PetID"),
-                    GameType = reader.GetString("GameType"),
-                    StartTime = reader.GetDateTime("StartTime"),
-                    EndTime = reader.IsDBNull("EndTime") ? null : reader.GetDateTime("EndTime"),
-                    GameResult = reader.IsDBNull("GameResult") ? null : reader.GetString("GameResult"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    SessionID = reader.GetString("SessionID")
+                    GameID = reader.GetInt32(reader.GetOrdinal("GameID")),
+                    UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    PetID = reader.GetInt32(reader.GetOrdinal("PetID")),
+                    GameType = reader.GetString(reader.GetOrdinal("GameType")),
+                    StartTime = reader.GetDateTime(reader.GetOrdinal("StartTime")),
+                    EndTime = reader.IsDBNull(reader.GetOrdinal("EndTime")) ? null : reader.GetDateTime(reader.GetOrdinal("EndTime")),
+                    GameResult = reader.IsDBNull(reader.GetOrdinal("GameResult")) ? null : reader.GetString(reader.GetOrdinal("GameResult")),
+                    PointsEarned = reader.GetInt32(reader.GetOrdinal("PointsEarned")),
+                    PetExpEarned = reader.GetInt32(reader.GetOrdinal("PetExpEarned")),
+                    CouponEarned = reader.IsDBNull(reader.GetOrdinal("CouponEarned")) ? null : reader.GetInt32(reader.GetOrdinal("CouponEarned")),
+                    SessionID = reader.GetString(reader.GetOrdinal("SessionID"))
                 });
             }
             return games;
@@ -55,17 +55,17 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 games.Add(new MiniGameEntity
                 {
-                    GameID = reader.GetInt32("GameID"),
-                    UserID = reader.GetInt32("UserID"),
-                    PetID = reader.GetInt32("PetID"),
-                    GameType = reader.GetString("GameType"),
-                    StartTime = reader.GetDateTime("StartTime"),
-                    EndTime = reader.IsDBNull("EndTime") ? null : reader.GetDateTime("EndTime"),
-                    GameResult = reader.IsDBNull("GameResult") ? null : reader.GetString("GameResult"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    SessionID = reader.GetString("SessionID")
+                    GameID = reader.GetInt32(reader.GetOrdinal("GameID")),
+                    UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    PetID = reader.GetInt32(reader.GetOrdinal("PetID")),
+                    GameType = reader.GetString(reader.GetOrdinal("GameType")),
+                    StartTime = reader.GetDateTime(reader.GetOrdinal("StartTime")),
+                    EndTime = reader.IsDBNull(reader.GetOrdinal("EndTime")) ? null : reader.GetDateTime(reader.GetOrdinal("EndTime")),
+                    GameResult = reader.IsDBNull(reader.GetOrdinal("GameResult")) ? null : reader.GetString(reader.GetOrdinal("GameResult")),
+                    PointsEarned = reader.GetInt32(reader.GetOrdinal("PointsEarned")),
+                    PetExpEarned = reader.GetInt32(reader.GetOrdinal("PetExpEarned")),
+                    CouponEarned = reader.IsDBNull(reader.GetOrdinal("CouponEarned")) ? null : reader.GetInt32(reader.GetOrdinal("CouponEarned")),
+                    SessionID = reader.GetString(reader.GetOrdinal("SessionID"))
                 });
             }
             return games;
@@ -85,17 +85,17 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 games.Add(new MiniGameEntity
                 {
-                    GameID = reader.GetInt32("GameID"),
-                    UserID = reader.GetInt32("UserID"),
-                    PetID = reader.GetInt32("PetID"),
-                    GameType = reader.GetString("GameType"),
-                    StartTime = reader.GetDateTime("StartTime"),
-                    EndTime = reader.IsDBNull("EndTime") ? null : reader.GetDateTime("EndTime"),
-                    GameResult = reader.IsDBNull("GameResult") ? null : reader.GetString("GameResult"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    SessionID = reader.GetString("SessionID")
+                    GameID = reader.GetInt32(reader.GetOrdinal("GameID")),
+                    UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    PetID = reader.GetInt32(reader.GetOrdinal("PetID")),
+                    GameType = reader.GetString(reader.GetOrdinal("GameType")),
+                    StartTime = reader.GetDateTime(reader.GetOrdinal("StartTime")),
+                    EndTime = reader.IsDBNull(reader.GetOrdinal("EndTime")) ? null : reader.GetDateTime(reader.GetOrdinal("EndTime")),
+                    GameResult = reader.IsDBNull(reader.GetOrdinal("GameResult")) ? null : reader.GetString(reader.GetOrdinal("GameResult")),
+                    PointsEarned = reader.GetInt32(reader.GetOrdinal("PointsEarned")),
+                    PetExpEarned = reader.GetInt32(reader.GetOrdinal("PetExpEarned")),
+                    CouponEarned = reader.IsDBNull(reader.GetOrdinal("CouponEarned")) ? null : reader.GetInt32(reader.GetOrdinal("CouponEarned")),
+                    SessionID = reader.GetString(reader.GetOrdinal("SessionID"))
                 });
             }
             return games;
@@ -114,17 +114,17 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 return new MiniGameEntity
                 {
-                    GameID = reader.GetInt32("GameID"),
-                    UserID = reader.GetInt32("UserID"),
-                    PetID = reader.GetInt32("PetID"),
-                    GameType = reader.GetString("GameType"),
-                    StartTime = reader.GetDateTime("StartTime"),
-                    EndTime = reader.IsDBNull("EndTime") ? null : reader.GetDateTime("EndTime"),
-                    GameResult = reader.IsDBNull("GameResult") ? null : reader.GetString("GameResult"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    SessionID = reader.GetString("SessionID")
+                    GameID = reader.GetInt32(reader.GetOrdinal("GameID")),
+                    UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    PetID = reader.GetInt32(reader.GetOrdinal("PetID")),
+                    GameType = reader.GetString(reader.GetOrdinal("GameType")),
+                    StartTime = reader.GetDateTime(reader.GetOrdinal("StartTime")),
+                    EndTime = reader.IsDBNull(reader.GetOrdinal("EndTime")) ? null : reader.GetDateTime(reader.GetOrdinal("EndTime")),
+                    GameResult = reader.IsDBNull(reader.GetOrdinal("GameResult")) ? null : reader.GetString(reader.GetOrdinal("GameResult")),
+                    PointsEarned = reader.GetInt32(reader.GetOrdinal("PointsEarned")),
+                    PetExpEarned = reader.GetInt32(reader.GetOrdinal("PetExpEarned")),
+                    CouponEarned = reader.IsDBNull(reader.GetOrdinal("CouponEarned")) ? null : reader.GetInt32(reader.GetOrdinal("CouponEarned")),
+                    SessionID = reader.GetString(reader.GetOrdinal("SessionID"))
                 };
             }
             return null;
@@ -275,17 +275,17 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 games.Add(new MiniGameEntity
                 {
-                    GameID = reader.GetInt32("GameID"),
-                    UserID = reader.GetInt32("UserID"),
-                    PetID = reader.GetInt32("PetID"),
-                    GameType = reader.GetString("GameType"),
-                    StartTime = reader.GetDateTime("StartTime"),
-                    EndTime = reader.IsDBNull("EndTime") ? null : reader.GetDateTime("EndTime"),
-                    GameResult = reader.IsDBNull("GameResult") ? null : reader.GetString("GameResult"),
-                    PointsEarned = reader.GetInt32("PointsEarned"),
-                    PetExpEarned = reader.GetInt32("PetExpEarned"),
-                    CouponEarned = reader.IsDBNull("CouponEarned") ? null : reader.GetInt32("CouponEarned"),
-                    SessionID = reader.GetString("SessionID")
+                    GameID = reader.GetInt32(reader.GetOrdinal("GameID")),
+                    UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    PetID = reader.GetInt32(reader.GetOrdinal("PetID")),
+                    GameType = reader.GetString(reader.GetOrdinal("GameType")),
+                    StartTime = reader.GetDateTime(reader.GetOrdinal("StartTime")),
+                    EndTime = reader.IsDBNull(reader.GetOrdinal("EndTime")) ? null : reader.GetDateTime(reader.GetOrdinal("EndTime")),
+                    GameResult = reader.IsDBNull(reader.GetOrdinal("GameResult")) ? null : reader.GetString(reader.GetOrdinal("GameResult")),
+                    PointsEarned = reader.GetInt32(reader.GetOrdinal("PointsEarned")),
+                    PetExpEarned = reader.GetInt32(reader.GetOrdinal("PetExpEarned")),
+                    CouponEarned = reader.IsDBNull(reader.GetOrdinal("CouponEarned")) ? null : reader.GetInt32(reader.GetOrdinal("CouponEarned")),
+                    SessionID = reader.GetString(reader.GetOrdinal("SessionID"))
                 });
             }
             return games;
@@ -310,12 +310,12 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
-                statistics["TotalGames"] = reader.GetInt32("TotalGames");
-                statistics["WinCount"] = reader.GetInt32("WinCount");
-                statistics["LoseCount"] = reader.GetInt32("LoseCount");
-                statistics["AbortCount"] = reader.GetInt32("AbortCount");
-                statistics["TotalPointsEarned"] = reader.GetInt32("TotalPointsEarned");
-                statistics["TotalExpEarned"] = reader.GetInt32("TotalExpEarned");
+                statistics["TotalGames"] = reader.GetInt32(reader.GetOrdinal("TotalGames"));
+                statistics["WinCount"] = reader.GetInt32(reader.GetOrdinal("WinCount"));
+                statistics["LoseCount"] = reader.GetInt32(reader.GetOrdinal("LoseCount"));
+                statistics["AbortCount"] = reader.GetInt32(reader.GetOrdinal("AbortCount"));
+                statistics["TotalPointsEarned"] = reader.GetInt32(reader.GetOrdinal("TotalPointsEarned"));
+                statistics["TotalExpEarned"] = reader.GetInt32(reader.GetOrdinal("TotalExpEarned"));
             }
             return statistics;
         }

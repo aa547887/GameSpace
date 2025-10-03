@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models;
 
 public partial class ManagerDatum
 {
     public int ManagerId { get; set; }
+
+    // Property aliases for backward compatibility
+    [NotMapped]
+    public int Manager_Id { get => ManagerId; set => ManagerId = value; }
 
     public string? ManagerName { get; set; }
 
@@ -23,7 +28,15 @@ public partial class ManagerDatum
 
     public bool ManagerLockoutEnabled { get; set; }
 
+    // Property alias for backward compatibility
+    [NotMapped]
+    public bool Manager_LockoutEnabled { get => ManagerLockoutEnabled; set => ManagerLockoutEnabled = value; }
+
     public DateTime? ManagerLockoutEnd { get; set; }
+
+    // Property alias for backward compatibility
+    [NotMapped]
+    public DateTime? Manager_LockoutEnd { get => ManagerLockoutEnd; set => ManagerLockoutEnd = value; }
 
     public bool IsActive { get; set; } = true;
 

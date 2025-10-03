@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
 using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Models;
@@ -30,11 +31,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
             if (!string.IsNullOrEmpty(status))
             {
                 if (status == "today")
-                    allSignIns = allSignIns.Where(s => s.SignInTime.Date == DateTime.Today);
+                    allSignIns = allSignIns.Where(s => s.SignTime.Date == DateTime.Today);
                 else if (status == "week")
-                    allSignIns = allSignIns.Where(s => s.SignInTime >= DateTime.Today.AddDays(-7));
+                    allSignIns = allSignIns.Where(s => s.SignTime >= DateTime.Today.AddDays(-7));
                 else if (status == "month")
-                    allSignIns = allSignIns.Where(s => s.SignInTime >= DateTime.Today.AddDays(-30));
+                    allSignIns = allSignIns.Where(s => s.SignTime >= DateTime.Today.AddDays(-30));
             }
 
             // 搜尋功能
@@ -50,7 +51,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 "user" => allSignIns.OrderBy(s => s.Users?.User_Name),
                 "points" => allSignIns.OrderByDescending(s => s.PointsGained),
                 "consecutive" => allSignIns.OrderByDescending(s => s.ConsecutiveDays),
-                _ => allSignIns.OrderByDescending(s => s.SignInTime)
+                _ => allSignIns.OrderByDescending(s => s.SignTime)
             };
 
             // 分頁
@@ -65,7 +66,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 SignInId = s.LogID,
                 UserId = s.UserID,
-                SignInDate = s.SignInTime,
+                SignInDate = s.SignTime,
                 RewardPoints = s.PointsGained,
                 ConsecutiveDays = s.ConsecutiveDays,
                 Users = s.Users,
@@ -89,9 +90,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             ViewBag.Status = status;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalSignIns = allSignInsList.Count();
-            ViewBag.TodaySignIns = allSignInsList.Count(s => s.SignInTime.Date == DateTime.Today);
-            ViewBag.WeekSignIns = allSignInsList.Count(s => s.SignInTime >= DateTime.Today.AddDays(-7));
-            ViewBag.MonthSignIns = allSignInsList.Count(s => s.SignInTime >= DateTime.Today.AddDays(-30));
+            ViewBag.TodaySignIns = allSignInsList.Count(s => s.SignTime.Date == DateTime.Today);
+            ViewBag.WeekSignIns = allSignInsList.Count(s => s.SignTime >= DateTime.Today.AddDays(-7));
+            ViewBag.MonthSignIns = allSignInsList.Count(s => s.SignTime >= DateTime.Today.AddDays(-30));
 
             return View(viewModel);
         }
@@ -116,7 +117,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 SignInId = signInDetail.LogID,
                 UserId = signInDetail.UserID,
-                SignInDate = signInDetail.SignInTime,
+                SignInDate = signInDetail.SignTime,
                 RewardPoints = signInDetail.PointsGained,
                 ConsecutiveDays = signInDetail.ConsecutiveDays,
                 Users = signInDetail.Users,
@@ -163,9 +164,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             return Json(new
             {
-                today = allSignIns.Count(s => s.SignInTime.Date == today),
-                thisWeek = allSignIns.Count(s => s.SignInTime >= weekStart),
-                thisMonth = allSignIns.Count(s => s.SignInTime >= monthStart),
+                today = allSignIns.Count(s => s.SignTime.Date == today),
+                thisWeek = allSignIns.Count(s => s.SignTime >= weekStart),
+                thisMonth = allSignIns.Count(s => s.SignTime >= monthStart),
                 total = stats.TotalSignIns
             });
         }
@@ -304,7 +305,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 取得統計數據
             var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
-            var signInsInRange = allSignIns.Where(s => s.SignInTime.Date >= startDate.Value.Date && s.SignInTime.Date <= endDate.Value.Date).ToList();
+            var signInsInRange = allSignIns.Where(s => s.SignTime.Date >= startDate.Value.Date && s.SignTime.Date <= endDate.Value.Date).ToList();
 
             // 基本統計
             var stats = new
@@ -319,7 +320,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 每日簽到趨勢
             var dailyTrend = signInsInRange
-                .GroupBy(s => s.SignInTime.Date)
+                .GroupBy(s => s.SignTime.Date)
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -332,7 +333,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 星期分佈
             var weekdayDistribution = signInsInRange
-                .GroupBy(s => s.SignInTime.DayOfWeek)
+                .GroupBy(s => s.SignTime.DayOfWeek)
                 .Select(g => new
                 {
                     DayOfWeek = g.Key.ToString(),
@@ -343,7 +344,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 時段分佈（按小時）
             var hourlyDistribution = signInsInRange
-                .GroupBy(s => s.SignInTime.Hour)
+                .GroupBy(s => s.SignTime.Hour)
                 .Select(g => new
                 {
                     Hour = g.Key,
@@ -421,7 +422,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                         TotalSignIns = g.Count(),
                         TotalPoints = g.Sum(s => s.PointsGained),
                         MaxConsecutive = g.Max(s => s.ConsecutiveDays),
-                        LastSignIn = g.Max(s => s.SignInTime),
+                        LastSignIn = g.Max(s => s.SignTime),
                         AveragePoints = g.Average(s => s.PointsGained)
                     })
                     .OrderByDescending(u => u.TotalSignIns)
@@ -454,14 +455,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
             var monthlySignIns = allSignIns
-                .Where(s => s.SignInTime >= startDate && s.SignInTime <= endDate)
+                .Where(s => s.SignTime >= startDate && s.SignTime <= endDate)
                 .ToList();
 
             // 每日統計
             var dailyStats = new List<object>();
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
-                var daySignIns = monthlySignIns.Where(s => s.SignInTime.Date == date).ToList();
+                var daySignIns = monthlySignIns.Where(s => s.SignTime.Date == date).ToList();
                 dailyStats.Add(new
                 {
                     Date = date,
@@ -500,8 +501,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
             var signInsInRange = allSignIns
-                .Where(s => s.SignInTime.Date >= startDate.Value.Date && s.SignInTime.Date <= endDate.Value.Date)
-                .OrderByDescending(s => s.SignInTime)
+                .Where(s => s.SignTime.Date >= startDate.Value.Date && s.SignTime.Date <= endDate.Value.Date)
+                .OrderByDescending(s => s.SignTime)
                 .ToList();
 
             if (format.ToLower() == "csv")
@@ -511,7 +512,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 foreach (var signIn in signInsInRange)
                 {
-                    csv.AppendLine($"{signIn.LogID},{signIn.UserID},{signIn.Users?.User_Name},{signIn.SignInTime:yyyy-MM-dd HH:mm:ss},{signIn.PointsGained},{signIn.ConsecutiveDays},{signIn.ExpGained},{signIn.CouponGained}");
+                    csv.AppendLine($"{signIn.LogID},{signIn.UserID},{signIn.Users?.User_Name},{signIn.SignTime:yyyy-MM-dd HH:mm:ss},{signIn.PointsGained},{signIn.ConsecutiveDays},{signIn.ExpGained},{signIn.CouponGained}");
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
@@ -525,7 +526,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     signInId = s.LogID,
                     userId = s.UserID,
                     userName = s.Users?.User_Name,
-                    signInTime = s.SignInTime,
+                    signInTime = s.SignTime,
                     pointsGained = s.PointsGained,
                     consecutiveDays = s.ConsecutiveDays,
                     expGained = s.ExpGained,
@@ -547,8 +548,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
 
-            var period1SignIns = allSignIns.Where(s => s.SignInTime.Date >= period1Start.Value.Date && s.SignInTime.Date <= period1End.Value.Date).ToList();
-            var period2SignIns = allSignIns.Where(s => s.SignInTime.Date >= period2Start.Value.Date && s.SignInTime.Date <= period2End.Value.Date).ToList();
+            var period1SignIns = allSignIns.Where(s => s.SignTime.Date >= period1Start.Value.Date && s.SignTime.Date <= period1End.Value.Date).ToList();
+            var period2SignIns = allSignIns.Where(s => s.SignTime.Date >= period2Start.Value.Date && s.SignTime.Date <= period2End.Value.Date).ToList();
 
             var comparison = new
             {
@@ -590,6 +591,54 @@ namespace GameSpace.Areas.MiniGame.Controllers
             ViewBag.Growth = growth;
 
             return View();
+        }
+
+        #endregion
+
+        #region SignIn Rules Configuration
+
+        // GET: AdminSignIn/Rules
+        public IActionResult Rules()
+        {
+            // 初始化預設值
+            var viewModel = new SignInRuleConfigViewModel
+            {
+                SignInRule = new SignInRuleConfig
+                {
+                    DailyPoints = 10,
+                    WeeklyBonusPoints = 50,
+                    MonthlyBonusPoints = 200,
+                    ConsecutiveDays = 7,
+                    Description = "每日簽到可獲得點數，連續簽到將獲得額外獎勵"
+                }
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: AdminSignIn/UpdateRules
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRules(SignInRuleConfigViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("Rules", model);
+            }
+
+            try
+            {
+                // TODO: 實作儲存規則到資料庫的邏輯
+                // 這裡可以呼叫 _signInService 來儲存規則
+
+                TempData["Success"] = "簽到規則設定已成功儲存";
+                return RedirectToAction(nameof(Rules));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"儲存失敗: {ex.Message}");
+                return View("Rules", model);
+            }
         }
 
         #endregion

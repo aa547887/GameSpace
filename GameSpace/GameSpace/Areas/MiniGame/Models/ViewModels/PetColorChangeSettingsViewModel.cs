@@ -54,6 +54,24 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// </summary>
         [StringLength(500, ErrorMessage = "備註長度不能超過500個字元")]
         public string? Remarks { get; set; }
+
+        /// <summary>
+        /// 所需點數（別名屬性，為了向後相容）
+        /// </summary>
+        public int PointsRequired
+        {
+            get => RequiredPoints;
+            set => RequiredPoints = value;
+        }
+
+        /// <summary>
+        /// 設定名稱（別名屬性，為了向後相容）
+        /// </summary>
+        public string SettingName
+        {
+            get => ColorName;
+            set => ColorName = value;
+        }
     }
 
     /// <summary>

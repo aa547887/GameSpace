@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models.ViewModels
+﻿namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     /// <summary>
     /// 權限操作日誌
@@ -84,5 +84,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 備註
         /// </summary>
         public string? Notes { get; set; }
+
+        // Property aliases for compatibility
+        public int ManagerId { get => OperatorManagerId; set => OperatorManagerId = value; }
+        public string ManagerName { get => OperatorManagerName; set => OperatorManagerName = value; }
+        public string Operation { get => OperationType; set => OperationType = value; }
+        public string Details { get => OperationDescription; set => OperationDescription = value; }
     }
 }

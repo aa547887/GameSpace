@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿﻿using System.ComponentModel.DataAnnotations;
 using GameSpace.Models;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
@@ -100,6 +100,9 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     {
         public int UserId { get; set; }
 
+        // Alias for compatibility
+        public int User_Id { get => UserId; set => UserId = value; }
+
         [Required(ErrorMessage = "用戶名稱為必填")]
         [StringLength(50, ErrorMessage = "用戶名稱長度不可超過 50 字元")]
         public string User_name { get; set; } = string.Empty;
@@ -152,6 +155,8 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminWalletIndexViewModel
     {
         public List<UserWalletViewModel> UserWallets { get; set; } = new();
+        public PagedResult<UserCouponModel> Coupons { get; set; } = new();
+        public CouponQueryModel CouponQuery { get; set; } = new();
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
@@ -163,6 +168,26 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public decimal Amount { get; set; }
         public string ChangeType { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public int CurrentPoints { get; set; }
+
+        /// <summary>
+        /// 交易金額（別名屬性，為了向後相容）
+        /// </summary>
+        public decimal TransactionAmount
+        {
+            get => Amount;
+            set => Amount = value;
+        }
+
+        /// <summary>
+        /// 交易類型（別名屬性，為了向後相容）
+        /// </summary>
+        public string TransactionType
+        {
+            get => ChangeType;
+            set => ChangeType = value;
+        }
     }
 
     // EVoucher Index page model
@@ -251,6 +276,41 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [StringLength(50)]
         public string CouponCode { get; set; } = string.Empty;
 
+        [Required]
+        [StringLength(100)]
+        public string CouponName { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(20)]
+        public string DiscountType { get; set; } = string.Empty;
+
+        [Required]
+        [Range(0.01, 999999.99)]
+        public decimal DiscountValue { get; set; }
+
+        [Required]
+        [Range(0, 999999.99)]
+        public decimal MinOrderAmount { get; set; }
+
+        [Range(0, 999999.99)]
+        public decimal? MaxDiscountAmount { get; set; }
+
+        [Required]
+        [DataType(DataType.DateTime)]
+        public DateTime StartDate { get; set; }
+
+        [Required]
+        [DataType(DataType.DateTime)]
+        public DateTime EndDate { get; set; }
+
+        [Range(1, int.MaxValue)]
+        public int? UsageLimit { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
         // 保留舊屬性名稱以支持向後相容
         [Obsolete("請使用 UserId 屬性")]
         public int UserID
@@ -279,6 +339,13 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [Required]
         [StringLength(50)]
         public string EVoucherCode { get; set; } = string.Empty;
+
+        // Additional properties for Edit scenarios
+        public int UserID { get => UserId; set => UserId = value; }
+        public string EvoucherCode { get => EVoucherCode; set => EVoucherCode = value; }
+        public DateTime AcquiredTime { get; set; }
+        public DateTime? UsedTime { get; set; }
+        public bool IsUsed { get; set; }
     }
 
     public class AdminEVoucherTypeCreateViewModel
@@ -347,6 +414,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
+
+        /// <summary>
+        /// 獎勵類型
+        /// </summary>
+        public string? BonusType { get; set; }
     }
 
     // 寵物相關 ViewModels
@@ -374,6 +446,25 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
+
+        /// <summary>
+        /// 頁碼（別名屬性，為了向後相容）
+        /// </summary>
+        public int PageNumber
+        {
+            get => CurrentPage;
+            set => CurrentPage = value;
+        }
+
+        /// <summary>
+        /// 變更類型 (Skin/Background)
+        /// </summary>
+        public string? ChangeType { get; set; }
+
+        public int? UserId { get; set; }
+        public int? PetId { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
     public class PetIndividualSettingsModel
@@ -389,6 +480,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
+
+        /// <summary>
+        /// 分頁資訊
+        /// </summary>
+        public PagedResult<Pet>? Pagination { get; set; }
     }
 
     public class AdminPetRulesViewModel

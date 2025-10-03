@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -198,6 +198,9 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public TimeSpan? Duration { get; set; }
+
+        // Additional properties for compatibility
+        public int TotalGames { get; set; }
         public bool Aborted { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -17,7 +18,20 @@ namespace GameSpace.Areas.MiniGame.Models
         public int SortOrder { get; set; } = 0;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+
+        // Property aliases for compatibility
+        [NotMapped]
+        public int BackgroundId { get => BackgroundOptionId; set => BackgroundOptionId = value; }
+
+        [NotMapped]
+        public int RequiredPoints { get; set; }
+
+        [NotMapped]
+        public bool IsUnlocked { get; set; }
+    }
+
+    // Alias for compatibility
+    public class PetBackgroundOption : PetBackgroundOptionEntity
+    {
     }
 }
-
-

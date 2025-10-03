@@ -130,5 +130,15 @@ public partial class User
     public virtual UserSalesInformation? UserSalesInformation { get; set; }
 
     public virtual ICollection<UserToken> UserTokens { get; set; } = new List<UserToken>();
+
+    public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();
+
+    public virtual ICollection<UserWallet> Wallets { get; set; } = new List<UserWallet>();
+
+    public virtual ICollection<WalletHistory> WalletHistories { get; set; } = new List<WalletHistory>();
+
+    public virtual ICollection<UserSignInStat> SignIns { get; set; } = new List<UserSignInStat>();
+
+    public virtual ICollection<MiniGame> GamePlayRecords { get; set; } = new List<MiniGame>();
 }
 

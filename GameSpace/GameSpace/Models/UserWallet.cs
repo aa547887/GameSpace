@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models;
 
@@ -17,6 +18,13 @@ public partial class UserWallet
     }
 
     public int User_Point
+    {
+        get => UserPoint;
+        set => UserPoint = value;
+    }
+
+    [NotMapped]
+    public int Points
     {
         get => UserPoint;
         set => UserPoint = value;

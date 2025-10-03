@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models
@@ -63,5 +63,15 @@ namespace GameSpace.Models
         /// </summary>
         [ForeignKey(nameof(ManagerId))]
         public virtual ManagerDatum? Manager { get; set; }
+
+        // Property aliases for compatibility
+        [NotMapped]
+        public string Operation { get => OperationType; set => OperationType = value; }
+
+        [NotMapped]
+        public string Details { get => OperationDetails ?? string.Empty; set => OperationDetails = value; }
+
+        [NotMapped]
+        public int? TargetUserId { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models
@@ -61,5 +61,15 @@ namespace GameSpace.Models
         /// 更新者 ID
         /// </summary>
         public int? UpdatedBy { get; set; }
+
+        // Property aliases for compatibility
+        [NotMapped]
+        public string Key { get => SettingKey; set => SettingKey = value; }
+
+        [NotMapped]
+        public string? Value { get => SettingValue; set => SettingValue = value; }
+
+        [NotMapped]
+        public DateTime CreatedTime { get => CreatedAt; set => CreatedAt = value; }
     }
 }

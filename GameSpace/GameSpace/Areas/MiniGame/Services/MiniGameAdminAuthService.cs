@@ -22,8 +22,16 @@ namespace GameSpace.Areas.MiniGame.Services
             if (manager?.ManagerRoles == null)
                 return false;
 
-            return manager.ManagerRoles
-                .Any(r => r.ManagerRolePermission.PermissionName == permission);
+            return permission switch
+            {
+                "AdministratorPrivilegesManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true),
+                "UserStatusManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true),
+                "ShoppingPermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true),
+                "MessagePermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true),
+                "PetRightsManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true),
+                "CustomerService" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true),
+                _ => false
+            };
         }
 
         public async Task<List<ManagerRolePermission>> GetManagerPermissionsAsync(int managerId)
@@ -33,7 +41,10 @@ namespace GameSpace.Areas.MiniGame.Services
                 .ThenInclude(r => r.ManagerRolePermission)
                 .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
-            return manager?.ManagerRoles?.Select(r => r.ManagerRolePermission).ToList() ?? new List<ManagerRolePermission>();
+            return manager?.ManagerRoles?
+                .Where(r => r.ManagerRolePermission != null)
+                .Select(r => r.ManagerRolePermission!)
+                .ToList() ?? new List<ManagerRolePermission>();
         }
 
         public async Task<ManagerDatum?> GetManagerDatumAsync(int managerId)

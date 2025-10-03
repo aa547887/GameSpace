@@ -1,7 +1,11 @@
-using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
+    /// <summary>
+    /// 寵物背景選項 (簡化版)
+    /// </summary>
+
     /// <summary>
     /// 寵物背景選項 ViewModel
     /// </summary>

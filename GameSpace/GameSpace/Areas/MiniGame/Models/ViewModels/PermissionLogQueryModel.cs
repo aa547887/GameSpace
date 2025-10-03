@@ -8,6 +8,17 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class PermissionLogQueryModel
     {
         /// <summary>
+        /// 管理員ID
+        /// </summary>
+        public int? ManagerId { get; set; }
+
+        /// <summary>
+        /// 操作類型 (Add, Update, Delete, Grant, Revoke)
+        /// </summary>
+        [StringLength(20)]
+        public string? Operation { get; set; }
+
+        /// <summary>
         /// 操作類型 (Add, Update, Delete, Grant, Revoke)
         /// </summary>
         [StringLength(20)]
@@ -38,7 +49,17 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// <summary>
         /// 開始日期
         /// </summary>
+        public DateTime? FromDate { get; set; }
+
+        /// <summary>
+        /// 開始日期
+        /// </summary>
         public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// 結束日期
+        /// </summary>
+        public DateTime? ToDate { get; set; }
 
         /// <summary>
         /// 結束日期

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Models;
 using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -241,7 +242,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                query = query.Where(ct => ct.Name.Contains(searchTerm) || ct.Description.Contains(searchTerm));
+                query = query.Where(ct => ct.Name.Contains(searchTerm) || (ct.Description != null && ct.Description.Contains(searchTerm)));
             }
 
             // 折扣類型篩選

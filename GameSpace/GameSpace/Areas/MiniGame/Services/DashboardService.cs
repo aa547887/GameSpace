@@ -273,7 +273,8 @@ namespace GameSpace.Areas.MiniGame.Services
 
             // 檢查優惠券庫存
             var expiringSoon = await _context.Coupons
-                .CountAsync(c => !c.IsUsed && c.ExpiryTime <= DateTime.UtcNow.AddDays(7));
+                .Include(c => c.CouponType)
+                .CountAsync(c => !c.IsUsed && c.CouponType.ValidTo <= DateTime.UtcNow.AddDays(7));
             if (expiringSoon > 0)
             {
                 alerts.Add(new SystemAlert

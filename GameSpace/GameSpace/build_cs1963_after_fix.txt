@@ -1,0 +1,23 @@
+  正在判斷要還原的專案...
+  所有專案都在最新狀態，可進行還原。
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(18,22): error CS0757: 部分方法不能有多重實作的宣告 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(11,79): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'DailyGameLimits' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(12,73): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'ErrorLogs' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(13,86): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'PetLevelRewardSettings' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(14,75): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'GameRules' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(15,80): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'GameEventRules' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(16,85): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'WalletTypes' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+
+建置失敗。
+
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(18,22): error CS0757: 部分方法不能有多重實作的宣告 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(11,79): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'DailyGameLimits' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(12,73): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'ErrorLogs' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(13,86): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'PetLevelRewardSettings' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(14,75): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'GameRules' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(15,80): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'GameEventRules' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Models\GameSpacedatabaseContext.Partial.new.cs(16,85): error CS0102: 類型 'GameSpacedatabaseContext' 已包含 'WalletTypes' 的定義 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+    0 個警告
+    7 個錯誤
+
+經過時間 00:00:03.48

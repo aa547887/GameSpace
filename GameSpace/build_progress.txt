@@ -1,0 +1,13 @@
+  正在判斷要還原的專案...
+  所有專案都在最新狀態，可進行還原。
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\CouponViewModels.cs(76,10): error CS1513: 必須是 } [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\CouponViewModels.cs(122,1): error CS1022: 必須是類型或命名空間定義，或檔案結尾 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+
+建置失敗。
+
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\CouponViewModels.cs(76,10): error CS1513: 必須是 } [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\CouponViewModels.cs(122,1): error CS1022: 必須是類型或命名空間定義，或檔案結尾 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+    0 個警告
+    2 個錯誤
+
+經過時間 00:00:01.58

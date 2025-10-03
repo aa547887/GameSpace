@@ -48,7 +48,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     ExpGained = reward.Experience,
                     CouponGained = reward.CouponCode ?? string.Empty
                 };
-                _context.UserSignInStat.Add(signInLog);
+                _context.UserSignInStats.Add(signInLog);
 
                 // 發放獎勵
                 await GrantSignInRewardAsync(userId, reward);
@@ -65,7 +65,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> CanSignInTodayAsync(int userId)
         {
             var today = DateTime.UtcNow.Date;
-            var signedInToday = await _context.UserSignInStat
+            var signedInToday = await _context.UserSignInStats
                 .AnyAsync(s => s.UserId == userId && s.SignTime.Date == today);
 
             return !signedInToday;
@@ -73,7 +73,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<DateTime?> GetLastSignInDateAsync(int userId)
         {
-            var lastSignIn = await _context.UserSignInStat
+            var lastSignIn = await _context.UserSignInStats
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.SignTime)
                 .FirstOrDefaultAsync();
@@ -83,7 +83,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetConsecutiveDaysAsync(int userId)
         {
-            var signIns = await _context.UserSignInStat
+            var signIns = await _context.UserSignInStats
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.SignTime)
                 .ToListAsync();
@@ -113,7 +113,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 簽到記錄查詢
         public async Task<IEnumerable<UserSignInStats>> GetSignInHistoryAsync(int userId, int pageNumber = 1, int pageSize = 20)
         {
-            var signIns = await _context.UserSignInStat
+            var signIns = await _context.UserSignInStats
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.SignTime)
                 .Skip((pageNumber - 1) * pageSize)
@@ -135,7 +135,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<UserSignInStats>> GetAllSignInsAsync(int pageNumber = 1, int pageSize = 50)
         {
-            var signIns = await _context.UserSignInStat
+            var signIns = await _context.UserSignInStats
                 .Include(s => s.User)
                 .OrderByDescending(s => s.SignTime)
                 .Skip((pageNumber - 1) * pageSize)
@@ -157,7 +157,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<UserSignInStats>> GetSignInsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            var signIns = await _context.UserSignInStat
+            var signIns = await _context.UserSignInStats
                 .Include(s => s.User)
                 .Where(s => s.SignTime >= startDate && s.SignTime <= endDate)
                 .OrderByDescending(s => s.SignTime)
@@ -178,7 +178,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<UserSignInStats?> GetSignInDetailAsync(int logId)
         {
-            var signIn = await _context.UserSignInStat
+            var signIn = await _context.UserSignInStats
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.LogId == logId);
 
@@ -311,7 +311,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 簽到統計
         public async Task<SignInStatistics> GetUserSignInStatisticsAsync(int userId)
         {
-            var allSignIns = await _context.UserSignInStat
+            var allSignIns = await _context.UserSignInStats
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.SignTime)
                 .ToListAsync();
@@ -334,7 +334,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<SignInStatistics> GetGlobalSignInStatisticsAsync()
         {
-            var allSignIns = await _context.UserSignInStat.ToListAsync();
+            var allSignIns = await _context.UserSignInStats.ToListAsync();
 
             return new SignInStatistics
             {
@@ -351,7 +351,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<Dictionary<string, int>> GetSignInTrendDataAsync(int days = 30)
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
-            var signIns = await _context.UserSignInStat
+            var signIns = await _context.UserSignInStats
                 .Where(s => s.SignTime >= startDate)
                 .GroupBy(s => s.SignTime.Date)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -365,7 +365,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<UserSignInRanking>> GetSignInLeaderboardAsync(int count = 10)
         {
-            var userIds = await _context.UserSignInStat
+            var userIds = await _context.UserSignInStats
                 .Select(s => s.UserId)
                 .Distinct()
                 .ToListAsync();
@@ -374,7 +374,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
             foreach (var userId in userIds)
             {
-                var userSignIns = await _context.UserSignInStat
+                var userSignIns = await _context.UserSignInStats
                     .Include(s => s.User)
                     .Where(s => s.UserId == userId)
                     .ToListAsync();

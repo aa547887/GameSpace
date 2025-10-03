@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -71,6 +71,15 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime? LastSignInDate { get; set; }
         public Dictionary<int, int> ConsecutiveDaysDistribution { get; set; } = new();
         public Dictionary<string, int> DailySignInTrend { get; set; } = new();
+
+        // Additional properties for compatibility
+        public int TodaySignInCount { get; set; }
+        public int ThisWeekSignInCount { get; set; }
+        public int ThisMonthSignInCount { get; set; }
+        public int PerfectAttendanceCount { get; set; }
+        public int TotalPointsGranted { get => TotalPointsDistributed; set => TotalPointsDistributed = value; }
+        public int TotalExpGranted { get => TotalExpDistributed; set => TotalExpDistributed = value; }
+        public int TotalCouponsGranted { get => TotalCouponsDistributed; set => TotalCouponsDistributed = value; }
     }
 
     /// <summary>
@@ -148,6 +157,39 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public bool IsActive { get; set; } = true;
 
         public DateTime? UpdatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 簽到規則配置 ViewModel (用於 Rules.cshtml 頁面)
+    /// </summary>
+    public class SignInRuleConfigViewModel
+    {
+        public SignInRuleConfig SignInRule { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 簽到規則配置模型
+    /// </summary>
+    public class SignInRuleConfig
+    {
+        [Required(ErrorMessage = "每日簽到點數為必填")]
+        [Range(0, 10000, ErrorMessage = "每日簽到點數必須在 0-10000 之間")]
+        public int DailyPoints { get; set; }
+
+        [Required(ErrorMessage = "週獎勵點數為必填")]
+        [Range(0, 10000, ErrorMessage = "週獎勵點數必須在 0-10000 之間")]
+        public int WeeklyBonusPoints { get; set; }
+
+        [Required(ErrorMessage = "月獎勵點數為必填")]
+        [Range(0, 10000, ErrorMessage = "月獎勵點數必須在 0-10000 之間")]
+        public int MonthlyBonusPoints { get; set; }
+
+        [Required(ErrorMessage = "連續簽到天數為必填")]
+        [Range(1, 365, ErrorMessage = "連續簽到天數必須在 1-365 之間")]
+        public int ConsecutiveDays { get; set; }
+
+        [StringLength(500, ErrorMessage = "規則描述長度不可超過 500 字元")]
+        public string? Description { get; set; }
     }
 }
 

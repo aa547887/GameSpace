@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
@@ -176,6 +176,10 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime? LastInteractionTime { get; set; }
         public int TotalColorChanges { get; set; }
         public int TotalBackgroundChanges { get; set; }
+
+        // Additional properties for compatibility
+        public int TotalPets { get; set; }
+        public decimal AverageLevel { get; set; }
     }
 
     /// <summary>
@@ -228,6 +232,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public bool IsActive { get; set; }
         public string? Description { get; set; }
         public int DisplayOrder { get; set; }
+
+        // Additional properties for compatibility
+        public int BackgroundId { get; set; }
+        public int RequiredPoints { get; set; }
+        public bool IsUnlocked { get; set; }
     }
 
     /// <summary>

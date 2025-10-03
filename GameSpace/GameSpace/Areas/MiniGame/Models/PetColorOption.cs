@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -63,6 +64,12 @@ namespace GameSpace.Areas.MiniGame.Models
         /// </summary>
         [StringLength(500, ErrorMessage = "備註長度不能超過500個字元")]
         public string? Remarks { get; set; }
+
+        // Property aliases for compatibility
+        [NotMapped]
+        public string ColorValue { get => ColorCode; set => ColorCode = value; }
+
+        [NotMapped]
+        public int DisplayOrder { get => SortOrder; set => SortOrder = value; }
     }
 }
-

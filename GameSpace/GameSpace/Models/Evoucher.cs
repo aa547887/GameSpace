@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models;
 
@@ -20,5 +21,8 @@ public partial class Evoucher
     public DateTime? UsedTime { get; set; }
 
     public virtual User User { get; set; } = null!;
-}
 
+    // Property alias for compatibility
+    [NotMapped]
+    public int UserID { get => UserId; set => UserId = value; }
+}

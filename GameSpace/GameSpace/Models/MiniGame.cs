@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models;
 
@@ -46,5 +47,36 @@ public partial class MiniGame
     public bool Aborted { get; set; }
 
     public virtual User User { get; set; } = null!;
-}
 
+    // Property aliases for compatibility with service layer
+    [NotMapped]
+    public int GameID { get => PlayId; set => PlayId = value; }
+
+    [NotMapped]
+    public int UserID { get => UserId; set => UserId = value; }
+
+    [NotMapped]
+    public int PetID { get => PetId; set => PetId = value; }
+
+    [NotMapped]
+    public string? GameType { get; set; }
+
+    [NotMapped]
+    public string? GameResult { get => Result; set => Result = value ?? string.Empty; }
+
+    [NotMapped]
+    public int PointsEarned { get => PointsGained; set => PointsGained = value; }
+
+    [NotMapped]
+    public int PetExpEarned { get => ExpGained; set => ExpGained = value; }
+
+    [NotMapped]
+    public int? CouponEarned
+    {
+        get => string.IsNullOrEmpty(CouponGained) ? null : int.TryParse(CouponGained, out var val) ? val : null;
+        set => CouponGained = value?.ToString() ?? string.Empty;
+    }
+
+    [NotMapped]
+    public string? SessionID { get; set; }
+}

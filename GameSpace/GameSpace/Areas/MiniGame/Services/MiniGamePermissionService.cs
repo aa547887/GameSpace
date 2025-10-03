@@ -29,19 +29,19 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRole)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null || !manager.IsActive) return false;
 
                 return permission switch
                 {
-                    "UserStatusManagement" => manager.ManagerRoles.Any(r => r.ManagerRole?.UserStatusManagement == true),
-                    "PetRightsManagement" => manager.ManagerRoles.Any(r => r.ManagerRole?.PetRightsManagement == true),
-                    "ShoppingPermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRole?.ShoppingPermissionManagement == true),
-                    "MessagePermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRole?.MessagePermissionManagement == true),
-                    "CustomerService" => manager.ManagerRoles.Any(r => r.ManagerRole?.CustomerService == true),
-                    "AdministratorPrivilegesManagement" => manager.ManagerRoles.Any(r => r.ManagerRole?.AdministratorPrivilegesManagement == true),
+                    "UserStatusManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true),
+                    "PetRightsManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true),
+                    "ShoppingPermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true),
+                    "MessagePermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true),
+                    "CustomerService" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true),
+                    "AdministratorPrivilegesManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true),
                     _ => false
                 };
             }
@@ -68,22 +68,22 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRole)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null || !manager.IsActive) return permissions;
 
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.AdministratorPrivilegesManagement == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true))
                     permissions.Add("AdministratorPrivilegesManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.UserStatusManagement == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true))
                     permissions.Add("UserStatusManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.ShoppingPermissionManagement == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true))
                     permissions.Add("ShoppingPermissionManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.MessagePermissionManagement == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true))
                     permissions.Add("MessagePermissionManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.PetRightsManagement == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true))
                     permissions.Add("PetRightsManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRole?.CustomerService == true))
+                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true))
                     permissions.Add("CustomerService");
             }
             catch
@@ -100,13 +100,13 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRole)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null) return null;
 
                 var permissions = await GetManagerPermissionsAsync(managerId);
-                var roleName = manager.ManagerRoles.FirstOrDefault()?.ManagerRole?.RoleName ?? "Unknown";
+                var roleName = manager.ManagerRoles.FirstOrDefault()?.ManagerRolePermission?.RoleName ?? "Unknown";
 
                 return new ManagerRoleInfo
                 {
@@ -116,7 +116,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     RoleName = roleName,
                     Permissions = permissions,
                     IsActive = manager.IsActive,
-                    LastLoginTime = manager.LastLoginTime
+                    LastLoginTime = null
                 };
             }
             catch
@@ -200,7 +200,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.Pet_Rights_Management == true);
+                    mr.ManagerRolePermission?.PetRightsManagement == true);
             }
             catch
             {
@@ -269,7 +269,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.customer_service == true);
+                    mr.ManagerRolePermission?.CustomerService == true);
             }
             catch
             {
@@ -466,8 +466,8 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 if (model.Description != null) right.Description = model.Description;
                 if (model.ExpiresAt.HasValue) right.ExpiresAt = model.ExpiresAt;
-                if (model.IsActive.HasValue) right.IsActive = model.IsActive.Value;
-                if (model.RightLevel.HasValue) right.RightLevel = model.RightLevel.Value;
+                if (model.IsActive != right.IsActive) right.IsActive = model.IsActive;
+                if (model.RightLevel != right.RightLevel) right.RightLevel = model.RightLevel;
                 if (model.RightScope != null) right.RightScope = model.RightScope;
 
                 await _context.SaveChangesAsync();
@@ -713,7 +713,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 var rightsByLevel = allRights
                     .GroupBy(r => r.RightLevel)
-                    .ToDictionary(g => g.Key.ToString(), g => g.Count());
+                    .ToDictionary(g => g.Key, g => g.Count());
 
                 return new PermissionStatistics
                 {
@@ -786,7 +786,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Take(query.PageSize)
                     .Select(log => new PermissionOperationLog
                     {
-                        LogId = log.OperationLogId,
+                        LogId = log.LogId,
                         ManagerId = log.ManagerId,
                         ManagerName = "Manager", // 可以通過 Join 獲取
                         TargetUserId = log.TargetUserId,

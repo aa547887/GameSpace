@@ -99,7 +99,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">錢包資訊</h6>
                 </div>
                 <div class="card-body">
-                    @if (Model.Wallets != null && Model.Wallets.Any())
+                    @if (Model.WalletHistories != null && Model.WalletHistories.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-bordered">
@@ -112,7 +112,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var wallet in Model.Wallets.Take(10))
+                                    @foreach (var wallet in Model.WalletHistories.Take(10))
                                     {
                                         <tr>
                                             <td>
@@ -128,9 +128,9 @@
                                 </tbody>
                             </table>
                         </div>
-                        @if (Model.Wallets.Count > 10)
+                        @if (Model.WalletHistories.Count > 10)
                         {
-                            <p class="text-muted text-center">顯示最近10筆記錄，共 @Model.Wallets.Count 筆</p>
+                            <p class="text-muted text-center">顯示最近10筆記錄，共 @Model.WalletHistories.Count 筆</p>
                         }
                     }
                     else

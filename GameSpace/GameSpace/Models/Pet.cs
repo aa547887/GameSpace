@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GameSpace.Models;
 
 public partial class Pet
 {
     public int PetId { get; set; }
+
+    [NotMapped]
+    public int Id { get => PetId; set => PetId = value; }
 
     public int UserId { get; set; }
 
@@ -42,6 +46,15 @@ public partial class Pet
     public int PointsGainedLevelUp { get; set; }
 
     public DateTime PointsGainedTimeLevelUp { get; set; }
+
+    [NotMapped]
+    public int PointsGained_LevelUp { get => PointsGainedLevelUp; set => PointsGainedLevelUp = value; }
+
+    [NotMapped]
+    public DateTime PointsGainedTime_LevelUp { get => PointsGainedTimeLevelUp; set => PointsGainedTimeLevelUp = value; }
+
+    [NotMapped]
+    public int PointsChanged_BackgroundColor { get => PointsChangedBackgroundColor; set => PointsChangedBackgroundColor = value; }
 
     public virtual User User { get; set; } = null!;
 }

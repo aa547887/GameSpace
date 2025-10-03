@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models.ViewModels
+﻿namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     /// <summary>
     /// 權限類型資訊
@@ -74,5 +74,15 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 更新時間
         /// </summary>
         public DateTime? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// 是否可設定過期時間
+        /// </summary>
+        public bool CanExpire { get; set; } = true;
+
+        /// <summary>
+        /// 是否可設定範圍
+        /// </summary>
+        public bool CanScope { get; set; } = false;
     }
 }

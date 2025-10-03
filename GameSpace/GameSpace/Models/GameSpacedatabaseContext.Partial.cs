@@ -10,6 +10,11 @@ namespace GameSpace.Models
         // MiniGame Area 專用 DbSets（新增）
         public virtual DbSet<GameSpace.Areas.MiniGame.Models.DailyGameLimit>? DailyGameLimits { get; set; }
         public virtual DbSet<GameSpace.Areas.MiniGame.Models.ErrorLog>? ErrorLogs { get; set; }
+        public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetLevelRewardSetting>? PetLevelRewardSettings { get; set; }
+        public virtual DbSet<GameSpace.Areas.MiniGame.Services.GameRule>? GameRules { get; set; }
+        public virtual DbSet<GameSpace.Areas.MiniGame.Services.GameEventRule>? GameEventRules { get; set; }
+        public virtual DbSet<GameSpace.Areas.MiniGame.Controllers.WalletTypeModel>? WalletTypes { get; set; }
+        public virtual DbSet<GameSpace.Areas.MiniGame.Models.UserSignInStats>? UserSignInStatsCustom { get; set; }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
         {
@@ -46,7 +51,58 @@ namespace GameSpace.Models
                     entity.Property(e => e.UserAgent).HasMaxLength(500);
                 });
             }
+
+            // PetLevelRewardSettings 實體設定
+            if (PetLevelRewardSettings != null)
+            {
+                modelBuilder.Entity<GameSpace.Areas.MiniGame.Models.PetLevelRewardSetting>(entity =>
+                {
+                    entity.ToTable("PetLevelRewardSettings");
+                    entity.HasKey(e => e.Id);
+                    entity.Property(e => e.Level).IsRequired();
+                    entity.Property(e => e.RewardType).HasMaxLength(50).IsRequired();
+                    entity.Property(e => e.RewardAmount).IsRequired();
+                    entity.Property(e => e.Description).HasMaxLength(200);
+                    entity.Property(e => e.CreatedBy).HasMaxLength(50);
+                    entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+                });
+            }
+
+            // GameRules 實體設定
+            if (GameRules != null)
+            {
+                modelBuilder.Entity<GameSpace.Areas.MiniGame.Services.GameRule>(entity =>
+                {
+                    entity.ToTable("GameRules");
+                    entity.HasKey(e => e.Id);
+                    entity.Property(e => e.RuleName).IsRequired();
+                    entity.Property(e => e.RuleType).IsRequired();
+                    entity.Property(e => e.RuleValue).IsRequired();
+                });
+            }
+
+            // GameEventRules 實體設定
+            if (GameEventRules != null)
+            {
+                modelBuilder.Entity<GameSpace.Areas.MiniGame.Services.GameEventRule>(entity =>
+                {
+                    entity.ToTable("GameEventRules");
+                    entity.HasKey(e => e.Id);
+                    entity.Property(e => e.EventName).IsRequired();
+                    entity.Property(e => e.EventType).IsRequired();
+                    entity.Property(e => e.RewardMultiplier).IsRequired();
+                });
+            }
+
+            // WalletTypes 實體設定
+            if (WalletTypes != null)
+            {
+                modelBuilder.Entity<GameSpace.Areas.MiniGame.Controllers.WalletTypeModel>(entity =>
+                {
+                    entity.ToTable("WalletTypes");
+                    entity.HasKey(e => e.WalletTypeId);
+                });
+            }
         }
     }
 }
-

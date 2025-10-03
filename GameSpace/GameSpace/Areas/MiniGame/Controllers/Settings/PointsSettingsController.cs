@@ -91,7 +91,6 @@ namespace GameSpace.Areas.MiniGame.Controllers.Settings
                 var activeBackgroundSettings = await _statisticsService.GetActiveBackgroundSettingsAsync();
                 var totalColorPoints = await _statisticsService.GetTotalColorPointsAsync();
                 var totalBackgroundPoints = await _statisticsService.GetTotalBackgroundPointsAsync();
-                var totalPoints = await _statisticsService.GetTotalPointsAsync();
 
                 var viewModel = new PointsSettingsStatisticsViewModel
                 {

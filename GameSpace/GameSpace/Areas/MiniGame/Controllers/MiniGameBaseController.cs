@@ -72,6 +72,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 載入管理員的角色權限
             var managerWithRoles = await _context.ManagerData
                 .Include(m => m.ManagerRoles)
+                .ThenInclude(r => r.ManagerRolePermission)
                 .FirstOrDefaultAsync(m => m.ManagerId == manager.ManagerId);
 
             if (managerWithRoles == null || !managerWithRoles.ManagerRoles.Any())
@@ -79,7 +80,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 檢查是否有任何角色具有管理員權限（最高權限）
             var hasAdminPrivilege = managerWithRoles.ManagerRoles
-                .Any(r => r.AdministratorPrivilegesManagement == true);
+                .Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true);
 
             if (hasAdminPrivilege) return true;
 
@@ -87,12 +88,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return permission switch
             {
                 "MiniGame.View" or "MiniGame.Edit" or "MiniGame.Delete" => hasAdminPrivilege,
-                "User.View" or "User.Edit" => managerWithRoles.ManagerRoles.Any(r => r.UserStatusManagement == true) || hasAdminPrivilege,
-                "Wallet.View" or "Wallet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true) || hasAdminPrivilege,
-                "Pet.View" or "Pet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.PetRightsManagement == true) || hasAdminPrivilege,
-                "Coupon.View" or "Coupon.Edit" or "EVoucher.View" or "EVoucher.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ShoppingPermissionManagement == true) || hasAdminPrivilege,
-                "Message.View" or "Message.Edit" => managerWithRoles.ManagerRoles.Any(r => r.MessagePermissionManagement == true) || hasAdminPrivilege,
-                "CustomerService" => managerWithRoles.ManagerRoles.Any(r => r.CustomerService == true) || hasAdminPrivilege,
+                "User.View" or "User.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true) || hasAdminPrivilege,
+                "Wallet.View" or "Wallet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true) || hasAdminPrivilege,
+                "Pet.View" or "Pet.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true) || hasAdminPrivilege,
+                "Coupon.View" or "Coupon.Edit" or "EVoucher.View" or "EVoucher.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true) || hasAdminPrivilege,
+                "Message.View" or "Message.Edit" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true) || hasAdminPrivilege,
+                "CustomerService" => managerWithRoles.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true) || hasAdminPrivilege,
                 _ => false
             };
         }

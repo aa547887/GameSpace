@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models.ViewModels
+﻿namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     /// <summary>
     /// 權限統計資訊
@@ -24,6 +24,41 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 已停用的權限數
         /// </summary>
         public int InactivePermissions { get; set; }
+
+        /// <summary>
+        /// 總用戶數
+        /// </summary>
+        public int TotalUsers { get; set; }
+
+        /// <summary>
+        /// 擁有權限的用戶數
+        /// </summary>
+        public int UsersWithRights { get; set; }
+
+        /// <summary>
+        /// 總權限數
+        /// </summary>
+        public int TotalRights { get; set; }
+
+        /// <summary>
+        /// 啟用的權限數
+        /// </summary>
+        public int ActiveRights { get; set; }
+
+        /// <summary>
+        /// 過期的權限數
+        /// </summary>
+        public int ExpiredRights { get; set; }
+
+        /// <summary>
+        /// 按類型分類的權限數
+        /// </summary>
+        public Dictionary<string, int> RightsByType { get; set; } = new();
+
+        /// <summary>
+        /// 按等級分類的權限數
+        /// </summary>
+        public Dictionary<int, int> RightsByLevel { get; set; } = new();
 
         /// <summary>
         /// 擁有權限的用戶總數

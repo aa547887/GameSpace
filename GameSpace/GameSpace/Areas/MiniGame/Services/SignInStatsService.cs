@@ -258,7 +258,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     CouponGained = stats.CouponEarned.HasValue ? stats.CouponEarned.Value.ToString() : string.Empty
                 };
 
-                _context.UserSignInStat.Add(signInLog);
+                _context.UserSignInStats.Add(signInLog);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -272,7 +272,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var signInLog = await _context.UserSignInStat.FirstOrDefaultAsync(s => s.LogId == stats.StatsID);
+                var signInLog = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.LogId == stats.StatsID);
                 if (signInLog == null) return false;
 
                 signInLog.UserId = stats.UserID;
@@ -294,10 +294,10 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var signInLog = await _context.UserSignInStat.FirstOrDefaultAsync(s => s.LogId == statsId);
+                var signInLog = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.LogId == statsId);
                 if (signInLog == null) return false;
 
-                _context.UserSignInStat.Remove(signInLog);
+                _context.UserSignInStats.Remove(signInLog);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -312,7 +312,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 var today = DateTime.Today;
-                var dbItem = await _context.UserSignInStat
+                var dbItem = await _context.UserSignInStats
                     .Where(s => s.UserId == userId && s.SignTime.Date == today)
                     .OrderByDescending(s => s.SignTime)
                     .FirstOrDefaultAsync();
@@ -340,7 +340,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var signIns = await _context.UserSignInStat
+                var signIns = await _context.UserSignInStats
                     .Where(s => s.UserId == userId)
                     .OrderByDescending(s => s.SignTime)
                     .ToListAsync();

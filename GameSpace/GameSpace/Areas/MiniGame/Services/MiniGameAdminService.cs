@@ -297,10 +297,22 @@ namespace GameSpace.Areas.MiniGame.Services
             return await _context.SaveChangesAsync() > 0;
         }
 
-        
+
         public async Task<bool> RemoveSignInRecordAsync(int signInId)
         {
-            var signIn = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.SignInId == signInId);
+            var signIn = await _context.UserSignInStats.FirstOrDefaultAsync(s => s.LogId == signInId);
+            if (signIn != null)
+            {
+                _context.UserSignInStats.Remove(signIn);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        public async Task<bool> RemoveSignInRecordAsync(int userId, DateTime signInDate)
+        {
+            var signIn = await _context.UserSignInStats
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.SignTime.Date == signInDate.Date);
             if (signIn != null)
             {
                 _context.UserSignInStats.Remove(signIn);
@@ -349,7 +361,21 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<List<SignInRecordReadModel>> GetUserSignInHistoryAsync(int userId)
         {
-            return await GetUserSignInRecordsAsync(userId);
+            var stats = await GetUserSignInRecordsAsync(userId);
+            return stats.Select(s => new SignInRecordReadModel
+            {
+                RecordId = s.LogId,
+                UserId = s.UserId,
+                UserName = s.User.UserName,
+                Email = s.User.Email,
+                SignInDate = s.SignTime,
+                ConsecutiveDays = 0, // This would need to be calculated
+                PointsGained = s.PointsGained,
+                ExpGained = s.ExpGained,
+                CouponGained = null, // CouponGained in UserSignInStat is string, needs conversion
+                CouponCode = s.CouponGained,
+                RewardDescription = $"點數: {s.PointsGained}, 經驗: {s.ExpGained}"
+            }).ToList();
         }
 
         // 寵物系統

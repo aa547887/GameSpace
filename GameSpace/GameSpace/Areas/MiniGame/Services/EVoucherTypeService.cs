@@ -101,7 +101,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 var evoucherType = await GetEVoucherTypeByIdAsync(evoucherTypeId);
                 if (evoucherType == null) return false;
 
-                evoucherType(ValidFrom <= DateTime.UtcNow && ValidTo >= DateTime.UtcNow) = false;
+                // Set ValidTo to current time to deactivate
+                evoucherType.ValidTo = DateTime.UtcNow;
                 // UpdatedAt property does not exist in EvoucherType
                 await _context.SaveChangesAsync();
                 return true;
@@ -116,7 +117,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<EvoucherType>> GetActiveEVoucherTypesAsync()
         {
             return await _context.EvoucherTypes
-                .Where(evt => evt(ValidFrom <= DateTime.UtcNow && ValidTo >= DateTime.UtcNow))
+                .Where(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow)
                 .OrderBy(evt => evt.Name)
                 .ToListAsync();
         }
@@ -132,7 +133,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<EvoucherType>> GetAvailableEVoucherTypesAsync()
         {
             return await _context.EvoucherTypes
-                .Where(evt => evt(ValidFrom <= DateTime.UtcNow && ValidTo >= DateTime.UtcNow) && evt.TotalAvailable > 0)
+                .Where(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow && evt.TotalAvailable > 0)
                 .OrderBy(evt => evt.ValueAmount)
                 .ToListAsync();
         }
@@ -183,7 +184,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> IsStockAvailableAsync(int evoucherTypeId)
         {
             var evoucherType = await GetEVoucherTypeByIdAsync(evoucherTypeId);
-            return evoucherType != null && evoucherType(ValidFrom <= DateTime.UtcNow && ValidTo >= DateTime.UtcNow) && evoucherType.TotalAvailable > 0;
+            return evoucherType != null && evoucherType.ValidFrom <= DateTime.UtcNow && evoucherType.ValidTo >= DateTime.UtcNow && evoucherType.TotalAvailable > 0;
         }
 
         // EvoucherType 統計
@@ -194,7 +195,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetActiveEVoucherTypesCountAsync()
         {
-            return await _context.EvoucherTypes.CountAsync(evt => evt(ValidFrom <= DateTime.UtcNow && ValidTo >= DateTime.UtcNow));
+            return await _context.EvoucherTypes.CountAsync(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow);
         }
 
         public async Task<Dictionary<string, int>> GetEVoucherTypesDistributionAsync()

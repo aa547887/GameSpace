@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -9,16 +9,41 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     /// </summary>
     public class UserCouponModel
     {
-        public int CouponId { get; set; }
+        public int CouponID { get; set; }
         public string CouponCode { get; set; } = string.Empty;
-        public int UserId { get; set; }
+        public int UserID { get; set; }
         public string UserName { get; set; } = string.Empty;
-        public int CouponTypeId { get; set; }
+        public int CouponTypeID { get; set; }
         public string CouponTypeName { get; set; } = string.Empty;
         public bool IsUsed { get; set; }
         public DateTime AcquiredTime { get; set; }
         public DateTime? UsedTime { get; set; }
         public int? UsedInOrderID { get; set; }
+
+        // Property aliases for compatibility with database field names
+        public int CouponId
+        {
+            get => CouponID;
+            set => CouponID = value;
+        }
+
+        public int UserId
+        {
+            get => UserID;
+            set => UserID = value;
+        }
+
+        public int CouponTypeId
+        {
+            get => CouponTypeID;
+            set => CouponTypeID = value;
+        }
+
+        public int? UsedInOrderId
+        {
+            get => UsedInOrderID;
+            set => UsedInOrderID = value;
+        }
     }
 
     /// <summary>
@@ -50,6 +75,10 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
                 return "未使用";
             }
         }
+
+        // Additional properties for compatibility
+        public int Quantity { get; set; }
+        public DateTime? LastUpdated { get; set; }
     }
 
     /// <summary>
@@ -82,6 +111,13 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public bool Descending { get; set; } = true;
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 20;
+
+        // Alias for compatibility
+        public int Page
+        {
+            get => PageNumber;
+            set => PageNumber = value;
+        }
     }
 }
 

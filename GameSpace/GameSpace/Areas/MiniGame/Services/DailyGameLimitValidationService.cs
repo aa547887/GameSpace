@@ -191,7 +191,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var today = DateTime.Today;
                 var tomorrow = today.AddDays(1);
 
-                var todayGameCount = await _context.MiniGame
+                var todayGameCount = await _context.MiniGames
                     .Where(x => x.UserID == userId && x.StartTime >= today && x.StartTime < tomorrow)
                     .CountAsync();
 

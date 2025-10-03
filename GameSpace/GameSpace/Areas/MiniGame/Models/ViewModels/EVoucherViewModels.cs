@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
@@ -131,6 +131,12 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime? ExpiryDate { get; set; }
         public DateTime? UsedDate { get; set; }
         public bool IsUsed { get; set; }
+
+        /// <summary>
+        /// 搜尋詞（用於查詢）
+        /// </summary>
+        [StringLength(100)]
+        public string? SearchTerm { get; set; }
 
         /// <summary>
         /// 用戶ID

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -69,6 +69,9 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int UsedEVouchers { get; set; }
         public DateTime? LastTransactionTime { get; set; }
         public int TransactionCount { get; set; }
+
+        // Additional properties for compatibility
+        public int TotalUsers { get; set; }
     }
 
     /// <summary>

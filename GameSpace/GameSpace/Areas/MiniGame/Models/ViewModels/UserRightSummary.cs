@@ -1,4 +1,4 @@
-namespace GameSpace.Areas.MiniGame.Models.ViewModels
+﻿namespace GameSpace.Areas.MiniGame.Models.ViewModels
 {
     /// <summary>
     /// 用戶權限摘要
@@ -24,6 +24,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 總權限數
         /// </summary>
         public int TotalRights { get; set; }
+
+        /// <summary>
+        /// 最後權限更新時間
+        /// </summary>
+        public DateTime? LastRightUpdate { get; set; }
 
         /// <summary>
         /// 啟用中的權限數

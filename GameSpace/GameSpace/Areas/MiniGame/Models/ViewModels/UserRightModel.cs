@@ -91,5 +91,10 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// 授予者名稱
         /// </summary>
         public string? GrantedByManagerName { get; set; }
+
+        /// <summary>
+        /// 權限範圍
+        /// </summary>
+        public string? RightScope { get; set; }
     }
 }
