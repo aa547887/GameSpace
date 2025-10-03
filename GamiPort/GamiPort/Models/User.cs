@@ -79,6 +79,8 @@ public partial class User
 
     public virtual ICollection<Thread> Threads { get; set; } = new List<Thread>();
 
+    public virtual UserHome? UserHome { get; set; }
+
     public virtual UserIntroduce? UserIntroduce { get; set; }
 
     public virtual UserRight? UserRight { get; set; }
