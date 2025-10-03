@@ -176,6 +176,14 @@ namespace GameSpace
 			// ========== 11) 授權政策（需要就用） ==========
 			builder.Services.AddAuthorization(options =>
 			{
+				// ⭐ MiniGame Area 必要的 AdminOnly 政策
+				options.AddPolicy("AdminOnly", policy =>
+				{
+					policy.RequireAuthenticatedUser();
+					policy.RequireAuthenticationSchemes("AdminCookie");
+				});
+
+				// 保留現有政策
 				options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
 				options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
 				options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));

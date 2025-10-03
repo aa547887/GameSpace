@@ -8,7 +8,7 @@ namespace GameSpace.Areas.MiniGame.Services
     /// <summary>
     /// 每日遊戲次數限制驗證服務
     /// </summary>
-    public class DailyGameLimitValidationService
+    public class DailyGameLimitValidationService : IDailyGameLimitValidationService
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<DailyGameLimitValidationService> _logger;

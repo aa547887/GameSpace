@@ -1,48 +1,48 @@
-ï»¿@model GameSpace.Areas.MiniGame.Models.PetColorChangeQueryModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetColorChangeQueryModel
 @{
-    ViewData["Title"] = "å¯µç‰©çš®è†š/èƒŒæ™¯æ›´æ›æ­·å²";
+    ViewData["Title"] = "Ãdª«¥Ö½§/­I´º§ó´«¾ú¥v";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">å¯µç‰©çš®è†š/èƒŒæ™¯æ›´æ›æ­·å²</h1>
+        <h1 class="h3 mb-0 text-gray-800">Ãdª«¥Ö½§/­I´º§ó´«¾ú¥v</h1>
     </div>
 
-    <!-- æœå°‹è¡¨å–® -->
+    <!-- ·j´Mªí³æ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">æŸ¥è©¢æ¢ä»¶</h6>
+            <h6 class="m-0 font-weight-bold text-primary">¬d¸ß±ø¥ó</h6>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-3">
-                    <label for="UserId" class="form-label">ç”¨æˆ¶ID</label>
-                    <input type="text" class="form-control" id="UserId" name="UserId" value="@Model.UserId" placeholder="è¼¸å…¥ç”¨æˆ¶ID">
+                    <label for="UserId" class="form-label">¥Î¤áID</label>
+                    <input type="text" class="form-control" id="UserId" name="UserId" value="@Model.UserId" placeholder="¿é¤J¥Î¤áID">
                 </div>
                 <div class="col-md-3">
-                    <label for="PetId" class="form-label">å¯µç‰©ID</label>
-                    <input type="text" class="form-control" id="PetId" name="PetId" value="@Model.PetId" placeholder="è¼¸å…¥å¯µç‰©ID">
+                    <label for="PetId" class="form-label">Ãdª«ID</label>
+                    <input type="text" class="form-control" id="PetId" name="PetId" value="@Model.PetId" placeholder="¿é¤JÃdª«ID">
                 </div>
                 <div class="col-md-3">
-                    <label for="ChangeType" class="form-label">æ›´æ›é¡žåž‹</label>
+                    <label for="ChangeType" class="form-label">§ó´«Ãþ«¬</label>
                     <select class="form-control" id="ChangeType" name="ChangeType">
-                        <option value="">å…¨éƒ¨</option>
-                        <option value="Skin" selected="@(Model.ChangeType == "Skin" ? "selected" : null)">çš®è†š</option>
-                        <option value="Background" selected="@(Model.ChangeType == "Background" ? "selected" : null)">èƒŒæ™¯</option>
+                        <option value="">¥þ³¡</option>
+                        <option value="Skin" selected="@(Model.ChangeType == "Skin" ? "selected" : null)">¥Ö½§</option>
+                        <option value="Background" selected="@(Model.ChangeType == "Background" ? "selected" : null)">­I´º</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="StartDate" class="form-label">é–‹å§‹æ—¥æœŸ</label>
+                    <label for="StartDate" class="form-label">¶}©l¤é´Á</label>
                     <input type="date" class="form-control" id="StartDate" name="StartDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")">
                 </div>
                 <div class="col-md-3">
-                    <label for="EndDate" class="form-label">çµæŸæ—¥æœŸ</label>
+                    <label for="EndDate" class="form-label">µ²§ô¤é´Á</label>
                     <input type="date" class="form-control" id="EndDate" name="EndDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")">
                 </div>
                 <div class="col-md-3">
-                    <label for="PageSize" class="form-label">æ¯é ç­†æ•¸</label>
+                    <label for="PageSize" class="form-label">¨C­¶µ§¼Æ</label>
                     <select class="form-control" id="PageSize" name="PageSize">
                         <option value="10" selected="@(Model.PageSize == 10 ? "selected" : null)">10</option>
                         <option value="20" selected="@(Model.PageSize == 20 ? "selected" : null)">20</option>
@@ -51,21 +51,21 @@
                 </div>
                 <div class="col-md-12">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> æŸ¥è©¢
+                        <i class="fas fa-search"></i> ¬d¸ß
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> é‡ç½®
+                        <i class="fas fa-undo"></i> ­«¸m
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- æŸ¥è©¢çµæžœ -->
+    <!-- ¬d¸ßµ²ªG -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">æ›´æ›æ­·å²è¨˜éŒ„</h6>
-            <span class="badge badge-info">å…± @Model.TotalCount ç­†è¨˜éŒ„</span>
+            <h6 class="m-0 font-weight-bold text-primary">§ó´«¾ú¥v°O¿ý</h6>
+            <span class="badge badge-info">¦@ @Model.TotalCount µ§°O¿ý</span>
         </div>
         <div class="card-body">
             @if (Model.TotalCount > 0)
@@ -74,15 +74,15 @@
                     <table class="table table-bordered" width="100%" cellspacing="0">
                         <thead>
                             <tr>
-                                <th>è¨˜éŒ„ID</th>
-                                <th>ç”¨æˆ¶ID</th>
-                                <th>å¯µç‰©ID</th>
-                                <th>å¯µç‰©åç¨±</th>
-                                <th>æ›´æ›é¡žåž‹</th>
-                                <th>æ›´æ›å‰</th>
-                                <th>æ›´æ›å¾Œ</th>
-                                <th>æ¶ˆè€—é»žæ•¸</th>
-                                <th>æ›´æ›æ™‚é–“</th>
+                                <th>°O¿ýID</th>
+                                <th>¥Î¤áID</th>
+                                <th>Ãdª«ID</th>
+                                <th>Ãdª«¦WºÙ</th>
+                                <th>§ó´«Ãþ«¬</th>
+                                <th>§ó´««e</th>
+                                <th>§ó´««á</th>
+                                <th>®ø¯ÓÂI¼Æ</th>
+                                <th>§ó´«®É¶¡</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -95,7 +95,7 @@
                                     <td>@record.PetName</td>
                                     <td>
                                         <span class="badge @(record.ChangeType == "Skin" ? "badge-primary" : "badge-success")">
-                                            @(record.ChangeType == "Skin" ? "çš®è†š" : "èƒŒæ™¯")
+                                            @(record.ChangeType == "Skin" ? "¥Ö½§" : "­I´º")
                                         </span>
                                     </td>
                                     <td>@record.OldValue</td>
@@ -108,15 +108,15 @@
                     </table>
                 </div>
 
-                <!-- åˆ†é  -->
+                <!-- ¤À­¶ -->
                 @if (Model.TotalPages > 1)
                 {
-                    <nav aria-label="åˆ†é å°Žèˆª">
+                    <nav aria-label="¤À­¶¾É¯è">
                         <ul class="pagination justify-content-center">
                             @if (Model.PageNumber > 1)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="?PageNumber=@(Model.PageNumber - 1)&PageSize=@Model.PageSize&UserId=@Model.UserId&PetId=@Model.PetId&ChangeType=@Model.ChangeType&StartDate=@Model.StartDate?.ToString("yyyy-MM-dd")&EndDate=@Model.EndDate?.ToString("yyyy-MM-dd")">ä¸Šä¸€é </a>
+                                    <a class="page-link" href="?PageNumber=@(Model.PageNumber - 1)&PageSize=@Model.PageSize&UserId=@Model.UserId&PetId=@Model.PetId&ChangeType=@Model.ChangeType&StartDate=@Model.StartDate?.ToString("yyyy-MM-dd")&EndDate=@Model.EndDate?.ToString("yyyy-MM-dd")">¤W¤@­¶</a>
                                 </li>
                             }
                             
@@ -130,7 +130,7 @@
                             @if (Model.PageNumber < Model.TotalPages)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="?PageNumber=@(Model.PageNumber + 1)&PageSize=@Model.PageSize&UserId=@Model.UserId&PetId=@Model.PetId&ChangeType=@Model.ChangeType&StartDate=@Model.StartDate?.ToString("yyyy-MM-dd")&EndDate=@Model.EndDate?.ToString("yyyy-MM-dd")">ä¸‹ä¸€é </a>
+                                    <a class="page-link" href="?PageNumber=@(Model.PageNumber + 1)&PageSize=@Model.PageSize&UserId=@Model.UserId&PetId=@Model.PetId&ChangeType=@Model.ChangeType&StartDate=@Model.StartDate?.ToString("yyyy-MM-dd")&EndDate=@Model.EndDate?.ToString("yyyy-MM-dd")">¤U¤@­¶</a>
                                 </li>
                             }
                         </ul>
@@ -141,8 +141,8 @@
             {
                 <div class="text-center py-4">
                     <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">æ²’æœ‰æ‰¾åˆ°ç¬¦åˆæ¢ä»¶çš„è¨˜éŒ„</h5>
-                    <p class="text-muted">è«‹èª¿æ•´æŸ¥è©¢æ¢ä»¶å¾Œé‡æ–°æœå°‹</p>
+                    <h5 class="text-muted">¨S¦³§ä¨ì²Å¦X±ø¥óªº°O¿ý</h5>
+                    <p class="text-muted">½Ð½Õ¾ã¬d¸ß±ø¥ó«á­«·s·j´M</p>
                 </div>
             }
         </div>

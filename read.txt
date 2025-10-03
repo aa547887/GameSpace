@@ -1,4 +1,4 @@
-
+﻿
 ### 一. 前置章（最重要）
 **連線與讀取**：    一律用powershell終端寫檔  ///minigame area在此:C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame ///
 - 先讀取    C:\Users\n2029\Desktop\GameSpace\GameSpace\schema\資料庫連線與讀取流程_詳細版.md 並**連線到 SQL 資料庫**，讀取 **SSMS** 的**表、欄位、完整的種子資料**（包含 **minigame area** 和 **使用者權限 manager** 相關）。  

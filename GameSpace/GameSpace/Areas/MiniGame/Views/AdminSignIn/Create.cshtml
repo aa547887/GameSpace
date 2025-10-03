@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminSignInCreateViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminSignInCreateViewModel
 @{
-    ViewData["Title"] = "新增簽到活動";
+    ViewData["Title"] = "�s�Wñ�쬡��";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- �������D -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">新增簽到活動</h1>
+        <h1 class="h3 mb-0 text-gray-800">�s�Wñ�쬡��</h1>
         <div>
             <a href="@Url.Action("Index", "AdminSignIn")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
             </a>
         </div>
     </div>
@@ -19,39 +19,39 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">簽到活動資訊</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">ñ�쬡�ʸ�T</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         
                         <div class="form-group">
-                            <label asp-for="SignInName" class="control-label">簽到活動名稱 *</label>
-                            <input asp-for="SignInName" class="form-control" placeholder="請輸入簽到活動名稱" />
+                            <label asp-for="SignInName" class="control-label">ñ�쬡�ʦW�� *</label>
+                            <input asp-for="SignInName" class="form-control" placeholder="�п�Jñ�쬡�ʦW��" />
                             <span asp-validation-for="SignInName" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="SignInDescription" class="control-label">簽到活動描述 *</label>
-                            <textarea asp-for="SignInDescription" class="form-control" rows="4" placeholder="請輸入簽到活動描述"></textarea>
+                            <label asp-for="SignInDescription" class="control-label">ñ�쬡�ʴy�z *</label>
+                            <textarea asp-for="SignInDescription" class="form-control" rows="4" placeholder="�п�Jñ�쬡�ʴy�z"></textarea>
                             <span asp-validation-for="SignInDescription" class="text-danger"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="RewardPoints" class="control-label">獎勵點數 *</label>
-                                    <input asp-for="RewardPoints" type="number" class="form-control" placeholder="請輸入獎勵點數" min="1" />
+                                    <label asp-for="RewardPoints" class="control-label">���y�I�� *</label>
+                                    <input asp-for="RewardPoints" type="number" class="form-control" placeholder="�п�J���y�I��" min="1" />
                                     <span asp-validation-for="RewardPoints" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="IsActive" class="control-label">狀態</label>
+                                    <label asp-for="IsActive" class="control-label">���A</label>
                                     <div class="form-check">
                                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                                         <label class="form-check-label" for="IsActive">
-                                            啟用
+                                            �ҥ�
                                         </label>
                                     </div>
                                 </div>
@@ -61,14 +61,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="StartDate" class="control-label">開始日期 *</label>
+                                    <label asp-for="StartDate" class="control-label">�}�l��� *</label>
                                     <input asp-for="StartDate" type="datetime-local" class="form-control" />
                                     <span asp-validation-for="StartDate" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="EndDate" class="control-label">結束日期 *</label>
+                                    <label asp-for="EndDate" class="control-label">������ *</label>
                                     <input asp-for="EndDate" type="datetime-local" class="form-control" />
                                     <span asp-validation-for="EndDate" class="text-danger"></span>
                                 </div>
@@ -77,10 +77,10 @@
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 建立簽到活動
+                                <i class="fas fa-save"></i> �إ�ñ�쬡��
                             </button>
                             <a href="@Url.Action("Index", "AdminSignIn")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> 取消
+                                <i class="fas fa-times"></i> ����
                             </a>
                         </div>
                     </form>
@@ -91,33 +91,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">建立須知</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�إ߶���</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
-                        <h5>簽到活動建立注意事項</h5>
+                        <h5>ñ�쬡�ʫإߪ`�N�ƶ�</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            活動名稱要簡潔明瞭
+                            ���ʦW�٭n²����A
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            描述要清楚說明活動內容
+                            �y�z�n�M���������ʤ��e
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            獎勵點數要合理設定
+                            ���y�I�ƭn�X�z�]�w
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            開始和結束日期要正確
+                            �}�l�M�������n���T
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            可以選擇是否立即啟用
+                            �i�H��ܬO�_�ߧY�ҥ�
                         </li>
                     </ul>
                 </div>
@@ -125,21 +125,21 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">快速設定</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�ֳt�]�w</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-primary" onclick="setQuickSettings('daily', '每日簽到', '每日簽到獲得點數獎勵', 100, 7)">
-                            <i class="fas fa-sun"></i> 每日簽到 (7天)
+                        <button type="button" class="btn btn-outline-primary" onclick="setQuickSettings('daily', '�C��ñ��', '�C��ñ����o�I�Ƽ��y', 100, 7)">
+                            <i class="fas fa-sun"></i> �C��ñ�� (7��)
                         </button>
-                        <button type="button" class="btn btn-outline-success" onclick="setQuickSettings('weekly', '週簽到', '每週簽到獲得額外獎勵', 500, 7)">
-                            <i class="fas fa-calendar-week"></i> 週簽到 (7天)
+                        <button type="button" class="btn btn-outline-success" onclick="setQuickSettings('weekly', '�gñ��', '�C�gñ����o�B�~���y', 500, 7)">
+                            <i class="fas fa-calendar-week"></i> �gñ�� (7��)
                         </button>
-                        <button type="button" class="btn btn-outline-info" onclick="setQuickSettings('monthly', '月簽到', '每月簽到獲得豐厚獎勵', 2000, 30)">
-                            <i class="fas fa-calendar-alt"></i> 月簽到 (30天)
+                        <button type="button" class="btn btn-outline-info" onclick="setQuickSettings('monthly', '��ñ��', '�C��ñ����o�׫p���y', 2000, 30)">
+                            <i class="fas fa-calendar-alt"></i> ��ñ�� (30��)
                         </button>
-                        <button type="button" class="btn btn-outline-warning" onclick="setQuickSettings('event', '活動簽到', '特殊活動簽到獎勵', 1000, 14)">
-                            <i class="fas fa-gift"></i> 活動簽到 (14天)
+                        <button type="button" class="btn btn-outline-warning" onclick="setQuickSettings('event', '����ñ��', '�S�����ñ����y', 1000, 14)">
+                            <i class="fas fa-gift"></i> ����ñ�� (14��)
                         </button>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
             document.getElementById('EndDate').value = endDate.toISOString().slice(0, 16);
         }
 
-        // 日期驗證
+        // �������
         document.getElementById('StartDate').addEventListener('change', function() {
             const startDate = new Date(this.value);
             const endDateInput = document.getElementById('EndDate');
@@ -182,7 +182,7 @@
             const startDate = new Date(startDateInput.value);
             
             if (endDate <= startDate) {
-                alert('結束日期必須晚於開始日期');
+                alert('�����������ߩ�}�l���');
                 this.value = '';
             }
         });

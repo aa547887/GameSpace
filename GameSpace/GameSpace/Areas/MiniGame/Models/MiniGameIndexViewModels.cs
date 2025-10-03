@@ -289,7 +289,7 @@ namespace GameSpace.Areas.MiniGame.Models
         /// <summary>
         /// 遊戲記錄列表
         /// </summary>
-        public List<MiniGame> GameRecords { get; set; } = new();
+        public List<GameSpace.Models.MiniGame> GameRecords { get; set; } = new();
         
         /// <summary>
         /// 用戶列表
@@ -324,7 +324,7 @@ namespace GameSpace.Areas.MiniGame.Models
         /// <summary>
         /// 分頁結果
         /// </summary>
-        public PagedResult<MiniGame> PagedResults { get; set; } = new();
+        public PagedResult<GameSpace.Models.MiniGame> PagedResults { get; set; } = new();
     }
 
     /// <summary>

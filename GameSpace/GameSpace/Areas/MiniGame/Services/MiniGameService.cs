@@ -1,4 +1,4 @@
-﻿using GameSpace.Areas.MiniGame.Models;
+﻿using MiniGameEntity = GameSpace.Models.MiniGame;
 using Microsoft.Data.SqlClient;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -12,9 +12,9 @@ namespace GameSpace.Areas.MiniGame.Services
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public async Task<IEnumerable<MiniGame>> GetAllMiniGamesAsync()
+        public async Task<IEnumerable<MiniGameEntity>> GetAllMiniGamesAsync()
         {
-            var games = new List<MiniGame>();
+            var games = new List<MiniGameEntity>();
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
@@ -23,7 +23,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                games.Add(new MiniGame
+                games.Add(new MiniGameEntity
                 {
                     GameID = reader.GetInt32("GameID"),
                     UserID = reader.GetInt32("UserID"),
@@ -41,9 +41,9 @@ namespace GameSpace.Areas.MiniGame.Services
             return games;
         }
 
-        public async Task<IEnumerable<MiniGame>> GetMiniGamesByUserIdAsync(int userId)
+        public async Task<IEnumerable<MiniGameEntity>> GetMiniGamesByUserIdAsync(int userId)
         {
-            var games = new List<MiniGame>();
+            var games = new List<MiniGameEntity>();
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
@@ -53,7 +53,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                games.Add(new MiniGame
+                games.Add(new MiniGameEntity
                 {
                     GameID = reader.GetInt32("GameID"),
                     UserID = reader.GetInt32("UserID"),
@@ -71,9 +71,9 @@ namespace GameSpace.Areas.MiniGame.Services
             return games;
         }
 
-        public async Task<IEnumerable<MiniGame>> GetMiniGamesByPetIdAsync(int petId)
+        public async Task<IEnumerable<MiniGameEntity>> GetMiniGamesByPetIdAsync(int petId)
         {
-            var games = new List<MiniGame>();
+            var games = new List<MiniGameEntity>();
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
@@ -83,7 +83,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                games.Add(new MiniGame
+                games.Add(new MiniGameEntity
                 {
                     GameID = reader.GetInt32("GameID"),
                     UserID = reader.GetInt32("UserID"),
@@ -101,7 +101,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return games;
         }
 
-        public async Task<MiniGame?> GetMiniGameByIdAsync(int gameId)
+        public async Task<MiniGameEntity?> GetMiniGameByIdAsync(int gameId)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -112,7 +112,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
-                return new MiniGame
+                return new MiniGameEntity
                 {
                     GameID = reader.GetInt32("GameID"),
                     UserID = reader.GetInt32("UserID"),
@@ -130,7 +130,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return null;
         }
 
-        public async Task<bool> CreateMiniGameAsync(MiniGame miniGame)
+        public async Task<bool> CreateMiniGameAsync(MiniGameEntity miniGame)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -154,7 +154,7 @@ namespace GameSpace.Areas.MiniGame.Services
             return result > 0;
         }
 
-        public async Task<bool> UpdateMiniGameAsync(MiniGame miniGame)
+        public async Task<bool> UpdateMiniGameAsync(MiniGameEntity miniGame)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -204,7 +204,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> StartGameAsync(int userId, int petId, string gameType)
         {
             var sessionId = Guid.NewGuid().ToString();
-            var miniGame = new MiniGame
+            var miniGame = new MiniGameEntity
             {
                 UserID = userId,
                 PetID = petId,
@@ -257,9 +257,9 @@ namespace GameSpace.Areas.MiniGame.Services
             return result > 0;
         }
 
-        public async Task<IEnumerable<MiniGame>> GetGamesByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<MiniGameEntity>> GetGamesByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            var games = new List<MiniGame>();
+            var games = new List<MiniGameEntity>();
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
@@ -273,7 +273,7 @@ namespace GameSpace.Areas.MiniGame.Services
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                games.Add(new MiniGame
+                games.Add(new MiniGameEntity
                 {
                     GameID = reader.GetInt32("GameID"),
                     UserID = reader.GetInt32("UserID"),

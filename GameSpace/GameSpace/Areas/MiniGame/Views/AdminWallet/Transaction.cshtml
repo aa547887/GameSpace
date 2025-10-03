@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminWalletTransactionViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminWalletTransactionViewModel
 @{
-    ViewData["Title"] = "點數交易";
+    ViewData["Title"] = "�I�ƥ��";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- �������D -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">點數交易</h1>
+        <h1 class="h3 mb-0 text-gray-800">�I�ƥ��</h1>
         <div>
             <a href="@Url.Action("Index", "AdminWallet")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
             </a>
         </div>
     </div>
@@ -19,7 +19,7 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">點數交易</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�I�ƥ��</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="Transaction" method="post">
@@ -30,13 +30,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="control-label">用戶名稱</label>
+                                    <label class="control-label">�Τ�W��</label>
                                     <input type="text" class="form-control" value="@Model.UserName" readonly />
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="control-label">目前點數</label>
+                                    <label class="control-label">�ثe�I��</label>
                                     <input type="text" class="form-control" value="@Model.CurrentPoints.ToString("N0")" readonly />
                                 </div>
                             </div>
@@ -45,36 +45,36 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="TransactionType" class="control-label">交易類型 *</label>
+                                    <label asp-for="TransactionType" class="control-label">������� *</label>
                                     <select asp-for="TransactionType" class="form-control" id="transactionType">
-                                        <option value="">請選擇交易類型</option>
-                                        <option value="earn">增加點數</option>
-                                        <option value="spend">扣除點數</option>
+                                        <option value="">�п�ܥ������</option>
+                                        <option value="earn">�W�[�I��</option>
+                                        <option value="spend">�����I��</option>
                                     </select>
                                     <span asp-validation-for="TransactionType" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="TransactionAmount" class="control-label">交易金額 *</label>
-                                    <input asp-for="TransactionAmount" type="number" class="form-control" placeholder="請輸入交易金額" min="1" />
+                                    <label asp-for="TransactionAmount" class="control-label">������B *</label>
+                                    <input asp-for="TransactionAmount" type="number" class="form-control" placeholder="�п�J������B" min="1" />
                                     <span asp-validation-for="TransactionAmount" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="Description" class="control-label">交易描述 *</label>
-                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="請輸入交易描述"></textarea>
+                            <label asp-for="Description" class="control-label">����y�z *</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="�п�J����y�z"></textarea>
                             <span asp-validation-for="Description" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 執行交易
+                                <i class="fas fa-save"></i> ������
                             </button>
                             <a href="@Url.Action("Index", "AdminWallet")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> 取消
+                                <i class="fas fa-times"></i> ����
                             </a>
                         </div>
                     </form>
@@ -85,33 +85,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">交易須知</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�������</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-coins fa-3x text-primary mb-3"></i>
-                        <h5>點數交易注意事項</h5>
+                        <h5>�I�ƥ���`�N�ƶ�</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            增加點數：直接增加用戶點數
+                            �W�[�I�ơG�����W�[�Τ��I��
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            扣除點數：從用戶點數中扣除
+                            �����I�ơG�q�Τ��I�Ƥ�����
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            交易金額必須大於0
+                            ������B�����j��0
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            交易描述會記錄在歷史中
+                            ����y�z�|�O���b���v��
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            交易後會立即生效
+                            �����|�ߧY�ͮ�
                         </li>
                     </ul>
                 </div>
@@ -119,21 +119,21 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�ֳt�ާ@</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-primary" onclick="setTransaction('earn', 100, '簽到獎勵')">
-                            <i class="fas fa-calendar-check"></i> 簽到獎勵 (100點)
+                        <button type="button" class="btn btn-outline-primary" onclick="setTransaction('earn', 100, 'ñ����y')">
+                            <i class="fas fa-calendar-check"></i> ñ����y (100�I)
                         </button>
-                        <button type="button" class="btn btn-outline-success" onclick="setTransaction('earn', 500, '遊戲獎勵')">
-                            <i class="fas fa-gamepad"></i> 遊戲獎勵 (500點)
+                        <button type="button" class="btn btn-outline-success" onclick="setTransaction('earn', 500, '�C�����y')">
+                            <i class="fas fa-gamepad"></i> �C�����y (500�I)
                         </button>
-                        <button type="button" class="btn btn-outline-info" onclick="setTransaction('earn', 1000, '活動獎勵')">
-                            <i class="fas fa-gift"></i> 活動獎勵 (1000點)
+                        <button type="button" class="btn btn-outline-info" onclick="setTransaction('earn', 1000, '���ʼ��y')">
+                            <i class="fas fa-gift"></i> ���ʼ��y (1000�I)
                         </button>
-                        <button type="button" class="btn btn-outline-warning" onclick="setTransaction('spend', 50, '遊戲消費')">
-                            <i class="fas fa-shopping-cart"></i> 遊戲消費 (50點)
+                        <button type="button" class="btn btn-outline-warning" onclick="setTransaction('spend', 50, '�C�����O')">
+                            <i class="fas fa-shopping-cart"></i> �C�����O (50�I)
                         </button>
                     </div>
                 </div>
@@ -152,21 +152,21 @@
             document.getElementById('Description').value = description;
         }
 
-        // 交易類型變更時的提示
+        // ��������ܧ�ɪ�����
         document.getElementById('transactionType').addEventListener('change', function() {
             const type = this.value;
             const amountInput = document.getElementById('TransactionAmount');
             const descriptionInput = document.getElementById('Description');
             
             if (type === 'earn') {
-                amountInput.placeholder = '請輸入要增加的點數';
-                descriptionInput.placeholder = '請輸入增加點數的原因';
+                amountInput.placeholder = '�п�J�n�W�[���I��';
+                descriptionInput.placeholder = '�п�J�W�[�I�ƪ���]';
             } else if (type === 'spend') {
-                amountInput.placeholder = '請輸入要扣除的點數';
-                descriptionInput.placeholder = '請輸入扣除點數的原因';
+                amountInput.placeholder = '�п�J�n�������I��';
+                descriptionInput.placeholder = '�п�J�����I�ƪ���]';
             } else {
-                amountInput.placeholder = '請輸入交易金額';
-                descriptionInput.placeholder = '請輸入交易描述';
+                amountInput.placeholder = '�п�J������B';
+                descriptionInput.placeholder = '�п�J����y�z';
             }
         });
     </script>

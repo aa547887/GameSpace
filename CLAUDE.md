@@ -1,4 +1,4 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -41,22 +41,32 @@ The application uses **two separate DbContexts**:
    - Connection: `aspnet-GameSpace-38e0b594-8684-40b2-b330-7fb94b733c73`
 
 2. **GameSpacedatabaseContext** (`GameSpace`)
+   - **All Areas share this single DbContext instance**
    - All business domain models (Users, Pets, MiniGames, Wallets, etc.)
    - Connection: `GameSpacedatabase`
    - Located at: `Models/GameSpacedatabaseContext.cs`
+   - **Registered once in `Program.cs`, injected into all controllers and services**
+
+> 📖 **详细架构说明**: 参见 [`schema/Area註冊架構說明.md`](GameSpace/schema/Area註冊架構說明.md) - 完整的 Area 注册、DbContext 使用和路由设定指南
 
 ### Area-Based Architecture
 The project follows ASP.NET Areas pattern with strict boundaries:
 
 ```
 Areas/
-├── Forum/              # Forum management
+├── Forum/              # Forum management (Simple Area - no special registration)
 ├── Identity/           # ASP.NET Identity pages
-├── MemberManagement/   # Member management
-├── MiniGame/          # ⭐ PRIMARY WORK AREA - Admin backend system
-├── OnlineStore/       # E-commerce features
-└── social_hub/        # Social features & SignalR chat
+├── MemberManagement/   # Member management (Simple Area - no special registration)
+├── MiniGame/          # ⭐ PRIMARY WORK AREA - Admin backend system (Complex Area - requires ServiceExtensions)
+├── OnlineStore/       # E-commerce features (Simple Area - no special registration)
+└── social_hub/        # Social features & SignalR chat (Complex Area - requires special registration)
 ```
+
+**Area Registration Patterns**:
+- **Simple Areas** (Forum, OnlineStore, MemberManagement): Only need `[Area("AreaName")]` attribute, no `Program.cs` registration
+- **Complex Areas** (MiniGame, social_hub): Require special service registration in `Program.cs`
+  - MiniGame: Uses `ServiceExtensions.cs` to register 32+ services
+  - social_hub: Requires SignalR Hub registration + custom services
 
 ### MiniGame Area Structure (Primary Development Focus)
 
@@ -135,11 +145,24 @@ Manager permissions stored in `ManagerRolePermission` with boolean flags:
 All MiniGame services MUST be registered in `Areas/MiniGame/config/ServiceExtensions.cs`:
 
 ```csharp
-services.AddScoped<IServiceInterface, ServiceImplementation>();
+public static IServiceCollection AddMiniGameServices(this IServiceCollection services, IConfiguration configuration)
+{
+    // ⚠️ DO NOT register DbContext here - it's already registered in Program.cs
+    // MiniGame Area uses shared GameSpacedatabaseContext
+    
+    services.AddScoped<IServiceInterface, ServiceImplementation>();
+    // ... register all 32+ services
+    
+    return services;
+}
 ```
 
 Then in `Program.cs`, add ONE line:
 ```csharp
+// Register shared DbContext (line 52)
+builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
+
+// Register MiniGame services (line 56)
 builder.Services.AddMiniGameServices(builder.Configuration);
 ```
 
@@ -200,9 +223,12 @@ EVoucherType           # 20 e-voucher types (redemption rules)
 
 ### Database Access
 1. **Always use `GameSpacedatabaseContext`** (not ApplicationDbContext) for business logic
-2. **Use Windows Authentication** (`Integrated Security=True`) for SQL Server
-3. **Connection string key**: `"GameSpace"` (not "GameSpacedatabase")
-4. **Include navigation properties** when querying for permissions: `.Include(m => m.ManagerRoles)`
+2. **Use shared DbContext** - All Areas inject the same `GameSpacedatabaseContext` instance from DI
+3. **Never create new DbContext** - Always inject via constructor, never use `new GameSpacedatabaseContext()`
+4. **Do not register DbContext in Area** - DbContext is only registered once in `Program.cs`
+5. **Use Windows Authentication** (`Integrated Security=True`) for SQL Server
+6. **Connection string key**: `"GameSpace"` (not "GameSpacedatabase")
+7. **Include navigation properties** when querying for permissions: `.Include(m => m.ManagerRoles)`
 
 ### Admin UI Standards
 1. **Template**: SB Admin 2 (Bootstrap-based)
@@ -213,11 +239,15 @@ EVoucherType           # 20 e-voucher types (redemption rules)
 ## Common Pitfalls
 
 1. **Wrong DbContext**: Using `ApplicationDbContext` instead of `GameSpacedatabaseContext`
-2. **Missing service registration**: Forgetting to add service in `ServiceExtensions.cs`
-3. **Entity/ViewModel confusion**: Passing entities to views or ViewModels to EF
-4. **Permission checks**: Not checking module-specific permissions in controllers
-5. **Navigation properties**: Forgetting `.Include()` when loading related data
-6. **Cookie scheme**: Using wrong authentication scheme (should be "AdminCookie")
+2. **Registering DbContext in Area**: Creating separate DbContext registration in `ServiceExtensions.cs` - should only be in `Program.cs`
+3. **Creating new DbContext**: Using `new GameSpacedatabaseContext()` instead of injecting via DI
+4. **Not sharing DbContext**: Creating separate DbContext for each Area instead of using shared instance
+5. **Missing service registration**: Forgetting to add service in `ServiceExtensions.cs`
+6. **Entity/ViewModel confusion**: Passing entities to views or ViewModels to EF
+7. **Permission checks**: Not checking module-specific permissions in controllers
+8. **Navigation properties**: Forgetting `.Include()` when loading related data
+9. **Cookie scheme**: Using wrong authentication scheme (should be "AdminCookie")
+10. **Explicit Route attribute**: Using `[Route("AreaName/[controller]")]` instead of relying on automatic Area routing
 
 ## Test Accounts
 
@@ -267,3 +297,4 @@ wang_meiling_03   / StrongPwd003!   # Shopping & pet management
 9. Authentication
 10. Authorization
 11. MapControllers / MapHub / MapRazorPages
+

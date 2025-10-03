@@ -59,6 +59,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<ManagerDatum> ManagerData { get; set; }
 
+    public virtual DbSet<ManagerRole> ManagerRoles { get; set; }
+
     public virtual DbSet<ManagerRolePermission> ManagerRolePermissions { get; set; }
 
     public virtual DbSet<MemberSalesProfile> MemberSalesProfiles { get; set; }
@@ -164,6 +166,10 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<VCsEligibleAgent> VCsEligibleAgents { get; set; }
 
     public virtual DbSet<WalletHistory> WalletHistories { get; set; }
+
+    public virtual DbSet<AdminOperationLog> AdminOperationLogs { get; set; }
+
+    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

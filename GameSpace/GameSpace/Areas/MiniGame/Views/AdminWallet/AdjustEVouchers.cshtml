@@ -1,6 +1,6 @@
-ï»¿@model GameSpace.Areas.MiniGame.Models.AdjustEVouchersModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.AdjustEVouchersModel
 @{
-    ViewData["Title"] = "èª¿æ•´æœƒå“¡æ“æœ‰é›»å­ç¦®åˆ¸";
+    ViewData["Title"] = "½Õ¾ã·|­û¾Ö¦³¹q¤lÂ§¨é";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
@@ -8,20 +8,20 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-gift-card mr-2"></i>èª¿æ•´æœƒå“¡æ“æœ‰é›»å­ç¦®åˆ¸
+            <i class="fas fa-gift-card mr-2"></i>½Õ¾ã·|­û¾Ö¦³¹q¤lÂ§¨é
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> è¿”å›
+                <i class="fas fa-arrow-left"></i> ªğ¦^
             </a>
         </div>
     </div>
 
-    <!-- èª¿æ•´è¡¨å–® -->
+    <!-- ½Õ¾ãªí³æ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-gift-card"></i> é›»å­ç¦®åˆ¸èª¿æ•´è³‡è¨Š
+                <i class="fas fa-gift-card"></i> ¹q¤lÂ§¨é½Õ¾ã¸ê°T
             </h6>
         </div>
         <div class="card-body">
@@ -29,20 +29,20 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="UserId" class="control-label">ç”¨æˆ¶ID *</label>
-                            <input asp-for="UserId" class="form-control" placeholder="è¼¸å…¥ç”¨æˆ¶ID" required />
+                            <label asp-for="UserId" class="control-label">¥Î¤áID *</label>
+                            <input asp-for="UserId" class="form-control" placeholder="¿é¤J¥Î¤áID" required />
                             <span asp-validation-for="UserId" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="EVoucherTypeId" class="control-label">ç¦®åˆ¸é¡å‹ *</label>   
+                            <label asp-for="EVoucherTypeId" class="control-label">Â§¨éÃş«¬ *</label>   
                             <select asp-for="EVoucherTypeId" class="form-control" required>
-                                <option value="">è«‹é¸æ“‡ç¦®åˆ¸é¡å‹</option>
-                                <option value="1">ç¾é‡‘ç¦®åˆ¸</option>
-                                <option value="2">å•†å“ç¦®åˆ¸</option>
-                                <option value="3">æœå‹™ç¦®åˆ¸</option>
-                                <option value="4">ç¯€æ—¥ç¦®åˆ¸</option>
+                                <option value="">½Ğ¿ï¾ÜÂ§¨éÃş«¬</option>
+                                <option value="1">²{ª÷Â§¨é</option>
+                                <option value="2">°Ó«~Â§¨é</option>
+                                <option value="3">ªA°ÈÂ§¨é</option>
+                                <option value="4">¸`¤éÂ§¨é</option>
                             </select>
                             <span asp-validation-for="EVoucherTypeId" class="text-danger"></span>
                         </div>
@@ -52,14 +52,14 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="Quantity" class="control-label">èª¿æ•´æ•¸é‡ *</label>
-                            <input asp-for="Quantity" class="form-control" type="number" min="1" max="10" placeholder="è¼¸å…¥æ•¸é‡" required />
+                            <label asp-for="Quantity" class="control-label">½Õ¾ã¼Æ¶q *</label>
+                            <input asp-for="Quantity" class="form-control" type="number" min="1" max="10" placeholder="¿é¤J¼Æ¶q" required />
                             <span asp-validation-for="Quantity" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="ExpiryDate" class="control-label">åˆ°æœŸæ—¥æœŸ *</label>       
+                            <label asp-for="ExpiryDate" class="control-label">¨ì´Á¤é´Á *</label>       
                             <input asp-for="ExpiryDate" class="form-control" type="date" required />
                             <span asp-validation-for="ExpiryDate" class="text-danger"></span>
                         </div>
@@ -69,55 +69,55 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="Reason" class="control-label">èª¿æ•´åŸå›  *</label>
+                            <label asp-for="Reason" class="control-label">½Õ¾ã­ì¦] *</label>
                             <select asp-for="Reason" class="form-control" required>
-                                <option value="">è«‹é¸æ“‡èª¿æ•´åŸå› </option>
-                                <option value="æ´»å‹•çå‹µ">æ´»å‹•çå‹µ</option>
-                                <option value="è£œå„Ÿ">è£œå„Ÿ</option>
-                                <option value="å®¢æœè™•ç†">å®¢æœè™•ç†</option>
-                                <option value="ç”Ÿæ—¥ç¦®ç‰©">ç”Ÿæ—¥ç¦®ç‰©</option>
-                                <option value="ç¯€æ—¥ç¦®ç‰©">ç¯€æ—¥ç¦®ç‰©</option>
-                                <option value="å…¶ä»–">å…¶ä»–</option>
+                                <option value="">½Ğ¿ï¾Ü½Õ¾ã­ì¦]</option>
+                                <option value="¬¡°Ê¼úÀy">¬¡°Ê¼úÀy</option>
+                                <option value="¸ÉÀv">¸ÉÀv</option>
+                                <option value="«ÈªA³B²z">«ÈªA³B²z</option>
+                                <option value="¥Í¤éÂ§ª«">¥Í¤éÂ§ª«</option>
+                                <option value="¸`¤éÂ§ª«">¸`¤éÂ§ª«</option>
+                                <option value="¨ä¥L">¨ä¥L</option>
                             </select>
                             <span asp-validation-for="Reason" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="CustomValue" class="control-label">è‡ªè¨‚é¢é¡</label>        
-                            <input asp-for="CustomValue" class="form-control" type="number" step="0.01" min="0" placeholder="ç•™ç©ºä½¿ç”¨é è¨­é¢é¡" />
+                            <label asp-for="CustomValue" class="control-label">¦Û­q­±ÃB</label>        
+                            <input asp-for="CustomValue" class="form-control" type="number" step="0.01" min="0" placeholder="¯dªÅ¨Ï¥Î¹w³]­±ÃB" />
                             <span asp-validation-for="CustomValue" class="text-danger"></span>
-                            <small class="form-text text-muted">ç•™ç©ºå°‡ä½¿ç”¨ç¦®åˆ¸é¡å‹çš„é è¨­é¢é¡</small>   
+                            <small class="form-text text-muted">¯dªÅ±N¨Ï¥ÎÂ§¨éÃş«¬ªº¹w³]­±ÃB</small>   
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Description" class="control-label">è©³ç´°èªªæ˜</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="è¼¸å…¥è©³ç´°èªªæ˜"></textarea>
+                    <label asp-for="Description" class="control-label">¸Ô²Ó»¡©ú</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="¿é¤J¸Ô²Ó»¡©ú"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-gift"></i> ç™¼æ”¾ç¦®åˆ¸
+                        <i class="fas fa-gift"></i> µo©ñÂ§¨é
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> é‡ç½®
+                        <i class="fas fa-undo"></i> ­«¸m
                     </button>
                     <button type="button" class="btn btn-info" onclick="previewAdjust()">
-                        <i class="fas fa-eye"></i> é è¦½
+                        <i class="fas fa-eye"></i> ¹wÄı
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ç¦®åˆ¸é¡å‹è³‡è¨Š -->
+    <!-- Â§¨éÃş«¬¸ê°T -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-info-circle"></i> å¯ç”¨ç¦®åˆ¸é¡å‹
+                <i class="fas fa-info-circle"></i> ¥i¥ÎÂ§¨éÃş«¬
             </h6>
         </div>
         <div class="card-body">
@@ -125,41 +125,41 @@
                 <table class="table table-bordered table-hover" id="evoucherTypesTable" width="100%" cellspacing="0">
                     <thead class="thead-light">
                         <tr>
-                            <th>é¡å‹ID</th>
-                            <th>é¡å‹åç¨±</th>
-                            <th>é è¨­é¢é¡</th>
-                            <th>ä½¿ç”¨ç¯„åœ</th>
-                            <th>ç‹€æ…‹</th>
+                            <th>Ãş«¬ID</th>
+                            <th>Ãş«¬¦WºÙ</th>
+                            <th>¹w³]­±ÃB</th>
+                            <th>¨Ï¥Î½d³ò</th>
+                            <th>ª¬ºA</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td>ç¾é‡‘ç¦®åˆ¸</td>
+                            <td>²{ª÷Â§¨é</td>
                             <td>NT$ 500</td>
-                            <td>å…¨ç«™é€šç”¨</td>
-                            <td><span class="badge badge-success">å•Ÿç”¨</span></td>
+                            <td>¥ş¯¸³q¥Î</td>
+                            <td><span class="badge badge-success">±Ò¥Î</span></td>
                         </tr>
                         <tr>
                             <td>2</td>
-                            <td>å•†å“ç¦®åˆ¸</td>
+                            <td>°Ó«~Â§¨é</td>
                             <td>NT$ 300</td>
-                            <td>æŒ‡å®šå•†å“</td>
-                            <td><span class="badge badge-success">å•Ÿç”¨</span></td>
+                            <td>«ü©w°Ó«~</td>
+                            <td><span class="badge badge-success">±Ò¥Î</span></td>
                         </tr>
                         <tr>
                             <td>3</td>
-                            <td>æœå‹™ç¦®åˆ¸</td>
+                            <td>ªA°ÈÂ§¨é</td>
                             <td>NT$ 200</td>
-                            <td>æŒ‡å®šæœå‹™</td>
-                            <td><span class="badge badge-success">å•Ÿç”¨</span></td>
+                            <td>«ü©wªA°È</td>
+                            <td><span class="badge badge-success">±Ò¥Î</span></td>
                         </tr>
                         <tr>
                             <td>4</td>
-                            <td>ç¯€æ—¥ç¦®åˆ¸</td>
+                            <td>¸`¤éÂ§¨é</td>
                             <td>NT$ 1000</td>
-                            <td>ç¯€æ—¥é™å®š</td>
-                            <td><span class="badge badge-success">å•Ÿç”¨</span></td>
+                            <td>¸`¤é­­©w</td>
+                            <td><span class="badge badge-success">±Ò¥Î</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -167,11 +167,11 @@
         </div>
     </div>
 
-    <!-- æœ€è¿‘èª¿æ•´è¨˜éŒ„ -->
+    <!-- ³Ìªñ½Õ¾ã°O¿ı -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-history"></i> æœ€è¿‘èª¿æ•´è¨˜éŒ„
+                <i class="fas fa-history"></i> ³Ìªñ½Õ¾ã°O¿ı
             </h6>
         </div>
         <div class="card-body">
@@ -179,42 +179,42 @@
                 <table class="table table-bordered table-hover" id="recentAdjustsTable" width="100%" cellspacing="0">
                     <thead class="thead-light">
                         <tr>
-                            <th>èª¿æ•´æ™‚é–“</th>
-                            <th>ç”¨æˆ¶ID</th>
-                            <th>ç¦®åˆ¸é¡å‹</th>
-                            <th>èª¿æ•´æ•¸é‡</th>
-                            <th>èª¿æ•´åŸå› </th>
-                            <th>æ“ä½œè€…</th>
-                            <th>ç‹€æ…‹</th>
+                            <th>½Õ¾ã®É¶¡</th>
+                            <th>¥Î¤áID</th>
+                            <th>Â§¨éÃş«¬</th>
+                            <th>½Õ¾ã¼Æ¶q</th>
+                            <th>½Õ¾ã­ì¦]</th>
+                            <th>¾Ş§@ªÌ</th>
+                            <th>ª¬ºA</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>2024-01-15 14:30:25</td>
                             <td>user001</td>
-                            <td>ç¾é‡‘ç¦®åˆ¸</td>
+                            <td>²{ª÷Â§¨é</td>
                             <td>1</td>
-                            <td>æ´»å‹•çå‹µ</td>
-                            <td>ç®¡ç†å“¡</td>
-                            <td><span class="badge badge-success">æˆåŠŸ</span></td>
+                            <td>¬¡°Ê¼úÀy</td>
+                            <td>ºŞ²z­û</td>
+                            <td><span class="badge badge-success">¦¨¥\</span></td>
                         </tr>
                         <tr>
                             <td>2024-01-15 13:45:12</td>
                             <td>user002</td>
-                            <td>å•†å“ç¦®åˆ¸</td>
+                            <td>°Ó«~Â§¨é</td>
                             <td>2</td>
-                            <td>è£œå„Ÿ</td>
-                            <td>ç®¡ç†å“¡</td>
-                            <td><span class="badge badge-success">æˆåŠŸ</span></td>
+                            <td>¸ÉÀv</td>
+                            <td>ºŞ²z­û</td>
+                            <td><span class="badge badge-success">¦¨¥\</span></td>
                         </tr>
                         <tr>
                             <td>2024-01-15 12:20:08</td>
                             <td>user003</td>
-                            <td>ç¯€æ—¥ç¦®åˆ¸</td>
+                            <td>¸`¤éÂ§¨é</td>
                             <td>1</td>
-                            <td>ç¯€æ—¥ç¦®ç‰©</td>
-                            <td>ç³»çµ±</td>
-                            <td><span class="badge badge-success">æˆåŠŸ</span></td>
+                            <td>¸`¤éÂ§ª«</td>
+                            <td>¨t²Î</td>
+                            <td><span class="badge badge-success">¦¨¥\</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -223,24 +223,24 @@
     </div>
 </div>
 
-<!-- é è¦½ Modal -->
+<!-- ¹wÄı Modal -->
 <div class="modal fade" id="previewModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">ç™¼æ”¾é è¦½</h5>
+                <h5 class="modal-title">µo©ñ¹wÄı</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div id="previewContent">
-                    <!-- é è¦½å…§å®¹å°‡åœ¨é€™è£¡é¡¯ç¤º -->
+                    <!-- ¹wÄı¤º®e±N¦b³o¸ÌÅã¥Ü -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
-                <button type="button" class="btn btn-primary" onclick="confirmAdjust()">ç¢ºèªç™¼æ”¾</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                <button type="button" class="btn btn-primary" onclick="confirmAdjust()">½T»{µo©ñ</button>
             </div>
         </div>
     </div>
@@ -248,7 +248,7 @@
 
 <script>
 $(document).ready(function() {
-    // åˆå§‹åŒ– DataTable
+    // ªì©l¤Æ DataTable
     $("#evoucherTypesTable, #recentAdjustsTable").DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -259,7 +259,7 @@ $(document).ready(function() {
 });
 
 function resetForm() {
-    if (confirm("ç¢ºå®šè¦é‡ç½®è¡¨å–®å—ï¼Ÿæ‰€æœ‰æœªå„²å­˜çš„è®Šæ›´å°‡æœƒéºå¤±ã€‚")) {
+    if (confirm("½T©w­n­«¸mªí³æ¶Ü¡H©Ò¦³¥¼Àx¦sªºÅÜ§ó±N·|¿ò¥¢¡C")) {
         document.getElementById("adjustForm").reset();
     }
 }
@@ -280,23 +280,23 @@ function previewAdjust() {
             if (response.success) {
                 showPreview(response.data);
             } else {
-                alert("é è¦½å¤±æ•—: " + response.message);
+                alert("¹wÄı¥¢±Ñ: " + response.message);
             }
         },
         error: function() {
-            alert("é è¦½è«‹æ±‚å¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦");
+            alert("¹wÄı½Ğ¨D¥¢±Ñ¡A½Ğµy«á¦A¸Õ");
         }
     });
 }
 
 function showPreview(data) {
-    var previewHtml = "<h6>ç™¼æ”¾è¨­å®šé è¦½</h6>";
-    previewHtml += "<p><strong>ç”¨æˆ¶ID:</strong> " + data.userId + "</p>";
-    previewHtml += "<p><strong>ç¦®åˆ¸é¡å‹:</strong> " + data.eVoucherTypeName + "</p>";
-    previewHtml += "<p><strong>èª¿æ•´æ•¸é‡:</strong> " + data.quantity + "</p>";
-    previewHtml += "<p><strong>åˆ°æœŸæ—¥æœŸ:</strong> " + data.expiryDate + "</p>";
-    previewHtml += "<p><strong>èª¿æ•´åŸå› :</strong> " + data.reason + "</p>";
-    previewHtml += "<p><strong>é¢é¡:</strong> " + data.value + "</p>";
+    var previewHtml = "<h6>µo©ñ³]©w¹wÄı</h6>";
+    previewHtml += "<p><strong>¥Î¤áID:</strong> " + data.userId + "</p>";
+    previewHtml += "<p><strong>Â§¨éÃş«¬:</strong> " + data.eVoucherTypeName + "</p>";
+    previewHtml += "<p><strong>½Õ¾ã¼Æ¶q:</strong> " + data.quantity + "</p>";
+    previewHtml += "<p><strong>¨ì´Á¤é´Á:</strong> " + data.expiryDate + "</p>";
+    previewHtml += "<p><strong>½Õ¾ã­ì¦]:</strong> " + data.reason + "</p>";
+    previewHtml += "<p><strong>­±ÃB:</strong> " + data.value + "</p>";
 
     $("#previewContent").html(previewHtml);
     $("#previewModal").modal("show");
@@ -307,7 +307,7 @@ function confirmAdjust() {
     $("#adjustForm").submit();
 }
 
-// è¡¨å–®é©—è­‰
+// ªí³æÅçÃÒ
 function validateForm() {
     const userId = document.getElementById("UserId").value.trim();
     const evoucherTypeId = document.getElementById("EVoucherTypeId").value;
@@ -316,34 +316,34 @@ function validateForm() {
     const reason = document.getElementById("Reason").value;
 
     if (!userId) {
-        alert("è«‹è¼¸å…¥ç”¨æˆ¶ID");
+        alert("½Ğ¿é¤J¥Î¤áID");
         return false;
     }
 
     if (!evoucherTypeId) {
-        alert("è«‹é¸æ“‡ç¦®åˆ¸é¡å‹");
+        alert("½Ğ¿ï¾ÜÂ§¨éÃş«¬");
         return false;
     }
 
     if (!quantity || quantity <= 0) {
-        alert("è«‹è¼¸å…¥æœ‰æ•ˆçš„èª¿æ•´æ•¸é‡");
+        alert("½Ğ¿é¤J¦³®Äªº½Õ¾ã¼Æ¶q");
         return false;
     }
 
     if (!expiryDate) {
-        alert("è«‹é¸æ“‡åˆ°æœŸæ—¥æœŸ");
+        alert("½Ğ¿ï¾Ü¨ì´Á¤é´Á");
         return false;
     }
 
     if (!reason) {
-        alert("è«‹é¸æ“‡èª¿æ•´åŸå› ");
+        alert("½Ğ¿ï¾Ü½Õ¾ã­ì¦]");
         return false;
     }
 
     return true;
 }
 
-// è¡¨å–®æäº¤é©—è­‰
+// ªí³æ´£¥æÅçÃÒ
 document.getElementById("adjustForm").addEventListener("submit", function(e) {
     if (!validateForm()) {
         e.preventDefault();
@@ -353,7 +353,7 @@ document.getElementById("adjustForm").addEventListener("submit", function(e) {
     const userId = document.getElementById("UserId").value.trim();
     const quantity = document.getElementById("Quantity").value;
 
-    if (!confirm(`ç¢ºå®šè¦ç™¼æ”¾ ${quantity} å¼µé›»å­ç¦®åˆ¸çµ¦ç”¨æˆ¶ ${userId} å—ï¼Ÿ`)) {
+    if (!confirm(`½T©w­nµo©ñ ${quantity} ±i¹q¤lÂ§¨éµ¹¥Î¤á ${userId} ¶Ü¡H`)) {
         e.preventDefault();
         return;
     }

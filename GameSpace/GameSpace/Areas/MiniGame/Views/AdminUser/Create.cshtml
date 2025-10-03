@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminUserCreateViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminUserCreateViewModel
 @{
-    ViewData["Title"] = "新增用戶";
+    ViewData["Title"] = "�s�W�Τ�";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- �������D -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">新增用戶</h1>
+        <h1 class="h3 mb-0 text-gray-800">�s�W�Τ�</h1>
         <div>
             <a href="@Url.Action("Index", "AdminUser")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
             </a>
         </div>
     </div>
@@ -19,7 +19,7 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">用戶資訊</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�Τ��T</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
@@ -28,15 +28,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="User_name" class="control-label">用戶名稱 *</label>
-                                    <input asp-for="User_name" class="form-control" placeholder="請輸入用戶名稱" />
+                                    <label asp-for="User_name" class="control-label">�Τ�W�� *</label>
+                                    <input asp-for="User_name" class="form-control" placeholder="�п�J�Τ�W��" />
                                     <span asp-validation-for="User_name" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="User_account" class="control-label">用戶帳號 *</label>
-                                    <input asp-for="User_account" class="form-control" placeholder="請輸入用戶帳號" />
+                                    <label asp-for="User_account" class="control-label">�Τ�b�� *</label>
+                                    <input asp-for="User_account" class="form-control" placeholder="�п�J�Τ�b��" />
                                     <span asp-validation-for="User_account" class="text-danger"></span>
                                 </div>
                             </div>
@@ -45,15 +45,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="Password" class="control-label">密碼 *</label>
-                                    <input asp-for="Password" type="password" class="form-control" placeholder="請輸入密碼" />
+                                    <label asp-for="Password" class="control-label">�K�X *</label>
+                                    <input asp-for="Password" type="password" class="form-control" placeholder="�п�J�K�X" />
                                     <span asp-validation-for="Password" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="ConfirmPassword" class="control-label">確認密碼 *</label>
-                                    <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="請再次輸入密碼" />
+                                    <label asp-for="ConfirmPassword" class="control-label">�T�{�K�X *</label>
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="�ЦA����J�K�X" />
                                     <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                                 </div>
                             </div>
@@ -62,15 +62,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="User_email" class="control-label">電子郵件 *</label>
-                                    <input asp-for="User_email" type="email" class="form-control" placeholder="請輸入電子郵件" />
+                                    <label asp-for="User_email" class="control-label">�q�l�l�� *</label>
+                                    <input asp-for="User_email" type="email" class="form-control" placeholder="�п�J�q�l�l��" />
                                     <span asp-validation-for="User_email" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="User_phone" class="control-label">電話號碼</label>
-                                    <input asp-for="User_phone" class="form-control" placeholder="請輸入電話號碼" />
+                                    <label asp-for="User_phone" class="control-label">�q�ܸ��X</label>
+                                    <input asp-for="User_phone" class="form-control" placeholder="�п�J�q�ܸ��X" />
                                     <span asp-validation-for="User_phone" class="text-danger"></span>
                                 </div>
                             </div>
@@ -79,30 +79,30 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="User_birthday" class="control-label">生日</label>
+                                    <label asp-for="User_birthday" class="control-label">�ͤ�</label>
                                     <input asp-for="User_birthday" type="date" class="form-control" />
                                     <span asp-validation-for="User_birthday" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="User_gender" class="control-label">性別</label>
+                                    <label asp-for="User_gender" class="control-label">�ʧO</label>
                                     <select asp-for="User_gender" class="form-control">
-                                        <option value="">請選擇性別</option>
-                                        <option value="男">男</option>
-                                        <option value="女">女</option>
-                                        <option value="其他">其他</option>
+                                        <option value="">�п�ܩʧO</option>
+                                        <option value="�k">�k</option>
+                                        <option value="�k">�k</option>
+                                        <option value="��L">��L</option>
                                     </select>
                                     <span asp-validation-for="User_gender" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="IsActive" class="control-label">狀態</label>
+                                    <label asp-for="IsActive" class="control-label">���A</label>
                                     <div class="form-check">
                                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                                         <label class="form-check-label" for="IsActive">
-                                            啟用
+                                            �ҥ�
                                         </label>
                                     </div>
                                 </div>
@@ -110,17 +110,17 @@
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="User_address" class="control-label">地址</label>
-                            <textarea asp-for="User_address" class="form-control" rows="3" placeholder="請輸入地址"></textarea>
+                            <label asp-for="User_address" class="control-label">�a�}</label>
+                            <textarea asp-for="User_address" class="form-control" rows="3" placeholder="�п�J�a�}"></textarea>
                             <span asp-validation-for="User_address" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 建立用戶
+                                <i class="fas fa-save"></i> �إߥΤ�
                             </button>
                             <a href="@Url.Action("Index", "AdminUser")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> 取消
+                                <i class="fas fa-times"></i> ����
                             </a>
                         </div>
                     </form>
@@ -131,33 +131,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">建立須知</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�إ߶���</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
-                        <h5>用戶建立注意事項</h5>
+                        <h5>�Τ�إߪ`�N�ƶ�</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            用戶帳號必須唯一
+                            �Τ�b�������ߤ@
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            電子郵件必須唯一
+                            �q�l�l�󥲶��ߤ@
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            密碼長度至少6個字符
+                            �K�X���צܤ�6�Ӧr��
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            建立後會自動建立初始錢包
+                            �إ߫�|�۰ʫإߪ�l���]
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            可以選擇是否立即啟用用戶
+                            �i�H��ܬO�_�ߧY�ҥΥΤ�
                         </li>
                     </ul>
                 </div>

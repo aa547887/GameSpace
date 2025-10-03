@@ -15,12 +15,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class PermissionController : MiniGameBaseController
     {
-        private readonly IMiniGamePermissionService _permissionService;
-
-        public PermissionController(GameSpacedatabaseContext context, IMiniGamePermissionService permissionService) 
+        public PermissionController(GameSpacedatabaseContext context, IMiniGamePermissionService permissionService)
             : base(context, null, permissionService)
         {
-            _permissionService = permissionService;
         }
 
         // ========== 管理員權限管理 ==========

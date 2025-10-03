@@ -50,6 +50,9 @@ namespace GameSpace.Areas.MiniGame.config
             // 註冊每日遊戲次數限制服務
             services.AddScoped<IDailyGameLimitService, DailyGameLimitService>();
 
+            // 註冊每日遊戲次數限制驗證服務
+            services.AddScoped<IDailyGameLimitValidationService, DailyGameLimitValidationService>();
+
             // 註冊寵物成本設定服務
             services.AddScoped<IPetSkinColorCostSettingService, PetSkinColorCostSettingService>();
             services.AddScoped<IPetBackgroundCostSettingService, PetBackgroundCostSettingService>();

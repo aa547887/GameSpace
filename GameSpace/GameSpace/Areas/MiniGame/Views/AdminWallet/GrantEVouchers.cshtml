@@ -1,6 +1,6 @@
-ï»¿@model GameSpace.Areas.MiniGame.Models.GrantEVouchersModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.GrantEVouchersModel
 @{
-    ViewData["Title"] = "ç™¼æ”¾æœƒå“¡é›»å­åˆ¸";
+    ViewData["Title"] = "µo©ñ·|­û¹q¤l¨é";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
@@ -8,25 +8,25 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-gift-card mr-2"></i>ç™¼æ”¾æœƒå“¡é›»å­åˆ¸
+            <i class="fas fa-gift-card mr-2"></i>µo©ñ·|­û¹q¤l¨é
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> è¿”å›
+                <i class="fas fa-arrow-left"></i> ªğ¦^
             </a>
         </div>
     </div>
 
-    <!-- çµ±è¨ˆå¡ç‰‡ -->
+    <!-- ²Î­p¥d¤ù -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2 hover-card">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">ä»Šæ—¥ç™¼æ”¾</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGrants">è¼‰å…¥ä¸­...</div>
-                            <div class="text-xs text-muted">è¼ƒæ˜¨æ—¥ <span class="text-success">+12.5%</span></div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">¤µ¤éµo©ñ</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayGrants">¸ü¤J¤¤...</div>
+                            <div class="text-xs text-muted">¸û¬Q¤é <span class="text-success">+12.5%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-gift-card fa-2x text-gray-300"></i>
@@ -40,9 +40,9 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">æœ¬æœˆç™¼æ”¾</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthGrants">è¼‰å…¥ä¸­...</div>
-                            <div class="text-xs text-muted">è¼ƒä¸Šæœˆ <span class="text-success">+8.3%</span></div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">¥»¤ëµo©ñ</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="monthGrants">¸ü¤J¤¤...</div>
+                            <div class="text-xs text-muted">¸û¤W¤ë <span class="text-success">+8.3%</span></div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-chart-line fa-2x text-gray-300"></i>
@@ -56,9 +56,9 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">æ´»èºåˆ¸ç¨®</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeTypes">è¼‰å…¥ä¸­...</div>
-                            <div class="text-xs text-muted">å…± 4 ç¨®é¡å‹</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">¬¡ÅD¨éºØ</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeTypes">¸ü¤J¤¤...</div>
+                            <div class="text-xs text-muted">¦@ 4 ºØÃş«¬</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-tags fa-2x text-gray-300"></i>
@@ -72,9 +72,9 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">å¾…å¯©æ ¸</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingGrants">è¼‰å…¥ä¸­...</div>
-                            <div class="text-xs text-muted">éœ€è¦è™•ç†</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">«İ¼f®Ö</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingGrants">¸ü¤J¤¤...</div>
+                            <div class="text-xs text-muted">»İ­n³B²z</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-clock fa-2x text-gray-300"></i>
@@ -85,37 +85,37 @@
         </div>
     </div>
 
-    <!-- ç™¼æ”¾è¡¨å–® -->
+    <!-- µo©ñªí³æ -->
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-gift-card"></i> é›»å­åˆ¸ç™¼æ”¾è¨­å®š
+                        <i class="fas fa-gift-card"></i> ¹q¤l¨éµo©ñ³]©w
                     </h6>
                 </div>
                 <div class="card-body">
                     <form id="grantEVouchersForm">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="grantType" class="form-label">ç™¼æ”¾é¡å‹ <span class="text-danger">*</span></label>
+                                <label for="grantType" class="form-label">µo©ñÃş«¬ <span class="text-danger">*</span></label>
                                 <select class="form-control" id="grantType" name="grantType" required>
-                                    <option value="">è«‹é¸æ“‡ç™¼æ”¾é¡å‹</option>
-                                    <option value="single">å–®ä¸€æœƒå“¡</option>
-                                    <option value="multiple">å¤šå€‹æœƒå“¡</option>
-                                    <option value="all">å…¨é«”æœƒå“¡</option>
-                                    <option value="condition">æ¢ä»¶ç™¼æ”¾</option>
+                                    <option value="">½Ğ¿ï¾Üµo©ñÃş«¬</option>
+                                    <option value="single">³æ¤@·|­û</option>
+                                    <option value="multiple">¦h­Ó·|­û</option>
+                                    <option value="all">¥şÅé·|­û</option>
+                                    <option value="condition">±ø¥óµo©ñ</option>
                                 </select>
                                 <div class="invalid-feedback" id="grantTypeError"></div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="evoucherTypeId" class="form-label">é›»å­åˆ¸é¡å‹ <span class="text-danger">*</span></label>
+                                <label for="evoucherTypeId" class="form-label">¹q¤l¨éÃş«¬ <span class="text-danger">*</span></label>
                                 <select class="form-control" id="evoucherTypeId" name="evoucherTypeId" required>
-                                    <option value="">è«‹é¸æ“‡é›»å­åˆ¸é¡å‹</option>
-                                    <option value="1" data-value="500">ç¾é‡‘åˆ¸ (NT$ 500)</option>
-                                    <option value="2" data-value="300">å•†å“åˆ¸ (NT$ 300)</option>
-                                    <option value="3" data-value="200">æœå‹™åˆ¸ (NT$ 200)</option>
-                                    <option value="4" data-value="1000">ç¯€æ—¥åˆ¸ (NT$ 1000)</option>
+                                    <option value="">½Ğ¿ï¾Ü¹q¤l¨éÃş«¬</option>
+                                    <option value="1" data-value="500">²{ª÷¨é (NT$ 500)</option>
+                                    <option value="2" data-value="300">°Ó«~¨é (NT$ 300)</option>
+                                    <option value="3" data-value="200">ªA°È¨é (NT$ 200)</option>
+                                    <option value="4" data-value="1000">¸`¤é¨é (NT$ 1000)</option>
                                 </select>
                                 <div class="invalid-feedback" id="evoucherTypeError"></div>
                             </div>
@@ -123,27 +123,27 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="quantity" class="form-label">ç™¼æ”¾æ•¸é‡ <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="quantity" name="quantity" placeholder="è¼¸å…¥æ•¸é‡" required min="1" max="100">
+                                <label for="quantity" class="form-label">µo©ñ¼Æ¶q <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" placeholder="¿é¤J¼Æ¶q" required min="1" max="100">
                                 <div class="invalid-feedback" id="quantityError"></div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="customValue" class="form-label">è‡ªè¨‚é¢é¡</label>
+                                <label for="customValue" class="form-label">¦Û­q­±ÃB</label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">NT$</span>
                                     </div>
-                                    <input type="number" class="form-control" id="customValue" name="customValue" step="0.01" min="0" placeholder="ç•™ç©ºä½¿ç”¨é è¨­é¢é¡">
+                                    <input type="number" class="form-control" id="customValue" name="customValue" step="0.01" min="0" placeholder="¯dªÅ¨Ï¥Î¹w³]­±ÃB">
                                 </div>
-                                <small class="form-text text-muted">ç•™ç©ºå°‡ä½¿ç”¨é›»å­åˆ¸é¡å‹çš„é è¨­é¢é¡</small>
+                                <small class="form-text text-muted">¯dªÅ±N¨Ï¥Î¹q¤l¨éÃş«¬ªº¹w³]­±ÃB</small>
                             </div>
                         </div>
 
                         <div class="row" id="singleUserRow" style="display: none;">
                             <div class="col-md-12 mb-3">
-                                <label for="userId" class="form-label">æœƒå“¡ID <span class="text-danger">*</span></label>
+                                <label for="userId" class="form-label">·|­ûID <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="userId" name="userId" placeholder="è¼¸å…¥æœƒå“¡ID">
+                                    <input type="text" class="form-control" id="userId" name="userId" placeholder="¿é¤J·|­ûID">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary" type="button" id="searchUserBtn">
                                             <i class="fas fa-search"></i>
@@ -156,48 +156,48 @@
 
                         <div class="row" id="multipleUsersRow" style="display: none;">
                             <div class="col-md-12 mb-3">
-                                <label for="userIds" class="form-label">æœƒå“¡IDåˆ—è¡¨ <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="userIds" name="userIds" rows="5" placeholder="è¼¸å…¥æœƒå“¡IDï¼Œæ¯è¡Œä¸€å€‹"></textarea>
+                                <label for="userIds" class="form-label">·|­ûID¦Cªí <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="userIds" name="userIds" rows="5" placeholder="¿é¤J·|­ûID¡A¨C¦æ¤@­Ó"></textarea>
                                 <div class="invalid-feedback" id="userIdsError"></div>
-                                <small class="form-text text-muted">æ¯è¡Œè¼¸å…¥ä¸€å€‹æœƒå“¡IDï¼Œæœ€å¤šæ”¯æ´100å€‹æœƒå“¡</small>
+                                <small class="form-text text-muted">¨C¦æ¿é¤J¤@­Ó·|­ûID¡A³Ì¦h¤ä´©100­Ó·|­û</small>
                             </div>
                         </div>
 
                         <div class="row" id="conditionRow" style="display: none;">
                             <div class="col-md-6 mb-3">
-                                <label for="conditionType" class="form-label">æ¢ä»¶é¡å‹ <span class="text-danger">*</span></label>
+                                <label for="conditionType" class="form-label">±ø¥óÃş«¬ <span class="text-danger">*</span></label>
                                 <select class="form-control" id="conditionType" name="conditionType">
-                                    <option value="">è«‹é¸æ“‡æ¢ä»¶é¡å‹</option>
-                                    <option value="level">ç­‰ç´šæ¢ä»¶</option>
-                                    <option value="points">é»æ•¸æ¢ä»¶</option>
-                                    <option value="signin">ç°½åˆ°æ¢ä»¶</option>
-                                    <option value="game">éŠæˆ²æ¢ä»¶</option>
+                                    <option value="">½Ğ¿ï¾Ü±ø¥óÃş«¬</option>
+                                    <option value="level">µ¥¯Å±ø¥ó</option>
+                                    <option value="points">ÂI¼Æ±ø¥ó</option>
+                                    <option value="signin">Ã±¨ì±ø¥ó</option>
+                                    <option value="game">¹CÀ¸±ø¥ó</option>
                                 </select>
                                 <div class="invalid-feedback" id="conditionTypeError"></div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="conditionValue" class="form-label">æ¢ä»¶å€¼ <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="conditionValue" name="conditionValue" placeholder="è¼¸å…¥æ¢ä»¶å€¼">
+                                <label for="conditionValue" class="form-label">±ø¥ó­È <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="conditionValue" name="conditionValue" placeholder="¿é¤J±ø¥ó­È">
                                 <div class="invalid-feedback" id="conditionValueError"></div>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="expireDate" class="form-label">æœ‰æ•ˆæœŸé™ <span class="text-danger">*</span></label>
+                                <label for="expireDate" class="form-label">¦³®Ä´Á­­ <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="expireDate" name="expireDate" required>
                                 <div class="invalid-feedback" id="expireDateError"></div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="reason" class="form-label">ç™¼æ”¾åŸå›  <span class="text-danger">*</span></label>
+                                <label for="reason" class="form-label">µo©ñ­ì¦] <span class="text-danger">*</span></label>
                                 <select class="form-control" id="reason" name="reason" required>
-                                    <option value="">è«‹é¸æ“‡ç™¼æ”¾åŸå› </option>
-                                    <option value="æ´»å‹•çå‹µ">æ´»å‹•çå‹µ</option>
-                                    <option value="è£œå„Ÿ">è£œå„Ÿ</option>
-                                    <option value="å®¢æœè™•ç†">å®¢æœè™•ç†</option>
-                                    <option value="ç”Ÿæ—¥ç¦®ç‰©">ç”Ÿæ—¥ç¦®ç‰©</option>
-                                    <option value="ç¯€æ—¥ç¦®ç‰©">ç¯€æ—¥ç¦®ç‰©</option>
-                                    <option value="å…¶ä»–">å…¶ä»–</option>
+                                    <option value="">½Ğ¿ï¾Üµo©ñ­ì¦]</option>
+                                    <option value="¬¡°Ê¼úÀy">¬¡°Ê¼úÀy</option>
+                                    <option value="¸ÉÀv">¸ÉÀv</option>
+                                    <option value="«ÈªA³B²z">«ÈªA³B²z</option>
+                                    <option value="¥Í¤éÂ§ª«">¥Í¤éÂ§ª«</option>
+                                    <option value="¸`¤éÂ§ª«">¸`¤éÂ§ª«</option>
+                                    <option value="¨ä¥L">¨ä¥L</option>
                                 </select>
                                 <div class="invalid-feedback" id="reasonError"></div>
                             </div>
@@ -205,8 +205,8 @@
 
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="description" class="form-label">è©³ç´°èªªæ˜</label>
-                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="è¼¸å…¥è©³ç´°èªªæ˜"></textarea>
+                                <label for="description" class="form-label">¸Ô²Ó»¡©ú</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="¿é¤J¸Ô²Ó»¡©ú"></textarea>
                             </div>
                         </div>
 
@@ -215,7 +215,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="notifyUser" name="notifyUser" checked>
                                     <label class="form-check-label" for="notifyUser">
-                                        <i class="fas fa-bell"></i> ç™¼é€é€šçŸ¥çµ¦å—å½±éŸ¿çš„æœƒå“¡
+                                        <i class="fas fa-bell"></i> µo°e³qª¾µ¹¨ü¼vÅTªº·|­û
                                     </label>
                                 </div>
                             </div>
@@ -223,7 +223,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="generateQR" name="generateQR" checked>
                                     <label class="form-check-label" for="generateQR">
-                                        <i class="fas fa-qrcode"></i> è‡ªå‹•ç”ŸæˆQRç¢¼
+                                        <i class="fas fa-qrcode"></i> ¦Û°Ê¥Í¦¨QR½X
                                     </label>
                                 </div>
                             </div>
@@ -232,13 +232,13 @@
                         <div class="row">
                             <div class="col-12 text-right">
                                 <button type="button" class="btn btn-primary btn-hover" id="previewBtn">
-                                    <i class="fas fa-eye"></i> é è¦½
+                                    <i class="fas fa-eye"></i> ¹wÄı
                                 </button>
                                 <button type="submit" class="btn btn-success btn-hover" id="submitBtn">
-                                    <i class="fas fa-check"></i> ç¢ºèªç™¼æ”¾
+                                    <i class="fas fa-check"></i> ½T»{µo©ñ
                                 </button>
                                 <button type="button" class="btn btn-secondary btn-hover" id="resetBtn">
-                                    <i class="fas fa-undo"></i> é‡ç½®
+                                    <i class="fas fa-undo"></i> ­«¸m
                                 </button>
                             </div>
                         </div>
@@ -251,26 +251,26 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-info">
-                        <i class="fas fa-info-circle"></i> ç™¼æ”¾é ˆçŸ¥
+                        <i class="fas fa-info-circle"></i> µo©ñ¶·ª¾
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li class="mb-2"><i class="fas fa-check text-success"></i> é›»å­åˆ¸ç™¼æ”¾å¾Œç«‹å³ç”Ÿæ•ˆ</li>
-                        <li class="mb-2"><i class="fas fa-check text-success"></i> ç³»çµ±æœƒè‡ªå‹•è¨˜éŒ„ç™¼æ”¾è¨˜éŒ„</li>
-                        <li class="mb-2"><i class="fas fa-check text-success"></i> å¯é¸æ“‡æ˜¯å¦é€šçŸ¥æœƒå“¡</li>
-                        <li class="mb-2"><i class="fas fa-check text-success"></i> æ”¯æ´æ‰¹æ¬¡ç™¼æ”¾åŠŸèƒ½</li>
-                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> è«‹ç¢ºèªç™¼æ”¾æ¢ä»¶æ­£ç¢º</li>
-                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> å¤§é‡ç™¼æ”¾å‰è«‹å…ˆé è¦½</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> ¹q¤l¨éµo©ñ«á¥ß§Y¥Í®Ä</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> ¨t²Î·|¦Û°Ê°O¿ıµo©ñ°O¿ı</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> ¥i¿ï¾Ü¬O§_³qª¾·|­û</li>
+                        <li class="mb-2"><i class="fas fa-check text-success"></i> ¤ä´©§å¦¸µo©ñ¥\¯à</li>
+                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> ½Ğ½T»{µo©ñ±ø¥ó¥¿½T</li>
+                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> ¤j¶qµo©ñ«e½Ğ¥ı¹wÄı</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- é›»å­åˆ¸é¡å‹è³‡è¨Š -->
+            <!-- ¹q¤l¨éÃş«¬¸ê°T -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-list"></i> å¯ç”¨é›»å­åˆ¸é¡å‹
+                        <i class="fas fa-list"></i> ¥i¥Î¹q¤l¨éÃş«¬
                     </h6>
                 </div>
                 <div class="card-body">
@@ -278,31 +278,31 @@
                         <table class="table table-sm table-bordered">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>é¡å‹</th>
-                                    <th>é è¨­é¢é¡</th>
-                                    <th>ä½¿ç”¨ç¯„åœ</th>
+                                    <th>Ãş«¬</th>
+                                    <th>¹w³]­±ÃB</th>
+                                    <th>¨Ï¥Î½d³ò</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><i class="fas fa-money-bill-wave text-success"></i> ç¾é‡‘åˆ¸</td>
+                                    <td><i class="fas fa-money-bill-wave text-success"></i> ²{ª÷¨é</td>
                                     <td><span class="badge badge-success">NT$ 500</span></td>
-                                    <td>å…¨ç«™é€šç”¨</td>
+                                    <td>¥ş¯¸³q¥Î</td>
                                 </tr>
                                 <tr>
-                                    <td><i class="fas fa-shopping-bag text-primary"></i> å•†å“åˆ¸</td>
+                                    <td><i class="fas fa-shopping-bag text-primary"></i> °Ó«~¨é</td>
                                     <td><span class="badge badge-primary">NT$ 300</span></td>
-                                    <td>æŒ‡å®šå•†å“</td>
+                                    <td>«ü©w°Ó«~</td>
                                 </tr>
                                 <tr>
-                                    <td><i class="fas fa-concierge-bell text-info"></i> æœå‹™åˆ¸</td>
+                                    <td><i class="fas fa-concierge-bell text-info"></i> ªA°È¨é</td>
                                     <td><span class="badge badge-info">NT$ 200</span></td>
-                                    <td>æŒ‡å®šæœå‹™</td>
+                                    <td>«ü©wªA°È</td>
                                 </tr>
                                 <tr>
-                                    <td><i class="fas fa-gift text-warning"></i> ç¯€æ—¥åˆ¸</td>
+                                    <td><i class="fas fa-gift text-warning"></i> ¸`¤é¨é</td>
                                     <td><span class="badge badge-warning">NT$ 1000</span></td>
-                                    <td>ç¯€æ—¥é™å®š</td>
+                                    <td>¸`¤é­­©w</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -310,36 +310,36 @@
                 </div>
             </div>
 
-            <!-- é è¦½çµæœ -->
+            <!-- ¹wÄıµ²ªG -->
             <div class="card shadow mb-4" id="previewCard" style="display: none;">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-warning">
-                        <i class="fas fa-eye"></i> é è¦½çµæœ
+                        <i class="fas fa-eye"></i> ¹wÄıµ²ªG
                     </h6>
                 </div>
                 <div class="card-body">
                     <div id="previewContent">
-                        <!-- é è¦½å…§å®¹å°‡åœ¨é€™è£¡é¡¯ç¤º -->
+                        <!-- ¹wÄı¤º®e±N¦b³o¸ÌÅã¥Ü -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- æœ€è¿‘ç™¼æ”¾è¨˜éŒ„ -->
+    <!-- ³Ìªñµo©ñ°O¿ı -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-history"></i> æœ€è¿‘ç™¼æ”¾è¨˜éŒ„
+                        <i class="fas fa-history"></i> ³Ìªñµo©ñ°O¿ı
                     </h6>
                     <div class="d-flex">
                         <button class="btn btn-sm btn-info mr-2" onclick="refreshRecords()">
-                            <i class="fas fa-sync"></i> åˆ·æ–°
+                            <i class="fas fa-sync"></i> ¨ê·s
                         </button>
                         <button class="btn btn-sm btn-success" onclick="exportRecords()">
-                            <i class="fas fa-download"></i> åŒ¯å‡º
+                            <i class="fas fa-download"></i> ¶×¥X
                         </button>
                     </div>
                 </div>
@@ -348,19 +348,19 @@
                         <table class="table table-bordered table-hover" id="recentGrantsTable">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>ç™¼æ”¾æ™‚é–“</th>
-                                    <th>æœƒå“¡ID</th>
-                                    <th>é›»å­åˆ¸é¡å‹</th>
-                                    <th>ç™¼æ”¾æ•¸é‡</th>
-                                    <th>é¢é¡</th>
-                                    <th>ç™¼æ”¾åŸå› </th>
-                                    <th>æ“ä½œè€…</th>
-                                    <th>ç‹€æ…‹</th>
-                                    <th>æ“ä½œ</th>
+                                    <th>µo©ñ®É¶¡</th>
+                                    <th>·|­ûID</th>
+                                    <th>¹q¤l¨éÃş«¬</th>
+                                    <th>µo©ñ¼Æ¶q</th>
+                                    <th>­±ÃB</th>
+                                    <th>µo©ñ­ì¦]</th>
+                                    <th>¾Ş§@ªÌ</th>
+                                    <th>ª¬ºA</th>
+                                    <th>¾Ş§@</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- é›»å­åˆ¸ç™¼æ”¾è¨˜éŒ„å°‡é€šé AJAX å‹•æ…‹è¼‰å…¥ -->
+                                <!-- ¹q¤l¨éµo©ñ°O¿ı±N³q¹L AJAX °ÊºA¸ü¤J -->
                             </tbody>
                         </table>
                     </div>
@@ -370,13 +370,13 @@
     </div>
 </div>
 
-<!-- è©³ç´°è³‡è¨Š Modal -->
+<!-- ¸Ô²Ó¸ê°T Modal -->
 <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-info-circle"></i> ç™¼æ”¾è¨˜éŒ„è©³æƒ…
+                    <i class="fas fa-info-circle"></i> µo©ñ°O¿ı¸Ô±¡
                 </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
@@ -384,26 +384,26 @@
             </div>
             <div class="modal-body">
                 <div id="detailContent">
-                    <!-- è©³ç´°å…§å®¹å°‡åœ¨é€™è£¡é¡¯ç¤º -->
+                    <!-- ¸Ô²Ó¤º®e±N¦b³o¸ÌÅã¥Ü -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
                 <button type="button" class="btn btn-primary" id="printDetailBtn">
-                    <i class="fas fa-print"></i> åˆ—å°
+                    <i class="fas fa-print"></i> ¦C¦L
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- QRç¢¼ Modal -->
+<!-- QR½X Modal -->
 <div class="modal fade" id="qrCodeModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-qrcode"></i> é›»å­åˆ¸QRç¢¼
+                    <i class="fas fa-qrcode"></i> ¹q¤l¨éQR½X
                 </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
@@ -414,8 +414,8 @@
                 <p class="mt-3" id="qrCodeText"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
-                <button type="button" class="btn btn-primary" onclick="printQRCode()">åˆ—å°</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                <button type="button" class="btn btn-primary" onclick="printQRCode()">¦C¦L</button>
             </div>
         </div>
     </div>
@@ -425,10 +425,10 @@
 
 <script>
     $(document).ready(function() {
-        // åˆå§‹åŒ–çµ±è¨ˆæ•¸æ“š
+        // ªì©l¤Æ²Î­p¼Æ¾Ú
         loadStatistics();
 
-        // åˆå§‹åŒ– DataTable
+        // ªì©l¤Æ DataTable
         var table = $("#recentGrantsTable").DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -454,7 +454,7 @@
                 { 
                     "data": "status",
                     "render": function(data, type, row) {
-                        var statusClass = data === "æˆåŠŸ" ? "badge-success" : "badge-danger";
+                        var statusClass = data === "¦¨¥\" ? "badge-success" : "badge-danger";
                         return "<span class=\"badge " + statusClass + "\">" + data + "</span>";
                     }
                 },
@@ -462,15 +462,15 @@
                     "data": null,
                     "render": function(data, type, row) {
                         return "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.id + ")\">" +
-                               "<i class=\"fas fa-eye\"></i> æŸ¥çœ‹</button> " +
+                               "<i class=\"fas fa-eye\"></i> ¬d¬İ</button> " +
                                "<button class=\"btn btn-sm btn-warning\" onclick=\"generateQR(" + row.id + ")\">" +
-                               "<i class=\"fas fa-qrcode\"></i> QRç¢¼</button>";
+                               "<i class=\"fas fa-qrcode\"></i> QR½X</button>";
                     }
                 }
             ]
         });
 
-        // ç™¼æ”¾é¡å‹è®Šæ›´è™•ç†
+        // µo©ñÃş«¬ÅÜ§ó³B²z
         $("#grantType").change(function() {
             var type = $(this).val();
             $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
@@ -489,26 +489,26 @@
             }
         });
 
-        // é›»å­åˆ¸é¡å‹è®Šæ›´è™•ç†
+        // ¹q¤l¨éÃş«¬ÅÜ§ó³B²z
         $("#evoucherTypeId").change(function() {
             var selectedOption = $(this).find("option:selected");
             var defaultValue = selectedOption.data("value");
             if (defaultValue) {
-                $("#customValue").attr("placeholder", "é è¨­é¢é¡: NT$ " + defaultValue);
+                $("#customValue").attr("placeholder", "¹w³]­±ÃB: NT$ " + defaultValue);
             }
         });
 
-        // æœå°‹ç”¨æˆ¶æŒ‰éˆ•
+        // ·j´M¥Î¤á«ö¶s
         $("#searchUserBtn").click(function() {
             var userId = $("#userId").val();
             if (userId) {
                 searchUser(userId);
             } else {
-                showAlert("è«‹å…ˆè¼¸å…¥æœƒå“¡ID", "warning");
+                showAlert("½Ğ¥ı¿é¤J·|­ûID", "warning");
             }
         });
 
-        // é è¦½åŠŸèƒ½
+        // ¹wÄı¥\¯à
         $("#previewBtn").click(function() {
             var formData = $("#grantEVouchersForm").serialize();
             var isValid = validateForm();
@@ -526,11 +526,11 @@
                     if (response.success) {
                         showPreview(response.data);
                     } else {
-                        showAlert("é è¦½å¤±æ•—: " + response.message, "error");
+                        showAlert("¹wÄı¥¢±Ñ: " + response.message, "error");
                     }
                 },
                 error: function() {
-                    showAlert("é è¦½è«‹æ±‚å¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦", "error");
+                    showAlert("¹wÄı½Ğ¨D¥¢±Ñ¡A½Ğµy«á¦A¸Õ", "error");
                 },
                 complete: function() {
                     showLoading(false);
@@ -538,7 +538,7 @@
             });
         });
 
-        // è¡¨å–®æäº¤
+        // ªí³æ´£¥æ
         $("#grantEVouchersForm").submit(function(e) {
             e.preventDefault();
             var formData = $(this).serialize();
@@ -548,7 +548,7 @@
                 return;
             }
 
-            if (!confirm("ç¢ºå®šè¦ç™¼æ”¾é›»å­åˆ¸å—ï¼Ÿæ­¤æ“ä½œç„¡æ³•æ’¤éŠ·ã€‚")) {
+            if (!confirm("½T©w­nµo©ñ¹q¤l¨é¶Ü¡H¦¹¾Ş§@µLªkºM¾P¡C")) {
                 return;
             }
 
@@ -559,18 +559,18 @@
                 data: formData,
                 success: function(response) {
                     if (response.success) {
-                        showAlert("é›»å­åˆ¸ç™¼æ”¾æˆåŠŸï¼å½±éŸ¿ " + response.affectedUsers + " ä½æœƒå“¡", "success");
+                        showAlert("¹q¤l¨éµo©ñ¦¨¥\¡I¼vÅT " + response.affectedUsers + " ¦ì·|­û", "success");
                         $("#grantEVouchersForm")[0].reset();
                         $("#previewCard").hide();
                         $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
                         table.ajax.reload();
                         loadStatistics();
                     } else {
-                        showAlert("é›»å­åˆ¸ç™¼æ”¾å¤±æ•—: " + response.message, "error");
+                        showAlert("¹q¤l¨éµo©ñ¥¢±Ñ: " + response.message, "error");
                     }
                 },
                 error: function() {
-                    showAlert("é›»å­åˆ¸ç™¼æ”¾å¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦", "error");
+                    showAlert("¹q¤l¨éµo©ñ¥¢±Ñ¡A½Ğµy«á¦A¸Õ", "error");
                 },
                 complete: function() {
                     showLoading(false);
@@ -578,9 +578,9 @@
             });
         });
 
-        // é‡ç½®åŠŸèƒ½
+        // ­«¸m¥\¯à
         $("#resetBtn").click(function() {
-            if (confirm("ç¢ºå®šè¦é‡ç½®è¡¨å–®å—ï¼Ÿæ‰€æœ‰æœªå„²å­˜çš„è®Šæ›´å°‡æœƒéºå¤±ã€‚")) {
+            if (confirm("½T©w­n­«¸mªí³æ¶Ü¡H©Ò¦³¥¼Àx¦sªºÅÜ§ó±N·|¿ò¥¢¡C")) {
                 $("#grantEVouchersForm")[0].reset();
                 $("#singleUserRow, #multipleUsersRow, #conditionRow").hide();
                 $("#previewCard").hide();
@@ -588,19 +588,19 @@
             }
         });
 
-        // åˆ—å°è©³æƒ…
+        // ¦C¦L¸Ô±¡
         $("#printDetailBtn").click(function() {
             window.print();
         });
 
-        // æ·»åŠ è¼‰å…¥å‹•ç•«
+        // ²K¥[¸ü¤J°Êµe
         $(".card").each(function(index) {
             $(this).css("animation-delay", (index * 0.1) + "s");
             $(this).addClass("fade-in");
         });
     });
 
-    // è¼‰å…¥çµ±è¨ˆæ•¸æ“š
+    // ¸ü¤J²Î­p¼Æ¾Ú
     function loadStatistics() {
         $.ajax({
             url: "@Url.Action("GetEVoucherStatistics", "AdminWallet")",
@@ -614,15 +614,15 @@
                 }
             },
             error: function() {
-                $("#todayGrants").text("è¼‰å…¥å¤±æ•—");
-                $("#monthGrants").text("è¼‰å…¥å¤±æ•—");
-                $("#activeTypes").text("è¼‰å…¥å¤±æ•—");
-                $("#pendingGrants").text("è¼‰å…¥å¤±æ•—");
+                $("#todayGrants").text("¸ü¤J¥¢±Ñ");
+                $("#monthGrants").text("¸ü¤J¥¢±Ñ");
+                $("#activeTypes").text("¸ü¤J¥¢±Ñ");
+                $("#pendingGrants").text("¸ü¤J¥¢±Ñ");
             }
         });
     }
 
-    // æœå°‹ç”¨æˆ¶
+    // ·j´M¥Î¤á
     function searchUser(userId) {
         $.ajax({
             url: "@Url.Action("SearchUser", "AdminWallet")",
@@ -630,18 +630,18 @@
             data: { userId: userId },
             success: function(response) {
                 if (response.success) {
-                    showAlert("æ‰¾åˆ°ç”¨æˆ¶: " + response.data.userName, "success");
+                    showAlert("§ä¨ì¥Î¤á: " + response.data.userName, "success");
                 } else {
-                    showAlert("æ‰¾ä¸åˆ°è©²ç”¨æˆ¶", "warning");
+                    showAlert("§ä¤£¨ì¸Ó¥Î¤á", "warning");
                 }
             },
             error: function() {
-                showAlert("æœå°‹ç”¨æˆ¶å¤±æ•—", "error");
+                showAlert("·j´M¥Î¤á¥¢±Ñ", "error");
             }
         });
     }
 
-    // è¡¨å–®é©—è­‰
+    // ªí³æÅçÃÒ
     function validateForm() {
         var isValid = true;
         clearValidation();
@@ -653,47 +653,47 @@
         var reason = $("#reason").val();
 
         if (!grantType) {
-            showFieldError("grantType", "è«‹é¸æ“‡ç™¼æ”¾é¡å‹");
+            showFieldError("grantType", "½Ğ¿ï¾Üµo©ñÃş«¬");
             isValid = false;
         }
 
         if (!evoucherTypeId) {
-            showFieldError("evoucherTypeId", "è«‹é¸æ“‡é›»å­åˆ¸é¡å‹");
+            showFieldError("evoucherTypeId", "½Ğ¿ï¾Ü¹q¤l¨éÃş«¬");
             isValid = false;
         }
 
         if (!quantity || quantity <= 0) {
-            showFieldError("quantity", "è«‹è¼¸å…¥æœ‰æ•ˆçš„ç™¼æ”¾æ•¸é‡");
+            showFieldError("quantity", "½Ğ¿é¤J¦³®Äªºµo©ñ¼Æ¶q");
             isValid = false;
         }
 
         if (!expireDate) {
-            showFieldError("expireDate", "è«‹é¸æ“‡æœ‰æ•ˆæœŸé™");
+            showFieldError("expireDate", "½Ğ¿ï¾Ü¦³®Ä´Á­­");
             isValid = false;
         }
 
         if (!reason) {
-            showFieldError("reason", "è«‹é¸æ“‡ç™¼æ”¾åŸå› ");
+            showFieldError("reason", "½Ğ¿ï¾Üµo©ñ­ì¦]");
             isValid = false;
         }
 
         if (grantType === "single" && !$("#userId").val()) {
-            showFieldError("userId", "è«‹è¼¸å…¥æœƒå“¡ID");
+            showFieldError("userId", "½Ğ¿é¤J·|­ûID");
             isValid = false;
         }
 
         if (grantType === "multiple" && !$("#userIds").val()) {
-            showFieldError("userIds", "è«‹è¼¸å…¥æœƒå“¡IDåˆ—è¡¨");
+            showFieldError("userIds", "½Ğ¿é¤J·|­ûID¦Cªí");
             isValid = false;
         }
 
         if (grantType === "condition") {
             if (!$("#conditionType").val()) {
-                showFieldError("conditionType", "è«‹é¸æ“‡æ¢ä»¶é¡å‹");
+                showFieldError("conditionType", "½Ğ¿ï¾Ü±ø¥óÃş«¬");
                 isValid = false;
             }
             if (!$("#conditionValue").val()) {
-                showFieldError("conditionValue", "è«‹è¼¸å…¥æ¢ä»¶å€¼");
+                showFieldError("conditionValue", "½Ğ¿é¤J±ø¥ó­È");
                 isValid = false;
             }
         }
@@ -701,40 +701,40 @@
         return isValid;
     }
 
-    // é¡¯ç¤ºæ¬„ä½éŒ¯èª¤
+    // Åã¥ÜÄæ¦ì¿ù»~
     function showFieldError(fieldId, message) {
         $("#" + fieldId).addClass("is-invalid");
         $("#" + fieldId + "Error").text(message).show();
     }
 
-    // æ¸…é™¤é©—è­‰
+    // ²M°£ÅçÃÒ
     function clearValidation() {
         $(".form-control").removeClass("is-invalid");
         $(".invalid-feedback").hide();
     }
 
-    // é¡¯ç¤ºé è¦½çµæœ
+    // Åã¥Ü¹wÄıµ²ªG
     function showPreview(data) {
         var previewHtml = "<div class=\"alert alert-info\">";
-        previewHtml += "<h6><i class=\"fas fa-eye\"></i> ç™¼æ”¾è¨­å®šé è¦½</h6>";
+        previewHtml += "<h6><i class=\"fas fa-eye\"></i> µo©ñ³]©w¹wÄı</h6>";
         previewHtml += "<div class=\"row\">";
         previewHtml += "<div class=\"col-md-6\">";
-        previewHtml += "<p><strong>ç™¼æ”¾é¡å‹:</strong> " + data.grantType + "</p>";
-        previewHtml += "<p><strong>é›»å­åˆ¸é¡å‹:</strong> " + data.eVoucherTypeName + "</p>";
-        previewHtml += "<p><strong>ç™¼æ”¾æ•¸é‡:</strong> " + data.quantity + "</p>";
-        previewHtml += "<p><strong>é¢é¡:</strong> " + data.value + "</p>";
+        previewHtml += "<p><strong>µo©ñÃş«¬:</strong> " + data.grantType + "</p>";
+        previewHtml += "<p><strong>¹q¤l¨éÃş«¬:</strong> " + data.eVoucherTypeName + "</p>";
+        previewHtml += "<p><strong>µo©ñ¼Æ¶q:</strong> " + data.quantity + "</p>";
+        previewHtml += "<p><strong>­±ÃB:</strong> " + data.value + "</p>";
         previewHtml += "</div>";
         previewHtml += "<div class=\"col-md-6\">";
-        previewHtml += "<p><strong>æœ‰æ•ˆæœŸé™:</strong> " + data.expireDate + "</p>";
-        previewHtml += "<p><strong>ç™¼æ”¾åŸå› :</strong> " + data.reason + "</p>";
-        previewHtml += "<p><strong>å½±éŸ¿æœƒå“¡æ•¸:</strong> " + data.affectedUsers + "</p>";
+        previewHtml += "<p><strong>¦³®Ä´Á­­:</strong> " + data.expireDate + "</p>";
+        previewHtml += "<p><strong>µo©ñ­ì¦]:</strong> " + data.reason + "</p>";
+        previewHtml += "<p><strong>¼vÅT·|­û¼Æ:</strong> " + data.affectedUsers + "</p>";
         previewHtml += "</div></div>";
 
         if (data.userList && data.userList.length > 0) {
-            previewHtml += "<h6>å½±éŸ¿çš„æœƒå“¡:</h6>";
+            previewHtml += "<h6>¼vÅTªº·|­û:</h6>";
             previewHtml += "<div class=\"table-responsive\">";
             previewHtml += "<table class=\"table table-sm\">";
-            previewHtml += "<thead><tr><th>æœƒå“¡ID</th><th>æœƒå“¡åç¨±</th></tr></thead>";
+            previewHtml += "<thead><tr><th>·|­ûID</th><th>·|­û¦WºÙ</th></tr></thead>";
             previewHtml += "<tbody>";
             data.userList.forEach(function(user) {
                 previewHtml += "<tr><td>" + user.userId + "</td><td>" + user.userName + "</td></tr>";
@@ -747,17 +747,17 @@
         $("#previewCard").show();
     }
 
-    // åˆ·æ–°è¨˜éŒ„
+    // ¨ê·s°O¿ı
     function refreshRecords() {
         $("#recentGrantsTable").DataTable().ajax.reload();
     }
 
-    // åŒ¯å‡ºè¨˜éŒ„
+    // ¶×¥X°O¿ı
     function exportRecords() {
         window.open("@Url.Action("ExportEVoucherGrants", "AdminWallet")", "_blank");
     }
 
-    // æŸ¥çœ‹è©³ç´°è³‡è¨Š
+    // ¬d¬İ¸Ô²Ó¸ê°T
     function viewDetail(recordId) {
         $.ajax({
             url: "@Url.Action("GetEVoucherGrantDetail", "AdminWallet")",
@@ -767,16 +767,16 @@
                 if (response.success) {
                     showDetailModal(response.data);
                 } else {
-                    showAlert("ç²å–è©³ç´°è³‡è¨Šå¤±æ•—: " + response.message, "error");
+                    showAlert("Àò¨ú¸Ô²Ó¸ê°T¥¢±Ñ: " + response.message, "error");
                 }
             },
             error: function() {
-                showAlert("ç²å–è©³ç´°è³‡è¨Šå¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦", "error");
+                showAlert("Àò¨ú¸Ô²Ó¸ê°T¥¢±Ñ¡A½Ğµy«á¦A¸Õ", "error");
             }
         });
     }
 
-    // ç”ŸæˆQRç¢¼
+    // ¥Í¦¨QR½X
     function generateQR(recordId) {
         $.ajax({
             url: "@Url.Action("GenerateEVoucherQR", "AdminWallet")",
@@ -785,47 +785,47 @@
             success: function(response) {
                 if (response.success) {
                     $("#qrCodeContainer").html("<img src='" + response.data.qrCodeUrl + "' class='img-fluid' alt='QR Code'>");
-                    $("#qrCodeText").text("é›»å­åˆ¸ä»£ç¢¼: " + response.data.eVoucherCode);
+                    $("#qrCodeText").text("¹q¤l¨é¥N½X: " + response.data.eVoucherCode);
                     $("#qrCodeModal").modal("show");
                 } else {
-                    showAlert("ç”ŸæˆQRç¢¼å¤±æ•—: " + response.message, "error");
+                    showAlert("¥Í¦¨QR½X¥¢±Ñ: " + response.message, "error");
                 }
             },
             error: function() {
-                showAlert("ç”ŸæˆQRç¢¼å¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦", "error");
+                showAlert("¥Í¦¨QR½X¥¢±Ñ¡A½Ğµy«á¦A¸Õ", "error");
             }
         });
     }
 
-    // åˆ—å°QRç¢¼
+    // ¦C¦LQR½X
     function printQRCode() {
         window.print();
     }
 
-    // é¡¯ç¤ºè©³ç´°è³‡è¨Šæ¨¡æ…‹æ¡†
+    // Åã¥Ü¸Ô²Ó¸ê°T¼ÒºA®Ø
     function showDetailModal(data) {
         var detailHtml = "<div class=\"row\">";
         detailHtml += "<div class=\"col-md-6\">";
-        detailHtml += "<h6><i class=\"fas fa-info-circle\"></i> åŸºæœ¬è³‡è¨Š</h6>";
+        detailHtml += "<h6><i class=\"fas fa-info-circle\"></i> °ò¥»¸ê°T</h6>";
         detailHtml += "<table class=\"table table-sm\">";
-        detailHtml += "<tr><td>ç™¼æ”¾æ™‚é–“:</td><td>" + data.grantTime + "</td></tr>";
-        detailHtml += "<tr><td>æœƒå“¡ID:</td><td>" + data.userId + "</td></tr>";
-        detailHtml += "<tr><td>é›»å­åˆ¸é¡å‹:</td><td>" + data.eVoucherTypeName + "</td></tr>";
-        detailHtml += "<tr><td>ç™¼æ”¾æ•¸é‡:</td><td>" + data.quantity + "</td></tr>";
+        detailHtml += "<tr><td>µo©ñ®É¶¡:</td><td>" + data.grantTime + "</td></tr>";
+        detailHtml += "<tr><td>·|­ûID:</td><td>" + data.userId + "</td></tr>";
+        detailHtml += "<tr><td>¹q¤l¨éÃş«¬:</td><td>" + data.eVoucherTypeName + "</td></tr>";
+        detailHtml += "<tr><td>µo©ñ¼Æ¶q:</td><td>" + data.quantity + "</td></tr>";
         detailHtml += "</table></div>";
         detailHtml += "<div class=\"col-md-6\">";
-        detailHtml += "<h6><i class=\"fas fa-gift-card\"></i> ç™¼æ”¾è³‡è¨Š</h6>";
+        detailHtml += "<h6><i class=\"fas fa-gift-card\"></i> µo©ñ¸ê°T</h6>";
         detailHtml += "<table class=\"table table-sm\">";
-        detailHtml += "<tr><td>é¢é¡:</td><td>" + data.value + "</td></tr>";
-        detailHtml += "<tr><td>æœ‰æ•ˆæœŸé™:</td><td>" + data.expireDate + "</td></tr>";
-        detailHtml += "<tr><td>ç™¼æ”¾åŸå› :</td><td>" + data.reason + "</td></tr>";
-        detailHtml += "<tr><td>æ“ä½œè€…:</td><td>" + data.operator + "</td></tr>";
+        detailHtml += "<tr><td>­±ÃB:</td><td>" + data.value + "</td></tr>";
+        detailHtml += "<tr><td>¦³®Ä´Á­­:</td><td>" + data.expireDate + "</td></tr>";
+        detailHtml += "<tr><td>µo©ñ­ì¦]:</td><td>" + data.reason + "</td></tr>";
+        detailHtml += "<tr><td>¾Ş§@ªÌ:</td><td>" + data.operator + "</td></tr>";
         detailHtml += "</table></div></div>";
 
         if (data.description) {
             detailHtml += "<div class=\"row mt-3\">";
             detailHtml += "<div class=\"col-12\">";
-            detailHtml += "<h6><i class=\"fas fa-align-left\"></i> è©³ç´°èªªæ˜</h6>";
+            detailHtml += "<h6><i class=\"fas fa-align-left\"></i> ¸Ô²Ó»¡©ú</h6>";
             detailHtml += "<p class=\"text-muted\">" + data.description + "</p>";
             detailHtml += "</div></div>";
         }
@@ -834,7 +834,7 @@
         $("#detailModal").modal("show");
     }
 
-    // é¡¯ç¤ºè¼‰å…¥ç‹€æ…‹
+    // Åã¥Ü¸ü¤Jª¬ºA
     function showLoading(show) {
         if (show) {
             $("body").addClass("loading");
@@ -843,7 +843,7 @@
         }
     }
 
-    // é¡¯ç¤ºæç¤ºè¨Šæ¯
+    // Åã¥Ü´£¥Ü°T®§
     function showAlert(message, type) {
         var alertClass = "alert-info";
         switch(type) {

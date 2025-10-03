@@ -1,4 +1,4 @@
-{
+﻿{
   "permissions": {
     "allow": [
       "Bash(dotnet build:*)",
@@ -15,7 +15,21 @@
       "Bash(cat:*)",
       "Bash(Get-Content \"C:\\Users\\n2029\\Desktop\\GameSpace\\audit_remaining\")",
       "Bash(sqlcmd:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(Out-File -FilePath \"C:\\Users\\n2029\\Desktop\\GameSpace\\build_output.txt\" -Encoding utf8)",
+      "Bash(Select-String \"error\")",
+      "Bash(Group-Object)",
+      "Bash(Sort-Object Count -Descending)",
+      "Bash(powershell:*)",
+      "Bash(tee:*)",
+      "Bash(if [ -f todo.md ])",
+      "Bash(then cat todo.md)",
+      "Bash(else echo \"檔案不存在，將建立新檔案\")",
+      "Bash(fi)",
+      "Bash(Test-Path \"C:\\Users\\n2029\\Desktop\\GameSpace\\GameSpace\\GameSpace\\Areas\\MiniGame\\Models\\ViewModels\\PermissionViewModels.cs\")",
+      "Bash(Select-Object -First 50)",
+      "Bash(Select-String -Pattern \"error|warning\")",
+      "Bash(Select-Object -First 30)"
     ],
     "deny": [],
     "ask": []

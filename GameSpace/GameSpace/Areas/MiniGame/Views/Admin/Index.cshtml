@@ -1,17 +1,17 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminDashboardViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "管理員儀表板";
+    ViewData["Title"] = "�޲z������O";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <!-- Page Header -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">
-        <i class="fas fa-tachometer-alt me-2 text-primary"></i>管理員儀表板
+        <i class="fas fa-tachometer-alt me-2 text-primary"></i>�޲z������O
     </h1>
     <div class="d-flex">
         <span class="badge bg-success me-2 shadow-sm" id="systemStatus">
-            <i class="fas fa-circle text-success"></i> 系統正常
+            <i class="fas fa-circle text-success"></i> �t�Υ��`
         </span>
         <span class="badge bg-info shadow-sm" id="currentTime">
             <i class="fas fa-clock"></i> @DateTime.Now.ToString("yyyy-MM-dd HH:mm")
@@ -26,7 +26,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總用戶數</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">�`�Τ��</div>
                         <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalUsers.ToString("N0")</div>
                     </div>
                     <div class="col-auto">
@@ -42,7 +42,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">活躍用戶</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">���D�Τ�</div>
                         <div class="h5 mb-0 font-weight-bold text-white">@Model.ActiveUsers.ToString("N0")</div>
                     </div>
                     <div class="col-auto">
@@ -58,7 +58,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總寵物數</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">�`�d����</div>
                         <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalPets.ToString("N0")</div>
                     </div>
                     <div class="col-auto">
@@ -74,7 +74,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">總點數</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">�`�I��</div>
                         <div class="h5 mb-0 font-weight-bold text-white">@Model.TotalPoints.ToString("N0")</div>
                     </div>
                     <div class="col-auto">
@@ -93,7 +93,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">今日簽到</div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">����ñ��</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodaySignIns</div>
                     </div>
                     <div class="col-auto">
@@ -109,7 +109,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日遊戲</div>
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">����C��</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayGames</div>
                     </div>
                     <div class="col-auto">
@@ -125,7 +125,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">本月簽到</div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">����ñ��</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ThisMonthSignIns</div>
                     </div>
                     <div class="col-auto">
@@ -141,7 +141,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">本月遊戲</div>
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">����C��</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ThisMonthGames</div>
                     </div>
                     <div class="col-auto">
@@ -159,14 +159,14 @@
     <div class="col-xl-8 col-lg-7">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">用戶成長趨勢</h6>
+                <h6 class="m-0 font-weight-bold text-primary">�Τᦨ���Ͷ�</h6>
                 <div class="dropdown no-arrow">
                     <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
                         <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right shadow">
-                        <a class="dropdown-item" href="#">匯出資料</a>
-                        <a class="dropdown-item" href="#">列印報表</a>
+                        <a class="dropdown-item" href="#">�ץX���</a>
+                        <a class="dropdown-item" href="#">�C�L����</a>
                     </div>
                 </div>
             </div>
@@ -182,7 +182,7 @@
     <div class="col-xl-4 col-lg-5">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">遊戲統計</h6>
+                <h6 class="m-0 font-weight-bold text-primary">�C���έp</h6>
             </div>
             <div class="card-body">
                 <div class="chart-pie pt-4 pb-2">
@@ -190,13 +190,13 @@
                 </div>
                 <div class="mt-4 text-center small">
                     <span class="mr-2">
-                        <i class="fas fa-circle text-primary"></i> 小遊戲
+                        <i class="fas fa-circle text-primary"></i> �p�C��
                     </span>
                     <span class="mr-2">
-                        <i class="fas fa-circle text-success"></i> 競技遊戲
+                        <i class="fas fa-circle text-success"></i> �v�޹C��
                     </span>
                     <span class="mr-2">
-                        <i class="fas fa-circle text-info"></i> 休閒遊戲
+                        <i class="fas fa-circle text-info"></i> �𶢹C��
                     </span>
                 </div>
             </div>
@@ -209,17 +209,17 @@
     <div class="col-lg-12">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">最近活動</h6>
+                <h6 class="m-0 font-weight-bold text-primary">�̪񬡰�</h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-borderless">
                         <thead>
                             <tr>
-                                <th>用戶</th>
-                                <th>活動類型</th>
-                                <th>描述</th>
-                                <th>時間</th>
+                                <th>�Τ�</th>
+                                <th>��������</th>
+                                <th>�y�z</th>
+                                <th>�ɶ�</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -237,7 +237,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-@(activity.ActivityType == "簽到" ? "success" : "info")">
+                                        <span class="badge bg-@(activity.ActivityType == "ñ��" ? "success" : "info")">
                                             @activity.ActivityType
                                         </span>
                                     </td>
@@ -255,14 +255,14 @@
 
 @section Scripts {
     <script>
-        // 用戶成長趨勢圖
+        // �Τᦨ���Ͷչ�
         const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
         const userGrowthChart = new Chart(userGrowthCtx, {
             type: 'line',
             data: {
-                labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                labels: ['1��', '2��', '3��', '4��', '5��', '6��'],
                 datasets: [{
-                    label: '用戶數',
+                    label: '�Τ��',
                     data: [12, 19, 3, 5, 2, 3],
                     borderColor: 'rgb(75, 192, 192)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -284,12 +284,12 @@
             }
         });
 
-        // 遊戲統計圓餅圖
+        // �C���έp����
         const gameStatsCtx = document.getElementById('gameStatsChart').getContext('2d');
         const gameStatsChart = new Chart(gameStatsCtx, {
             type: 'doughnut',
             data: {
-                labels: ['小遊戲', '競技遊戲', '休閒遊戲'],
+                labels: ['�p�C��', '�v�޹C��', '�𶢹C��'],
                 datasets: [{
                     data: [@Model.TotalMiniGames, 150, 200],
                     backgroundColor: [
@@ -309,7 +309,7 @@
             }
         });
 
-        // 更新時間
+        // ��s�ɶ�
         setInterval(function() {
             const now = new Date();
             const timeString = now.toLocaleString('zh-TW', {

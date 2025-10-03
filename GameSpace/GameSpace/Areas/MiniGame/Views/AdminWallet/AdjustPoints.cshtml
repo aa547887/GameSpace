@@ -1,17 +1,17 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminWalletIndexViewModel
 @{
-    ViewData["Title"] = "調整會員點數";
+    ViewData["Title"] = "�վ�|���I��";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-edit mr-2"></i>調整會員點數
+            <i class="fas fa-edit mr-2"></i>�վ�|���I��
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> 返回
+                <i class="fas fa-arrow-left"></i> ��^
             </a>
         </div>
     </div>
@@ -32,13 +32,13 @@
         </div>
     }
 
-    <!-- 調整點數表單 -->
+    <!-- �վ��I�ƪ�� -->
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-edit"></i> 點數調整
+                        <i class="fas fa-edit"></i> �I�ƽվ�
                     </h6>
                 </div>
                 <div class="card-body">
@@ -46,37 +46,37 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="userId">用戶ID *</label>
+                                    <label for="userId">�Τ�ID *</label>
                                     <input type="number" class="form-control" id="userId" name="userId"
                                            value="@ViewBag.UserId" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="points">調整點數 *</label>
+                                    <label for="points">�վ��I�� *</label>
                                     <input type="number" class="form-control" id="points" name="points"
-                                           placeholder="正數為增加，負數為減少" required>
+                                           placeholder="���Ƭ��W�[�A�t�Ƭ����" required>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label for="reason">調整原因 *</label>
+                                    <label for="reason">�վ��] *</label>
                                     <textarea class="form-control" id="reason" name="reason" rows="3"
-                                              placeholder="請輸入調整原因" required></textarea>        
+                                              placeholder="�п�J�վ��]" required></textarea>        
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 確認調整
+                                <i class="fas fa-save"></i> �T�{�վ�
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                                <i class="fas fa-undo"></i> 重置
+                                <i class="fas fa-undo"></i> ���m
                             </button>
                             <button type="button" class="btn btn-info" onclick="previewAdjust()">
-                                <i class="fas fa-eye"></i> 預覽
+                                <i class="fas fa-eye"></i> �w��
                             </button>
                         </div>
                     </form>
@@ -84,50 +84,50 @@
             </div>
         </div>
 
-        <!-- 用戶信息 -->
+        <!-- �Τ�H�� -->
         <div class="col-lg-4">
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user"></i> 用戶信息
+                        <i class="fas fa-user"></i> �Τ�H��
                     </h6>
                 </div>
                 <div class="card-body">
                     <div id="userInfo">
-                        <p class="text-muted">請輸入用戶ID查看信息</p>
+                        <p class="text-muted">�п�J�Τ�ID�d�ݫH��</p>
                     </div>
                 </div>
             </div>
 
-            <!-- 調整須知 -->
+            <!-- �վ㶷�� -->
             <div class="card shadow mt-3">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-info">
-                        <i class="fas fa-info-circle"></i> 調整須知
+                        <i class="fas fa-info-circle"></i> �վ㶷��
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> 正數為增加點數</li>
-                        <li><i class="fas fa-check text-success"></i> 負數為減少點數</li>
-                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 調整後立即生效</li>
-                        <li><i class="fas fa-exclamation-triangle text-warning"></i> 系統會記錄所有調整</li>
+                        <li><i class="fas fa-check text-success"></i> ���Ƭ��W�[�I��</li>
+                        <li><i class="fas fa-check text-success"></i> �t�Ƭ�����I��</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> �վ��ߧY�ͮ�</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> �t�η|�O���Ҧ��վ�</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 最近調整記錄 -->
+    <!-- �̪�վ�O�� -->
     <div class="row mt-4">
         <div class="col-lg-12">
             <div class="card shadow">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-history"></i> 最近調整記錄
+                        <i class="fas fa-history"></i> �̪�վ�O��
                     </h6>
                     <button class="btn btn-sm btn-info" onclick="refreshRecords()">
-                        <i class="fas fa-sync"></i> 刷新
+                        <i class="fas fa-sync"></i> ��s
                     </button>
                 </div>
                 <div class="card-body">
@@ -135,17 +135,17 @@
                         <table class="table table-bordered table-hover" id="adjustRecordsTable" width="100%" cellspacing="0">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>用戶ID</th>
-                                    <th>調整點數</th>
-                                    <th>調整原因</th>
-                                    <th>調整時間</th>
-                                    <th>操作員</th>
-                                    <th>操作</th>
+                                    <th>�Τ�ID</th>
+                                    <th>�վ��I��</th>
+                                    <th>�վ��]</th>
+                                    <th>�վ�ɶ�</th>
+                                    <th>�ާ@��</th>
+                                    <th>�ާ@</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">暫無調整記錄</td>   
+                                    <td colspan="6" class="text-center text-muted">�ȵL�վ�O��</td>   
                                 </tr>
                             </tbody>
                         </table>
@@ -156,24 +156,24 @@
     </div>
 </div>
 
-<!-- 預覽 Modal -->
+<!-- �w�� Modal -->
 <div class="modal fade" id="previewModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">調整預覽</h5>
+                <h5 class="modal-title">�վ�w��</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div id="previewContent">
-                    <!-- 預覽內容將在這裡顯示 -->
+                    <!-- �w�����e�N�b�o����� -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
-                <button type="button" class="btn btn-primary" onclick="confirmAdjust()">確認調整</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">����</button>
+                <button type="button" class="btn btn-primary" onclick="confirmAdjust()">�T�{�վ�</button>
             </div>
         </div>
     </div>
@@ -181,7 +181,7 @@
 
 <script>
 $(document).ready(function() {
-    // 初始化 DataTable
+    // ��l�� DataTable
     $("#adjustRecordsTable").DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -191,11 +191,11 @@ $(document).ready(function() {
     });
 });
 
-// 用戶ID輸入時自動查詢用戶信息
+// �Τ�ID��J�ɦ۰ʬd�ߥΤ�H��
 document.getElementById('userId').addEventListener('input', function() {
     const userId = this.value;
     if (userId) {
-        document.getElementById('userInfo').innerHTML = '<p class="text-info">正在查詢用戶信息...</p>';
+        document.getElementById('userInfo').innerHTML = '<p class="text-info">���b�d�ߥΤ�H��...</p>';
         
         $.ajax({
             url: "@Url.Action("GetUserInfo", "AdminWallet")",
@@ -204,27 +204,27 @@ document.getElementById('userId').addEventListener('input', function() {
             success: function(response) {
                 if (response.success) {
                     document.getElementById("userInfo").innerHTML =
-                        `<p class="text-success">用戶: ${response.data.userName} (${response.data.email})</p>
-                         <p class="text-info">當前點數: ${response.data.currentPoints.toLocaleString()}</p>`;
+                        `<p class="text-success">�Τ�: ${response.data.userName} (${response.data.email})</p>
+                         <p class="text-info">��e�I��: ${response.data.currentPoints.toLocaleString()}</p>`;
                 } else {
                     document.getElementById("userInfo").innerHTML =
-                        `<p class="text-danger">用戶不存在或查詢失敗</p>`;
+                        `<p class="text-danger">�Τᤣ�s�b�άd�ߥ���</p>`;
                 }
             },
             error: function() {
                 document.getElementById("userInfo").innerHTML =
-                    `<p class="text-danger">查詢失敗，請稍後再試</p>`;
+                    `<p class="text-danger">�d�ߥ��ѡA�еy��A��</p>`;
             }
         });
     } else {
-        document.getElementById('userInfo').innerHTML = '<p class="text-muted">請輸入用戶ID查看信息</p>';
+        document.getElementById('userInfo').innerHTML = '<p class="text-muted">�п�J�Τ�ID�d�ݫH��</p>';
     }
 });
 
 function resetForm() {
-    if (confirm("確定要重置表單嗎？所有未儲存的變更將會遺失。")) {
+    if (confirm("�T�w�n���m���ܡH�Ҧ����x�s���ܧ�N�|�򥢡C")) {
         document.getElementById("adjustForm").reset();
-        document.getElementById('userInfo').innerHTML = '<p class="text-muted">請輸入用戶ID查看信息</p>';
+        document.getElementById('userInfo').innerHTML = '<p class="text-muted">�п�J�Τ�ID�d�ݫH��</p>';
     }
 }
 
@@ -244,23 +244,23 @@ function previewAdjust() {
             if (response.success) {
                 showPreview(response.data);
             } else {
-                alert("預覽失敗: " + response.message);
+                alert("�w������: " + response.message);
             }
         },
         error: function() {
-            alert("預覽請求失敗，請稍後再試");
+            alert("�w���ШD���ѡA�еy��A��");
         }
     });
 }
 
 function showPreview(data) {
-    var previewHtml = "<h6>調整設定預覽</h6>";
-    previewHtml += "<p><strong>用戶ID:</strong> " + data.userId + "</p>";
-    previewHtml += "<p><strong>用戶名稱:</strong> " + data.userName + "</p>";
-    previewHtml += "<p><strong>當前點數:</strong> " + data.currentPoints + "</p>";
-    previewHtml += "<p><strong>調整點數:</strong> " + data.adjustPoints + "</p>";
-    previewHtml += "<p><strong>調整後點數:</strong> " + data.newPoints + "</p>";
-    previewHtml += "<p><strong>調整原因:</strong> " + data.reason + "</p>";
+    var previewHtml = "<h6>�վ�]�w�w��</h6>";
+    previewHtml += "<p><strong>�Τ�ID:</strong> " + data.userId + "</p>";
+    previewHtml += "<p><strong>�Τ�W��:</strong> " + data.userName + "</p>";
+    previewHtml += "<p><strong>��e�I��:</strong> " + data.currentPoints + "</p>";
+    previewHtml += "<p><strong>�վ��I��:</strong> " + data.adjustPoints + "</p>";
+    previewHtml += "<p><strong>�վ���I��:</strong> " + data.newPoints + "</p>";
+    previewHtml += "<p><strong>�վ��]:</strong> " + data.reason + "</p>";
 
     $("#previewContent").html(previewHtml);
     $("#previewModal").modal("show");
@@ -279,11 +279,11 @@ function refreshRecords() {
             if (response.success) {
                 loadRecordsToTable(response.data);
             } else {
-                alert("獲取記錄失敗: " + response.message);
+                alert("����O������: " + response.message);
             }
         },
         error: function() {
-            alert("獲取記錄失敗，請稍後再試");
+            alert("����O�����ѡA�еy��A��");
         }
     });
 }
@@ -303,12 +303,12 @@ function loadRecordsToTable(data) {
                 record.reason,
                 record.adjustTime,
                 record.operator,
-                "<button class='btn btn-sm btn-info' onclick='viewRecordDetail(" + record.id + ")'>查看</button>"
+                "<button class='btn btn-sm btn-info' onclick='viewRecordDetail(" + record.id + ")'>�d��</button>"
             ]);
         });
     } else {
         table.row.add([
-            "暫無調整記錄", "", "", "", "", ""
+            "�ȵL�վ�O��", "", "", "", "", ""
         ]);
     }
     
@@ -316,35 +316,35 @@ function loadRecordsToTable(data) {
 }
 
 function viewRecordDetail(recordId) {
-    // 查看記錄詳情
-    alert("查看記錄詳情: " + recordId);
+    // �d�ݰO���Ա�
+    alert("�d�ݰO���Ա�: " + recordId);
 }
 
-// 表單驗證
+// �������
 function validateForm() {
     const userId = document.getElementById("userId").value.trim();
     const points = document.getElementById("points").value;
     const reason = document.getElementById("reason").value.trim();
 
     if (!userId) {
-        alert("請輸入用戶ID");
+        alert("�п�J�Τ�ID");
         return false;
     }
 
     if (!points || points == 0) {
-        alert("請輸入有效的調整點數");
+        alert("�п�J���Ī��վ��I��");
         return false;
     }
 
     if (!reason) {
-        alert("請輸入調整原因");
+        alert("�п�J�վ��]");
         return false;
     }
 
     return true;
 }
 
-// 表單提交驗證
+// ��洣������
 document.getElementById("adjustForm").addEventListener("submit", function(e) {
     if (!validateForm()) {
         e.preventDefault();
@@ -354,7 +354,7 @@ document.getElementById("adjustForm").addEventListener("submit", function(e) {
     const userId = document.getElementById("userId").value.trim();
     const points = document.getElementById("points").value;
 
-    if (!confirm(`確定要調整用戶 ${userId} 的點數 ${points} 嗎？`)) {
+    if (!confirm(`�T�w�n�վ�Τ� ${userId} ���I�� ${points} �ܡH`)) {
         e.preventDefault();
         return;
     }

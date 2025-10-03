@@ -11,11 +11,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminWalletTypesController : MiniGameBaseController
     {
-        private readonly IMiniGameAdminService _adminService;
-
-        public AdminWalletTypesController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminWalletTypesController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context, adminService)
         {
-            _adminService = adminService;
         }
 
         // 錢包類型管理首頁

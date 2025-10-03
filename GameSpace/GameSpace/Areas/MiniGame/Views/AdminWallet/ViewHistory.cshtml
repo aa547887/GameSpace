@@ -1,6 +1,6 @@
-ï»¿@model GameSpace.Areas.MiniGame.Models.WalletHistoryModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.WalletHistoryModel
 @{
-    ViewData["Title"] = "æŸ¥çœ‹æœƒå“¡æ”¶æ”¯æ˜ç´°";
+    ViewData["Title"] = "¬d¬İ·|­û¦¬¤ä©ú²Ó";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
@@ -8,20 +8,20 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-chart-line mr-2"></i>æŸ¥çœ‹æœƒå“¡æ”¶æ”¯æ˜ç´°
+            <i class="fas fa-chart-line mr-2"></i>¬d¬İ·|­û¦¬¤ä©ú²Ó
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> è¿”å›
+                <i class="fas fa-arrow-left"></i> ªğ¦^
             </a>
         </div>
     </div>
 
-    <!-- æœå°‹è¡¨å–® -->
+    <!-- ·j´Mªí³æ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-filter"></i> æœå°‹æ¢ä»¶
+                <i class="fas fa-filter"></i> ·j´M±ø¥ó
             </h6>
         </div>
         <div class="card-body">
@@ -29,30 +29,30 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="userId">ç”¨æˆ¶ID</label>
-                            <input type="text" class="form-control" id="userId" name="userId" placeholder="è¼¸å…¥ç”¨æˆ¶ID">
+                            <label for="userId">¥Î¤áID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="¿é¤J¥Î¤áID">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="transactionType">äº¤æ˜“é¡å‹</label>
+                            <label for="transactionType">¥æ©öÃş«¬</label>
                             <select class="form-control" id="transactionType" name="transactionType">
-                                <option value="">å…¨éƒ¨</option>
-                                <option value="Points">æœƒå“¡é»æ•¸</option>
-                                <option value="Coupon">å•†åŸå„ªæƒ åˆ¸</option>
-                                <option value="EVoucher">é›»å­ç¦®åˆ¸</option>
+                                <option value="">¥ş³¡</option>
+                                <option value="Points">·|­ûÂI¼Æ</option>
+                                <option value="Coupon">°Ó«°Àu´f¨é</option>
+                                <option value="EVoucher">¹q¤lÂ§¨é</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="actionType">æ“ä½œé¡å‹</label>
+                            <label for="actionType">¾Ş§@Ãş«¬</label>
                             <select class="form-control" id="actionType" name="actionType">
-                                <option value="">å…¨éƒ¨</option>
-                                <option value="Earn">ç²å¾—</option>
-                                <option value="Spend">èŠ±è²»</option>
-                                <option value="Use">ä½¿ç”¨</option>
-                                <option value="Expire">éæœŸ</option>
+                                <option value="">¥ş³¡</option>
+                                <option value="Earn">Àò±o</option>
+                                <option value="Spend">ªá¶O</option>
+                                <option value="Use">¨Ï¥Î</option>
+                                <option value="Expire">¹L´Á</option>
                             </select>
                         </div>
                     </div>
@@ -60,40 +60,40 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="startDate">é–‹å§‹æ—¥æœŸ</label>
+                            <label for="startDate">¶}©l¤é´Á</label>
                             <input type="date" class="form-control" id="startDate" name="startDate">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="endDate">çµæŸæ—¥æœŸ</label>
+                            <label for="endDate">µ²§ô¤é´Á</label>
                             <input type="date" class="form-control" id="endDate" name="endDate">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> æœå°‹
+                        <i class="fas fa-search"></i> ·j´M
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> é‡ç½®
+                        <i class="fas fa-undo"></i> ­«¸m
                     </button>
                     <button type="button" class="btn btn-success" onclick="exportHistory()">
-                        <i class="fas fa-download"></i> åŒ¯å‡º
+                        <i class="fas fa-download"></i> ¶×¥X
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- çµ±è¨ˆè³‡è¨Š -->
+    <!-- ²Î­p¸ê°T -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">ç¸½æ”¶å…¥</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Á`¦¬¤J</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalIncome">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -109,7 +109,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">ç¸½æ”¯å‡º</div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Á`¤ä¥X</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalExpense">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -125,7 +125,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">æ·¨è®Šå‹•</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">²bÅÜ°Ê</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="netChange">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -141,7 +141,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">äº¤æ˜“ç­†æ•¸</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">¥æ©öµ§¼Æ</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="transactionCount">0</div>
                         </div>
                         <div class="col-auto">
@@ -153,27 +153,27 @@
         </div>
     </div>
 
-    <!-- äº¤æ˜“è¨˜éŒ„ -->
+    <!-- ¥æ©ö°O¿ı -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-list"></i> äº¤æ˜“è¨˜éŒ„
+                <i class="fas fa-list"></i> ¥æ©ö°O¿ı
             </h6>
-            <span class="badge badge-info" id="resultCount">å…± 0 ç­†è¨˜éŒ„</span>
+            <span class="badge badge-info" id="resultCount">¦@ 0 µ§°O¿ı</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="transactionsTable" width="100%" cellspacing="0">
                     <thead class="thead-light">
                         <tr>
-                            <th>äº¤æ˜“æ™‚é–“</th>
-                            <th>ç”¨æˆ¶ID</th>
-                            <th>äº¤æ˜“é¡å‹</th>
-                            <th>æ“ä½œé¡å‹</th>
-                            <th>é‡‘é¡/æ•¸é‡</th>
-                            <th>é¤˜é¡</th>
-                            <th>æè¿°</th>
-                            <th>æ“ä½œ</th>
+                            <th>¥æ©ö®É¶¡</th>
+                            <th>¥Î¤áID</th>
+                            <th>¥æ©öÃş«¬</th>
+                            <th>¾Ş§@Ãş«¬</th>
+                            <th>ª÷ÃB/¼Æ¶q</th>
+                            <th>¾lÃB</th>
+                            <th>´y­z</th>
+                            <th>¾Ş§@</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -188,13 +188,13 @@
                                         @switch (transaction.TransactionType)
                                         {
                                             case "Points":
-                                                <span class="badge badge-primary">æœƒå“¡é»æ•¸</span>      
+                                                <span class="badge badge-primary">·|­ûÂI¼Æ</span>      
                                                 break;
                                             case "Coupon":
-                                                <span class="badge badge-success">å•†åŸå„ªæƒ åˆ¸</span>    
+                                                <span class="badge badge-success">°Ó«°Àu´f¨é</span>    
                                                 break;
                                             case "EVoucher":
-                                                <span class="badge badge-warning">é›»å­ç¦®åˆ¸</span>      
+                                                <span class="badge badge-warning">¹q¤lÂ§¨é</span>      
                                                 break;
                                             default:
                                                 <span class="badge badge-secondary">@transaction.TransactionType</span>
@@ -205,16 +205,16 @@
                                         @switch (transaction.ActionType)
                                         {
                                             case "Earn":
-                                                <span class="badge badge-success">ç²å¾—</span>
+                                                <span class="badge badge-success">Àò±o</span>
                                                 break;
                                             case "Spend":
-                                                <span class="badge badge-danger">èŠ±è²»</span>
+                                                <span class="badge badge-danger">ªá¶O</span>
                                                 break;
                                             case "Use":
-                                                <span class="badge badge-info">ä½¿ç”¨</span>
+                                                <span class="badge badge-info">¨Ï¥Î</span>
                                                 break;
                                             case "Expire":
-                                                <span class="badge badge-warning">éæœŸ</span>
+                                                <span class="badge badge-warning">¹L´Á</span>
                                                 break;
                                             default:
                                                 <span class="badge badge-secondary">@transaction.ActionType</span>
@@ -239,7 +239,7 @@
                                     <td>@transaction.Description</td>
                                     <td>
                                         <button class="btn btn-sm btn-info" onclick="viewTransactionDetails(@transaction.Id)">
-                                            <i class="fas fa-eye"></i> è©³æƒ…
+                                            <i class="fas fa-eye"></i> ¸Ô±¡
                                         </button>
                                     </td>
                                 </tr>
@@ -248,7 +248,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center">è«‹è¼¸å…¥æœå°‹æ¢ä»¶é€²è¡ŒæŸ¥è©¢</td>        
+                                <td colspan="8" class="text-center">½Ğ¿é¤J·j´M±ø¥ó¶i¦æ¬d¸ß</td>        
                             </tr>
                         }
                     </tbody>
@@ -258,12 +258,12 @@
     </div>
 </div>
 
-<!-- äº¤æ˜“è©³æƒ… Modal -->
+<!-- ¥æ©ö¸Ô±¡ Modal -->
 <div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">äº¤æ˜“è©³æƒ…</h5>
+                <h5 class="modal-title">¥æ©ö¸Ô±¡</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -271,27 +271,27 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>åŸºæœ¬è³‡è¨Š</h6>
+                        <h6>°ò¥»¸ê°T</h6>
                         <table class="table table-sm">
-                            <tr><td>äº¤æ˜“ID:</td><td id="detailTransactionId"></td></tr>
-                            <tr><td>äº¤æ˜“æ™‚é–“:</td><td id="detailTransactionTime"></td></tr>
-                            <tr><td>äº¤æ˜“é¡å‹:</td><td id="detailTransactionType"></td></tr>
-                            <tr><td>æ“ä½œé¡å‹:</td><td id="detailActionType"></td></tr>
+                            <tr><td>¥æ©öID:</td><td id="detailTransactionId"></td></tr>
+                            <tr><td>¥æ©ö®É¶¡:</td><td id="detailTransactionTime"></td></tr>
+                            <tr><td>¥æ©öÃş«¬:</td><td id="detailTransactionType"></td></tr>
+                            <tr><td>¾Ş§@Ãş«¬:</td><td id="detailActionType"></td></tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6>é‡‘é¡è³‡è¨Š</h6>
+                        <h6>ª÷ÃB¸ê°T</h6>
                         <table class="table table-sm">
-                            <tr><td>é‡‘é¡/æ•¸é‡:</td><td id="detailAmount"></td></tr>
-                            <tr><td>äº¤æ˜“å¾Œé¤˜é¡:</td><td id="detailBalance"></td></tr>
-                            <tr><td>æè¿°:</td><td id="detailDescription"></td></tr>
-                            <tr><td>å‚™è¨»:</td><td id="detailRemark"></td></tr>
+                            <tr><td>ª÷ÃB/¼Æ¶q:</td><td id="detailAmount"></td></tr>
+                            <tr><td>¥æ©ö«á¾lÃB:</td><td id="detailBalance"></td></tr>
+                            <tr><td>´y­z:</td><td id="detailDescription"></td></tr>
+                            <tr><td>³Æµù:</td><td id="detailRemark"></td></tr>
                         </table>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
             </div>
         </div>
     </div>
@@ -299,7 +299,7 @@
 
 <script>
 $(document).ready(function() {
-    // åˆå§‹åŒ– DataTable
+    // ªì©l¤Æ DataTable
     var table = $("#transactionsTable").DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -311,7 +311,7 @@ $(document).ready(function() {
         ]
     });
 
-    // æ›´æ–°çµ±è¨ˆè³‡è¨Š
+    // §ó·s²Î­p¸ê°T
     updateStatistics();
     updateResultCount();
 });
@@ -341,32 +341,32 @@ function viewTransactionDetails(transactionId) {
                 $("#detailAmount").text(response.data.amount);
                 $("#detailBalance").text(response.data.balance);
                 $("#detailDescription").text(response.data.description);
-                $("#detailRemark").text(response.data.remark || "ç„¡");
+                $("#detailRemark").text(response.data.remark || "µL");
                 $("#transactionDetailModal").modal("show");
             } else {
-                alert("ç²å–äº¤æ˜“è©³æƒ…å¤±æ•—: " + response.message);
+                alert("Àò¨ú¥æ©ö¸Ô±¡¥¢±Ñ: " + response.message);
             }
         },
         error: function() {
-            alert("ç²å–äº¤æ˜“è©³æƒ…å¤±æ•—ï¼Œè«‹ç¨å¾Œå†è©¦");
+            alert("Àò¨ú¥æ©ö¸Ô±¡¥¢±Ñ¡A½Ğµy«á¦A¸Õ");
         }
     });
 }
 
-// æ›´æ–°çµ±è¨ˆè³‡è¨Š
+// §ó·s²Î­p¸ê°T
 function updateStatistics() {
-    // æ¨¡æ“¬çµ±è¨ˆæ•¸æ“š
+    // ¼ÒÀÀ²Î­p¼Æ¾Ú
     document.getElementById("totalIncome").textContent = "NT$ 15,680";
     document.getElementById("totalExpense").textContent = "NT$ 8,420";
     document.getElementById("netChange").textContent = "NT$ 7,260";
     document.getElementById("transactionCount").textContent = "156";
 }
 
-// æ›´æ–°çµæœè¨ˆæ•¸
+// §ó·sµ²ªG­p¼Æ
 function updateResultCount() {
     const rows = document.querySelectorAll("tbody tr");
-    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("è«‹è¼¸å…¥") ? 1 : 0);
-    document.getElementById("resultCount").textContent = `å…± ${count} ç­†è¨˜éŒ„`;
+    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("½Ğ¿é¤J") ? 1 : 0);
+    document.getElementById("resultCount").textContent = `¦@ ${count} µ§°O¿ı`;
 }
 </script>
 

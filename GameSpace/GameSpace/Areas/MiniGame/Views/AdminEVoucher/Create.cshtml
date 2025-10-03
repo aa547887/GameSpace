@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminEVoucherCreateViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminEVoucherCreateViewModel
 @{
-    ViewData["Title"] = "新增電子禮券";
+    ViewData["Title"] = "�s�W�q�l§��";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- 頁面標題 -->
+    <!-- �������D -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">新增電子禮券</h1>
+        <h1 class="h3 mb-0 text-gray-800">�s�W�q�l§��</h1>
         <div>
             <a href="@Url.Action("Index", "AdminEVoucher")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
             </a>
         </div>
     </div>
@@ -19,7 +19,7 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">電子禮券資訊</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�q�l§���T</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
@@ -28,9 +28,9 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="EVoucherTypeID" class="control-label">禮券類型 *</label>
+                                    <label asp-for="EVoucherTypeID" class="control-label">§������ *</label>
                                     <select asp-for="EVoucherTypeID" class="form-control">
-                                        <option value="">請選擇禮券類型</option>
+                                        <option value="">�п��§������</option>
                                         @if (ViewBag.EVoucherTypes != null)
                                         {
                                             @foreach (var type in ViewBag.EVoucherTypes)
@@ -44,9 +44,9 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="UserID" class="control-label">用戶 *</label>
+                                    <label asp-for="UserID" class="control-label">�Τ� *</label>
                                     <select asp-for="UserID" class="form-control">
-                                        <option value="">請選擇用戶</option>
+                                        <option value="">�п�ܥΤ�</option>
                                         @if (ViewBag.Users != null)
                                         {
                                             @foreach (var user in ViewBag.Users)
@@ -61,27 +61,27 @@
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="EVoucherCode" class="control-label">禮券代碼 *</label>
-                            <input asp-for="EVoucherCode" class="form-control" placeholder="請輸入禮券代碼" />
+                            <label asp-for="EVoucherCode" class="control-label">§��N�X *</label>
+                            <input asp-for="EVoucherCode" class="form-control" placeholder="�п�J§��N�X" />
                             <span asp-validation-for="EVoucherCode" class="text-danger"></span>
-                            <small class="form-text text-muted">代碼必須唯一，建議使用大寫字母和數字</small>
+                            <small class="form-text text-muted">�N�X�����ߤ@�A��ĳ�ϥΤj�g�r���M�Ʀr</small>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="AcquiredTime" class="control-label">獲得時間</label>
+                                    <label asp-for="AcquiredTime" class="control-label">��o�ɶ�</label>
                                     <input asp-for="AcquiredTime" type="datetime-local" class="form-control" />
                                     <span asp-validation-for="AcquiredTime" class="text-danger"></span>
-                                    <small class="form-text text-muted">留空則使用當前時間</small>
+                                    <small class="form-text text-muted">�d�ūh�ϥη�e�ɶ�</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="UsedTime" class="control-label">使用時間</label>
+                                    <label asp-for="UsedTime" class="control-label">�ϥήɶ�</label>
                                     <input asp-for="UsedTime" type="datetime-local" class="form-control" />
                                     <span asp-validation-for="UsedTime" class="text-danger"></span>
-                                    <small class="form-text text-muted">可選，用於預設使用時間</small>
+                                    <small class="form-text text-muted">�i��A�Ω�w�]�ϥήɶ�</small>
                                 </div>
                             </div>
                         </div>
@@ -90,17 +90,17 @@
                             <div class="form-check">
                                 <input asp-for="IsUsed" class="form-check-input" type="checkbox" />
                                 <label class="form-check-label" for="IsUsed">
-                                    已使用
+                                    �w�ϥ�
                                 </label>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 建立電子禮券
+                                <i class="fas fa-save"></i> �إ߹q�l§��
                             </button>
                             <a href="@Url.Action("Index", "AdminEVoucher")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> 取消
+                                <i class="fas fa-times"></i> ����
                             </a>
                         </div>
                     </form>
@@ -111,33 +111,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">建立須知</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�إ߶���</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-gift fa-3x text-primary mb-3"></i>
-                        <h5>電子禮券建立注意事項</h5>
+                        <h5>�q�l§��إߪ`�N�ƶ�</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            禮券代碼必須唯一
+                            §��N�X�����ߤ@
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            需要選擇禮券類型和用戶
+                            �ݭn���§�������M�Τ�
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            獲得時間可自訂或使用當前時間
+                            ��o�ɶ��i�ۭq�Ψϥη�e�ɶ�
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            可以預設為已使用狀態
+                            �i�H�w�]���w�ϥΪ��A
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            禮券類型決定面額和有效期
+                            §�������M�w���B�M���Ĵ�
                         </li>
                     </ul>
                 </div>
@@ -145,18 +145,18 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">�ֳt�ާ@</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="@Url.Action("CreateType", "AdminEVoucher")" class="btn btn-outline-success">
-                            <i class="fas fa-plus"></i> 新增禮券類型
+                            <i class="fas fa-plus"></i> �s�W§������
                         </a>
                         <button type="button" class="btn btn-outline-primary" onclick="generateCode()">
-                            <i class="fas fa-random"></i> 生成隨機代碼
+                            <i class="fas fa-random"></i> �ͦ��H���N�X
                         </button>
                         <button type="button" class="btn btn-outline-info" onclick="setCurrentTime()">
-                            <i class="fas fa-clock"></i> 設定當前時間
+                            <i class="fas fa-clock"></i> �]�w��e�ɶ�
                         </button>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">禮券類型說明</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">§����������</h6>
                 </div>
                 <div class="card-body">
                     @if (ViewBag.EVoucherTypes != null && ((List<EVoucherType>)ViewBag.EVoucherTypes).Any())
@@ -173,13 +173,13 @@
                         {
                             <div class="mb-3">
                                 <span class="badge badge-primary">@type.Name</span>
-                                <small class="text-muted">@type.ValueAmount.ToString("C") - @type.ValidDays 天</small>
+                                <small class="text-muted">@type.ValueAmount.ToString("C") - @type.ValidDays ��</small>
                             </div>
                         }
                     }
                     else
                     {
-                        <p class="text-muted">暫無禮券類型，請先建立禮券類型</p>
+                        <p class="text-muted">�ȵL§�������A�Х��إ�§������</p>
                     }
                 </div>
             </div>
@@ -205,25 +205,25 @@
             document.getElementById('AcquiredTime').value = now.toISOString().slice(0, 16);
         }
 
-        // 禮券類型變更時的提示
+        // §�������ܧ�ɪ�����
         document.getElementById('EVoucherTypeID').addEventListener('change', function() {
             const typeId = this.value;
             if (typeId) {
-                // 可以在這裡添加 AJAX 調用來獲取禮券類型的詳細資訊
+                // �i�H�b�o�̲K�[ AJAX �եΨ����§���������ԲӸ�T
                 console.log('Selected type ID:', typeId);
             }
         });
 
-        // 用戶變更時的提示
+        // �Τ��ܧ�ɪ�����
         document.getElementById('UserID').addEventListener('change', function() {
             const userId = this.value;
             if (userId) {
-                // 可以在這裡添加 AJAX 調用來獲取用戶的詳細資訊
+                // �i�H�b�o�̲K�[ AJAX �եΨ�����Τ᪺�ԲӸ�T
                 console.log('Selected user ID:', userId);
             }
         });
 
-        // 已使用狀態變更時的處理
+        // �w�ϥΪ��A�ܧ�ɪ��B�z
         document.getElementById('IsUsed').addEventListener('change', function() {
             const usedTimeInput = document.getElementById('UsedTime');
             if (this.checked && !usedTimeInput.value) {

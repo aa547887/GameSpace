@@ -321,7 +321,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class GameRecordModel
     {
-        public List<MiniGame> GameRecords { get; set; } = new();
+        public List<GameSpace.Models.MiniGame> GameRecords { get; set; } = new();
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;

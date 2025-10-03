@@ -11,11 +11,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminDiagnosticsController : MiniGameBaseController
     {
-        private readonly IMiniGameAdminService _adminService;
-
-        public AdminDiagnosticsController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminDiagnosticsController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context, adminService)
         {
-            _adminService = adminService;
         }
 
         // 系統診斷首頁

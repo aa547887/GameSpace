@@ -12,11 +12,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminHomeController : MiniGameBaseController
     {
-        private readonly IMiniGameAdminService _adminService;
-
-        public AdminHomeController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context)
+        public AdminHomeController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context, adminService)
         {
-            _adminService = adminService;
         }
 
         // MiniGame Admin 首頁

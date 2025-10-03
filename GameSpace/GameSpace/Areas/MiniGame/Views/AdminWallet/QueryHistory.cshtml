@@ -1,28 +1,28 @@
-﻿@model GameSpace.Areas.MiniGame.Models.AdminWalletIndexViewModel
+﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminWalletIndexViewModel
 @{
-    ViewData["Title"] = "查詢會員收支明細";
+    ViewData["Title"] = "�d�߷|���������";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-chart-line mr-2"></i>查詢會員收支明細
+            <i class="fas fa-chart-line mr-2"></i>�d�߷|���������
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> 返回
+                <i class="fas fa-arrow-left"></i> ��^
             </a>
         </div>
     </div>
 
-    <!-- 搜索區域 -->
+    <!-- �j���ϰ� -->
     <div class="row mb-4">
         <div class="col-lg-12">
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-filter"></i> 搜索條件
+                        <i class="fas fa-filter"></i> �j������
                     </h6>
                 </div>
                 <div class="card-body">
@@ -30,21 +30,21 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label for="userId">用戶ID</label>
+                                    <label for="userId">�Τ�ID</label>
                                     <input type="number" class="form-control" id="userId" name="userId"
-                                           value="@ViewBag.UserId" placeholder="輸入用戶ID">
+                                           value="@ViewBag.UserId" placeholder="��J�Τ�ID">
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label for="startDate">開始日期</label>
+                                    <label for="startDate">�}�l���</label>
                                     <input type="date" class="form-control" id="startDate" name="startDate"
                                            value="@ViewBag.StartDate">
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label for="endDate">結束日期</label>
+                                    <label for="endDate">������</label>
                                     <input type="date" class="form-control" id="endDate" name="endDate"
                                            value="@ViewBag.EndDate">
                                 </div>
@@ -54,10 +54,10 @@
                                     <label>&nbsp;</label>
                                     <div class="d-flex">
                                         <button type="submit" class="btn btn-primary mr-2">
-                                            <i class="fas fa-search"></i> 搜索
+                                            <i class="fas fa-search"></i> �j��
                                         </button>
                                         <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                                            <i class="fas fa-undo"></i> 重置
+                                            <i class="fas fa-undo"></i> ���m
                                         </button>
                                     </div>
                                 </div>
@@ -69,14 +69,14 @@
         </div>
     </div>
 
-    <!-- 統計信息 -->
+    <!-- �έp�H�� -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">總收入</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">�`���J</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalIncome</div>
                         </div>
                         <div class="col-auto">
@@ -91,7 +91,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">總支出</div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">�`��X</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalExpense</div>
                         </div>
                         <div class="col-auto">
@@ -106,7 +106,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">淨變化</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">�b�ܤ�</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.NetChange</div>
                         </div>
                         <div class="col-auto">
@@ -121,7 +121,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">交易筆數</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">�������</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TransactionCount</div>
                         </div>
                         <div class="col-auto">
@@ -133,20 +133,20 @@
         </div>
     </div>
 
-    <!-- 收支明細列表 -->
+    <!-- ������ӦC�� -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-list"></i> 收支明細列表
+                        <i class="fas fa-list"></i> ������ӦC��
                     </h6>
                     <div class="d-flex">
                         <button class="btn btn-sm btn-success mr-2" onclick="exportData()">
-                            <i class="fas fa-download"></i> 匯出
+                            <i class="fas fa-download"></i> �ץX
                         </button>
                         <button class="btn btn-sm btn-info" onclick="refreshData()">
-                            <i class="fas fa-sync"></i> 刷新
+                            <i class="fas fa-sync"></i> ��s
                         </button>
                     </div>
                 </div>
@@ -157,13 +157,13 @@
                             <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
                                 <thead class="thead-light">
                                     <tr>
-                                        <th>交易時間</th>
-                                        <th>交易類型</th>
-                                        <th>交易金額</th>
-                                        <th>交易後餘額</th>
-                                        <th>交易說明</th>
-                                        <th>操作員</th>
-                                        <th>操作</th>
+                                        <th>����ɶ�</th>
+                                        <th>�������</th>
+                                        <th>������B</th>
+                                        <th>�����l�B</th>
+                                        <th>�������</th>
+                                        <th>�ާ@��</th>
+                                        <th>�ާ@</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -174,11 +174,11 @@
                                             <td>
                                                 @if (record.UserPoint > 0)
                                                 {
-                                                    <span class="badge badge-success">收入</span>      
+                                                    <span class="badge badge-success">���J</span>      
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge badge-danger">支出</span>       
+                                                    <span class="badge badge-danger">��X</span>       
                                                 }
                                             </td>
                                             <td class="@(record.UserPoint > 0 ? "text-success" : "text-danger")">
@@ -186,10 +186,10 @@
                                             </td>
                                             <td class="font-weight-bold">@record.UserPoint</td>
                                             <td>@record.UserName</td>
-                                            <td>系統管理員</td>
+                                            <td>�t�κ޲z��</td>
                                             <td>
                                                 <button class="btn btn-sm btn-info" onclick="viewTransactionDetail(@record.Id)">
-                                                    <i class="fas fa-eye"></i> 詳情
+                                                    <i class="fas fa-eye"></i> �Ա�
                                                 </button>
                                             </td>
                                         </tr>
@@ -202,7 +202,7 @@
                     {
                         <div class="text-center py-4">
                             <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">沒有找到符合條件的收支記錄</p>
+                            <p class="text-gray-500">�S�����ŦX���󪺦���O��</p>
                         </div>
                     }
                 </div>
@@ -211,12 +211,12 @@
     </div>
 </div>
 
-<!-- 交易詳情 Modal -->
+<!-- ����Ա� Modal -->
 <div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">交易詳情</h5>
+                <h5 class="modal-title">����Ա�</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -224,27 +224,27 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>基本資訊</h6>
+                        <h6>�򥻸�T</h6>
                         <table class="table table-sm">
-                            <tr><td>交易ID:</td><td id="detailTransactionId"></td></tr>
-                            <tr><td>交易時間:</td><td id="detailTransactionTime"></td></tr>
-                            <tr><td>交易類型:</td><td id="detailTransactionType"></td></tr>
-                            <tr><td>交易金額:</td><td id="detailTransactionAmount"></td></tr>
+                            <tr><td>���ID:</td><td id="detailTransactionId"></td></tr>
+                            <tr><td>����ɶ�:</td><td id="detailTransactionTime"></td></tr>
+                            <tr><td>�������:</td><td id="detailTransactionType"></td></tr>
+                            <tr><td>������B:</td><td id="detailTransactionAmount"></td></tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6>相關資訊</h6>
+                        <h6>������T</h6>
                         <table class="table table-sm">
-                            <tr><td>交易後餘額:</td><td id="detailBalanceAfter"></td></tr>
-                            <tr><td>交易說明:</td><td id="detailDescription"></td></tr>
-                            <tr><td>操作員:</td><td id="detailOperator"></td></tr>
-                            <tr><td>備註:</td><td id="detailRemark"></td></tr>
+                            <tr><td>�����l�B:</td><td id="detailBalanceAfter"></td></tr>
+                            <tr><td>�������:</td><td id="detailDescription"></td></tr>
+                            <tr><td>�ާ@��:</td><td id="detailOperator"></td></tr>
+                            <tr><td>�Ƶ�:</td><td id="detailRemark"></td></tr>
                         </table>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">����</button>
             </div>
         </div>
     </div>
@@ -252,7 +252,7 @@
 
 <script>
 $(document).ready(function() {
-    // 初始化 DataTable
+    // ��l�� DataTable
     var table = $("#dataTable").DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -293,14 +293,14 @@ function viewTransactionDetail(transactionId) {
                 $("#detailBalanceAfter").text(response.data.balanceAfter);
                 $("#detailDescription").text(response.data.description);
                 $("#detailOperator").text(response.data.operator);
-                $("#detailRemark").text(response.data.remark || "無");
+                $("#detailRemark").text(response.data.remark || "�L");
                 $("#transactionDetailModal").modal("show");
             } else {
-                alert("獲取交易詳情失敗: " + response.message);
+                alert("�������Ա�����: " + response.message);
             }
         },
         error: function() {
-            alert("獲取交易詳情失敗，請稍後再試");
+            alert("�������Ա����ѡA�еy��A��");
         }
     });
 }
