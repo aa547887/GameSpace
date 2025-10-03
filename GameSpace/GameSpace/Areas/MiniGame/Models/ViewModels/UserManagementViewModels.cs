@@ -226,6 +226,72 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     }
 
     /// <summary>
+    /// 用戶遊戲統計
+    /// </summary>
+    public class UserGameStatistics
+    {
+        /// <summary>
+        /// 總遊戲次數
+        /// </summary>
+        public int TotalGames { get; set; }
+
+        /// <summary>
+        /// 勝利次數
+        /// </summary>
+        public int WinCount { get; set; }
+
+        /// <summary>
+        /// 失敗次數
+        /// </summary>
+        public int LoseCount { get; set; }
+
+        /// <summary>
+        /// 中止次數
+        /// </summary>
+        public int AbortCount { get; set; }
+
+        /// <summary>
+        /// 勝率
+        /// </summary>
+        public double WinRate => TotalGames > 0 ? (double)WinCount / TotalGames * 100 : 0;
+
+        /// <summary>
+        /// 累計獲得點數
+        /// </summary>
+        public int TotalPointsEarned { get; set; }
+
+        /// <summary>
+        /// 累計獲得寵物經驗
+        /// </summary>
+        public int TotalPetExpEarned { get; set; }
+
+        /// <summary>
+        /// 累計獲得優惠券數
+        /// </summary>
+        public int TotalCouponsEarned { get; set; }
+
+        /// <summary>
+        /// 最後遊戲時間
+        /// </summary>
+        public DateTime? LastGameTime { get; set; }
+
+        /// <summary>
+        /// 今日已遊戲次數
+        /// </summary>
+        public int TodayGameCount { get; set; }
+
+        /// <summary>
+        /// 今日剩餘可玩次數
+        /// </summary>
+        public int RemainingGamesToday { get; set; }
+
+        /// <summary>
+        /// 連續遊戲天數
+        /// </summary>
+        public int ConsecutiveGameDays { get; set; }
+    }
+
+    /// <summary>
     /// 用戶查詢模型
     /// </summary>
     public class UserQueryModel

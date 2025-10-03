@@ -159,6 +159,202 @@ namespace GameSpace.Areas.MiniGame.Services
             return await HasManagerPermissionAsync(managerId, "UserStatusManagement");
         }
 
+        // ========== 介面必要方法實作 (8個) ==========
+
+        /// <summary>
+        /// 檢查管理員是否有使用者狀態管理權限
+        /// </summary>
+        public async Task<bool> HasUserStatusManagementPermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.UserStatusManagement == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查管理員是否有寵物管理權限
+        /// </summary>
+        public async Task<bool> HasPetManagementPermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.Pet_Rights_Management == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查管理員是否有購物管理權限
+        /// </summary>
+        public async Task<bool> HasShoppingManagementPermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.ShoppingPermissionManagement == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查管理員是否有訊息管理權限
+        /// </summary>
+        public async Task<bool> HasMessageManagementPermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.MessagePermissionManagement == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查管理員是否有客服權限
+        /// </summary>
+        public async Task<bool> HasCustomerServicePermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.customer_service == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查管理員是否有管理員權限
+        /// </summary>
+        public async Task<bool> HasAdministratorPermissionAsync(int managerId)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .ThenInclude(mr => mr.ManagerRolePermission)
+                    .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
+
+                if (manager == null) return false;
+
+                return manager.ManagerRoles.Any(mr =>
+                    mr.ManagerRolePermission?.AdministratorPrivilegesManagement == true);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 從 HttpContext 獲取管理員 ID
+        /// </summary>
+        public int? GetManagerIdFromContext(HttpContext context)
+        {
+            try
+            {
+                var managerIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
+                if (managerIdClaim == null)
+                {
+                    managerIdClaim = context.User.FindFirst("ManagerId");
+                }
+
+                if (managerIdClaim != null && int.TryParse(managerIdClaim.Value, out int managerId))
+                {
+                    return managerId;
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 檢查當前管理員是否有指定權限
+        /// </summary>
+        public async Task<bool> HasPermissionAsync(HttpContext context, string permissionType)
+        {
+            try
+            {
+                var managerId = GetManagerIdFromContext(context);
+                if (!managerId.HasValue)
+                {
+                    return false;
+                }
+
+                return permissionType switch
+                {
+                    "UserStatusManagement" => await HasUserStatusManagementPermissionAsync(managerId.Value),
+                    "PetManagement" or "PetRightsManagement" or "Pet_Rights_Management" => await HasPetManagementPermissionAsync(managerId.Value),
+                    "ShoppingManagement" or "ShoppingPermissionManagement" => await HasShoppingManagementPermissionAsync(managerId.Value),
+                    "MessageManagement" or "MessagePermissionManagement" => await HasMessageManagementPermissionAsync(managerId.Value),
+                    "CustomerService" => await HasCustomerServicePermissionAsync(managerId.Value),
+                    "Administrator" or "AdministratorPrivilegesManagement" => await HasAdministratorPermissionAsync(managerId.Value),
+                    _ => false
+                };
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // ========== 用戶權限管理 ==========
 
         public async Task<List<GameSpace.Models.UserRight>> GetUserRightsAsync(int userId)

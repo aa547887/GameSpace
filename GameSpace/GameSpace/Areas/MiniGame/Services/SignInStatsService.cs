@@ -1,16 +1,159 @@
 ﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
     public class SignInStatsService : ISignInStatsService
     {
         private readonly string _connectionString;
+        private readonly GameSpacedatabaseContext _context;
 
-        public SignInStatsService(IConfiguration configuration)
+        public SignInStatsService(IConfiguration configuration, GameSpacedatabaseContext context)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException(nameof(configuration));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
+
+        // ========== 介面方法實作 ==========
+
+        public async Task<PagedResult<UserSignInStats>> GetSignInStatsAsync(SignInStatsQueryModel query)
+        {
+            try
+            {
+                var queryable = _context.UserSignInStats.AsQueryable();
+
+                // 篩選條件
+                if (query.UserId.HasValue)
+                    queryable = queryable.Where(s => s.UserID == query.UserId.Value);
+
+                if (query.SignTimeFrom.HasValue)
+                    queryable = queryable.Where(s => s.SignTime >= query.SignTimeFrom.Value);
+
+                if (query.SignTimeTo.HasValue)
+                    queryable = queryable.Where(s => s.SignTime <= query.SignTimeTo.Value);
+
+                if (query.MinConsecutiveDays.HasValue)
+                    queryable = queryable.Where(s => s.ConsecutiveDays >= query.MinConsecutiveDays.Value);
+
+                var totalCount = await queryable.CountAsync();
+
+                // 排序
+                if (!string.IsNullOrEmpty(query.OrderBy))
+                {
+                    if (query.Descending)
+                        queryable = queryable.OrderByDescending(s => EF.Property<object>(s, query.OrderBy));
+                    else
+                        queryable = queryable.OrderBy(s => EF.Property<object>(s, query.OrderBy));
+                }
+                else
+                {
+                    queryable = queryable.OrderByDescending(s => s.SignTime);
+                }
+
+                // 分頁
+                var items = await queryable
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<UserSignInStats>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+            }
+            catch
+            {
+                return new PagedResult<UserSignInStats>();
+            }
+        }
+
+        public async Task<SignInStatsSummary> GetSignInStatsSummaryAsync()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var weekStart = today.AddDays(-(int)today.DayOfWeek);
+                var monthStart = new DateTime(today.Year, today.Month, 1);
+
+                var allStats = await _context.UserSignInStats.ToListAsync();
+
+                return new SignInStatsSummary
+                {
+                    TodaySignInCount = allStats.Count(s => s.SignTime.Date == today),
+                    ThisWeekSignInCount = allStats.Count(s => s.SignTime >= weekStart),
+                    ThisMonthSignInCount = allStats.Count(s => s.SignTime >= monthStart),
+                    MaxConsecutiveDays = allStats.Any() ? allStats.Max(s => s.ConsecutiveDays) : 0,
+                    PerfectAttendanceCount = allStats.Count(s => s.ConsecutiveDays >= DateTime.DaysInMonth(today.Year, today.Month)),
+                    TotalPointsGranted = allStats.Sum(s => s.PointsEarned),
+                    TotalExpGranted = allStats.Sum(s => s.PetExpEarned),
+                    TotalCouponsGranted = allStats.Count(s => s.CouponEarned != null)
+                };
+            }
+            catch
+            {
+                return new SignInStatsSummary();
+            }
+        }
+
+        public async Task<bool> ConfigureSignInRulesAsync(SignInRulesModel rules)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(rules);
+                var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SignInRules");
+
+                if (setting == null)
+                {
+                    setting = new SystemSetting
+                    {
+                        SettingKey = "SignInRules",
+                        SettingValue = json,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.SystemSettings.Add(setting);
+                }
+                else
+                {
+                    setting.SettingValue = json;
+                    setting.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<SignInRulesModel> GetSignInRulesAsync()
+        {
+            try
+            {
+                var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SignInRules");
+
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return new SignInRulesModel(); // 使用預設值
+                }
+
+                return JsonSerializer.Deserialize<SignInRulesModel>(setting.SettingValue) ?? new SignInRulesModel();
+            }
+            catch
+            {
+                return new SignInRulesModel();
+            }
+        }
+
+        // ========== 原有方法 ==========
 
         public async Task<IEnumerable<UserSignInStats>> GetAllSignInStatsAsync()
         {

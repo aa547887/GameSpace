@@ -333,12 +333,24 @@ namespace GameSpace.Areas.MiniGame.Services
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<PetBackgroundOption>> GetAvailableBackgroundsAsync()
+        public async Task<IEnumerable<GameSpace.Areas.MiniGame.Models.ViewModels.PetBackgroundOption>> GetAvailableBackgroundsAsync()
         {
-            return await _context.PetBackgroundOptions
+            var entities = await _context.PetBackgroundOptions
                 .Where(o => o.IsActive)
-                .OrderBy(o => o.DisplayOrder)
+                .OrderBy(o => o.SortOrder)
                 .ToListAsync();
+
+            // 將 Entity 映射為 ViewModel
+            return entities.Select(e => new GameSpace.Areas.MiniGame.Models.ViewModels.PetBackgroundOption
+            {
+                BackgroundId = e.BackgroundOptionId,
+                BackgroundName = e.BackgroundName,
+                ImageUrl = null, // Entity 中沒有 ImageUrl，可根據 BackgroundCode 生成或留空
+                RequiredPoints = 0, // Entity 中沒有此欄位，預設為 0（免費）
+                IsDefault = e.SortOrder == 0, // 假設 SortOrder 為 0 的是預設背景
+                IsUnlocked = true, // 所有啟用的背景視為已解鎖
+                Description = null // Entity 中沒有描述欄位
+            }).ToList();
         }
 
         // Pet 統計

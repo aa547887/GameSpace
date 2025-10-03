@@ -1,6 +1,8 @@
 ﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -17,24 +19,28 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             var queryable = _context.UserWallets.AsQueryable();
 
-            // 搜尋條件
-            if (!string.IsNullOrEmpty(query.SearchTerm))
+            // 使用者ID篩選
+            if (query.UserId.HasValue)
             {
-                queryable = queryable.Where(w => w.User.User_name.Contains(query.SearchTerm) ||
-                                               w.User.User_Account.Contains(query.SearchTerm));
+                queryable = queryable.Where(w => w.UserId == query.UserId.Value);
             }
 
             // 點數範圍篩選
             if (query.MinPoints.HasValue)
-                queryable = queryable.Where(w => w.User_Point >= query.MinPoints.Value);
+                queryable = queryable.Where(w => w.UserPoint >= query.MinPoints.Value);
             if (query.MaxPoints.HasValue)
-                queryable = queryable.Where(w => w.User_Point <= query.MaxPoints.Value);
+                queryable = queryable.Where(w => w.UserPoint <= query.MaxPoints.Value);
 
             var totalCount = await queryable.CountAsync();
 
+            // 排序
+            if (query.Descending)
+                queryable = queryable.OrderByDescending(w => w.UserPoint);
+            else
+                queryable = queryable.OrderBy(w => w.UserPoint);
+
             var items = await queryable
                 .Include(w => w.User)
-                .OrderByDescending(w => w.User_Point)
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();
@@ -52,7 +58,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.UserWallets
                 .Include(w => w.User)
-                .FirstOrDefaultAsync(w => w.User_Id == userId);
+                .FirstOrDefaultAsync(w => w.UserId == userId);
         }
 
         public async Task<bool> UpdateUserPointsAsync(int userId, int points, string description)
@@ -63,18 +69,18 @@ namespace GameSpace.Areas.MiniGame.Services
                 var wallet = await _context.UserWallets.FindAsync(userId);
                 if (wallet == null) return false;
 
-                var oldPoints = wallet.User_Point;
-                wallet.User_Point += points;
+                var oldPoints = wallet.UserPoint;
+                wallet.UserPoint += points;
 
                 // 記錄交易歷史
                 var history = new WalletHistory
                 {
-                    UserID = userId,
-                    ChangeAmount = points,
+                    UserId = userId,
+                    PointsChanged = points,
                     ChangeType = "Point",
                     ChangeTime = DateTime.Now,
                     Description = description,
-                    RelatedID = null
+                    ItemCode = null
                 };
 
                 _context.WalletHistories.Add(history);
