@@ -149,8 +149,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<UserHome> UserHomes { get; set; }
-
     public virtual DbSet<UserIntroduce> UserIntroduces { get; set; }
 
     public virtual DbSet<UserRight> UserRights { get; set; }
@@ -2089,34 +2087,6 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("User_Password");
             entity.Property(e => e.UserPhoneNumberConfirmed).HasColumnName("User_PhoneNumberConfirmed");
             entity.Property(e => e.UserTwoFactorEnabled).HasColumnName("User_TwoFactorEnabled");
-        });
-
-        modelBuilder.Entity<UserHome>(entity =>
-        {
-            entity.HasKey(e => e.UserId).HasName("PK__UserHome__206D9190F17AE3FF");
-
-            entity.ToTable("UserHome");
-
-            entity.HasIndex(e => e.HomeCode, "UQ__UserHome__DCD5B1D4001F96FB").IsUnique();
-
-            entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
-                .HasColumnName("User_ID");
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.HomeCode)
-                .HasMaxLength(32)
-                .IsUnicode(false);
-            entity.Property(e => e.IsPublic).HasDefaultValue(true);
-            entity.Property(e => e.Title).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())");
-
-            entity.HasOne(d => d.User).WithOne(p => p.UserHome)
-                .HasForeignKey<UserHome>(d => d.UserId)
-                .HasConstraintName("FK_UserHome_User");
         });
 
         modelBuilder.Entity<UserIntroduce>(entity =>
