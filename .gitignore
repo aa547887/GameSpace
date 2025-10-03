@@ -1,64 +1,10 @@
-﻿# === Visual Studio / .NET + Vue 完整 .gitignore ===
-
-# --- IDE / 使用者環境 ---
+﻿# Visual Studio local cache
 .vs/
-.vscode/
-.idea/
-_ReSharper*/
-*.DotSettings.user
-
-# --- .NET 建置輸出 ---
-**/[Bb]in/
-**/[Oo]bj/
-# dotnet publish（多半落在 bin 裡，但保險起見）
-**/publish/
-
-# --- 使用者/方案個人檔 ---
-*.user
 *.suo
+*.user
 *.userosscache
-*.rsuser
 *.sln.docstates
 
-# --- NuGet / 套件輸出 ---
-packages/
-*.nupkg
-*.snupkg
-artifacts/
-
-# --- 測試 / 覆蓋率 ---
-TestResults/
-*.trx
-*.coverage
-*.coveragexml
-
-# --- 日誌 / 暫存 / 雜項 ---
-[Ll]ogs/
-*.log
-*.tmp
-*.temp
-*.cache
-*.swp
-*.bak
-~$*
-*.orig
-*.rej
-
-# --- 前端（Node / Vue / Vite / Webpack）---
-node_modules/
-dist/
-build/
-.cache/
-.temp/
-coverage/
-*.tsbuildinfo
-.eslintcache
-# 若用 LibMan 或把第三方前端庫放這裡
-wwwroot/lib/
-
-# --- OS 產物 ---
-.DS_Store
-Thumbs.db
-ehthumbs.db
-/GamiPort/GamiPort/bin/Debug/net8.0/GamiPort.dll
-/GamiPort/GamiPort/bin/Debug/net8.0/GamiPort.exe
+# .NET build outputs
+**/bin/
+**/obj/
