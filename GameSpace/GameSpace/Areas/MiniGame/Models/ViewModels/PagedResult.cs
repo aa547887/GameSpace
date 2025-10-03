@@ -14,6 +14,15 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int CurrentPage { get; set; }
 
         /// <summary>
+        /// Page 是 CurrentPage 的別名，為了向後相容
+        /// </summary>
+        public int Page
+        {
+            get => CurrentPage;
+            set => CurrentPage = value;
+        }
+
+        /// <summary>
         /// PageNumber 是 CurrentPage 的別名，為了向後相容
         /// </summary>
         public int PageNumber

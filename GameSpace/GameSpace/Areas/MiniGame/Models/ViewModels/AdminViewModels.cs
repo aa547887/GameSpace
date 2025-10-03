@@ -98,7 +98,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class AdminUserEditViewModel
     {
-        public int User_Id { get; set; }
+        public int UserId { get; set; }
 
         [Required(ErrorMessage = "用戶名稱為必填")]
         [StringLength(50, ErrorMessage = "用戶名稱長度不可超過 50 字元")]
@@ -159,7 +159,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class AdminWalletTransactionViewModel
     {
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         public decimal Amount { get; set; }
         public string ChangeType { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
@@ -173,7 +173,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class AdjustEVouchersModel
     {
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         public int EvoucherTypeId { get; set; }
         public int Quantity { get; set; }
         public string? Reason { get; set; }
@@ -224,7 +224,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class GrantEVouchersModel
     {
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         public int EvoucherTypeId { get; set; }
         public int Quantity { get; set; }
     }
@@ -271,7 +271,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminEVoucherCreateViewModel
     {
         [Required]
-        public int UserID { get; set; }
+        public int UserId { get; set; }
 
         [Required]
         public int EvoucherTypeId { get; set; }
@@ -306,7 +306,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class EVoucherCreateVM
     {
         [Required]
-        public int UserID { get; set; }
+        public int UserId { get; set; }
 
         [Required]
         public int EvoucherTypeId { get; set; }
@@ -315,7 +315,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class EVoucherEditVM
     {
         public int EvoucherId { get; set; }
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         public int EvoucherTypeId { get; set; }
     }
 
@@ -323,7 +323,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminSignInCreateViewModel
     {
         [Required]
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         
         public DateTime SignTime { get; set; } = DateTime.Now;
         
@@ -353,7 +353,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminPetCreateViewModel
     {
         [Required]
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         
         [Required]
         [StringLength(50)]
@@ -401,7 +401,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class AdminMiniGameCreateViewModel
     {
         [Required]
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         
         [Required]
         public int PetID { get; set; }
@@ -461,6 +461,44 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int PointsChanged { get; set; }
         public string Description { get; set; } = string.Empty;
         public DateTime ChangeTime { get; set; }
+    }
+
+    // 最近簽到模型
+    public class RecentSignInModel
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public DateTime SignTime { get; set; }
+        public int PointsGained { get; set; }
+        public int ExpGained { get; set; }
+        public string? CouponGained { get; set; }
+    }
+
+    // 最近遊戲記錄模型
+    public class RecentGameRecordModel
+    {
+        public int PlayId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int Level { get; set; }
+        public string? Result { get; set; }
+        public int PointsGained { get; set; }
+        public int ExpGained { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public string? GameName { get; set; }
+    }
+
+    // 系統狀態模型
+    public class SystemStatusModel
+    {
+        public bool DatabaseConnection { get; set; }
+        public string MemoryUsage { get; set; } = string.Empty;
+        public DateTime? LastBackup { get; set; }
+        public int ErrorCount { get; set; }
+        public string CpuUsage { get; set; } = string.Empty;
+        public string DiskSpace { get; set; } = string.Empty;
+        public DateTime LastChecked { get; set; } = DateTime.Now;
     }
 
 }

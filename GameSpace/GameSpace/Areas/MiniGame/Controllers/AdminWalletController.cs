@@ -58,21 +58,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var viewModel = new AdminWalletIndexViewModel
             {
-                Wallets = new PagedResult<Wallet>
+                UserWallets = pagedHistory.Select(h => new UserWalletViewModel
                 {
-                    Items = pagedHistory.Select(h => new Wallet
-                    {
-                        WalletId = h.HistoryID,
-                        UserId = h.UserID,
-                        Amount = Math.Abs(h.PointsChanged),
-                        TransactionType = h.PointsChanged > 0 ? "earn" : "spend",
-                        TransactionDate = h.ChangeTime,
-                        Description = h.Description
-                    }).ToList(),
-                    TotalCount = totalCount,
-                    PageNumber = page,
-                    PageSize = pageSize
-                }
+                    WalletId = h.LogId,
+                    UserId = h.UserId,
+                    Amount = Math.Abs(h.PointsChanged),
+                    TransactionType = h.PointsChanged > 0 ? "earn" : "spend",
+                    TransactionDate = h.ChangeTime,
+                    Description = h.Description ?? string.Empty
+                }).ToList(),
+                TotalCount = totalCount,
+                PageSize = pageSize,
+                CurrentPage = page
             };
 
             // 統計數據
@@ -102,15 +99,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            // 轉換為 Wallet 格式顯示
-            var wallet = new Wallet
+            // 轉換為 UserWalletViewModel 格式顯示
+            var wallet = new UserWalletViewModel
             {
-                WalletId = history.HistoryID,
-                UserId = history.UserID,
+                WalletId = history.LogId,
+                UserId = history.UserId,
                 Amount = Math.Abs(history.PointsChanged),
                 TransactionType = history.PointsChanged > 0 ? "earn" : "spend",
                 TransactionDate = history.ChangeTime,
-                Description = history.Description
+                Description = history.Description ?? string.Empty
             };
 
             return View(wallet);

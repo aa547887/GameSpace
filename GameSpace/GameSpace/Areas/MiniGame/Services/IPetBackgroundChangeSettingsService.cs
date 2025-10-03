@@ -26,6 +26,36 @@ namespace GameSpace.Areas.MiniGame.Services
         /// 驗證用戶是否有足夠點數變更背景
         /// </summary>
         Task<bool> CanUserChangeBgackgroundAsync(int userId);
+
+        /// <summary>
+        /// 獲取所有背景變更設定
+        /// </summary>
+        Task<IEnumerable<PetBackgroundChangeSettings>> GetAllAsync();
+
+        /// <summary>
+        /// 根據ID獲取背景變更設定
+        /// </summary>
+        Task<PetBackgroundChangeSettings?> GetByIdAsync(int id);
+
+        /// <summary>
+        /// 建立背景變更設定
+        /// </summary>
+        Task<PetBackgroundChangeSettings> CreateAsync(PetBackgroundChangeSettings settings);
+
+        /// <summary>
+        /// 更新背景變更設定
+        /// </summary>
+        Task<PetBackgroundChangeSettings> UpdateAsync(int id, PetBackgroundChangeSettings settings);
+
+        /// <summary>
+        /// 刪除背景變更設定
+        /// </summary>
+        Task<bool> DeleteAsync(int id);
+
+        /// <summary>
+        /// 切換背景變更設定啟用狀態
+        /// </summary>
+        Task<bool> ToggleActiveAsync(int id);
     }
 }
 

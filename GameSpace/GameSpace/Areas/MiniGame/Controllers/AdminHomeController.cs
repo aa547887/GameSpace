@@ -102,7 +102,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var totalPets = await _context.Pets.CountAsync();
             var totalGames = await _context.MiniGames.CountAsync();
             var totalCoupons = await _context.Coupons.CountAsync();
-            var totalEVouchers = await _context.EVouchers.CountAsync();
+            var totalEVouchers = await _context.Evouchers.CountAsync();
 
             // 今日統計
             var todaySignIns = await _context.UserSignInStats

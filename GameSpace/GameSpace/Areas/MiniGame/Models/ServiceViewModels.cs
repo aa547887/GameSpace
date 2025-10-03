@@ -8,6 +8,7 @@ namespace GameSpace.Areas.MiniGame.Models
     /// </summary>
     public class AdminDashboardViewModel
     {
+        // 基本統計
         public int TotalUsers { get; set; }
         public int ActiveUsers { get; set; }
         public int TotalPets { get; set; }
@@ -15,11 +16,49 @@ namespace GameSpace.Areas.MiniGame.Models
         public int TotalCoupons { get; set; }
         public int TotalEVouchers { get; set; }
         public int TotalPoints { get; set; }
+
+        // 今日統計
         public int TodaySignIns { get; set; }
         public int TodayGames { get; set; }
+
+        // 本月統計
         public int ThisMonthSignIns { get; set; }
         public int ThisMonthGames { get; set; }
+
+        // 活躍用戶統計
+        public int ActiveUsersLast7Days { get; set; }
+
+        // 寵物統計
+        public int PetsWithMaxLevel { get; set; }
+        public int PetsWithMaxHappiness { get; set; }
+
+        // 錢包統計
+        public int TotalPointsInCirculation { get; set; }
+        public int AveragePointsPerUser { get; set; }
+
+        // 優惠券統計
+        public int UsedCoupons { get; set; }
+        public int AvailableCoupons { get; set; }
+
+        // 電子券統計
+        public int UsedEVouchers { get; set; }
+        public int AvailableEVouchers { get; set; }
+
+        // 最近活動 - 通用列表（AdminDashboardController 使用）
         public List<RecentActivityViewModel> RecentActivities { get; set; } = new List<RecentActivityViewModel>();
+        public List<RecentActivityViewModel> RecentGames { get; set; } = new List<RecentActivityViewModel>();
+        public List<RecentActivityViewModel> RecentSignIns { get; set; } = new List<RecentActivityViewModel>();
+
+        // 圖表數據
+        public List<ChartData> SignInChartData { get; set; } = new List<ChartData>();
+        public List<ChartData> GameChartData { get; set; } = new List<ChartData>();
+        public List<ChartData> PointsChartData { get; set; } = new List<ChartData>();
+
+        // AdminController 專用屬性（使用不同的屬性名稱避免衝突）
+        public List<RecentSignInModel> RecentSignInList { get; set; } = new List<RecentSignInModel>();
+        public List<RecentGameRecordModel> RecentGameRecords { get; set; } = new List<RecentGameRecordModel>();
+        public List<RecentWalletTransactionModel> RecentWalletTransactions { get; set; } = new List<RecentWalletTransactionModel>();
+        public SystemStatsModel SystemStats { get; set; } = new SystemStatsModel();
     }
 
     /// <summary>
@@ -31,6 +70,11 @@ namespace GameSpace.Areas.MiniGame.Models
         public string ActivityType { get; set; } = string.Empty;
         public DateTime ActivityTime { get; set; }
         public string Description { get; set; } = string.Empty;
+
+        // AdminDashboardController 使用的屬性
+        public string Activity { get; set; } = string.Empty;
+        public DateTime Time { get; set; }
+        public int PointsEarned { get; set; }
     }
 
     /// <summary>

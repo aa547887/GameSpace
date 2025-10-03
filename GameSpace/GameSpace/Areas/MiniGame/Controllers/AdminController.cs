@@ -130,7 +130,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 TotalPoints = totalPoints,
                 TotalCoupons = totalCoupons,
                 TotalEVouchers = totalEVouchers,
-                RecentSignIns = recentSignIns,
+                RecentSignInList = recentSignIns,
                 RecentGameRecords = recentGameRecords,
                 RecentWalletTransactions = recentWalletTransactions,
                 SystemStats = systemStats

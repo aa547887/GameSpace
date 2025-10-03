@@ -53,6 +53,12 @@ namespace GameSpace.Areas.MiniGame.Services
         /// <param name="id">設定ID</param>
         /// <returns>是否切換成功</returns>
         Task<bool> ToggleActiveAsync(int id);
+
+        /// <summary>
+        /// 取得所有寵物換色點數設定 (Alias for GetAllSettingsAsync)
+        /// </summary>
+        /// <returns>寵物換色點數設定清單</returns>
+        Task<IEnumerable<PetColorChangeSettings>> GetAllAsync();
     }
 }
 

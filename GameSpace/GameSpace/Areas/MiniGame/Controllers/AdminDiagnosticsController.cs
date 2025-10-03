@@ -158,7 +158,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var totalPets = await _context.Pets.CountAsync();
             var totalGames = await _context.MiniGames.CountAsync();
             var totalCoupons = await _context.Coupons.CountAsync();
-            var totalEVouchers = await _context.EVouchers.CountAsync();
+            var totalEVouchers = await _context.Evouchers.CountAsync();
 
             // 今日活動
             var todaySignIns = await _context.UserSignInStats
@@ -215,7 +215,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     ["Pets"] = await _context.Pets.CountAsync(),
                     ["MiniGames"] = await _context.MiniGames.CountAsync(),
                     ["Coupons"] = await _context.Coupons.CountAsync(),
-                    ["EVouchers"] = await _context.EVouchers.CountAsync(),
+                    ["EVouchers"] = await _context.Evouchers.CountAsync(),
                     ["UserWallets"] = await _context.UserWallets.CountAsync(),
                     ["WalletHistories"] = await _context.WalletHistories.CountAsync()
                 };
@@ -494,6 +494,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         public string CpuUsage { get; set; } = string.Empty;
         public string DiskSpace { get; set; } = string.Empty;
         public DateTime? LastBackup { get; set; }
+        public int ErrorCount { get; set; }
     }
 
     public class ErrorStatsModel

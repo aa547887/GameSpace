@@ -168,7 +168,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     ChangeType = "EVoucher",
                     ChangeTime = DateTime.Now,
                     Description = description,
-                    ItemCode = evoucher.EVoucherId
+                    ItemCode = evoucher.EvoucherId
                 };
 
                 _context.WalletHistories.Add(history);

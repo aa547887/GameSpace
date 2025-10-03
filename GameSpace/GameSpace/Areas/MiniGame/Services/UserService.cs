@@ -25,7 +25,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<User?> GetUserByIdAsync(int userId)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.User_Id == userId);
+                .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
         public async Task<User?> GetUserByAccountAsync(string account)
@@ -37,7 +37,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.UserEmail == email);
+                .FirstOrDefaultAsync(u => u.User_email == email);
         }
 
         public async Task<bool> CreateUserAsync(User user)
@@ -52,8 +52,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 // 自動建立錢包
                 var wallet = new UserWallet
                 {
-                    User_Id = user.User_Id,
-                    User_Point = 0
+                    UserId = user.UserId,
+                    UserPoint = 0
                 };
                 _context.UserWallets.Add(wallet);
                 await _context.SaveChangesAsync();
@@ -140,7 +140,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (user == null) return false;
 
                 user.UserStatus = "Locked";
-                user.UserLockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
+                user.User_LockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -158,7 +158,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (user == null) return false;
 
                 user.UserStatus = "Active";
-                user.UserLockoutEnd = null;
+                user.User_LockoutEnd = null;
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -173,7 +173,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.Users
                 .Where(u => u.User_Account.Contains(searchTerm) ||
-                           u.UserEmail.Contains(searchTerm) ||
+                           u.User_email.Contains(searchTerm) ||
                            u.UserName.Contains(searchTerm))
                 .OrderByDescending(u => u.User_CreatedAt)
                 .ToListAsync();
@@ -199,7 +199,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.Users
                 .Where(u => u.UserStatus == "Locked")
-                .OrderByDescending(u => u.UserLockoutEnd)
+                .OrderByDescending(u => u.User_LockoutEnd)
                 .ToListAsync();
         }
 
@@ -244,13 +244,13 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 // 檢查是否已有此權限
                 var existingRight = await _context.UserRights
-                    .FirstOrDefaultAsync(r => r.User_Id == userId && r.User_RightName == rightName);
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.User_RightName == rightName);
 
                 if (existingRight != null) return true; // 已有權限
 
                 var right = new GameSpace.Models.UserRight
                 {
-                    User_Id = userId,
+                    UserId = userId,
                     User_RightName = rightName,
                     User_GrantedAt = DateTime.UtcNow
                 };
@@ -269,7 +269,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 var right = await _context.UserRights
-                    .FirstOrDefaultAsync(r => r.User_Id == userId && r.User_RightName == rightName);
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.User_RightName == rightName);
 
                 if (right == null) return false;
 
@@ -286,7 +286,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<string>> GetUserRightsAsync(int userId)
         {
             return await _context.UserRights
-                .Where(r => r.User_Id == userId)
+                .Where(r => r.UserId == userId)
                 .Select(r => r.User_RightName)
                 .ToListAsync();
         }
@@ -294,7 +294,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> HasRightAsync(int userId, string rightName)
         {
             return await _context.UserRights
-                .AnyAsync(r => r.User_Id == userId && r.User_RightName == rightName);
+                .AnyAsync(r => r.UserId == userId && r.User_RightName == rightName);
         }
     }
 }

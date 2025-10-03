@@ -127,16 +127,16 @@
     // 用戶讀取模型
     public class UserReadModel
     {
-        public int User_Id { get; set; }
+        public int UserId { get; set; }
         public string User_name { get; set; } = string.Empty;
         public string User_Account { get; set; } = string.Empty;
-        public string User_Email { get; set; } = string.Empty;
+        public string User_email { get; set; } = string.Empty;
         public bool User_EmailConfirmed { get; set; }
         public int User_AccessFailedCount { get; set; }
         public bool User_LockoutEnabled { get; set; }
-        public DateTime? User_LockoutEnd { get; set; }
+        public DateTime? UserLockoutEnd { get; set; }
         public DateTime User_registration_date { get; set; }
-        public int User_Point { get; set; }
+        public int UserPoint { get; set; }
         public int PetCount { get; set; }
         public int GameCount { get; set; }
         public int SignInCount { get; set; }

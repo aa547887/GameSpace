@@ -152,7 +152,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var topUsers = await _context.Users
                 .Join(_context.UserWallets,
                     u => u.User_Id,
-                    w => w.User_Id,
+                    w => w.UserId,
                     (u, w) => new { User = u, Wallet = w })
                 .GroupJoin(_context.Pets,
                     uw => uw.User.User_Id,
@@ -165,7 +165,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     {
                         UserId = uwp.User.User_Id,
                         UserName = uwp.User.User_Account,
-                        Points = uwp.Wallet.User_Point,
+                        Points = uwp.Wallet.UserPoint,
                         Level = uwp.Pet != null ? uwp.Pet.Level : 1,
                         GamesPlayed = signIns.Count()
                     })

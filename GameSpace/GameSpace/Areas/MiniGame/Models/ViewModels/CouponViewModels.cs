@@ -9,11 +9,11 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     /// </summary>
     public class UserCouponModel
     {
-        public int CouponID { get; set; }
+        public int CouponId { get; set; }
         public string CouponCode { get; set; } = string.Empty;
-        public int UserID { get; set; }
+        public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
-        public int CouponTypeID { get; set; }
+        public int CouponTypeId { get; set; }
         public string CouponTypeName { get; set; } = string.Empty;
         public bool IsUsed { get; set; }
         public DateTime AcquiredTime { get; set; }

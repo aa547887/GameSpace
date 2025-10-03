@@ -10,15 +10,15 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         /// <summary>
         /// 設定ID
         /// </summary>
-        public int SettingId { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
-        /// 設定名稱
+        /// 顏色名稱
         /// </summary>
-        [Required(ErrorMessage = "設定名稱為必填欄位")]
-        [StringLength(100, ErrorMessage = "設定名稱長度不能超過100個字元")]
-        [Display(Name = "設定名稱")]
-        public string SettingName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "顏色名稱為必填欄位")]
+        [StringLength(100, ErrorMessage = "顏色名稱長度不能超過100個字元")]
+        [Display(Name = "顏色名稱")]
+        public string ColorName { get; set; } = string.Empty;
 
         /// <summary>
         /// 換色所需點數
@@ -26,7 +26,16 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         [Required(ErrorMessage = "換色所需點數為必填欄位")]
         [Range(0, int.MaxValue, ErrorMessage = "換色所需點數必須大於等於0")]
         [Display(Name = "換色所需點數")]
-        public int PointsRequired { get; set; } = 2000;
+        public int RequiredPoints { get; set; } = 2000;
+
+        /// <summary>
+        /// 顏色代碼（十六進位，例如：#FF5733）
+        /// </summary>
+        [Required(ErrorMessage = "顏色代碼為必填欄位")]
+        [StringLength(7, MinimumLength = 7, ErrorMessage = "顏色代碼必須為7個字元（包含#）")]
+        [RegularExpression(@"^#[0-9A-Fa-f]{6}$", ErrorMessage = "顏色代碼格式不正確，必須為 #RRGGBB 格式")]
+        [Display(Name = "顏色代碼")]
+        public string ColorCode { get; set; } = string.Empty;
 
         /// <summary>
         /// 是否啟用
@@ -64,6 +73,47 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         [StringLength(500, ErrorMessage = "備註長度不能超過500個字元")]
         [Display(Name = "備註")]
         public string? Remarks { get; set; }
+    }
+
+    /// <summary>
+    /// 寵物換色點數設定索引 ViewModel
+    /// </summary>
+    public class PetColorChangeSettingsIndexViewModel
+    {
+        /// <summary>
+        /// 設定列表
+        /// </summary>
+        public List<PetColorChangeSettingsViewModel> Settings { get; set; } = new List<PetColorChangeSettingsViewModel>();
+
+        /// <summary>
+        /// 總數量
+        /// </summary>
+        public int TotalCount { get; set; }
+
+        /// <summary>
+        /// 頁碼
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// 每頁大小
+        /// </summary>
+        public int PageSize { get; set; } = 20;
+
+        /// <summary>
+        /// 總頁數
+        /// </summary>
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+
+        /// <summary>
+        /// 是否有上一頁
+        /// </summary>
+        public bool HasPreviousPage => PageNumber > 1;
+
+        /// <summary>
+        /// 是否有下一頁
+        /// </summary>
+        public bool HasNextPage => PageNumber < TotalPages;
     }
 }
 
