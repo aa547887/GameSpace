@@ -60,10 +60,10 @@ namespace GameSpace.Areas.MiniGame.Services
             // 簡化版：使用簽到作為遊戲活動指標
             var stats = new GameStatistics
             {
-                TotalGamesPlayed = await _context.User_SignInStats.CountAsync(),
-                GamesToday = await _context.User_SignInStats.CountAsync(s => s.SignInTime >= today),
-                GamesThisWeek = await _context.User_SignInStats.CountAsync(s => s.SignInTime >= weekAgo),
-                GamesThisMonth = await _context.User_SignInStats.CountAsync(s => s.SignInTime >= monthAgo),
+                TotalGamesPlayed = await _context.UserSignInStats.CountAsync(),
+                GamesToday = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= today),
+                GamesThisWeek = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= weekAgo),
+                GamesThisMonth = await _context.UserSignInStats.CountAsync(s => s.SignInTime >= monthAgo),
                 AverageGameDuration = 0,
                 MostPopularGame = "寵物養成"
             };
@@ -78,7 +78,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var monthAgo = today.AddMonths(-1);
 
             // 使用點數消耗作為收入指標
-            var allHistory = await _context.WalletHistory
+            var allHistory = await _context.WalletHistories
                 .Where(h => h.PointsChanged < 0)
                 .ToListAsync();
 
@@ -119,7 +119,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<Dictionary<string, int>> GetGamePlayTrendAsync(int days = 30)
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
-            var signIns = await _context.User_SignInStats
+            var signIns = await _context.UserSignInStats
                 .Where(s => s.SignInTime >= startDate)
                 .GroupBy(s => s.SignInTime.Date)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -134,7 +134,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<Dictionary<string, decimal>> GetRevenueTrendAsync(int days = 30)
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
-            var revenue = await _context.WalletHistory
+            var revenue = await _context.WalletHistories
                 .Where(h => h.ChangeTime >= startDate && h.PointsChanged < 0)
                 .GroupBy(h => h.ChangeTime.Date)
                 .Select(g => new { Date = g.Key, Total = Math.Abs(g.Sum(h => h.PointsChanged)) })
@@ -150,15 +150,15 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<TopUser>> GetTopUsersAsync(int count = 10)
         {
             var topUsers = await _context.Users
-                .Join(_context.User_Wallet,
+                .Join(_context.UserWallets,
                     u => u.User_Id,
                     w => w.User_Id,
                     (u, w) => new { User = u, Wallet = w })
-                .GroupJoin(_context.Pet,
+                .GroupJoin(_context.Pets,
                     uw => uw.User.User_Id,
                     p => p.UserID,
                     (uw, pets) => new { uw.User, uw.Wallet, Pet = pets.FirstOrDefault() })
-                .GroupJoin(_context.User_SignInStats,
+                .GroupJoin(_context.UserSignInStats,
                     uwp => uwp.User.User_Id,
                     s => s.UserID,
                     (uwp, signIns) => new TopUser
@@ -186,14 +186,14 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     GameId = 1,
                     GameName = "寵物養成",
-                    PlayCount = await _context.Pet.CountAsync(),
+                    PlayCount = await _context.Pets.CountAsync(),
                     AverageScore = 0
                 },
                 new TopGame
                 {
                     GameId = 2,
                     GameName = "每日簽到",
-                    PlayCount = await _context.User_SignInStats.CountAsync(),
+                    PlayCount = await _context.UserSignInStats.CountAsync(),
                     AverageScore = 0
                 }
             };
@@ -207,7 +207,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var activities = new List<RecentActivity>();
 
             // 最近簽到
-            var recentSignIns = await _context.User_SignInStats
+            var recentSignIns = await _context.UserSignInStats
                 .Include(s => s.Users)
                 .OrderByDescending(s => s.SignInTime)
                 .Take(count / 2)
@@ -222,7 +222,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }));
 
             // 最近錢包變動
-            var recentWallet = await _context.WalletHistory
+            var recentWallet = await _context.WalletHistories
                 .Include(h => h.User)
                 .OrderByDescending(h => h.ChangeTime)
                 .Take(count / 2)
@@ -259,7 +259,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
 
             // 檢查低點數使用者
-            var lowPointUsers = await _context.User_Wallet
+            var lowPointUsers = await _context.UserWallets
                 .CountAsync(w => w.User_Point < 10);
             if (lowPointUsers > 0)
             {
@@ -272,7 +272,7 @@ namespace GameSpace.Areas.MiniGame.Services
             }
 
             // 檢查優惠券庫存
-            var expiringSoon = await _context.Coupon
+            var expiringSoon = await _context.Coupons
                 .CountAsync(c => !c.IsUsed && c.ExpiryTime <= DateTime.UtcNow.AddDays(7));
             if (expiringSoon > 0)
             {

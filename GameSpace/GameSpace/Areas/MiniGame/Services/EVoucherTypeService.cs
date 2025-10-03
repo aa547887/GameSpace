@@ -16,14 +16,14 @@ namespace GameSpace.Areas.MiniGame.Services
         // EvoucherType 基本 CRUD
         public async Task<IEnumerable<EvoucherType>> GetAllEVoucherTypesAsync()
         {
-            return await _context.EvoucherType
+            return await _context.EvoucherTypes
                 .OrderByDescending(evt => evt.CreatedAt)
                 .ToListAsync();
         }
 
         public async Task<EvoucherType?> GetEVoucherTypeByIdAsync(int evoucherTypeId)
         {
-            return await _context.EvoucherType
+            return await _context.EvoucherTypes
                 .FirstOrDefaultAsync(evt => evt.EVoucherTypeID == evoucherTypeId);
         }
 
@@ -33,7 +33,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 evoucherType.CreatedAt = DateTime.UtcNow;
                 evoucherType.IsActive = true;
-                _context.EvoucherType.Add(evoucherType);
+                _context.EvoucherTypes.Add(evoucherType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -48,7 +48,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 evoucherType.UpdatedAt = DateTime.UtcNow;
-                _context.EvoucherType.Update(evoucherType);
+                _context.EvoucherTypes.Update(evoucherType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -65,7 +65,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var evoucherType = await GetEVoucherTypeByIdAsync(evoucherTypeId);
                 if (evoucherType == null) return false;
 
-                _context.EvoucherType.Remove(evoucherType);
+                _context.EvoucherTypes.Remove(evoucherType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -115,7 +115,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // EvoucherType 查詢
         public async Task<IEnumerable<EvoucherType>> GetActiveEVoucherTypesAsync()
         {
-            return await _context.EvoucherType
+            return await _context.EvoucherTypes
                 .Where(evt => evt.IsActive)
                 .OrderBy(evt => evt.EVoucherTypeName)
                 .ToListAsync();
@@ -123,7 +123,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<EvoucherType>> GetEVoucherTypesByValueRangeAsync(decimal minValue, decimal maxValue)
         {
-            return await _context.EvoucherType
+            return await _context.EvoucherTypes
                 .Where(evt => evt.Value >= minValue && evt.Value <= maxValue)
                 .OrderBy(evt => evt.Value)
                 .ToListAsync();
@@ -131,7 +131,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<EvoucherType>> GetAvailableEVoucherTypesAsync()
         {
-            return await _context.EvoucherType
+            return await _context.EvoucherTypes
                 .Where(evt => evt.IsActive && evt.Stock > 0)
                 .OrderBy(evt => evt.Value)
                 .ToListAsync();
@@ -189,17 +189,17 @@ namespace GameSpace.Areas.MiniGame.Services
         // EvoucherType 統計
         public async Task<int> GetTotalEVoucherTypesCountAsync()
         {
-            return await _context.EvoucherType.CountAsync();
+            return await _context.EvoucherTypes.CountAsync();
         }
 
         public async Task<int> GetActiveEVoucherTypesCountAsync()
         {
-            return await _context.EvoucherType.CountAsync(evt => evt.IsActive);
+            return await _context.EvoucherTypes.CountAsync(evt => evt.IsActive);
         }
 
         public async Task<Dictionary<string, int>> GetEVoucherTypesDistributionAsync()
         {
-            var types = await _context.EvoucherType.ToListAsync();
+            var types = await _context.EvoucherTypes.ToListAsync();
             var distribution = new Dictionary<string, int>();
 
             // 按價值範圍分組
@@ -213,12 +213,12 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<EVoucherTypeUsageStats>> GetEVoucherTypeUsageStatsAsync()
         {
-            var evoucherTypes = await _context.EvoucherType.ToListAsync();
+            var evoucherTypes = await _context.EvoucherTypes.ToListAsync();
             var stats = new List<EVoucherTypeUsageStats>();
 
             foreach (var evoucherType in evoucherTypes)
             {
-                var evouchers = await _context.EVoucher
+                var evouchers = await _context.Evouchers
                     .Where(e => e.EVoucherTypeID == evoucherType.EVoucherTypeID)
                     .ToListAsync();
 

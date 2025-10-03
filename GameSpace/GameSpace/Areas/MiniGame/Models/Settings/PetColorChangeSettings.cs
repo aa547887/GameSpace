@@ -21,6 +21,12 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public string SettingName { get; set; } = string.Empty;
 
         /// <summary>
+        /// 顏色代碼 - for view compatibility
+        /// </summary>
+        [StringLength(7)]
+        public string ColorCode { get; set; } = string.Empty;
+
+        /// <summary>
         /// 換色所需點數
         /// </summary>
         [Required(ErrorMessage = "換色所需點數為必填欄位")]

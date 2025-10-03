@@ -177,9 +177,9 @@ namespace GameSpace.Areas.MiniGame.Services
                 var eVoucherCode = GenerateEVoucherCode(eVoucherType.Name);
                 var eVoucher = new Evoucher
                 {
-                    EVoucherCode = eVoucherCode,
-                    EVoucherTypeID = eVoucherTypeId,
-                    UserID = userId,
+                    EvoucherCode = eVoucherCode,
+                    EvoucherTypeId = eVoucherTypeId,
+                    UserId = userId,
                     IsUsed = false,
                     AcquiredTime = DateTime.Now
                 };

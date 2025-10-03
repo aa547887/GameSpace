@@ -1,4 +1,5 @@
-﻿using GameSpace.Areas.MiniGame.Models.ViewModels;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -426,12 +427,12 @@ namespace GameSpace.Areas.MiniGame.Services
                     pet.Level = model.Level.Value;
                 if (model.Hunger.HasValue)
                     pet.Hunger = model.Hunger.Value;
-                if (model.Happiness.HasValue)
-                    pet.Happiness = model.Happiness.Value;
+                if (model.Mood.HasValue)
+                    pet.Mood = model.Mood.Value;
                 if (model.Health.HasValue)
                     pet.Health = model.Health.Value;
-                if (model.Energy.HasValue)
-                    pet.Energy = model.Energy.Value;
+                if (model.Stamina.HasValue)
+                    pet.Stamina = model.Stamina.Value;
                 if (model.Cleanliness.HasValue)
                     pet.Cleanliness = model.Cleanliness.Value;
                 

@@ -27,26 +27,5 @@ namespace GameSpace.Areas.MiniGame.Models
         public decimal? Value { get; set; }
         public DateTime? ExpiryDate { get; set; }
     }
-
-    public class EVoucherEditModel
-    {
-        [Required]
-        public int Id { get; set; }
-
-        [Required]
-        public string EvoucherCode { get; set; } = string.Empty;
-        public string EVoucherCode { get => EvoucherCode; set => EvoucherCode = value; }
-
-        [Required]
-        public int UserId { get; set; }
-
-        [Required]
-        public int EvoucherTypeId { get; set; }
-        public int EVoucherTypeID { get => EvoucherTypeId; set => EvoucherTypeId = value; }
-    
-    public bool IsUsed { get; set; }
-
-        public DateTime? UsedTime { get; set; }
-    }
 }
 

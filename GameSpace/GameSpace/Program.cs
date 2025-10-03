@@ -180,7 +180,7 @@ namespace GameSpace
 				options.AddPolicy("AdminOnly", policy =>
 				{
 					policy.RequireAuthenticatedUser();
-					policy.RequireAuthenticationSchemes("AdminCookie");
+					policy.AddAuthenticationSchemes("AdminCookie");
 				});
 
 				// 保留現有政策

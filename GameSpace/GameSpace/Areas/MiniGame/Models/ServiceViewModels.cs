@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 
 namespace GameSpace.Areas.MiniGame.Models
 {
@@ -132,20 +133,6 @@ namespace GameSpace.Areas.MiniGame.Models
     }
 
     /// <summary>
-    /// 分頁結果模型
-    /// </summary>
-    public class PagedResult<T>
-    {
-        public List<T> Items { get; set; } = new List<T>();
-        public int TotalCount { get; set; }
-        public int PageSize { get; set; }
-        public int CurrentPage { get; set; }
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-        public bool HasPreviousPage => CurrentPage > 1;
-        public bool HasNextPage => CurrentPage < TotalPages;
-    }
-
-    /// <summary>
     /// 查詢模型基類
     /// </summary>
     public class BaseQueryModel
@@ -215,17 +202,6 @@ namespace GameSpace.Areas.MiniGame.Models
     }
 
     /// <summary>
-    /// 電子券查詢模型
-    /// </summary>
-    public class EVoucherQueryModel : BaseQueryModel
-    {
-        public int? UserId { get; set; }
-        public int? EVoucherTypeId { get; set; }
-        public bool? IsUsed { get; set; }
-        public DateTime? ExpiryDate { get; set; }
-    }
-
-    /// <summary>
     /// 寵物查詢模型
     /// </summary>
     public class PetQueryModel : BaseQueryModel
@@ -236,6 +212,25 @@ namespace GameSpace.Areas.MiniGame.Models
         public int? MaxLevel { get; set; }
         public string SkinColor { get; set; } = string.Empty;
         public string BackgroundColor { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 用戶權限查詢模型
+    /// </summary>
+    public class UserRightQueryModel
+    {
+        public int? UserId { get; set; }
+        public string? RightName { get; set; }
+        public string? RightType { get; set; }
+        public bool? IsActive { get; set; }
+        public DateTime? CreatedFrom { get; set; }
+        public DateTime? CreatedTo { get; set; }
+        public DateTime? ExpiresFrom { get; set; }
+        public DateTime? ExpiresTo { get; set; }
+        public string SortBy { get; set; } = string.Empty;
+        public bool SortDescending { get; set; } = false;
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 
     /// <summary>
@@ -260,14 +255,6 @@ namespace GameSpace.Areas.MiniGame.Models
     public class AdminSignInIndexViewModel
     {
         public PagedResult<GameSpace.Models.UserSignInStat> SignIns { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 管理員電子券索引 ViewModel
-    /// </summary>
-    public class AdminEVoucherIndexViewModel
-    {
-        public PagedResult<GameSpace.Models.Evoucher> EVouchers { get; set; } = new();
     }
 
     /// <summary>

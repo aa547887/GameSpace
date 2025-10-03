@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminManagerRoleCreateViewModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminManagerRoleCreateViewModel
 @{
-    ViewData["Title"] = "�s�W����";
+    ViewData["Title"] = "新增角色";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- �������D -->
+    <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">�s�W����</h1>
+        <h1 class="h3 mb-0 text-gray-800">新增角色</h1>
         <div>
             <a href="@Url.Action("Index", "AdminManager")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
             </a>
         </div>
     </div>
@@ -19,26 +19,26 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�����T</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">角色資訊</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="CreateRole" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         
                         <div class="form-group">
-                            <label asp-for="role_name" class="control-label">����W�� *</label>
-                            <input asp-for="role_name" class="form-control" placeholder="�п�J����W��" />
+                            <label asp-for="role_name" class="control-label">角色名稱 *</label>
+                            <input asp-for="role_name" class="form-control" placeholder="請輸入角色名稱" />
                             <span asp-validation-for="role_name" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="role_description" class="control-label">����y�z *</label>
-                            <textarea asp-for="role_description" class="form-control" rows="3" placeholder="�п�J����y�z"></textarea>
+                            <label asp-for="role_description" class="control-label">角色描述 *</label>
+                            <textarea asp-for="role_description" class="form-control" rows="3" placeholder="請輸入角色描述"></textarea>
                             <span asp-validation-for="role_description" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
-                            <label class="control-label">�v�����t *</label>
+                            <label class="control-label">權限分配 *</label>
                             <div class="row">
                                 @if (ViewBag.Permissions != null)
                                 {
@@ -62,17 +62,17 @@
                             <div class="form-check">
                                 <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                                 <label class="form-check-label" for="IsActive">
-                                    �ҥ�
+                                    啟用
                                 </label>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> �إߨ���
+                                <i class="fas fa-save"></i> 建立角色
                             </button>
                             <a href="@Url.Action("Index", "AdminManager")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> ����
+                                <i class="fas fa-times"></i> 取消
                             </a>
                         </div>
                     </form>
@@ -83,33 +83,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�إ߶���</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">建立須知</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-user-tag fa-3x text-primary mb-3"></i>
-                        <h5>����إߪ`�N�ƶ�</h5>
+                        <h5>角色建立注意事項</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            ����W�٭n�M�����A
+                            角色名稱要清楚明瞭
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �y�z�n��������¾�d
+                            描述要說明角色職責
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �ݭn���t�A����v��
+                            需要分配適當的權限
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �i�H��ܬO�_�ߧY�ҥ�
+                            可以選擇是否立即啟用
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �v�����t�n�ŦX�̤p�v����h
+                            權限分配要符合最小權限原則
                         </li>
                     </ul>
                 </div>
@@ -117,7 +117,7 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�v������</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">權限說明</h6>
                 </div>
                 <div class="card-body">
                     @if (ViewBag.Permissions != null && ((List<ManagerPermission>)ViewBag.Permissions).Any())
@@ -132,25 +132,25 @@
                     }
                     else
                     {
-                        <p class="text-muted">�ȵL�v���A�Х��إ��v��</p>
+                        <p class="text-muted">暫無權限，請先建立權限</p>
                     }
                 </div>
             </div>
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�ֳt�ާ@</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-outline-primary" onclick="selectAllPermissions()">
-                            <i class="fas fa-check-square"></i> �����v��
+                            <i class="fas fa-check-square"></i> 全選權限
                         </button>
                         <button type="button" class="btn btn-outline-secondary" onclick="clearAllPermissions()">
-                            <i class="fas fa-square"></i> �M�����
+                            <i class="fas fa-square"></i> 清除選擇
                         </button>
                         <button type="button" class="btn btn-outline-info" onclick="selectCommonPermissions()">
-                            <i class="fas fa-star"></i> ��ܱ`���v��
+                            <i class="fas fa-star"></i> 選擇常用權限
                         </button>
                     </div>
                 </div>
@@ -178,7 +178,7 @@
         }
 
         function selectCommonPermissions() {
-            // ��ܱ`�Ϊ��v��
+            // 選擇常用的權限
             const commonPermissions = ['view_dashboard', 'view_users', 'view_reports'];
             const checkboxes = document.querySelectorAll('input[name="PermissionIds"]');
             checkboxes.forEach(checkbox => {
@@ -188,38 +188,37 @@
             });
         }
 
-        // ����������
+        // 角色選擇驗證
         document.querySelector('form').addEventListener('submit', function(e) {
             const permissionCheckboxes = document.querySelectorAll('input[name="PermissionIds"]:checked');
             if (permissionCheckboxes.length === 0) {
                 e.preventDefault();
-                alert('�Цܤֿ�ܤ@���v��');
+                alert('請至少選擇一個權限');
             }
         });
 
-        // ����W������
+        // 角色名稱驗證
         document.getElementById('role_name').addEventListener('input', function() {
             const name = this.value;
             if (name.length < 2) {
-                this.setCustomValidity('����W�٦ܤֻݭn2�Ӧr��');
+                this.setCustomValidity('角色名稱至少需要2個字符');
             } else if (name.length > 50) {
-                this.setCustomValidity('����W�٤���W�L50�Ӧr��');
+                this.setCustomValidity('角色名稱不能超過50個字符');
             } else {
                 this.setCustomValidity('');
             }
         });
 
-        // ����y�z����
+        // 角色描述驗證
         document.getElementById('role_description').addEventListener('input', function() {
             const description = this.value;
             if (description.length < 10) {
-                this.setCustomValidity('����y�z�ܤֻݭn10�Ӧr��');
+                this.setCustomValidity('角色描述至少需要10個字符');
             } else if (description.length > 200) {
-                this.setCustomValidity('����y�z����W�L200�Ӧr��');
+                this.setCustomValidity('角色描述不能超過200個字符');
             } else {
                 this.setCustomValidity('');
             }
         });
     </script>
 }
-

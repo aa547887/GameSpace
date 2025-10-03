@@ -171,6 +171,27 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SystemSetting> SystemSettings { get; set; }
 
+    // MiniGame Area 專用 DbSets
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetColorOption> PetColorOptions { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetBackgroundOptionEntity> PetBackgroundOptions { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetSkinColorCostSetting> PetSkinColorCostSettings { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.Settings.PetLevelExperienceSetting> PetLevelExperienceSettings { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Services.PetLevelUpRule> PetLevelUpRules { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.ViewModels.PetInteractionBonusRules> PetInteractionBonusRules { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.Settings.PetSkinColorPointSettings> PetSkinColorPointSettings { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Models.Settings.PetBackgroundPointSettings> PetBackgroundPointSettings { get; set; }
+
+    public virtual DbSet<GameSpace.Areas.MiniGame.Services.SignInRule> SignInRules { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BannedWord>(entity =>

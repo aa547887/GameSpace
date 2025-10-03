@@ -37,7 +37,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.User_Email == email);
+                .FirstOrDefaultAsync(u => u.UserEmail == email);
         }
 
         public async Task<bool> CreateUserAsync(User user)
@@ -45,7 +45,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 user.User_CreatedAt = DateTime.UtcNow;
-                user.User_Status = "Active";
+                user.UserStatus = "Active";
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
@@ -105,7 +105,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var user = await GetUserByIdAsync(userId);
                 if (user == null) return false;
 
-                user.User_Status = "Active";
+                user.UserStatus = "Active";
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -122,7 +122,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var user = await GetUserByIdAsync(userId);
                 if (user == null) return false;
 
-                user.User_Status = "Inactive";
+                user.UserStatus = "Inactive";
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -139,8 +139,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 var user = await GetUserByIdAsync(userId);
                 if (user == null) return false;
 
-                user.User_Status = "Locked";
-                user.User_LockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
+                user.UserStatus = "Locked";
+                user.UserLockoutEnd = lockoutEnd ?? DateTime.UtcNow.AddDays(30);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -157,8 +157,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 var user = await GetUserByIdAsync(userId);
                 if (user == null) return false;
 
-                user.User_Status = "Active";
-                user.User_LockoutEnd = null;
+                user.UserStatus = "Active";
+                user.UserLockoutEnd = null;
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -173,8 +173,8 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.Users
                 .Where(u => u.User_Account.Contains(searchTerm) ||
-                           u.User_Email.Contains(searchTerm) ||
-                           u.User_Name.Contains(searchTerm))
+                           u.UserEmail.Contains(searchTerm) ||
+                           u.UserName.Contains(searchTerm))
                 .OrderByDescending(u => u.User_CreatedAt)
                 .ToListAsync();
         }
@@ -182,7 +182,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<User>> GetActiveUsersAsync()
         {
             return await _context.Users
-                .Where(u => u.User_Status == "Active")
+                .Where(u => u.UserStatus == "Active")
                 .OrderByDescending(u => u.User_CreatedAt)
                 .ToListAsync();
         }
@@ -190,7 +190,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<User>> GetInactiveUsersAsync()
         {
             return await _context.Users
-                .Where(u => u.User_Status == "Inactive")
+                .Where(u => u.UserStatus == "Inactive")
                 .OrderByDescending(u => u.User_CreatedAt)
                 .ToListAsync();
         }
@@ -198,8 +198,8 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<User>> GetLockedUsersAsync()
         {
             return await _context.Users
-                .Where(u => u.User_Status == "Locked")
-                .OrderByDescending(u => u.User_LockoutEnd)
+                .Where(u => u.UserStatus == "Locked")
+                .OrderByDescending(u => u.UserLockoutEnd)
                 .ToListAsync();
         }
 
@@ -211,7 +211,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetActiveUsersCountAsync()
         {
-            return await _context.Users.CountAsync(u => u.User_Status == "Active");
+            return await _context.Users.CountAsync(u => u.UserStatus == "Active");
         }
 
         public async Task<int> GetNewUsersCountAsync(DateTime since)

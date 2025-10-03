@@ -227,18 +227,18 @@ namespace GameSpace.Areas.MiniGame.Services
                 var wallet = await GetWalletByUserIdAsync(userId);
                 if (wallet == null) return false;
 
-                wallet.User_Point += points;
+                wallet.UserPoint += points;
 
                 var history = new WalletHistory
                 {
-                    UserID = userId,
+                    UserId = userId,
                     ChangeType = points > 0 ? "Admin_Add" : "Admin_Deduct",
                     PointsChanged = points,
                     ItemCode = $"ADMIN_{managerId ?? 0}",
                     Description = $"管理員調整: {reason}",
                     ChangeTime = DateTime.UtcNow
                 };
-                _context.WalletHistory.Add(history);
+                _context.WalletHistories.Add(history);
 
                 await _context.SaveChangesAsync();
                 return true;
@@ -256,19 +256,19 @@ namespace GameSpace.Areas.MiniGame.Services
                 var wallet = await GetWalletByUserIdAsync(userId);
                 if (wallet == null) return false;
 
-                var currentPoints = wallet.User_Point;
-                wallet.User_Point = 0;
+                var currentPoints = wallet.UserPoint;
+                wallet.UserPoint = 0;
 
                 var history = new WalletHistory
                 {
-                    UserID = userId,
+                    UserId = userId,
                     ChangeType = "Admin_Reset",
                     PointsChanged = -currentPoints,
                     ItemCode = $"ADMIN_RESET_{managerId ?? 0}",
                     Description = $"管理員重置: {reason} (原有點數: {currentPoints})",
                     ChangeTime = DateTime.UtcNow
                 };
-                _context.WalletHistory.Add(history);
+                _context.WalletHistories.Add(history);
 
                 await _context.SaveChangesAsync();
                 return true;
@@ -281,7 +281,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<WalletHistory>> GetAllHistoryAsync(int pageNumber = 1, int pageSize = 50)
         {
-            return await _context.WalletHistory
+            return await _context.WalletHistories
                 .OrderByDescending(h => h.ChangeTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -300,18 +300,18 @@ namespace GameSpace.Areas.MiniGame.Services
                     var wallet = await GetWalletByUserIdAsync(userId);
                     if (wallet != null)
                     {
-                        wallet.User_Point += points;
+                        wallet.UserPoint += points;
 
                         var history = new WalletHistory
                         {
-                            UserID = userId,
+                            UserId = userId,
                             ChangeType = "Batch_Grant",
                             PointsChanged = points,
                             ItemCode = "BATCH_OPERATION",
                             Description = $"批次發放: {description}",
                             ChangeTime = DateTime.UtcNow
                         };
-                        _context.WalletHistory.Add(history);
+                        _context.WalletHistories.Add(history);
                     }
                 }
 
@@ -328,7 +328,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<UserWallet>> GetTopWalletsAsync(int count = 10)
         {
             return await _context.UserWallets
-                .OrderByDescending(w => w.User_Point)
+                .OrderByDescending(w => w.UserPoint)
                 .Take(count)
                 .ToListAsync();
         }

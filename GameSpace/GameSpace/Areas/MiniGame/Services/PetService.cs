@@ -17,7 +17,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<Pet>> GetAllPetsAsync()
         {
             return await _context.Pets
-                .Include(p => p.Users)
+                .Include(p => p.User)
                 .OrderByDescending(p => p.Level)
                 .ToListAsync();
         }
@@ -25,15 +25,15 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<Pet?> GetPetByIdAsync(int petId)
         {
             return await _context.Pets
-                .Include(p => p.Users)
-                .FirstOrDefaultAsync(p => p.PetID == petId);
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.PetId == petId);
         }
 
         public async Task<Pet?> GetPetByUserIdAsync(int userId)
         {
             return await _context.Pets
-                .Include(p => p.Users)
-                .FirstOrDefaultAsync(p => p.UserID == userId);
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.UserId == userId);
         }
 
         public async Task<bool> CreatePetAsync(Pet pet)
@@ -222,10 +222,10 @@ namespace GameSpace.Areas.MiniGame.Services
                 pet.PointsGainedTime_LevelUp = DateTime.UtcNow;
 
                 // 更新使用者錢包
-                var wallet = await _context.User_Wallet.FirstOrDefaultAsync(w => w.User_Id == pet.UserID);
+                var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == pet.UserId);
                 if (wallet != null)
                 {
-                    wallet.User_Point += pointsReward;
+                    wallet.UserPoint += pointsReward;
                 }
 
                 await _context.SaveChangesAsync();
@@ -253,28 +253,28 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (pet == null) return false;
 
                 // 檢查使用者點數
-                var wallet = await _context.User_Wallet.FirstOrDefaultAsync(w => w.User_Id == pet.UserID);
-                if (wallet == null || wallet.User_Point < pointsCost) return false;
+                var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == pet.UserId);
+                if (wallet == null || wallet.UserPoint < pointsCost) return false;
 
                 // 扣除點數
-                wallet.User_Point -= pointsCost;
+                wallet.UserPoint -= pointsCost;
 
                 // 更新寵物
                 pet.SkinColor = colorCode;
                 pet.SkinColorChangedTime = DateTime.UtcNow;
-                pet.PointsChanged_SkinColor += pointsCost;
+                pet.PointsChangedSkinColor += pointsCost;
 
                 // 記錄歷史
                 var history = new WalletHistory
                 {
-                    UserID = pet.UserID,
+                    UserId = pet.UserId,
                     ChangeType = "Pet",
                     PointsChanged = -pointsCost,
                     ItemCode = $"SKIN_{colorCode}",
                     Description = $"寵物換膚色: {colorCode}",
                     ChangeTime = DateTime.UtcNow
                 };
-                _context.WalletHistory.Add(history);
+                _context.WalletHistories.Add(history);
 
                 await _context.SaveChangesAsync();
                 return true;
@@ -293,11 +293,11 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (pet == null) return false;
 
                 // 檢查使用者點數
-                var wallet = await _context.User_Wallet.FirstOrDefaultAsync(w => w.User_Id == pet.UserID);
-                if (wallet == null || wallet.User_Point < pointsCost) return false;
+                var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == pet.UserId);
+                if (wallet == null || wallet.UserPoint < pointsCost) return false;
 
                 // 扣除點數
-                wallet.User_Point -= pointsCost;
+                wallet.UserPoint -= pointsCost;
 
                 // 更新寵物
                 pet.BackgroundColor = colorCode;
@@ -307,14 +307,14 @@ namespace GameSpace.Areas.MiniGame.Services
                 // 記錄歷史
                 var history = new WalletHistory
                 {
-                    UserID = pet.UserID,
+                    UserId = pet.UserId,
                     ChangeType = "Pet",
                     PointsChanged = -pointsCost,
                     ItemCode = $"BG_{colorCode}",
                     Description = $"寵物換背景: {colorCode}",
                     ChangeTime = DateTime.UtcNow
                 };
-                _context.WalletHistory.Add(history);
+                _context.WalletHistories.Add(history);
 
                 await _context.SaveChangesAsync();
                 return true;
@@ -368,7 +368,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 { "Stamina", pet.Stamina },
                 { "Cleanliness", pet.Cleanliness },
                 { "Health", pet.Health },
-                { "PointsSpentOnSkin", pet.PointsChanged_SkinColor },
+                { "PointsSpentOnSkin", pet.PointsChangedSkinColor },
                 { "PointsSpentOnBackground", pet.PointsChanged_BackgroundColor },
                 { "PointsEarnedFromLevelUp", pet.PointsGained_LevelUp }
             };
@@ -377,7 +377,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<Pet>> GetTopLevelPetsAsync(int count = 10)
         {
             return await _context.Pets
-                .Include(p => p.Users)
+                .Include(p => p.User)
                 .OrderByDescending(p => p.Level)
                 .ThenByDescending(p => p.Experience)
                 .Take(count)

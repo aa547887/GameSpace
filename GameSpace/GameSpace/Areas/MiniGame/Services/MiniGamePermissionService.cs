@@ -1,4 +1,5 @@
-﻿using GameSpace.Areas.MiniGame.Models.ViewModels;
+﻿using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;

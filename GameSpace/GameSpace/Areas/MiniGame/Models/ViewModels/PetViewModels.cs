@@ -422,5 +422,29 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
         public DateTime? UpdatedAt { get; set; }
     }
+
+    /// <summary>
+    /// 寵物背景變更設定 ViewModel
+    /// </summary>
+    public class PetBackgroundChangeSettingsViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "背景顏色為必填")]
+        [StringLength(20, ErrorMessage = "背景顏色長度不可超過 20 字元")]
+        public string BackgroundColor { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "所需點數為必填")]
+        [Range(0, 100000, ErrorMessage = "所需點數必須在 0-100000 之間")]
+        public int PointsRequired { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [StringLength(200, ErrorMessage = "描述長度不可超過 200 字元")]
+        public string? Description { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
 }
 

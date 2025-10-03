@@ -121,6 +121,17 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     /// </summary>
     public class EVoucherQueryModel
     {
+        // Result properties (for displaying search results)
+        public int Id { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string EVoucherCode { get; set; } = string.Empty;
+        public string EVoucherTypeName { get; set; } = string.Empty;
+        public decimal Value { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public DateTime? UsedDate { get; set; }
+        public bool IsUsed { get; set; }
+
         /// <summary>
         /// 用戶ID
         /// </summary>
@@ -136,11 +147,6 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// </summary>
         [StringLength(20)]
         public string? TypeCode { get; set; }
-
-        /// <summary>
-        /// 是否已使用
-        /// </summary>
-        public bool? IsUsed { get; set; }
 
         /// <summary>
         /// 票券代碼（模糊搜尋）
@@ -465,5 +471,73 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         /// </summary>
         [StringLength(500)]
         public string? Notes { get; set; }
+    }
+
+    /// <summary>
+    /// 電子票券編輯模型
+    /// </summary>
+    public class EVoucherEditModel
+    {
+        /// <summary>
+        /// 票券ID
+        /// </summary>
+        [Required(ErrorMessage = "票券ID為必填")]
+        public int Id { get; set; }
+
+        /// <summary>
+        /// 票券代碼
+        /// </summary>
+        [Required(ErrorMessage = "票券代碼為必填")]
+        [StringLength(50, ErrorMessage = "票券代碼長度不可超過 50 字元")]
+        public string EVoucherCode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 用戶ID
+        /// </summary>
+        [Required(ErrorMessage = "用戶ID為必填")]
+        public int UserId { get; set; }
+
+        /// <summary>
+        /// 票券類型ID
+        /// </summary>
+        [Required(ErrorMessage = "票券類型ID為必填")]
+        public int EVoucherTypeID { get; set; }
+
+        /// <summary>
+        /// 票券價值
+        /// </summary>
+        [Range(0.01, 1000000, ErrorMessage = "票券價值必須在 0.01-1000000 之間")]
+        public decimal? Value { get; set; }
+
+        /// <summary>
+        /// 有效期限
+        /// </summary>
+        public DateTime? ExpiryDate { get; set; }
+
+        /// <summary>
+        /// 是否已使用
+        /// </summary>
+        public bool IsUsed { get; set; }
+
+        /// <summary>
+        /// 使用日期
+        /// </summary>
+        public DateTime? UsedDate { get; set; }
+
+        /// <summary>
+        /// 描述
+        /// </summary>
+        [StringLength(1000, ErrorMessage = "描述長度不可超過 1000 字元")]
+        public string? Description { get; set; }
+
+        /// <summary>
+        /// 建立時間
+        /// </summary>
+        public DateTime? CreatedAt { get; set; }
+
+        /// <summary>
+        /// 更新時間
+        /// </summary>
+        public DateTime? UpdatedAt { get; set; }
     }
 }

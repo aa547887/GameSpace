@@ -1,16 +1,16 @@
-﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminMiniGameCreateViewModel
+@model GameSpace.Areas.MiniGame.Models.ViewModels.AdminMiniGameCreateViewModel
 @{
-    ViewData["Title"] = "�s�W�C��";
+    ViewData["Title"] = "新增遊戲";
     Layout = "~/Areas/MiniGame/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- �������D -->
+    <!-- 頁面標題 -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">�s�W�C��</h1>
+        <h1 class="h3 mb-0 text-gray-800">新增遊戲</h1>
         <div>
             <a href="@Url.Action("Index", "AdminMiniGame")" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
-                <i class="fas fa-arrow-left fa-sm text-white-50"></i> ��^�C��
+                <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回列表
             </a>
         </div>
     </div>
@@ -19,49 +19,49 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�C����T</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">遊戲資訊</h6>
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         
                         <div class="form-group">
-                            <label asp-for="GameName" class="control-label">�C���W�� *</label>
-                            <input asp-for="GameName" class="form-control" placeholder="�п�J�C���W��" />
+                            <label asp-for="GameName" class="control-label">遊戲名稱 *</label>
+                            <input asp-for="GameName" class="form-control" placeholder="請輸入遊戲名稱" />
                             <span asp-validation-for="GameName" class="text-danger"></span>
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="GameDescription" class="control-label">�C���y�z *</label>
-                            <textarea asp-for="GameDescription" class="form-control" rows="4" placeholder="�п�J�C���y�z"></textarea>
+                            <label asp-for="GameDescription" class="control-label">遊戲描述 *</label>
+                            <textarea asp-for="GameDescription" class="form-control" rows="4" placeholder="請輸入遊戲描述"></textarea>
                             <span asp-validation-for="GameDescription" class="text-danger"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="GameType" class="control-label">�C������ *</label>
+                                    <label asp-for="GameType" class="control-label">遊戲類型 *</label>
                                     <select asp-for="GameType" class="form-control">
-                                        <option value="">�п�ܹC������</option>
-                                        <option value="�q��">�q��</option>
-                                        <option value="�ʧ@">�ʧ@</option>
-                                        <option value="����">����</option>
-                                        <option value="�g��">�g��</option>
-                                        <option value="�v�t">�v�t</option>
-                                        <option value="����">����</option>
-                                        <option value="�����t">�����t</option>
-                                        <option value="��L">��L</option>
+                                        <option value="">請選擇遊戲類型</option>
+                                        <option value="益智">益智</option>
+                                        <option value="動作">動作</option>
+                                        <option value="策略">策略</option>
+                                        <option value="射擊">射擊</option>
+                                        <option value="競速">競速</option>
+                                        <option value="模擬">模擬</option>
+                                        <option value="角色扮演">角色扮演</option>
+                                        <option value="其他">其他</option>
                                     </select>
                                     <span asp-validation-for="GameType" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="IsActive" class="control-label">���A</label>
+                                    <label asp-for="IsActive" class="control-label">狀態</label>
                                     <div class="form-check">
                                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                                         <label class="form-check-label" for="IsActive">
-                                            �ҥ�
+                                            啟用
                                         </label>
                                     </div>
                                 </div>
@@ -71,40 +71,40 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="CostPoints" class="control-label">�����I�� *</label>
-                                    <input asp-for="CostPoints" type="number" class="form-control" placeholder="�п�J�����I��" min="0" />
+                                    <label asp-for="CostPoints" class="control-label">消耗點數 *</label>
+                                    <input asp-for="CostPoints" type="number" class="form-control" placeholder="請輸入消耗點數" min="0" />
                                     <span asp-validation-for="CostPoints" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="RewardPoints" class="control-label">���y�I�� *</label>
-                                    <input asp-for="RewardPoints" type="number" class="form-control" placeholder="�п�J���y�I��" min="0" />
+                                    <label asp-for="RewardPoints" class="control-label">獎勵點數 *</label>
+                                    <input asp-for="RewardPoints" type="number" class="form-control" placeholder="請輸入獎勵點數" min="0" />
                                     <span asp-validation-for="RewardPoints" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="MaxPlayCount" class="control-label">�̤j�C������ *</label>
-                                    <input asp-for="MaxPlayCount" type="number" class="form-control" placeholder="�п�J�̤j�C������" min="1" />
+                                    <label asp-for="MaxPlayCount" class="control-label">最大遊玩次數 *</label>
+                                    <input asp-for="MaxPlayCount" type="number" class="form-control" placeholder="請輸入最大遊玩次數" min="1" />
                                     <span asp-validation-for="MaxPlayCount" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label asp-for="GameImageUrl" class="control-label">�C���Ϥ���}</label>
-                            <input asp-for="GameImageUrl" type="url" class="form-control" placeholder="�п�J�C���Ϥ���}" />
+                            <label asp-for="GameImageUrl" class="control-label">遊戲圖片網址</label>
+                            <input asp-for="GameImageUrl" type="url" class="form-control" placeholder="請輸入遊戲圖片網址" />
                             <span asp-validation-for="GameImageUrl" class="text-danger"></span>
-                            <small class="form-text text-muted">�i��A�Ω���ܹC���Ϥ�</small>
+                            <small class="form-text text-muted">可選，用於顯示遊戲圖片</small>
                         </div>
 
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> �إ߹C��
+                                <i class="fas fa-save"></i> 建立遊戲
                             </button>
                             <a href="@Url.Action("Index", "AdminMiniGame")" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> ����
+                                <i class="fas fa-times"></i> 取消
                             </a>
                         </div>
                     </form>
@@ -115,33 +115,33 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�إ߶���</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">建立須知</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
                         <i class="fas fa-gamepad fa-3x text-primary mb-3"></i>
-                        <h5>�C���إߪ`�N�ƶ�</h5>
+                        <h5>遊戲建立注意事項</h5>
                     </div>
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �C���W�٭n�l�ޤH
+                            遊戲名稱要吸引人
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �y�z�n�M���������k
+                            描述要清楚說明玩法
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �I�Ƴ]�w�n�X�z
+                            點數設定要合理
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �̤j�C�����ƭn�A��
+                            最大遊玩次數要適當
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check text-success"></i>
-                            �i�H��ܬO�_�ߧY�ҥ�
+                            可以選擇是否立即啟用
                         </li>
                     </ul>
                 </div>
@@ -149,49 +149,49 @@
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�C����������</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">遊戲類型說明</h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <span class="badge badge-info">�q��</span>
-                        <small class="text-muted">�ݭn��ҩM�������C��</small>
+                        <span class="badge badge-info">益智</span>
+                        <small class="text-muted">需要思考和解謎的遊戲</small>
                     </div>
                     <div class="mb-3">
-                        <span class="badge badge-danger">�ʧ@</span>
-                        <small class="text-muted">�ݭn�ֳt�������C��</small>
+                        <span class="badge badge-danger">動作</span>
+                        <small class="text-muted">需要快速反應的遊戲</small>
                     </div>
                     <div class="mb-3">
-                        <span class="badge badge-warning">����</span>
-                        <small class="text-muted">�ݭn�����W�����C��</small>
+                        <span class="badge badge-warning">策略</span>
+                        <small class="text-muted">需要策略規劃的遊戲</small>
                     </div>
                     <div class="mb-3">
-                        <span class="badge badge-success">�g��</span>
-                        <small class="text-muted">�g���������C��</small>
+                        <span class="badge badge-success">射擊</span>
+                        <small class="text-muted">射擊類型的遊戲</small>
                     </div>
                     <div class="mb-3">
-                        <span class="badge badge-primary">�v�t</span>
-                        <small class="text-muted">�v�t�������C��</small>
+                        <span class="badge badge-primary">競速</span>
+                        <small class="text-muted">競速類型的遊戲</small>
                     </div>
                 </div>
             </div>
 
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">�ֳt�]�w</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">快速設定</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-info" onclick="setQuickSettings('�q��', '�ƿW', '�g��ƿW�C���A�D�ԧA���޿���', 10, 50, 5)">
-                            <i class="fas fa-puzzle-piece"></i> �q���C��
+                        <button type="button" class="btn btn-outline-info" onclick="setQuickSettings('益智', '數獨', '經典數獨遊戲，挑戰你的邏輯思維', 10, 50, 5)">
+                            <i class="fas fa-puzzle-piece"></i> 益智遊戲
                         </button>
-                        <button type="button" class="btn btn-outline-danger" onclick="setQuickSettings('�ʧ@', '���D', '�ָ`�����D�C���A����A������', 20, 100, 3)">
-                            <i class="fas fa-running"></i> �ʧ@�C��
+                        <button type="button" class="btn btn-outline-danger" onclick="setQuickSettings('動作', '跳躍', '快節奏跳躍遊戲，考驗你的反應', 20, 100, 3)">
+                            <i class="fas fa-running"></i> 動作遊戲
                         </button>
-                        <button type="button" class="btn btn-outline-warning" onclick="setQuickSettings('����', '��', '�����𨾹C���A�O�çA����a', 30, 150, 2)">
-                            <i class="fas fa-chess"></i> �����C��
+                        <button type="button" class="btn btn-outline-warning" onclick="setQuickSettings('策略', '塔防', '策略塔防遊戲，保衛你的基地', 30, 150, 2)">
+                            <i class="fas fa-chess"></i> 策略遊戲
                         </button>
-                        <button type="button" class="btn btn-outline-success" onclick="setQuickSettings('�g��', '�Ӫ�', '�ӪŮg���C���A���ѥ~�P�ĤH', 25, 120, 4)">
-                            <i class="fas fa-rocket"></i> �g���C��
+                        <button type="button" class="btn btn-outline-success" onclick="setQuickSettings('射擊', '太空', '太空射擊遊戲，擊敗外星敵人', 25, 120, 4)">
+                            <i class="fas fa-rocket"></i> 射擊遊戲
                         </button>
                     </div>
                 </div>
@@ -213,15 +213,15 @@
             document.getElementById('MaxPlayCount').value = maxPlay;
         }
 
-        // �I������
+        // 點數驗證
         document.getElementById('CostPoints').addEventListener('input', function() {
             const cost = parseInt(this.value);
             const reward = parseInt(document.getElementById('RewardPoints').value);
             
             if (cost < 0) {
-                this.setCustomValidity('�����I�Ƥ��ର�t��');
+                this.setCustomValidity('消耗點數不能為負數');
             } else if (reward > 0 && cost > reward) {
-                this.setCustomValidity('�����I�Ƥ����j����y�I��');
+                this.setCustomValidity('消耗點數不應大於獎勵點數');
             } else {
                 this.setCustomValidity('');
             }
@@ -232,26 +232,25 @@
             const cost = parseInt(document.getElementById('CostPoints').value);
             
             if (reward < 0) {
-                this.setCustomValidity('���y�I�Ƥ��ର�t��');
+                this.setCustomValidity('獎勵點數不能為負數');
             } else if (cost > 0 && reward < cost) {
-                this.setCustomValidity('���y�I�Ƥ����p������I��');
+                this.setCustomValidity('獎勵點數不應小於消耗點數');
             } else {
                 this.setCustomValidity('');
             }
         });
 
-        // �̤j�C����������
+        // 最大遊玩次數驗證
         document.getElementById('MaxPlayCount').addEventListener('input', function() {
             const maxPlay = parseInt(this.value);
             
             if (maxPlay < 1) {
-                this.setCustomValidity('�̤j�C�����ƥ����j��0');
+                this.setCustomValidity('最大遊玩次數必須大於0');
             } else if (maxPlay > 1000) {
-                this.setCustomValidity('�̤j�C�����Ƥ���W�L1000');
+                this.setCustomValidity('最大遊玩次數不能超過1000');
             } else {
                 this.setCustomValidity('');
             }
         });
     </script>
 }
-

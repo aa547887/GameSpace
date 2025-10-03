@@ -16,6 +16,26 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         [StringLength(50)]
         public string BackgroundName { get; set; } = "";
 
+        /// <summary>
+        /// 背景颜色 - Alias for BackgroundCode for view compatibility
+        /// </summary>
+        [NotMapped]
+        public string BackgroundColor
+        {
+            get => BackgroundCode;
+            set => BackgroundCode = value;
+        }
+
+        /// <summary>
+        /// 所需點數 - Alias for RequiredPoints for view compatibility
+        /// </summary>
+        [NotMapped]
+        public int PointsRequired
+        {
+            get => RequiredPoints;
+            set => RequiredPoints = value;
+        }
+
         [Required]
         public int RequiredPoints { get; set; }
 

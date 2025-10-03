@@ -57,49 +57,101 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     // 用戶相關 ViewModels
     public class AdminUserCreateViewModel
     {
-        [Required]
-        [StringLength(50)]
+        [Required(ErrorMessage = "用戶名稱為必填")]
+        [StringLength(50, ErrorMessage = "用戶名稱長度不可超過 50 字元")]
         public string User_name { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(50)]
-        public string User_Account { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(100)]
-        public string User_Password { get; set; } = string.Empty;
-        
-        [Required]
-        [EmailAddress]
-        [StringLength(100)]
-        public string User_Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "用戶帳號為必填")]
+        [StringLength(50, ErrorMessage = "用戶帳號長度不可超過 50 字元")]
+        public string User_account { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "密碼為必填")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "密碼長度必須在 6-100 字元之間")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "確認密碼為必填")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "密碼與確認密碼不符")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "電子郵件為必填")]
+        [EmailAddress(ErrorMessage = "電子郵件格式不正確")]
+        [StringLength(100, ErrorMessage = "電子郵件長度不可超過 100 字元")]
+        public string User_email { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "電話號碼格式不正確")]
+        [StringLength(20, ErrorMessage = "電話號碼長度不可超過 20 字元")]
+        public string? User_phone { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? User_birthday { get; set; }
+
+        [StringLength(10, ErrorMessage = "性別長度不可超過 10 字元")]
+        public string? User_gender { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [StringLength(500, ErrorMessage = "地址長度不可超過 500 字元")]
+        public string? User_address { get; set; }
     }
 
     public class AdminUserEditViewModel
     {
         public int User_Id { get; set; }
-        
-        [Required]
-        [StringLength(50)]
+
+        [Required(ErrorMessage = "用戶名稱為必填")]
+        [StringLength(50, ErrorMessage = "用戶名稱長度不可超過 50 字元")]
         public string User_name { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(50)]
-        public string User_Account { get; set; } = string.Empty;
-        
-        [StringLength(100)]
-        public string? User_Password { get; set; }
-        
-        [Required]
-        [EmailAddress]
-        [StringLength(100)]
-        public string User_Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "用戶帳號為必填")]
+        [StringLength(50, ErrorMessage = "用戶帳號長度不可超過 50 字元")]
+        public string User_account { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "電子郵件為必填")]
+        [EmailAddress(ErrorMessage = "電子郵件格式不正確")]
+        [StringLength(100, ErrorMessage = "電子郵件長度不可超過 100 字元")]
+        public string User_email { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "電話號碼格式不正確")]
+        [StringLength(20, ErrorMessage = "電話號碼長度不可超過 20 字元")]
+        public string? User_phone { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? User_birthday { get; set; }
+
+        [StringLength(10, ErrorMessage = "性別長度不可超過 10 字元")]
+        public string? User_gender { get; set; }
+
+        public bool IsActive { get; set; }
+
+        [StringLength(500, ErrorMessage = "地址長度不可超過 500 字元")]
+        public string? User_address { get; set; }
+
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "新密碼長度必須在 6-100 字元之間")]
+        [DataType(DataType.Password)]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "新密碼與確認新密碼不符")]
+        public string? ConfirmNewPassword { get; set; }
     }
 
     // 錢包相關 ViewModels
+    public class UserWalletViewModel
+    {
+        public int WalletId { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string TransactionType { get; set; } = string.Empty; // Point, Coupon, EVoucher
+        public int Amount { get; set; }
+        public DateTime TransactionDate { get; set; }
+        public string Description { get; set; } = string.Empty;
+    }
+
     public class AdminWalletIndexViewModel
     {
-        public List<UserWallet> UserWallets { get; set; } = new();
+        public List<UserWalletViewModel> UserWallets { get; set; } = new();
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
@@ -124,13 +176,50 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int UserID { get; set; }
         public int EVoucherTypeID { get; set; }
         public int Quantity { get; set; }
+        public string? Reason { get; set; }
+        public decimal? CustomValue { get; set; }
+        public string? Description { get; set; }
     }
 
     public class GrantCouponsModel
     {
-        public int UserID { get; set; }
-        public int CouponTypeID { get; set; }
+        [Required(ErrorMessage = "使用者 ID 為必填")]
+        public int UserId { get; set; }
+
+        [Required(ErrorMessage = "優惠券類型 ID 為必填")]
+        public int CouponTypeId { get; set; }
+
+        [Required(ErrorMessage = "數量為必填")]
+        [Range(1, 1000, ErrorMessage = "數量必須介於 1 到 1000 之間")]
         public int Quantity { get; set; }
+
+        [DataType(DataType.DateTime)]
+        public DateTime? ExpiryDate { get; set; }
+
+        [Required(ErrorMessage = "原因為必填")]
+        [StringLength(200, ErrorMessage = "原因不得超過 200 個字元")]
+        public string Reason { get; set; } = string.Empty;
+
+        [Range(0, 999999.99, ErrorMessage = "自訂金額必須介於 0 到 999999.99 之間")]
+        public decimal? CustomValue { get; set; }
+
+        [StringLength(500, ErrorMessage = "描述不得超過 500 個字元")]
+        public string Description { get; set; } = string.Empty;
+
+        // 保留舊屬性名稱以支持向後相容
+        [Obsolete("請使用 UserId 屬性")]
+        public int UserID
+        {
+            get => UserId;
+            set => UserId = value;
+        }
+
+        [Obsolete("請使用 CouponTypeId 屬性")]
+        public int CouponTypeID
+        {
+            get => CouponTypeId;
+            set => CouponTypeId = value;
+        }
     }
 
     public class GrantEVouchersModel
@@ -143,6 +232,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     public class WalletHistoryModel
     {
         public List<WalletHistory> Histories { get; set; } = new();
+        public List<WalletHistory> Transactions { get; set; } = new(); // Alias for Histories
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;

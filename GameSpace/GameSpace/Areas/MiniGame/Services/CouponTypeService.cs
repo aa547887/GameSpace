@@ -16,14 +16,14 @@ namespace GameSpace.Areas.MiniGame.Services
         // CouponType 基本 CRUD
         public async Task<IEnumerable<CouponType>> GetAllCouponTypesAsync()
         {
-            return await _context.CouponType
+            return await _context.CouponTypes
                 .OrderByDescending(ct => ct.CreatedAt)
                 .ToListAsync();
         }
 
         public async Task<CouponType?> GetCouponTypeByIdAsync(int couponTypeId)
         {
-            return await _context.CouponType
+            return await _context.CouponTypes
                 .FirstOrDefaultAsync(ct => ct.CouponTypeID == couponTypeId);
         }
 
@@ -33,7 +33,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 couponType.CreatedAt = DateTime.UtcNow;
                 couponType.IsActive = true;
-                _context.CouponType.Add(couponType);
+                _context.CouponTypes.Add(couponType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -48,7 +48,7 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 couponType.UpdatedAt = DateTime.UtcNow;
-                _context.CouponType.Update(couponType);
+                _context.CouponTypes.Update(couponType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -65,7 +65,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 var couponType = await GetCouponTypeByIdAsync(couponTypeId);
                 if (couponType == null) return false;
 
-                _context.CouponType.Remove(couponType);
+                _context.CouponTypes.Remove(couponType);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -115,7 +115,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // CouponType 查詢
         public async Task<IEnumerable<CouponType>> GetActiveCouponTypesAsync()
         {
-            return await _context.CouponType
+            return await _context.CouponTypes
                 .Where(ct => ct.IsActive)
                 .OrderBy(ct => ct.CouponTypeName)
                 .ToListAsync();
@@ -123,7 +123,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<CouponType>> GetCouponTypesByDiscountTypeAsync(string discountType)
         {
-            return await _context.CouponType
+            return await _context.CouponTypes
                 .Where(ct => ct.DiscountType == discountType)
                 .OrderByDescending(ct => ct.CreatedAt)
                 .ToListAsync();
@@ -131,7 +131,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<CouponType>> GetCouponTypesByPointsCostAsync(int minPoints, int maxPoints)
         {
-            return await _context.CouponType
+            return await _context.CouponTypes
                 .Where(ct => ct.PointsCost >= minPoints && ct.PointsCost <= maxPoints)
                 .OrderBy(ct => ct.PointsCost)
                 .ToListAsync();
@@ -140,17 +140,17 @@ namespace GameSpace.Areas.MiniGame.Services
         // CouponType 統計
         public async Task<int> GetTotalCouponTypesCountAsync()
         {
-            return await _context.CouponType.CountAsync();
+            return await _context.CouponTypes.CountAsync();
         }
 
         public async Task<int> GetActiveCouponTypesCountAsync()
         {
-            return await _context.CouponType.CountAsync(ct => ct.IsActive);
+            return await _context.CouponTypes.CountAsync(ct => ct.IsActive);
         }
 
         public async Task<Dictionary<string, int>> GetCouponTypesDistributionAsync()
         {
-            var distribution = await _context.CouponType
+            var distribution = await _context.CouponTypes
                 .GroupBy(ct => ct.DiscountType)
                 .Select(g => new { Type = g.Key, Count = g.Count() })
                 .ToListAsync();
@@ -160,12 +160,12 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<IEnumerable<CouponTypeUsageStats>> GetCouponTypeUsageStatsAsync()
         {
-            var couponTypes = await _context.CouponType.ToListAsync();
+            var couponTypes = await _context.CouponTypes.ToListAsync();
             var stats = new List<CouponTypeUsageStats>();
 
             foreach (var couponType in couponTypes)
             {
-                var coupons = await _context.Coupon
+                var coupons = await _context.Coupons
                     .Where(c => c.CouponTypeID == couponType.CouponTypeID)
                     .ToListAsync();
 

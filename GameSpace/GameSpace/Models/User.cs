@@ -25,6 +25,53 @@ public partial class User
 
     public DateTime? UserLockoutEnd { get; set; }
 
+    // Alias properties for backward compatibility with views
+    public int User_Id
+    {
+        get => UserId;
+        set => UserId = value;
+    }
+
+    public string User_name
+    {
+        get => UserName;
+        set => UserName = value;
+    }
+
+    public string User_account
+    {
+        get => UserAccount;
+        set => UserAccount = value;
+    }
+
+    public string User_email { get; set; } = null!;
+    public string? User_phone { get; set; }
+    public DateTime? User_birthday { get; set; }
+    public string? User_gender { get; set; }
+    public DateTime? User_registration_date { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public bool IsActive { get; set; } = true;
+    public string? User_address { get; set; }
+
+    // Additional alias properties for database column compatibility
+    public string? UserEmail => User_email;
+    public DateTime? CreateAccount => User_registration_date;
+    public string? User_Status { get; set; }
+    public DateTime? User_CreatedAt { get; set; }
+
+    // Case-variant aliases for queries (User_Name vs User_name)
+    public string User_Name
+    {
+        get => UserName;
+        set => UserName = value;
+    }
+
+    public string User_Account
+    {
+        get => UserAccount;
+        set => UserAccount = value;
+    }
+
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<GroupBlock> GroupBlockBlockedByUsers { get; set; } = new List<GroupBlock>();

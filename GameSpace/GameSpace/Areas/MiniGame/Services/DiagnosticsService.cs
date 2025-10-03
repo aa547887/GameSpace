@@ -76,10 +76,10 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 // 檢查各個 Service 是否正常
                 health["Database"] = await _context.Database.CanConnectAsync();
-                health["PetService"] = await _context.Pet.AnyAsync() || !await _context.Pet.AnyAsync();
-                health["WalletService"] = await _context.User_Wallet.AnyAsync() || !await _context.User_Wallet.AnyAsync();
-                health["SignInService"] = await _context.User_SignInStats.AnyAsync() || !await _context.User_SignInStats.AnyAsync();
-                health["CouponService"] = await _context.Coupon.AnyAsync() || !await _context.Coupon.AnyAsync();
+                health["PetService"] = await _context.Pets.AnyAsync() || !await _context.Pets.AnyAsync();
+                health["WalletService"] = await _context.UserWallets.AnyAsync() || !await _context.UserWallets.AnyAsync();
+                health["SignInService"] = await _context.UserSignInStats.AnyAsync() || !await _context.UserSignInStats.AnyAsync();
+                health["CouponService"] = await _context.Coupons.AnyAsync() || !await _context.Coupons.AnyAsync();
             }
             catch
             {
@@ -205,16 +205,16 @@ namespace GameSpace.Areas.MiniGame.Services
             try
             {
                 // 各資料表記錄數
-                sizeInfo["Pet"] = await _context.Pet.CountAsync();
-                sizeInfo["User_Wallet"] = await _context.User_Wallet.CountAsync();
-                sizeInfo["WalletHistory"] = await _context.WalletHistory.CountAsync();
-                sizeInfo["User_SignInStats"] = await _context.User_SignInStats.CountAsync();
-                sizeInfo["Coupon"] = await _context.Coupon.CountAsync();
-                sizeInfo["CouponType"] = await _context.CouponType.CountAsync();
-                sizeInfo["EVoucher"] = await _context.EVoucher.CountAsync();
-                sizeInfo["EVoucherType"] = await _context.EVoucherType.CountAsync();
+                sizeInfo["Pets"] = await _context.Pets.CountAsync();
+                sizeInfo["UserWallets"] = await _context.UserWallets.CountAsync();
+                sizeInfo["WalletHistories"] = await _context.WalletHistories.CountAsync();
+                sizeInfo["UserSignInStats"] = await _context.UserSignInStats.CountAsync();
+                sizeInfo["Coupons"] = await _context.Coupons.CountAsync();
+                sizeInfo["CouponTypes"] = await _context.CouponTypes.CountAsync();
+                sizeInfo["Evouchers"] = await _context.Evouchers.CountAsync();
+                sizeInfo["EvoucherTypes"] = await _context.EvoucherTypes.CountAsync();
                 sizeInfo["Users"] = await _context.Users.CountAsync();
-                sizeInfo["Manager"] = await _context.Manager.CountAsync();
+                sizeInfo["ManagerData"] = await _context.ManagerData.CountAsync();
                 sizeInfo["PetColorOptions"] = await _context.PetColorOptions.CountAsync();
                 sizeInfo["PetBackgroundOptions"] = await _context.PetBackgroundOptions.CountAsync();
 
