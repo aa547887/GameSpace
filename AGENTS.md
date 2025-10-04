@@ -1,42 +1,35 @@
 ﻿# Repository Guidelines
 
 ## Project Structure & Module Organization
-- Solution: `GameSpace/GameSpace.sln`
-- Web app (ASP.NET Core MVC, .NET 8): `GameSpace/GameSpace/GameSpace.csproj`
-- MVC Areas and features: `GameSpace/GameSpace/Areas/*`
-- Views and shared layout: `GameSpace/GameSpace/Views`, `.../Views/Shared`
-- Static assets: `GameSpace/GameSpace/wwwroot` (managed via `libman.json`)
-- Data and EF Core migrations: `GameSpace/GameSpace/Data`
-- App settings: `GameSpace/GameSpace/appsettings.json` and `appsettings.Development.json`
-- Database/schema docs: `GameSpace/schema`
+- Solution root: `GameSpace/GameSpace`. All .NET 8 MVC code lives in `GameSpace/GameSpace/GameSpace`.
+- Feature areas sit under `Areas/*` (Forum, MemberManagement, MiniGame, OnlineStore, social_hub). Shared controllers and views stay under `Controllers/` and `Views/`.
+- Domain models are in `Models/`; identity context and migrations in `Data/`. Static assets reside in `wwwroot/` (managed with LibMan).
+- Schema documentation lives in `schema/`. Review this when updating EF entities.
 
 ## Build, Test, and Development Commands
-- Restore: `dotnet restore GameSpace/GameSpace.sln`
-- Build (Debug): `dotnet build GameSpace/GameSpace.sln -c Debug`
-- Run (Dev): `dotnet watch run --project GameSpace/GameSpace/GameSpace.csproj`
-- Client libs: from the project directory, `libman restore`
-- EF migrate (optional): `dotnet ef database update` (requires `dotnet-ef`)
+- Restore packages: `dotnet restore GameSpace/GameSpace.sln`.
+- Build locally: `dotnet build GameSpace/GameSpace.sln -c Debug`.
+- Run with hot reload: `dotnet watch run --project GameSpace/GameSpace/GameSpace.csproj`.
+- Restore client libraries: from `GameSpace/GameSpace/GameSpace`, run `libman restore`.
+- Format code: `dotnet format GameSpace/GameSpace.sln` before submitting PRs.
 
 ## Coding Style & Naming Conventions
-- Language: C# (.NET 8). Indent with 4 spaces; no tabs.
-- Braces on new lines (Allman). One class per file.
-- Names: PascalCase for types/methods; camelCase for locals/params; prefer `_camelCase` for private fields.
-- Organize by feature (Areas) and keep controllers thin; move logic to services.
-- Run `dotnet format` before committing to enforce conventions.
+- C#, .NET 8; four-space indentation, Allman braces, one type per file.
+- PascalCase for classes/methods, camelCase for locals/parameters, `_camelCase` for private fields.
+- Keep nullable reference types enabled; avoid suppressing warnings unless justified.
+- Organize `using` directives: framework → third-party → project.
 
 ## Testing Guidelines
-- No standalone test project is present. Prefer xUnit in `GameSpace.Tests` alongside the solution.
-- Naming: `ClassNameTests`, methods like `Method_Should_DoExpected`.
-- Run tests: `dotnet test` (once a test project exists). Target ≥80% coverage for new code.
+- Add tests in a sibling `GameSpace.Tests` xUnit project. Reference the main project.
+- Name fixtures `FeatureNameTests`; methods as `Scenario_Should_ExpectedOutcome`.
+- Run `dotnet test` prior to PRs. Target ≥80% coverage on new code and include coverage summaries if possible.
 
 ## Commit & Pull Request Guidelines
-- Commits: concise, imperative subject; include scope (e.g., `Forum: ...`). The history commonly groups work by phases (e.g., `🔧 Phase 2: ...`).
-- Reference issues (e.g., `Fixes #123`) and summarize changes + rationale.
-- PRs: clear description, steps to reproduce/verify, screenshots for UI, migration notes when DB changes are included.
+- Commit messages should be imperative, optionally scoped: `fix(member): adjust lockout logic`.
+- Group logical changes per commit; avoid mixing refactors and fixes.
+- PRs must describe intent, list manual validation steps (`dotnet build`, `dotnet test`, UI checks), highlight config or schema updates, link issues, and attach UI screenshots when relevant.
 
-## Security & Configuration
-- Do not commit secrets. Use `appsettings.Development.json` or User Secrets (`dotnet user-secrets`) for local credentials.
-- Set environment: PowerShell `($env:ASPNETCORE_ENVIRONMENT='Development')`; Bash `export ASPNETCORE_ENVIRONMENT=Development`.
-- Review CORS, authentication, and role policies under `Areas/*` when adding endpoints.
-
-
+## Security & Configuration Tips
+- Never commit secrets. Use `dotnet user-secrets` or environment variables for local credentials.
+- Set `ASPNETCORE_ENVIRONMENT=Development` for local runs; document new keys when editing `Program.cs` or auth policies.
+- Review dual authentication requirements before touching admin login flows or policies.
