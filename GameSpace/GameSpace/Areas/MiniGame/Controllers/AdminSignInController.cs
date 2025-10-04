@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Collections.Generic;
+using System.Linq;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
-using GameSpace.Areas.MiniGame.ViewModels;
+using SignInRuleDto = GameSpace.Areas.MiniGame.Services.SignInRule;
 using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Models;
 
@@ -15,6 +19,17 @@ namespace GameSpace.Areas.MiniGame.Controllers
     {
         private readonly ISignInService _signInService;
         private readonly IUserService _userService;
+
+        private const string DailyPointsSettingKey = "MiniGame.SignIn.DailyPoints";
+        private const string WeeklyBonusPointsSettingKey = "MiniGame.SignIn.WeeklyBonusPoints";
+        private const string MonthlyBonusPointsSettingKey = "MiniGame.SignIn.MonthlyBonusPoints";
+        private const string ConsecutiveRequirementSettingKey = "MiniGame.SignIn.ConsecutiveDaysRequired";
+        private const string RuleDescriptionSettingKey = "MiniGame.SignIn.Description";
+        private const int MonthlyRewardThreshold = 30;
+        private const int DefaultDailyPoints = 10;
+        private const int DefaultWeeklyPoints = 50;
+        private const int DefaultMonthlyPoints = 200;
+        private const int DefaultConsecutiveRequirement = 7;
 
         public AdminSignInController(GameSpacedatabaseContext context, ISignInService signInService, IUserService userService) : base(context)
         {
@@ -575,47 +590,257 @@ namespace GameSpace.Areas.MiniGame.Controllers
         #region SignIn Rules Configuration
 
         // GET: AdminSignIn/Rules
-        public IActionResult Rules()
+        public async Task<IActionResult> Rules()
         {
-            // 初始化預設值
-            var viewModel = new GameSpace.Areas.MiniGame.ViewModels.SignInRuleConfigViewModel
-            {
-                DailyPoints = 10,
-                WeeklyBonusPoints = 50,
-                MonthlyBonusPoints = 200,
-                ConsecutiveDaysRequired = 7,
-                Description = "每日簽到可獲得點數，連續簽到將獲得額外獎勵"
-            };
-
+            var viewModel = await LoadSignInRuleConfigurationAsync();
             return View(viewModel);
         }
 
         // POST: AdminSignIn/UpdateRules
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateRules(GameSpace.Areas.MiniGame.ViewModels.SignInRuleConfigViewModel model)
+        public async Task<IActionResult> UpdateRules(SignInRuleConfigViewModel model)
         {
             if (!ModelState.IsValid)
             {
                 return View("Rules", model);
             }
 
+            if (model.SignInRule == null)
+            {
+                ModelState.AddModelError(string.Empty, "簽到規則資料遺失，請重新輸入。");
+                model.SignInRule = new SignInRuleConfig();
+                return View("Rules", model);
+            }
+
+            model.SignInRule.Description = model.SignInRule.Description?.Trim();
+
+            IDbContextTransaction? transaction = null;
             try
             {
-                // TODO: 實作儲存規則到資料庫的邏輯
-                // 這裡可以呼叫 _signInService 來儲存規則
+                transaction = await _context.Database.BeginTransactionAsync();
 
-                TempData["Success"] = "簽到規則設定已成功儲存";
+                if (!await SaveSignInSettingsAsync(model.SignInRule))
+                {
+                    await transaction.RollbackAsync();
+                    await transaction.DisposeAsync();
+                    transaction = null;
+                    ModelState.AddModelError(string.Empty, "儲存簽到設定失敗，請稍後再試。");
+                    return View("Rules", model);
+                }
+
+                if (!await ApplySignInRewardRulesAsync(model.SignInRule))
+                {
+                    await transaction.RollbackAsync();
+                    await transaction.DisposeAsync();
+                    transaction = null;
+                    ModelState.AddModelError(string.Empty, "更新簽到獎勵規則失敗，請稍後再試。");
+                    return View("Rules", model);
+                }
+
+                await transaction.CommitAsync();
+                await transaction.DisposeAsync();
+                transaction = null;
+
+                await LogOperationAsync("SignInRules.Update", BuildAuditSummary(model.SignInRule));
+
+                TempData["Success"] = "簽到規則已成功儲存。";
                 return RedirectToAction(nameof(Rules));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", $"儲存失敗: {ex.Message}");
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                    await transaction.DisposeAsync();
+                    transaction = null;
+                }
+
+                ModelState.AddModelError(string.Empty, $"儲存簽到規則時發生錯誤：{ex.Message}");
                 return View("Rules", model);
             }
+            finally
+            {
+                if (transaction != null)
+                {
+                    await transaction.DisposeAsync();
+                }
+            }
+        }
+
+        private async Task<SignInRuleConfigViewModel> LoadSignInRuleConfigurationAsync()
+        {
+            var signInRules = (await _signInService.GetAllSignInRulesAsync()).ToList();
+
+            var dailyRule = signInRules
+                .OrderBy(r => r.ConsecutiveDays)
+                .FirstOrDefault(r => r.ConsecutiveDays <= 1);
+
+            var streakRule = signInRules
+                .Where(r => r.ConsecutiveDays > 1 && r.ConsecutiveDays < MonthlyRewardThreshold)
+                .OrderBy(r => Math.Abs(r.ConsecutiveDays - DefaultConsecutiveRequirement))
+                .FirstOrDefault();
+
+            var monthlyRule = signInRules
+                .Where(r => r.ConsecutiveDays >= MonthlyRewardThreshold)
+                .OrderBy(r => r.ConsecutiveDays)
+                .FirstOrDefault();
+
+            var descriptionSetting = await GetSystemSettingAsync(RuleDescriptionSettingKey, string.Empty);
+            var resolvedDescription = string.IsNullOrWhiteSpace(descriptionSetting)
+                ? dailyRule?.Description ?? streakRule?.Description ?? monthlyRule?.Description ?? "每日簽到可獲得點數，達成連續簽到可獲得額外獎勵。"
+                : descriptionSetting.Trim();
+
+            var model = new SignInRuleConfigViewModel
+            {
+                SignInRule = new SignInRuleConfig
+                {
+                    DailyPoints = await GetIntSettingAsync(DailyPointsSettingKey, dailyRule?.PointsReward ?? DefaultDailyPoints, 0),
+                    WeeklyBonusPoints = await GetIntSettingAsync(WeeklyBonusPointsSettingKey, streakRule?.PointsReward ?? DefaultWeeklyPoints, 0),
+                    MonthlyBonusPoints = await GetIntSettingAsync(MonthlyBonusPointsSettingKey, monthlyRule?.PointsReward ?? DefaultMonthlyPoints, 0),
+                    ConsecutiveDays = await GetIntSettingAsync(ConsecutiveRequirementSettingKey, streakRule?.ConsecutiveDays ?? DefaultConsecutiveRequirement, 1),
+                    Description = resolvedDescription
+                }
+            };
+
+            if (model.SignInRule.ConsecutiveDays < 1)
+            {
+                model.SignInRule.ConsecutiveDays = 1;
+            }
+
+            return model;
+        }
+
+        private async Task<bool> SaveSignInSettingsAsync(SignInRuleConfig config)
+        {
+            var description = (config.Description ?? string.Empty).Trim();
+            var updates = new Dictionary<string, string>
+            {
+                [DailyPointsSettingKey] = config.DailyPoints.ToString(),
+                [WeeklyBonusPointsSettingKey] = config.WeeklyBonusPoints.ToString(),
+                [MonthlyBonusPointsSettingKey] = config.MonthlyBonusPoints.ToString(),
+                [ConsecutiveRequirementSettingKey] = config.ConsecutiveDays.ToString(),
+                [RuleDescriptionSettingKey] = description
+            };
+
+            foreach (var update in updates)
+            {
+                if (!await SetSystemSettingAsync(update.Key, update.Value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private async Task<bool> ApplySignInRewardRulesAsync(SignInRuleConfig config)
+        {
+            var rules = (await _signInService.GetAllSignInRulesAsync()).ToList();
+
+            if (!await UpsertSignInRuleAsync(rules, 1, config.DailyPoints, "每日簽到獎勵", config.Description))
+            {
+                return false;
+            }
+
+            if (!await UpsertSignInRuleAsync(rules, config.ConsecutiveDays, config.WeeklyBonusPoints, $"連續簽到{config.ConsecutiveDays}天獎勵", config.Description))
+            {
+                return false;
+            }
+
+            if (!await UpsertSignInRuleAsync(rules, MonthlyRewardThreshold, config.MonthlyBonusPoints, "每月簽到獎勵", config.Description))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<bool> UpsertSignInRuleAsync(List<SignInRuleDto> existingRules, int consecutiveDays, int points, string ruleName, string? baseDescription)
+        {
+            var targetRule = existingRules.FirstOrDefault(r => r.ConsecutiveDays == consecutiveDays);
+
+            if (targetRule != null)
+            {
+                targetRule.PointsReward = points;
+
+                if (targetRule.ExpReward <= 0 && points > 0)
+                {
+                    targetRule.ExpReward = Math.Max(1, points / 2);
+                }
+
+                targetRule.RuleName = ruleName;
+                targetRule.Description = BuildRuleDescription(consecutiveDays, points, baseDescription);
+                targetRule.IsActive = true;
+                targetRule.UpdatedAt = DateTime.UtcNow;
+
+                return await _signInService.UpdateSignInRuleAsync(targetRule);
+            }
+
+            var newRule = new SignInRuleDto
+            {
+                RuleName = ruleName,
+                Description = BuildRuleDescription(consecutiveDays, points, baseDescription),
+                ConsecutiveDays = consecutiveDays,
+                PointsReward = points,
+                ExpReward = points > 0 ? Math.Max(1, points / 2) : 0,
+                CouponTypeId = null,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            return await _signInService.CreateSignInRuleAsync(newRule);
+        }
+
+        private async Task<int> GetIntSettingAsync(string key, int fallback, int minValue)
+        {
+            var raw = await GetSystemSettingAsync(key, fallback.ToString());
+
+            if (!int.TryParse(raw, out var value))
+            {
+                value = fallback;
+            }
+
+            if (value < minValue)
+            {
+                value = minValue;
+            }
+
+            return value;
+        }
+
+        private static string BuildRuleDescription(int consecutiveDays, int points, string? extraDescription)
+        {
+            var segments = new List<string>
+            {
+                $"連續簽到 {consecutiveDays} 天"
+            };
+
+            if (points > 0)
+            {
+                segments.Add($"獲得 {points} 點數");
+            }
+            else
+            {
+                segments.Add("無額外點數獎勵");
+            }
+
+            if (!string.IsNullOrWhiteSpace(extraDescription))
+            {
+                segments.Add(extraDescription.Trim());
+            }
+
+            return string.Join("｜", segments);
+        }
+
+        private static string BuildAuditSummary(SignInRuleConfig config)
+        {
+            return $"每日{config.DailyPoints}點、週獎勵{config.WeeklyBonusPoints}點、月獎勵{config.MonthlyBonusPoints}點、連續簽到要求{config.ConsecutiveDays}天";
         }
 
         #endregion
     }
 }
+
 

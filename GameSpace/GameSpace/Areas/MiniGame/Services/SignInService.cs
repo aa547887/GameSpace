@@ -413,6 +413,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 Id = r.Id,
                 RuleName = r.Description ?? string.Empty,
+                Description = r.Description,
                 ConsecutiveDays = r.SignInDay,
                 PointsReward = r.Points,
                 ExpReward = r.Experience,
@@ -435,6 +436,7 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 Id = dbRule.Id,
                 RuleName = dbRule.Description ?? string.Empty,
+                Description = dbRule.Description,
                 ConsecutiveDays = dbRule.SignInDay,
                 PointsReward = dbRule.Points,
                 ExpReward = dbRule.Experience,
@@ -457,7 +459,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     HasCoupon = !string.IsNullOrEmpty(rule.CouponTypeId),
                     CouponTypeCode = rule.CouponTypeId,
                     IsActive = rule.IsActive,
-                    Description = rule.RuleName,
+                    Description = string.IsNullOrWhiteSpace(rule.Description) ? rule.RuleName : rule.Description,
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.Add(dbRule);
@@ -485,7 +487,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 dbRule.HasCoupon = !string.IsNullOrEmpty(rule.CouponTypeId);
                 dbRule.CouponTypeCode = rule.CouponTypeId;
                 dbRule.IsActive = rule.IsActive;
-                dbRule.Description = rule.RuleName;
+                dbRule.Description = string.IsNullOrWhiteSpace(rule.Description) ? rule.RuleName : rule.Description;
                 dbRule.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -537,4 +539,5 @@ namespace GameSpace.Areas.MiniGame.Services
         }
     }
 }
+
 

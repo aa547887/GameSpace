@@ -69,6 +69,7 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         public int Id { get; set; }
         public string RuleName { get; set; } = string.Empty;
+        public string? Description { get; set; }
         public int ConsecutiveDays { get; set; }
         public int PointsReward { get; set; }
         public int ExpReward { get; set; }
@@ -86,4 +87,5 @@ namespace GameSpace.Areas.MiniGame.Services
         public bool HasCoupon { get; set; }
     }
 }
+
 
