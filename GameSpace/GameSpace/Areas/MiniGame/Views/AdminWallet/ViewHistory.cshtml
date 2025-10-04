@@ -1,6 +1,6 @@
 @model GameSpace.Areas.MiniGame.Models.ViewModels.WalletHistoryModel
 @{
-    ViewData["Title"] = "�d�ݷ|���������";
+    ViewData["Title"] = "查詢錢包交易紀錄";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
@@ -8,20 +8,20 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-chart-line mr-2"></i>�d�ݷ|���������
+            <i class="fas fa-chart-line mr-2"></i>查詢錢包交易紀錄
         </h1>
         <div class="d-flex">
             <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> ��^
+                <i class="fas fa-arrow-left"></i> 返回
             </a>
         </div>
     </div>
 
-    <!-- �j�M���� -->
+    <!-- 搜尋條件 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-filter"></i> �j�M����
+                <i class="fas fa-filter"></i> 搜尋條件
             </h6>
         </div>
         <div class="card-body">
@@ -29,30 +29,30 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="userId">�Τ�ID</label>
-                            <input type="text" class="form-control" id="userId" name="userId" placeholder="��J�Τ�ID">
+                            <label for="userId">使用者ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="輸入使用者ID">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="transactionType">�������</label>
+                            <label for="transactionType">交易類型</label>
                             <select class="form-control" id="transactionType" name="transactionType">
-                                <option value="">����</option>
-                                <option value="Points">�|���I��</option>
-                                <option value="Coupon">�ӫ��u�f��</option>
-                                <option value="EVoucher">�q�l§��</option>
+                                <option value="">全部</option>
+                                <option value="Points">會員點數</option>
+                                <option value="Coupon">商品優惠券</option>
+                                <option value="EVoucher">電子禮券</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="actionType">�ާ@����</label>
+                            <label for="actionType">操作類型</label>
                             <select class="form-control" id="actionType" name="actionType">
-                                <option value="">����</option>
-                                <option value="Earn">��o</option>
-                                <option value="Spend">��O</option>
-                                <option value="Use">�ϥ�</option>
-                                <option value="Expire">�L��</option>
+                                <option value="">全部</option>
+                                <option value="Earn">獲得</option>
+                                <option value="Spend">花費</option>
+                                <option value="Use">使用</option>
+                                <option value="Expire">過期</option>
                             </select>
                         </div>
                     </div>
@@ -60,40 +60,40 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="startDate">�}�l���</label>
+                            <label for="startDate">開始日期</label>
                             <input type="date" class="form-control" id="startDate" name="startDate">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="endDate">�������</label>
+                            <label for="endDate">結束日期</label>
                             <input type="date" class="form-control" id="endDate" name="endDate">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> �j�M
+                        <i class="fas fa-search"></i> 搜尋
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> ���m
+                        <i class="fas fa-undo"></i> 重置
                     </button>
                     <button type="button" class="btn btn-success" onclick="exportHistory()">
-                        <i class="fas fa-download"></i> �ץX
+                        <i class="fas fa-download"></i> 匯出
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- �έp��T -->
+    <!-- 快速統計資訊 -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">�`���J</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">總收入</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalIncome">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -109,7 +109,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">�`��X</div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">總支出</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalExpense">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -125,7 +125,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">�b�ܰ�</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">淨變動</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="netChange">NT$ 0</div>
                         </div>
                         <div class="col-auto">
@@ -141,7 +141,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">�������</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">交易筆數</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="transactionCount">0</div>
                         </div>
                         <div class="col-auto">
@@ -153,26 +153,26 @@
         </div>
     </div>
 
-    <!-- ����O�� -->
+    <!-- 交易紀錄 -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-list"></i> ����O��
+                <i class="fas fa-list"></i> 交易紀錄
             </h6>
-            <span class="badge badge-info" id="resultCount">�@ 0 ���O��</span>
+            <span class="badge badge-info" id="resultCount">共 0 筆紀錄</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="transactionsTable" width="100%" cellspacing="0">
                     <thead class="thead-light">
                         <tr>
-                            <th>����ɶ�</th>
-                            <th>�Τ�ID</th>
-                            <th>�������</th>
-                            <th>�ާ@����</th>
-                            <th>���B/�ƶq</th>
-                            <th>�y�z</th>
-                            <th>�ާ@</th>
+                            <th>交易時間</th>
+                            <th>使用者ID</th>
+                            <th>交易類型</th>
+                            <th>操作類型</th>
+                            <th>金額/數量</th>
+                            <th>說明</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -187,13 +187,13 @@
                                         @switch (transaction.TransactionType)
                                         {
                                             case "Points":
-                                                <span class="badge badge-primary">�|���I��</span>      
+                                                <span class="badge badge-primary">會員點數</span>
                                                 break;
                                             case "Coupon":
-                                                <span class="badge badge-success">�ӫ��u�f��</span>    
+                                                <span class="badge badge-success">商品優惠券</span>
                                                 break;
                                             case "EVoucher":
-                                                <span class="badge badge-warning">�q�l§��</span>      
+                                                <span class="badge badge-warning">電子禮券</span>
                                                 break;
                                             default:
                                                 <span class="badge badge-secondary">@transaction.TransactionType</span>
@@ -204,16 +204,16 @@
                                         @switch (transaction.ActionType)
                                         {
                                             case "Earn":
-                                                <span class="badge badge-success">��o</span>
+                                                <span class="badge badge-success">獲得</span>
                                                 break;
                                             case "Spend":
-                                                <span class="badge badge-danger">��O</span>
+                                                <span class="badge badge-danger">花費</span>
                                                 break;
                                             case "Use":
-                                                <span class="badge badge-info">�ϥ�</span>
+                                                <span class="badge badge-info">使用</span>
                                                 break;
                                             case "Expire":
-                                                <span class="badge badge-warning">�L��</span>
+                                                <span class="badge badge-warning">過期</span>
                                                 break;
                                             default:
                                                 <span class="badge badge-secondary">@transaction.ActionType</span>
@@ -237,7 +237,7 @@
                                     <td>@transaction.Description</td>
                                     <td>
                                         <button class="btn btn-sm btn-info" onclick="viewTransactionDetails(@transaction.LogId)">
-                                            <i class="fas fa-eye"></i> �Ա�
+                                            <i class="fas fa-eye"></i> 檢視
                                         </button>
                                     </td>
                                 </tr>
@@ -246,7 +246,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center">�п�J�j�M����i��d��</td>        
+                                <td colspan="8" class="text-center">請輸入搜尋條件查詢紀錄</td>
                             </tr>
                         }
                     </tbody>
@@ -256,12 +256,12 @@
     </div>
 </div>
 
-<!-- ����Ա� Modal -->
+<!-- 交易檢視 Modal -->
 <div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">����Ա�</h5>
+                <h5 class="modal-title">交易檢視</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -269,27 +269,27 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>�򥻸�T</h6>
+                        <h6>基本資訊</h6>
                         <table class="table table-sm">
-                            <tr><td>���ID:</td><td id="detailTransactionId"></td></tr>
-                            <tr><td>����ɶ�:</td><td id="detailTransactionTime"></td></tr>
-                            <tr><td>�������:</td><td id="detailTransactionType"></td></tr>
-                            <tr><td>�ާ@����:</td><td id="detailActionType"></td></tr>
+                            <tr><td>交易ID:</td><td id="detailTransactionId"></td></tr>
+                            <tr><td>交易時間:</td><td id="detailTransactionTime"></td></tr>
+                            <tr><td>交易類型:</td><td id="detailTransactionType"></td></tr>
+                            <tr><td>操作類型:</td><td id="detailActionType"></td></tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6>���B��T</h6>
+                        <h6>金額資訊</h6>
                         <table class="table table-sm">
-                            <tr><td>���B/�ƶq:</td><td id="detailAmount"></td></tr>
-                            <tr><td>�����l�B:</td><td id="detailBalance"></td></tr>
-                            <tr><td>�y�z:</td><td id="detailDescription"></td></tr>
-                            <tr><td>�Ƶ�:</td><td id="detailRemark"></td></tr>
+                            <tr><td>金額/數量:</td><td id="detailAmount"></td></tr>
+                            <tr><td>交易後餘額:</td><td id="detailBalance"></td></tr>
+                            <tr><td>說明:</td><td id="detailDescription"></td></tr>
+                            <tr><td>備註:</td><td id="detailRemark"></td></tr>
                         </table>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">����</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
             </div>
         </div>
     </div>
@@ -297,7 +297,7 @@
 
 <script>
 $(document).ready(function() {
-    // ��l�� DataTable
+    // 初始化 DataTable
     var table = $("#transactionsTable").DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
@@ -309,7 +309,7 @@ $(document).ready(function() {
         ]
     });
 
-    // ��s�έp��T
+    // 更新快速統計資訊
     updateStatistics();
     updateResultCount();
 });
@@ -339,32 +339,31 @@ function viewTransactionDetails(transactionId) {
                 $("#detailAmount").text(response.data.amount);
                 $("#detailBalance").text(response.data.balance);
                 $("#detailDescription").text(response.data.description);
-                $("#detailRemark").text(response.data.remark || "�L");
+                $("#detailRemark").text(response.data.remark || "無");
                 $("#transactionDetailModal").modal("show");
             } else {
-                alert("�������Ա�����: " + response.message);
+                alert("取得交易檢視資料失敗: " + response.message);
             }
         },
         error: function() {
-            alert("�������Ա����ѡA�еy��A��");
+            alert("取得交易檢視資料失敗，請稍後再試");
         }
     });
 }
 
-// ��s�έp��T
+// 更新快速統計資訊
 function updateStatistics() {
-    // �����έp�ƾ�
+    // 這裡會從後端統計數據
     document.getElementById("totalIncome").textContent = "NT$ 15,680";
     document.getElementById("totalExpense").textContent = "NT$ 8,420";
     document.getElementById("netChange").textContent = "NT$ 7,260";
     document.getElementById("transactionCount").textContent = "156";
 }
 
-// ��s���G�p��
+// 更新結果計數
 function updateResultCount() {
     const rows = document.querySelectorAll("tbody tr");
-    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("�п�J") ? 1 : 0);
-    document.getElementById("resultCount").textContent = `�@ ${count} ���O��`;
+    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("請輸入") ? 1 : 0);
+    document.getElementById("resultCount").textContent = `共 ${count} 筆紀錄`;
 }
 </script>
-

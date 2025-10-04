@@ -20,6 +20,7 @@ namespace GameSpace.Areas.MiniGame.Models
         // 今日統計
         public int TodaySignIns { get; set; }
         public int TodayGames { get; set; }
+        public int TodayGamePlays { get; set; }
 
         // 本月統計
         public int ThisMonthSignIns { get; set; }
@@ -35,6 +36,8 @@ namespace GameSpace.Areas.MiniGame.Models
         // 錢包統計
         public int TotalPointsInCirculation { get; set; }
         public int AveragePointsPerUser { get; set; }
+        public int TotalPointsEarned { get; set; }
+        public int TotalPointsSpent { get; set; }
 
         // 優惠券統計
         public int UsedCoupons { get; set; }
@@ -53,6 +56,12 @@ namespace GameSpace.Areas.MiniGame.Models
         public List<ChartData> SignInChartData { get; set; } = new List<ChartData>();
         public List<ChartData> GameChartData { get; set; } = new List<ChartData>();
         public List<ChartData> PointsChartData { get; set; } = new List<ChartData>();
+
+        // 用戶成長數據（用於圖表）
+        public List<UserGrowthChartData> UserGrowthData { get; set; } = new List<UserGrowthChartData>();
+
+        // 遊戲遊玩數據（用於圖表）
+        public List<GamePlayChartData> GamePlayData { get; set; } = new List<GamePlayChartData>();
 
         // AdminController 專用屬性（使用不同的屬性名稱避免衝突）
         public List<RecentSignInModel> RecentSignInList { get; set; } = new List<RecentSignInModel>();
@@ -298,7 +307,7 @@ namespace GameSpace.Areas.MiniGame.Models
     /// </summary>
     public class AdminSignInIndexViewModel
     {
-        public PagedResult<GameSpace.Models.UserSignInStat> SignIns { get; set; } = new();
+        public PagedResult<GameSpace.Areas.MiniGame.Models.UserSignInStats> SignIns { get; set; } = new();
     }
 
     /// <summary>
@@ -307,6 +316,24 @@ namespace GameSpace.Areas.MiniGame.Models
     public class AdminUserIndexViewModel
     {
         public PagedResult<GameSpace.Models.User> Users { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 用戶成長圖表數據
+    /// </summary>
+    public class UserGrowthChartData
+    {
+        public string Date { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+    /// <summary>
+    /// 遊戲遊玩圖表數據
+    /// </summary>
+    public class GamePlayChartData
+    {
+        public string GameType { get; set; } = string.Empty;
+        public int Count { get; set; }
     }
 }
 

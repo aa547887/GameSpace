@@ -4,6 +4,7 @@ using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -35,7 +36,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 _logger.LogError(ex, "取得升級規則驗證結果時發生錯誤");
                 TempData["ErrorMessage"] = "載入驗證結果失敗";
-                return View(new ValidationResult { IsValid = false, Errors = new List<string> { "載入驗證結果失敗" } });
+                return View(new GameSpace.Areas.MiniGame.Models.ValidationResult { IsValid = false, Errors = new List<string> { "載入驗證結果失敗" } });
             }
         }
 
@@ -170,9 +171,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             {
                 _logger.LogError(ex, "產生升級規則驗證報告時發生錯誤");
                 TempData["ErrorMessage"] = "產生驗證報告失敗";
-                return View(new { 
-                    timestamp = DateTime.UtcNow, 
-                    consistency = new ValidationResult { IsValid = false, Errors = new List<string> { "產生驗證報告失敗" } },
+                return View(new {
+                    timestamp = DateTime.UtcNow,
+                    consistency = new GameSpace.Areas.MiniGame.Models.ValidationResult { IsValid = false, Errors = new List<string> { "產生驗證報告失敗" } },
                     summary = new { totalErrors = 1, totalWarnings = 0, isValid = false }
                 });
             }

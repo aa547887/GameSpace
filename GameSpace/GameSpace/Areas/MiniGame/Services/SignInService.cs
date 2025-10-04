@@ -1,6 +1,8 @@
 ﻿using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
 using Microsoft.EntityFrameworkCore;
+using SignInRuleEntity = GameSpace.Models.SignInRule;
+using SignInRuleDto = GameSpace.Areas.MiniGame.Services.SignInRule;
 
 namespace GameSpace.Areas.MiniGame.Services
 {
@@ -401,23 +403,64 @@ namespace GameSpace.Areas.MiniGame.Services
         // 簽到規則管理
         public async Task<IEnumerable<SignInRule>> GetAllSignInRulesAsync()
         {
-            return await _context.SignInRules
-                .OrderBy(r => r.DayNumber)
+            var dbRules = await _context.SignInRules
+                .Cast<SignInRuleEntity>()
+                .OrderBy(r => r.SignInDay)
                 .ToListAsync();
+
+            // Map database entity to DTO
+            return dbRules.Select(r => new SignInRule
+            {
+                Id = r.Id,
+                RuleName = r.Description ?? string.Empty,
+                ConsecutiveDays = r.SignInDay,
+                PointsReward = r.Points,
+                ExpReward = r.Experience,
+                CouponTypeId = r.CouponTypeCode,
+                IsActive = r.IsActive,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt
+            });
         }
 
         public async Task<SignInRule?> GetSignInRuleByIdAsync(int ruleId)
         {
-            return await _context.SignInRules
+            var dbRule = await _context.SignInRules
+                .Cast<SignInRuleEntity>()
                 .FirstOrDefaultAsync(r => r.Id == ruleId);
+
+            if (dbRule == null) return null;
+
+            return new SignInRule
+            {
+                Id = dbRule.Id,
+                RuleName = dbRule.Description ?? string.Empty,
+                ConsecutiveDays = dbRule.SignInDay,
+                PointsReward = dbRule.Points,
+                ExpReward = dbRule.Experience,
+                CouponTypeId = dbRule.CouponTypeCode,
+                IsActive = dbRule.IsActive,
+                CreatedAt = dbRule.CreatedAt,
+                UpdatedAt = dbRule.UpdatedAt
+            };
         }
 
         public async Task<bool> CreateSignInRuleAsync(SignInRule rule)
         {
             try
             {
-                rule.CreatedAt = DateTime.UtcNow;
-                _context.SignInRules.Add(rule);
+                var dbRule = new SignInRuleEntity
+                {
+                    SignInDay = rule.ConsecutiveDays,
+                    Points = rule.PointsReward,
+                    Experience = rule.ExpReward,
+                    HasCoupon = !string.IsNullOrEmpty(rule.CouponTypeId),
+                    CouponTypeCode = rule.CouponTypeId,
+                    IsActive = rule.IsActive,
+                    Description = rule.RuleName,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Add(dbRule);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -431,8 +474,20 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                rule.UpdatedAt = DateTime.UtcNow;
-                _context.SignInRules.Update(rule);
+                var dbRule = await _context.SignInRules
+                    .Cast<SignInRuleEntity>()
+                    .FirstOrDefaultAsync(r => r.Id == rule.Id);
+                if (dbRule == null) return false;
+
+                dbRule.SignInDay = rule.ConsecutiveDays;
+                dbRule.Points = rule.PointsReward;
+                dbRule.Experience = rule.ExpReward;
+                dbRule.HasCoupon = !string.IsNullOrEmpty(rule.CouponTypeId);
+                dbRule.CouponTypeCode = rule.CouponTypeId;
+                dbRule.IsActive = rule.IsActive;
+                dbRule.Description = rule.RuleName;
+                dbRule.UpdatedAt = DateTime.UtcNow;
+
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -446,10 +501,12 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var rule = await GetSignInRuleByIdAsync(ruleId);
-                if (rule == null) return false;
+                var dbRule = await _context.SignInRules
+                    .Cast<SignInRuleEntity>()
+                    .FirstOrDefaultAsync(r => r.Id == ruleId);
+                if (dbRule == null) return false;
 
-                _context.SignInRules.Remove(rule);
+                _context.Remove(dbRule);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -463,11 +520,13 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                var rule = await GetSignInRuleByIdAsync(ruleId);
-                if (rule == null) return false;
+                var dbRule = await _context.SignInRules
+                    .Cast<SignInRuleEntity>()
+                    .FirstOrDefaultAsync(r => r.Id == ruleId);
+                if (dbRule == null) return false;
 
-                rule.IsActive = !rule.IsActive;
-                rule.UpdatedAt = DateTime.UtcNow;
+                dbRule.IsActive = !dbRule.IsActive;
+                dbRule.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
                 return true;
             }

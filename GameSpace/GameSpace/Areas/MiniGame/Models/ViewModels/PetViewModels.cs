@@ -151,6 +151,30 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// 規則名稱（別名屬性，為了向後相容）
+        /// </summary>
+        public string Name
+        {
+            get => RuleName;
+            set => RuleName = value;
+        }
+
+        /// <summary>
+        /// 最大寵物數量（每個用戶可擁有的寵物上限）
+        /// </summary>
+        public int MaxPets { get; set; } = 1;
+
+        /// <summary>
+        /// 餵食成本（每次餵食所需點數）
+        /// </summary>
+        public int FeedingCost { get; set; } = 10;
+
+        /// <summary>
+        /// 餵食獎勵（每次餵食獲得的經驗值或其他獎勵）
+        /// </summary>
+        public int FeedingReward { get; set; } = 5;
     }
 
     /// <summary>

@@ -13,6 +13,15 @@ namespace GameSpace.Areas.MiniGame.Models.Settings
         public int Id { get; set; }
 
         /// <summary>
+        /// 設定ID（別名屬性，為了向後相容）
+        /// </summary>
+        public int SettingId
+        {
+            get => Id;
+            set => Id = value;
+        }
+
+        /// <summary>
         /// 顏色名稱
         /// </summary>
         [Required(ErrorMessage = "顏色名稱為必填欄位")]

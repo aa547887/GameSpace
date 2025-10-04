@@ -1,3 +1,4 @@
+@using GameSpace.Models
 @model GameSpace.Areas.MiniGame.Models.ViewModels.AdminEVoucherCreateViewModel
 @{
     ViewData["Title"] = "新增電子禮券";
@@ -167,7 +168,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">禮券類型說明</h6>
                 </div>
                 <div class="card-body">
-                    @if (ViewBag.EVoucherTypes != null && ((List<EVoucherType>)ViewBag.EVoucherTypes).Any())
+                    @if (ViewBag.EVoucherTypes != null && ((List<GameSpace.Models.EvoucherType>)ViewBag.EVoucherTypes).Any())
                     {
                         @foreach (var type in ViewBag.EVoucherTypes)
                         {

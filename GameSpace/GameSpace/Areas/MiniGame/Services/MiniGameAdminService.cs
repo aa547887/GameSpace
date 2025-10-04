@@ -367,7 +367,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 RecordId = s.LogId,
                 UserId = s.UserId,
                 UserName = s.User.UserName,
-                Email = s.User.Email,
+                Email = s.User.User_email,
                 SignInDate = s.SignTime,
                 ConsecutiveDays = 0, // This would need to be calculated
                 PointsGained = s.PointsGained,

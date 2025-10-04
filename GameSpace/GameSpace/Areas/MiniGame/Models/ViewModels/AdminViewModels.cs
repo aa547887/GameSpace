@@ -655,6 +655,78 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int? PetId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+
+        /// <summary>
+        /// 變更記錄項目列表（用於顯示查詢結果）
+        /// </summary>
+        [Display(Name = "變更記錄")]
+        public List<PetColorChangeItem> Items { get; set; } = new();
+
+        /// <summary>
+        /// 總頁數
+        /// </summary>
+        [Display(Name = "總頁數")]
+        public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
+    }
+
+    /// <summary>
+    /// 寵物顏色變更記錄項目（統一的皮膚/背景變更記錄）
+    /// </summary>
+    public class PetColorChangeItem
+    {
+        /// <summary>
+        /// 記錄ID
+        /// </summary>
+        [Display(Name = "記錄ID")]
+        public int Id { get; set; }
+
+        /// <summary>
+        /// 用戶ID
+        /// </summary>
+        [Display(Name = "用戶ID")]
+        public int UserId { get; set; }
+
+        /// <summary>
+        /// 寵物ID
+        /// </summary>
+        [Display(Name = "寵物ID")]
+        public int PetId { get; set; }
+
+        /// <summary>
+        /// 寵物名稱
+        /// </summary>
+        [Display(Name = "寵物名稱")]
+        public string PetName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 變更類型 (Skin/Background)
+        /// </summary>
+        [Display(Name = "變更類型")]
+        public string ChangeType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 變更前的值
+        /// </summary>
+        [Display(Name = "變更前")]
+        public string OldValue { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 變更後的值
+        /// </summary>
+        [Display(Name = "變更後")]
+        public string NewValue { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 消耗點數
+        /// </summary>
+        [Display(Name = "消耗點數")]
+        public int PointsCost { get; set; }
+
+        /// <summary>
+        /// 變更時間
+        /// </summary>
+        [Display(Name = "變更時間")]
+        public DateTime ChangeTime { get; set; }
     }
 
     public class PetIndividualSettingsModel
@@ -662,6 +734,12 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public Pet? Pet { get; set; }
         public List<PetSkinColorChangeLog> SkinChanges { get; set; } = new();
         public List<PetBackgroundColorChangeLog> BackgroundChanges { get; set; } = new();
+
+        /// <summary>
+        /// 寵物列表（用於查詢結果顯示）
+        /// </summary>
+        [Display(Name = "寵物列表")]
+        public List<Pet> Pets { get; set; } = new();
     }
 
     public class PetListQueryModel

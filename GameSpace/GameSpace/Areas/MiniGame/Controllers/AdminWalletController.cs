@@ -131,8 +131,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var model = new AdminWalletTransactionViewModel
             {
-                UserId = user.User_Id,
-                UserName = user.User_Name,
+                UserId = user.UserId,
+                UserName = user.UserName,
                 CurrentPoints = summary["CurrentPoints"]
             };
 
@@ -151,7 +151,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 {
                     result = await _walletService.AddPointsAsync(
                         model.UserId,
-                        model.TransactionAmount,
+                        (int)model.TransactionAmount,
                         model.Description
                     );
                 }
@@ -159,7 +159,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 {
                     result = await _walletService.DeductPointsAsync(
                         model.UserId,
-                        model.TransactionAmount,
+                        (int)model.TransactionAmount,
                         model.Description
                     );
                 }
@@ -180,7 +180,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             if (user != null)
             {
                 var summary = await _walletService.GetPointsSummaryAsync(model.UserId);
-                model.UserName = user.User_Name;
+                model.UserName = user.UserName;
                 model.CurrentPoints = summary["CurrentPoints"];
             }
 
@@ -204,8 +204,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var walletHistory = await _walletService.GetWalletHistoryAsync(userId.Value, 1, 100);
             var summary = await _walletService.GetPointsSummaryAsync(userId.Value);
 
-            // 轉換為 Wallet 格式
-            var wallets = walletHistory.Select(h => new Wallet
+            // 轉換為 ViewModel 格式
+            var wallets = walletHistory.Select(h => new
             {
                 WalletId = h.LogId,
                 UserId = h.UserId,
@@ -295,12 +295,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             foreach (var user in users.Take(top * 2)) // 取多一點以防有些用戶沒有錢包
             {
-                var summary = await _walletService.GetPointsSummaryAsync(user.User_Id);
+                var summary = await _walletService.GetPointsSummaryAsync(user.UserId);
                 leaderboard.Add(new
                 {
-                    userId = user.User_Id,
-                    UserName = user.User_Name,
-                    userAccount = user.User_Account,
+                    userId = user.UserId,
+                    UserName = user.UserName,
+                    userAccount = user.UserAccount,
                     CurrentPoints = summary["CurrentPoints"]
                 });
             }

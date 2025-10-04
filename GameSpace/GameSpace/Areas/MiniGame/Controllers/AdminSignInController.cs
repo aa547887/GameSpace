@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
+using GameSpace.Areas.MiniGame.ViewModels;
 using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Models;
 
@@ -42,13 +43,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 allSignIns = allSignIns.Where(s => s.Users != null &&
-                    (s.Users.User_Name.Contains(searchTerm) || s.Users.User_Account.Contains(searchTerm)));
+                    (s.Users.UserName.Contains(searchTerm) || s.Users.UserAccount.Contains(searchTerm)));
             }
 
             // 排序
             allSignIns = sortBy switch
             {
-                "user" => allSignIns.OrderBy(s => s.Users?.User_Name),
+                "user" => allSignIns.OrderBy(s => s.Users?.UserName),
                 "points" => allSignIns.OrderByDescending(s => s.PointsGained),
                 "consecutive" => allSignIns.OrderByDescending(s => s.ConsecutiveDays),
                 _ => allSignIns.OrderByDescending(s => s.SignTime)
@@ -61,23 +62,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Take(pageSize)
                 .ToList();
 
-            // 轉換為 SignIn 格式（相容舊 View）
-            var signInItems = pagedSignIns.Select(s => new SignIn
-            {
-                SignInId = s.LogID,
-                UserId = s.UserID,
-                SignInDate = s.SignTime,
-                RewardPoints = s.PointsGained,
-                ConsecutiveDays = s.ConsecutiveDays,
-                Users = s.Users,
-                IsActive = true
-            }).ToList();
-
             var viewModel = new AdminSignInIndexViewModel
             {
-                SignIns = new PagedResult<SignIn>
+                SignIns = new PagedResult<UserSignInStats>
                 {
-                    Items = signInItems,
+                    Items = pagedSignIns,
                     TotalCount = totalCount,
                     PageNumber = page,
                     PageSize = pageSize
@@ -112,19 +101,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            // 轉換為 SignIn 格式
-            var signIn = new SignIn
-            {
-                SignInId = signInDetail.LogID,
-                UserId = signInDetail.UserID,
-                SignInDate = signInDetail.SignTime,
-                RewardPoints = signInDetail.PointsGained,
-                ConsecutiveDays = signInDetail.ConsecutiveDays,
-                Users = signInDetail.Users,
-                IsActive = true
-            };
-
-            return View(signIn);
+            return View(signInDetail);
         }
 
         // GET: AdminSignIn/UserHistory/5
@@ -214,7 +191,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         // 新增簽到規則
         [HttpPost]
-        public async Task<IActionResult> CreateSignInRule([FromBody] SignInRule rule)
+        public async Task<IActionResult> CreateSignInRule([FromBody] GameSpace.Areas.MiniGame.Services.SignInRule rule)
         {
             if (rule == null)
             {
@@ -235,7 +212,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         // 更新簽到規則
         [HttpPost]
-        public async Task<IActionResult> UpdateSignInRule([FromBody] SignInRule rule)
+        public async Task<IActionResult> UpdateSignInRule([FromBody] GameSpace.Areas.MiniGame.Services.SignInRule rule)
         {
             if (rule == null)
             {
@@ -413,7 +390,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 // 顯示所有用戶的簽到統計列表
                 var allSignIns = await _signInService.GetAllSignInsAsync(1, 100000);
 
-                var userStats = allSignIns
+            var userStats = allSignIns
                     .GroupBy(s => new { s.UserID, s.Users })
                     .Select(g => new
                     {
@@ -512,7 +489,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 foreach (var signIn in signInsInRange)
                 {
-                    csv.AppendLine($"{signIn.LogID},{signIn.UserID},{signIn.Users?.User_Name},{signIn.SignTime:yyyy-MM-dd HH:mm:ss},{signIn.PointsGained},{signIn.ConsecutiveDays},{signIn.ExpGained},{signIn.CouponGained}");
+                    csv.AppendLine($"{signIn.LogID},{signIn.UserID},{signIn.Users?.UserName},{signIn.SignTime:yyyy-MM-dd HH:mm:ss},{signIn.PointsGained},{signIn.ConsecutiveDays},{signIn.ExpGained},{signIn.CouponGained}");
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
@@ -525,7 +502,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 {
                     signInId = s.LogID,
                     userId = s.UserID,
-                    userName = s.Users?.User_Name,
+                    userName = s.Users?.UserName,
                     signInTime = s.SignTime,
                     pointsGained = s.PointsGained,
                     consecutiveDays = s.ConsecutiveDays,
@@ -601,16 +578,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
         public IActionResult Rules()
         {
             // 初始化預設值
-            var viewModel = new SignInRuleConfigViewModel
+            var viewModel = new GameSpace.Areas.MiniGame.ViewModels.SignInRuleConfigViewModel
             {
-                SignInRule = new SignInRuleConfig
-                {
-                    DailyPoints = 10,
-                    WeeklyBonusPoints = 50,
-                    MonthlyBonusPoints = 200,
-                    ConsecutiveDays = 7,
-                    Description = "每日簽到可獲得點數，連續簽到將獲得額外獎勵"
-                }
+                DailyPoints = 10,
+                WeeklyBonusPoints = 50,
+                MonthlyBonusPoints = 200,
+                ConsecutiveDaysRequired = 7,
+                Description = "每日簽到可獲得點數，連續簽到將獲得額外獎勵"
             };
 
             return View(viewModel);
@@ -619,7 +593,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // POST: AdminSignIn/UpdateRules
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateRules(SignInRuleConfigViewModel model)
+        public async Task<IActionResult> UpdateRules(GameSpace.Areas.MiniGame.ViewModels.SignInRuleConfigViewModel model)
         {
             if (!ModelState.IsValid)
             {

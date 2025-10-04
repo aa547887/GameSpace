@@ -37,19 +37,19 @@
                                 </tr>
                                 <tr>
                                     <td><strong>管理者名稱:</strong></td>
-                                    <td>@Model.Manager_Name</td>
+                                    <td>@Model.ManagerName</td>
                                 </tr>
                                 <tr>
                                     <td><strong>帳號:</strong></td>
-                                    <td>@Model.Manager_Account</td>
+                                    <td>@Model.ManagerAccount</td>
                                 </tr>
                                 <tr>
                                     <td><strong>電子郵件:</strong></td>
-                                    <td>@Model.Manager_Email</td>
+                                    <td>@Model.ManagerEmail</td>
                                 </tr>
                                 <tr>
                                     <td><strong>註冊日期:</strong></td>
-                                    <td>@Model.Administrator_registration_date?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@Model.AdministratorRegistrationDate?.ToString("yyyy-MM-dd HH:mm")</td>
                                 </tr>
                                 <tr>
                                     <td><strong>狀態:</strong></td>
@@ -70,7 +70,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>最後登入:</strong></td>
-                                    <td>@(Model.LastLoginAt?.ToString("yyyy-MM-dd HH:mm") ?? "從未登入")</td>
+                                    <td>@(Model.ManagerLockoutEnd?.ToString("yyyy-MM-dd HH:mm") ?? "從未登入")</td>
                                 </tr>
                             </table>
                         </div>

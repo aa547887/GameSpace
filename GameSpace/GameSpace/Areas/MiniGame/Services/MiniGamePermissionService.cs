@@ -113,7 +113,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     RoleName = roleName,
                     Permissions = permissions,
                     IsActive = manager.IsActive,
-                    LastLoginTime = manager.LastLoginAt ?? DateTime.Now
+                    LastLoginTime = manager.ManagerLockoutEnd ?? DateTime.Now
                 };
             }
             catch
@@ -981,7 +981,7 @@ namespace GameSpace.Areas.MiniGame.Services
                         UserEmail = u.User_email ?? string.Empty,
                         IsActive = u.IsActive,
                         CreatedAt = u.User_registration_date ?? DateTime.Now,
-                        LastLoginTime = u.LastLoginAt
+                        LastLoginTime = u.UserLockoutEnd
                     })
                     .ToListAsync();
 

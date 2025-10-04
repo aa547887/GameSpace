@@ -29,7 +29,7 @@
                                     <option value="">所有用戶</option>
                                     @foreach (var user in Model.Users)
                                     {
-                                        <option value="@user.UserId" selected="@(Model.Query.UserId == user.UserId)">
+                                        <option value="@user.UserId" selected="@(Model.Query.UserId == user.UserId.ToString())">
                                             @user.UserName (@user.UserAccount)
                                         </option>
                                     }

@@ -13,7 +13,7 @@ namespace GameSpace.Models
         public virtual DbSet<GameSpace.Areas.MiniGame.Models.PetLevelRewardSetting>? PetLevelRewardSettings { get; set; }
         public virtual DbSet<GameSpace.Areas.MiniGame.Services.GameRule>? GameRules { get; set; }
         public virtual DbSet<GameSpace.Areas.MiniGame.Services.GameEventRule>? GameEventRules { get; set; }
-        public virtual DbSet<GameSpace.Areas.MiniGame.Controllers.WalletTypeModel>? WalletTypes { get; set; }
+        public virtual DbSet<GameSpace.Models.WalletType>? WalletTypes { get; set; }
         public virtual DbSet<GameSpace.Areas.MiniGame.Models.UserSignInStats>? UserSignInStatsCustom { get; set; }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
@@ -97,7 +97,7 @@ namespace GameSpace.Models
             // WalletTypes 實體設定
             if (WalletTypes != null)
             {
-                modelBuilder.Entity<GameSpace.Areas.MiniGame.Controllers.WalletTypeModel>(entity =>
+                modelBuilder.Entity<GameSpace.Models.WalletType>(entity =>
                 {
                     entity.ToTable("WalletTypes");
                     entity.HasKey(e => e.WalletTypeId);

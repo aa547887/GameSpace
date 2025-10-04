@@ -63,7 +63,7 @@
                         </tr>
                         <tr>
                             <td><strong>註冊日期:</strong></td>
-                            <td>@Model.User_registration_date.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@(Model.User_registration_date?.ToString("yyyy-MM-dd HH:mm") ?? "未設定")</td>
                         </tr>
                         <tr>
                             <td><strong>最後登入:</strong></td>
@@ -161,9 +161,9 @@
                                     @foreach (var signIn in Model.SignIns.Take(10))
                                     {
                                         <tr>
-                                            <td>@signIn.SignInDate.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td>@signIn.ConsecutiveDays</td>
-                                            <td>@signIn.RewardPoints.ToString("N0")</td>
+                                            <td>@signIn.SignTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@signIn.PointsGained</td>
+                                            <td>@signIn.PointsGained.ToString("N0")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -197,8 +197,8 @@
                                         <div class="card-body text-center">
                                             <i class="fas fa-paw fa-2x text-primary mb-2"></i>
                                             <h6>@pet.PetName</h6>
-                                            <p class="text-muted small">@pet.PetType</p>
-                                            <span class="badge badge-info">@pet.Rarity</span>
+                                            <p class="text-muted small">@pet.PetName</p>
+                                            <span class="badge badge-info">@pet.Level</span>
                                         </div>
                                     </div>
                                 </div>
@@ -238,9 +238,9 @@
                                     @foreach (var record in Model.GamePlayRecords.Take(10))
                                     {
                                         <tr>
-                                            <td>@record.MiniGame?.GameName</td>
-                                            <td>@record.PlayTime.ToString("yyyy-MM-dd HH:mm")</td>
-                                            <td>@record.Score.ToString("N0")</td>
+                                            <td>@(record.GameType ?? "冒險遊戲")</td>
+                                            <td>@record.PointsGainedTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@record.PointsGained.ToString("N0")</td>
                                             <td>@record.PointsEarned.ToString("N0")</td>
                                         </tr>
                                     }

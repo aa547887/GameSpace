@@ -210,7 +210,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
         private async Task CreateWalletTypeAsync(CreateWalletTypeViewModel model)
         {
-            var walletType = new WalletType
+            var walletType = new GameSpace.Models.WalletType
             {
                 TypeName = model.TypeName,
                 Description = model.Description,

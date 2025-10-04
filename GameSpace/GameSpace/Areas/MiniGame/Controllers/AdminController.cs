@@ -229,7 +229,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     userAccount = user.UserAccount,
                     emailConfirmed = user.UserEmailConfirmed,
                     phoneConfirmed = user.UserPhoneNumberConfirmed,
-                    points = UserWallet?.UserPoint ?? 0,
+                    points = 0,
                     petCount = user.Pets.Count(),
                     lastSignIn = await _context.UserSignInStats
                         .Where(s => s.UserId == userId)

@@ -1,3 +1,4 @@
+@using GameSpace.Models
 @model GameSpace.Areas.MiniGame.Models.ViewModels.AdminManagerRoleCreateViewModel
 @{
     ViewData["Title"] = "新增角色";
@@ -120,7 +121,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">權限說明</h6>
                 </div>
                 <div class="card-body">
-                    @if (ViewBag.Permissions != null && ((List<ManagerPermission>)ViewBag.Permissions).Any())
+                    @if (ViewBag.Permissions != null && ((List<GameSpace.Models.ManagerRolePermission>)ViewBag.Permissions).Any())
                     {
                         @foreach (var permission in ViewBag.Permissions)
                         {

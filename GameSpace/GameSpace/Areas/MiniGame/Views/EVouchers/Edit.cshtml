@@ -1,39 +1,39 @@
 @model GameSpace.Areas.MiniGame.Models.ViewModels.EVoucherEditModel
 @{
-    ViewData["Title"] = "½s¿è¹q¤lÂ§¨é";
+    ViewData["Title"] = "ç·¨è¼¯é›»å­ç¦®åˆ¸";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">½s¿è¹q¤lÂ§¨é</h1>
+        <h1 class="h3 mb-0 text-gray-800">ç·¨è¼¯é›»å­ç¦®åˆ¸</h1>
         <a href="@Url.Action("Index", "AdminEVoucher")" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> ªğ¦^¦Cªí
+            <i class="fas fa-arrow-left"></i> è¿”å›åˆ—è¡¨
         </a>
     </div>
 
-    <!-- ½s¿èªí³æ -->
+    <!-- ç·¨è¼¯è¡¨å–® -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">¹q¤lÂ§¨é¸ê°T</h6>
+            <h6 class="m-0 font-weight-bold text-primary">é›»å­ç¦®åˆ¸è³‡è¨Š</h6>
         </div>
         <div class="card-body">
             <form asp-action="Edit" method="post" id="editForm">
                 <input asp-for="Id" type="hidden" />
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="EVoucherCode" class="control-label">Â§¨é¥N½X</label>
+                            <label asp-for="EVoucherCode" class="control-label">ç¦®åˆ¸ä»£ç¢¼</label>
                             <input asp-for="EVoucherCode" class="form-control" readonly />
                             <span asp-validation-for="EVoucherCode" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="UserId" class="control-label">¥Î¤áID</label>
-                            <input asp-for="UserId" class="form-control" placeholder="¿é¤J¥Î¤áID" />
+                            <label asp-for="UserId" class="control-label">ä½¿ç”¨è€…ID</label>
+                            <input asp-for="UserId" class="form-control" placeholder="è¼¸å…¥ä½¿ç”¨è€…ID" />
                             <span asp-validation-for="UserId" class="text-danger"></span>
                         </div>
                     </div>
@@ -42,14 +42,14 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="Value" class="control-label">Â§¨é­±ÃB</label>
-                            <input asp-for="Value" class="form-control" type="number" step="0.01" min="0" placeholder="¿é¤J­±ÃB" />
+                            <label asp-for="Value" class="control-label">ç¦®åˆ¸é‡‘é¡</label>
+                            <input asp-for="Value" class="form-control" type="number" step="0.01" min="0" placeholder="è¼¸å…¥é‡‘é¡" />
                             <span asp-validation-for="Value" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="ExpiryDate" class="control-label">¨ì´Á¤é´Á</label>
+                            <label asp-for="ExpiryDate" class="control-label">åˆ°æœŸæ—¥æœŸ</label>
                             <input asp-for="ExpiryDate" class="form-control" type="date" />
                             <span asp-validation-for="ExpiryDate" class="text-danger"></span>
                         </div>
@@ -59,17 +59,17 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="IsUsed" class="control-label">¨Ï¥Îª¬ºA</label>
+                            <label asp-for="IsUsed" class="control-label">ä½¿ç”¨ç‹€æ…‹</label>
                             <select asp-for="IsUsed" class="form-control">
-                                <option value="false">¥¼¨Ï¥Î</option>
-                                <option value="true">¤w¨Ï¥Î</option>
+                                <option value="false">æœªä½¿ç”¨</option>
+                                <option value="true">å·²ä½¿ç”¨</option>
                             </select>
                             <span asp-validation-for="IsUsed" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="UsedDate" class="control-label">¨Ï¥Î¤é´Á</label>
+                            <label asp-for="UsedDate" class="control-label">ä½¿ç”¨æ—¥æœŸ</label>
                             <input asp-for="UsedDate" class="form-control" type="datetime-local" />
                             <span asp-validation-for="UsedDate" class="text-danger"></span>
                         </div>
@@ -77,56 +77,56 @@
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Description" class="control-label">´y­z</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="¿é¤JÂ§¨é´y­z"></textarea>
+                    <label asp-for="Description" class="control-label">èªªæ˜</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="è¼¸å…¥ç¦®åˆ¸èªªæ˜"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> §ó·sÂ§¨é
+                        <i class="fas fa-save"></i> å„²å­˜ç¦®åˆ¸
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> ­«¸m
+                        <i class="fas fa-undo"></i> é‡ç½®
                     </button>
                     <button type="button" class="btn btn-danger" onclick="deleteEVoucher()">
-                        <i class="fas fa-trash"></i> §R°£
+                        <i class="fas fa-trash"></i> åˆªé™¤
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ¾Ş§@¾ú¥v -->
+    <!-- æ“ä½œæ­·ç¨‹ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">¾Ş§@¾ú¥v</h6>
+            <h6 class="m-0 font-weight-bold text-primary">æ“ä½œæ­·ç¨‹</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>¾Ş§@®É¶¡</th>
-                            <th>¾Ş§@Ãş«¬</th>
-                            <th>¾Ş§@ªÌ</th>
-                            <th>³Æµù</th>
+                            <th>æ“ä½œæ™‚é–“</th>
+                            <th>æ“ä½œé¡å‹</th>
+                            <th>æ“ä½œè€…</th>
+                            <th>å‚™è¨»</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                            <td><span class="badge badge-success">«Ø¥ß</span></td>
-                            <td>¨t²Î</td>
-                            <td>¹q¤lÂ§¨é«Ø¥ß</td>
+                            <td>@(Model.CreatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A")</td>
+                            <td><span class="badge badge-success">å»ºç«‹</span></td>
+                            <td>ç³»çµ±</td>
+                            <td>é›»å­ç¦®åˆ¸å»ºç«‹</td>
                         </tr>
                         @if (Model.UpdatedAt.HasValue)
                         {
                             <tr>
-                                <td>@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                <td><span class="badge badge-info">§ó·s</span></td>
-                                <td>ºŞ²z­û</td>
-                                <td>Â§¨é¸ê°T§ó·s</td>
+                                <td>@(Model.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A")</td>
+                                <td><span class="badge badge-info">æ›´æ–°</span></td>
+                                <td>ç®¡ç†å“¡</td>
+                                <td>ç¦®åˆ¸è³‡è¨Šæ›´æ–°</td>
                             </tr>
                         }
                     </tbody>
@@ -138,29 +138,29 @@
 
 <script>
 function resetForm() {
-    if (confirm("½T©w­n­«¸mªí³æ¶Ü¡H©Ò¦³¥¼Àx¦sªºÅÜ§ó±N·|¿ò¥¢¡C")) {
+    if (confirm("ç¢ºå®šè¦é‡ç½®è¡¨å–®å—ï¼Ÿæ‰€æœ‰æœªå„²å­˜çš„è®Šæ›´éƒ½å°‡æœƒéºå¤±ã€‚")) {
         location.reload();
     }
 }
 
 function deleteEVoucher() {
-    if (confirm("½T©w­n§R°£¦¹¹q¤lÂ§¨é¶Ü¡H¦¹¾Ş§@µLªk´_­ì¡C")) {
+    if (confirm("ç¢ºå®šè¦åˆªé™¤é€™å¼µé›»å­ç¦®åˆ¸å—ï¼Ÿæ­¤æ“ä½œç„¡æ³•å¾©åŸã€‚")) {
         const form = document.createElement("form");
         form.method = "POST";
         form.action = "@Url.Action("Delete", "AdminEVoucher")";
-        
+
         const idInput = document.createElement("input");
         idInput.type = "hidden";
         idInput.name = "id";
         idInput.value = "@Model.Id";
-        
+
         form.appendChild(idInput);
         document.body.appendChild(form);
         form.submit();
     }
 }
 
-// ·í¨Ï¥Îª¬ºA§ïÅÜ®É¡A¦Û°Ê³]©w¨Ï¥Î¤é´Á
+// ç•¶ä½¿ç”¨ç‹€æ…‹è®Šæ›´æ™‚ï¼Œè‡ªå‹•è¨­å®šä½¿ç”¨æ—¥æœŸ
 document.getElementById("IsUsed").addEventListener("change", function() {
     const usedDateInput = document.getElementById("UsedDate");
     if (this.value === "true" && !usedDateInput.value) {
@@ -176,4 +176,3 @@ document.getElementById("IsUsed").addEventListener("change", function() {
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

@@ -1,4 +1,6 @@
-﻿namespace GameSpace.Areas.MiniGame.Models.Settings
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace GameSpace.Areas.MiniGame.Models.Settings
 {
     /// <summary>
     /// 寵物膚色點數設定
@@ -13,6 +15,13 @@
         public bool IsAvailable { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Property aliases for compatibility
+        [NotMapped]
+        public int Level { get => RequiredLevel; set => RequiredLevel = value; }
+
+        [NotMapped]
+        public int PointsCost { get => PointCost; set => PointCost = value; }
     }
 }
 

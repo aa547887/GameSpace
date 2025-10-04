@@ -27,7 +27,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // GET: AdminUser
         public async Task<IActionResult> Index(string searchTerm = "", string status = "", string sortBy = "name", int page = 1, int pageSize = 10)
         {
-            IEnumerable<Users> users;
+            IEnumerable<User> users;
 
             // 狀態篩選
             if (!string.IsNullOrEmpty(status))
@@ -47,19 +47,19 @@ namespace GameSpace.Areas.MiniGame.Controllers
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                users = users.Where(u => u.User_Name.Contains(searchTerm) ||
-                                        u.User_Account.Contains(searchTerm) ||
-                                        u.User_Email.Contains(searchTerm));
+                users = users.Where(u => u.UserName.Contains(searchTerm) ||
+                                        u.UserAccount.Contains(searchTerm) ||
+                                        u.User_email.Contains(searchTerm));
             }
 
             // 排序
             users = sortBy switch
             {
-                "account" => users.OrderBy(u => u.User_Account),
-                "email" => users.OrderBy(u => u.User_Email),
-                "created" => users.OrderBy(u => u.User_CreatedAt),
-                "lastLogin" => users.OrderByDescending(u => u.User_LockoutEnd),
-                _ => users.OrderBy(u => u.User_Name)
+                "account" => users.OrderBy(u => u.UserAccount),
+                "email" => users.OrderBy(u => u.User_email),
+                "created" => users.OrderBy(u => u.UserId),
+                "lastLogin" => users.OrderByDescending(u => u.UserLockoutEnd),
+                _ => users.OrderBy(u => u.UserName)
             };
 
             // 分頁
@@ -71,7 +71,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             var viewModel = new AdminUserIndexViewModel
             {
-                Users = new PagedResult<Users>
+                Users = new PagedResult<User>
                 {
                     Items = pagedUsers,
                     TotalCount = totalCount,
@@ -142,18 +142,21 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return View(model);
                 }
 
-                var user = new Users
+                var user = new User
                 {
-                    User_Name = model.User_name,
-                    User_Account = model.User_account,
-                    User_Password = HashPassword(model.Password),
-                    User_Email = model.User_email,
-                    User_Phone = model.User_phone,
-                    User_Birthday = model.User_birthday,
-                    User_Gender = model.User_gender,
-                    User_Address = model.User_address,
-                    User_Status = model.IsActive ? "Active" : "Inactive",
-                    User_CreatedAt = DateTime.UtcNow
+                    UserName = model.User_name,
+                    UserAccount = model.User_account,
+                    UserPassword = HashPassword(model.Password),
+                    User_email = model.User_email,
+                    User_phone = model.User_phone,
+                    User_birthday = model.User_birthday,
+                    User_gender = model.User_gender,
+                    User_address = model.User_address,
+                    UserLockoutEnabled = false,
+                    UserEmailConfirmed = model.IsActive,
+                    UserPhoneNumberConfirmed = false,
+                    UserTwoFactorEnabled = false,
+                    UserAccessFailedCount = 0
                 };
 
                 var result = await _userService.CreateUserAsync(user);
@@ -189,9 +192,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminUserEditViewModel
             {
                 User_Id = user.User_Id,
-                User_name = user.User_Name,
-                User_account = user.User_Account,
-                User_email = user.User_Email,
+                User_name = user.UserName,
+                User_account = user.UserAccount,
+                User_email = user.User_email,
                 User_phone = user.User_Phone,
                 User_birthday = user.User_Birthday,
                 User_gender = user.User_Gender,
@@ -222,7 +225,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 // 檢查帳號是否已被其他用戶使用
                 var existingAccount = await _userService.GetUserByAccountAsync(model.User_account);
-                if (existingAccount != null && existingAccount.User_Id != id)
+                if (existingAccount != null && existingAccount.UserId != id)
                 {
                     ModelState.AddModelError("User_account", "此帳號已被其他用戶使用");
                     return View(model);
@@ -230,15 +233,15 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 // 檢查電子郵件是否已被其他用戶使用
                 var existingEmail = await _userService.GetUserByEmailAsync(model.User_email);
-                if (existingEmail != null && existingEmail.User_Id != id)
+                if (existingEmail != null && existingEmail.UserId != id)
                 {
                     ModelState.AddModelError("User_email", "此電子郵件已被其他用戶使用");
                     return View(model);
                 }
 
-                user.User_Name = model.User_name;
-                user.User_Account = model.User_account;
-                user.User_Email = model.User_email;
+                user.UserName = model.User_name;
+                user.UserAccount = model.User_account;
+                user.User_email = model.User_email;
                 user.User_Phone = model.User_phone;
                 user.User_Birthday = model.User_birthday;
                 user.User_Gender = model.User_gender;
@@ -411,9 +414,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var result = users.Take(10).Select(u => new
             {
                 id = u.User_Id,
-                name = u.User_Name,
-                account = u.User_Account,
-                email = u.User_Email
+                name = u.UserName,
+                account = u.UserAccount,
+                email = u.User_email
             });
 
             return Json(result);

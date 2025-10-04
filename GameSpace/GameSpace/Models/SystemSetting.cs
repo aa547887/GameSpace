@@ -71,5 +71,8 @@ namespace GameSpace.Models
 
         [NotMapped]
         public DateTime CreatedTime { get => CreatedAt; set => CreatedAt = value; }
+
+        [NotMapped]
+        public DateTime? UpdatedTime { get => UpdatedAt; set => UpdatedAt = value; }
     }
 }

@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using GameSpace.Models;
-using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.social_hub.Auth;
+using EVoucherCreateModel = GameSpace.Areas.MiniGame.Models.EVoucherCreateModel;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -212,7 +212,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             var model = new AdminEVoucherCreateViewModel
             {
                 EvoucherTypeId = eVoucher.EvoucherTypeId,
-                UserID = eVoucher.UserID,
+                UserId = eVoucher.UserId,
                 EvoucherCode = eVoucher.EvoucherCode,
                 AcquiredTime = eVoucher.AcquiredTime,
                 UsedTime = eVoucher.UsedTime,
@@ -263,7 +263,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EVoucherExists(id))
+                    if (!EvoucherExists(id))
                     {
                         return NotFound();
                     }
@@ -811,7 +811,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     var voucher = new Evoucher
                     {
                         EvoucherTypeId = typeId,
-                        UserID = userId,
+                        UserId = userId,
                         EvoucherCode = code,
                         AcquiredTime = DateTime.Now,
                         IsUsed = false
