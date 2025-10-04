@@ -22,19 +22,27 @@ namespace GameSpace.Areas.Admin.Controllers
             var query = _db.Games.AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(q))
-                query = query.Where(g => g.Name.Contains(q) || (g.NameZh ?? "").Contains(q));
+            {
+                var keyword = $"%{q!.Trim()}%";
+                query = query.Where(g =>
+                    EF.Functions.Like(g.Name ?? string.Empty, keyword) ||
+                    EF.Functions.Like(g.NameZh ?? string.Empty, keyword));
+            }
 
             if (!string.IsNullOrWhiteSpace(genre))
-                query = query.Where(g => g.Genre == genre);
+            {
+                var normalizedGenre = genre.Trim();
+                query = query.Where(g => g.Genre != null && g.Genre == normalizedGenre);
+            }
 
             bool desc = dir.Equals("desc", StringComparison.OrdinalIgnoreCase);
             query = sort switch
             {
                 "id" => desc ? query.OrderByDescending(g => g.GameId) : query.OrderBy(g => g.GameId),
-                "name" => desc ? query.OrderByDescending(g => g.Name).ThenBy(g => g.GameId)
-                                  : query.OrderBy(g => g.Name).ThenBy(g => g.GameId),
-                "namezh" => desc ? query.OrderByDescending(g => EF.Functions.Collate(g.NameZh ?? g.Name, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId)
-                                  : query.OrderBy(g => EF.Functions.Collate(g.NameZh ?? g.Name, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId),
+                "name" => desc ? query.OrderByDescending(g => g.Name ?? string.Empty).ThenBy(g => g.GameId)
+                                  : query.OrderBy(g => g.Name ?? string.Empty).ThenBy(g => g.GameId),
+                "namezh" => desc ? query.OrderByDescending(g => EF.Functions.Collate(g.NameZh ?? g.Name ?? string.Empty, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId)
+                                  : query.OrderBy(g => EF.Functions.Collate(g.NameZh ?? g.Name ?? string.Empty, "Chinese_Taiwan_Stroke_CI_AS")).ThenBy(g => g.GameId),
                 _ /*created*/ => desc ? query.OrderByDescending(g => g.CreatedAt).ThenBy(g => g.GameId)
                                       : query.OrderBy(g => g.CreatedAt).ThenBy(g => g.GameId)
             };
@@ -44,9 +52,9 @@ namespace GameSpace.Areas.Admin.Controllers
             var list = await query.Select(g => new GameListItemVm
             {
                 GameId = g.GameId,
-                Name = g.Name,
-                NameZh = g.NameZh,
-                Genre = g.Genre,
+                Name = g.Name ?? string.Empty,
+                NameZh = g.NameZh ?? g.Name,
+                Genre = g.Genre ?? string.Empty,
                 CreatedAt = g.CreatedAt
             }).ToListAsync();
 
@@ -104,9 +112,9 @@ namespace GameSpace.Areas.Admin.Controllers
             var vm = new GameEditVm
             {
                 GameId = g.GameId,
-                Name = g.Name,
-                NameZh = g.NameZh,
-                Genre = g.Genre
+                Name = g.Name ?? string.Empty,
+                NameZh = g.NameZh ?? g.Name,
+                Genre = g.Genre ?? string.Empty
             };
             return View(vm);
         }

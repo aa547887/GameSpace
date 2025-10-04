@@ -25,8 +25,8 @@ namespace GameSpace.Areas.Forum.Controllers
                 .Select(p => new AdminPostListItemVm
                 {
                     AdminPostId = p.PostId,
-                    Title = p.Title,
-                    Status = p.Status ?? "draft",
+                    Title = p.Title ?? string.Empty,
+                    Status = string.IsNullOrWhiteSpace(p.Status) ? "draft" : p.Status!,
                     Pinned = p.Pinned ?? false,
                     CreatedAt = p.CreatedAt ?? DateTime.MinValue,
                     PublishedAt = p.PublishedAt
@@ -48,9 +48,9 @@ namespace GameSpace.Areas.Forum.Controllers
 
             var entity = new Post
             {
-                Title = vm.Title,
+                Title = vm.Title ?? string.Empty,
                 Tldr = vm.Tldr,
-                BodyMd = vm.BodyMd,
+                BodyMd = vm.BodyMd ?? string.Empty,
                 Pinned = vm.Pinned,
                 Status = "draft",
                 CreatedAt = DateTime.UtcNow,
@@ -75,9 +75,9 @@ namespace GameSpace.Areas.Forum.Controllers
             var vm = new PostEditVm
             {
                 PostId = p.PostId,
-                Title = p.Title,
+                Title = p.Title ?? string.Empty,
                 Tldr = p.Tldr,
-                BodyMd = p.BodyMd,
+                BodyMd = p.BodyMd ?? string.Empty,
                 Pinned = p.Pinned ?? false,
                 Type = p.Type,
                 GameId = p.GameId
@@ -94,9 +94,9 @@ namespace GameSpace.Areas.Forum.Controllers
             var p = await _db.Posts.FirstOrDefaultAsync(x => x.PostId == vm.PostId.Value);
             if (p == null) return NotFound();
 
-            p.Title = vm.Title;
+            p.Title = vm.Title ?? string.Empty;
             p.Tldr = vm.Tldr;
-            p.BodyMd = vm.BodyMd;
+            p.BodyMd = vm.BodyMd ?? string.Empty;
             p.Pinned = vm.Pinned;
             p.Type = vm.Type ?? p.Type;
             p.GameId = vm.GameId;
@@ -183,9 +183,9 @@ namespace GameSpace.Areas.Forum.Controllers
                 var vm = new AdminPostDetailsVm
                 {
                     PostId = p.PostId,
-                    Title = p.Title,
+                    Title = p.Title ?? string.Empty,
                     Tldr = p.Tldr,
-                    BodyMd = p.BodyMd,
+                    BodyMd = p.BodyMd ?? string.Empty,
                     Status = p.Status ?? "draft",
                     Pinned = p.Pinned ?? false,
                     CreatedAt = p.CreatedAt,

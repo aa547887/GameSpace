@@ -29,18 +29,24 @@ namespace GameSpace.Areas.Admin.Controllers
 
             if (sourceId.HasValue) baseQuery = baseQuery.Where(x => x.s.SourceId == sourceId.Value);
             if (!string.IsNullOrWhiteSpace(q))
-                baseQuery = baseQuery.Where(x => x.m.Code.Contains(q) || (x.m.Description ?? "").Contains(q));
+            {
+                var keyword = $"%{q!.Trim()}%";
+                baseQuery = baseQuery.Where(x =>
+                    EF.Functions.Like(x.m.Code ?? string.Empty, keyword) ||
+                    EF.Functions.Like(x.m.Description ?? string.Empty, keyword));
+            }
 
             var list = await baseQuery
-                .OrderBy(x => x.s.Name).ThenBy(x => x.m.Code)
+                .OrderBy(x => x.s.Name)
+                .ThenBy(x => x.m.Code)
                 .Select(x => new MetricListItemVm
                 {
                     MetricId = x.m.MetricId,
                     SourceId = x.s.SourceId,
-                    SourceName = x.s.Name,
-                    Code = x.m.Code,
-                    Unit = x.m.Unit,
-                    Description = x.m.Description,
+                    SourceName = x.s.Name ?? string.Empty,
+                    Code = x.m.Code ?? string.Empty,
+                    Unit = string.IsNullOrWhiteSpace(x.m.Unit) ? null : x.m.Unit,
+                    Description = string.IsNullOrWhiteSpace(x.m.Description) ? null : x.m.Description,
                     IsActive = x.m.IsActive ?? true,
                     CreatedAt = x.m.CreatedAt
                 })
@@ -224,7 +230,12 @@ namespace GameSpace.Areas.Admin.Controllers
 
             if (sourceId.HasValue) activeMetricIdsQ = activeMetricIdsQ.Where(m => m.SourceId == sourceId);
             if (!string.IsNullOrWhiteSpace(q))
-                activeMetricIdsQ = activeMetricIdsQ.Where(m => m.Code.Contains(q) || (m.Description ?? "").Contains(q));
+            {
+                var keyword = $"%{q!.Trim()}%";
+                activeMetricIdsQ = activeMetricIdsQ.Where(m =>
+                    EF.Functions.Like(m.Code ?? string.Empty, keyword) ||
+                    EF.Functions.Like(m.Description ?? string.Empty, keyword));
+            }
 
             var activeMetricIds = await activeMetricIdsQ
                 .Select(m => m.MetricId).ToListAsync();
