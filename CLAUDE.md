@@ -11,20 +11,37 @@ GameSpace (branded as "GamiPort") is an ASP.NET Core 8.0 MVC web application bui
 ## Build & Run Commands
 
 ```bash
-# Navigate to project directory
-cd GameSpace/GameSpace
+# Navigate to solution directory (from repository root)
+cd GameSpace
 
 # Restore packages
-dotnet restore
+dotnet restore GameSpace.sln
 
 # Build project
-dotnet build
+dotnet build GameSpace.sln
 
-# Run application (development)
+# Build without restore (faster if packages already restored)
+dotnet build GameSpace.sln --no-restore
+
+# Clean build artifacts
+dotnet clean GameSpace.sln
+
+# Navigate to project directory and run
+cd GameSpace
 dotnet run
+
+# Run with hot reload (development)
+dotnet watch run
 
 # Run with specific profile
 dotnet run --launch-profile https
+
+# Restore client-side libraries (Bootstrap, Font Awesome, etc.)
+# Run from project directory: GameSpace/GameSpace/
+libman restore
+
+# Format code (enforce C# conventions)
+dotnet format GameSpace.sln
 
 # Apply Identity migrations
 dotnet ef database update --context ApplicationDbContext
@@ -33,6 +50,10 @@ dotnet ef database update --context ApplicationDbContext
 **Default URLs**:
 - HTTPS: https://localhost:7042
 - HTTP: http://localhost:5211
+
+**Connection Strings** (in appsettings.json):
+- `DefaultConnection` - ASP.NET Core Identity database
+- `GameSpace` - Main application database (aliases: `GameSpacedatabaseContext`)
 
 **Note**: Main database is database-first. Schema scripts are in `GameSpace/schema/`.
 
@@ -89,27 +110,39 @@ The application uses **ASP.NET Core Areas** to organize features into modules:
 
 ### Directory Structure
 
+**Important**: The repository has a nested structure. From the repository root:
+
 ```
-GameSpace/
-├── Areas/
-│   ├── MiniGame/         - Controllers (22), Services (30+), extensive admin features
-│   ├── social_hub/       - ChatHub (SignalR), MuteFilter, NotificationService
-│   ├── OnlineStore/      - ProductInfoes, OrderInfoes, Suppliers
-│   ├── Forum/            - Posts, Threads, Metrics, Reports
-│   ├── MemberManagement/ - User/Manager admin
-│   └── Identity/         - ASP.NET Identity pages
-├── Controllers/          - Root controllers (Home, Login, Health)
-├── Data/                 - ApplicationDbContext & Identity migrations
-├── Infrastructure/       - Cross-cutting concerns
-│   ├── Login/           - Unified ILoginIdentity abstraction
-│   └── Time/            - IAppClock (Taipei timezone handling)
-├── Models/               - 84+ entity models (GameSpacedatabaseContext)
-├── Partials/             - DbContext partial extensions
-├── Views/                - 270+ Razor views
-├── wwwroot/              - Static assets (CSS, JS, images)
-├── schema/               - Database scripts, seed data, documentation
-└── Program.cs            - DI configuration, middleware pipeline
+C:\Users\n2029\Desktop\GameSpace\          (Repository root - contains docs)
+├── CLAUDE.md                               - This file
+├── AGENTS.md                               - General AI agent guidelines
+├── BUILD_ERROR_SUMMARY.md                  - Build error documentation
+├── GameSpace\                              (Solution directory)
+│   ├── GameSpace.sln                       - Main solution file
+│   └── GameSpace\                          (Project directory)
+│       ├── GameSpace.csproj                - Project file
+│       ├── Program.cs                      - DI configuration, middleware
+│       ├── Areas/
+│       │   ├── MiniGame/                   - Controllers (22), Services (30+)
+│       │   ├── social_hub/                 - ChatHub (SignalR), MuteFilter
+│       │   ├── OnlineStore/                - ProductInfoes, OrderInfoes
+│       │   ├── Forum/                      - Posts, Threads, Metrics
+│       │   ├── MemberManagement/           - User/Manager admin
+│       │   └── Identity/                   - ASP.NET Identity pages
+│       ├── Controllers/                    - Root controllers (Home, Login)
+│       ├── Data/                           - ApplicationDbContext & migrations
+│       ├── Infrastructure/
+│       │   ├── Login/                      - ILoginIdentity abstraction
+│       │   └── Time/                       - IAppClock (Taipei timezone)
+│       ├── Models/                         - 84+ entity models
+│       ├── Partials/                       - DbContext partial extensions
+│       ├── Views/                          - 270+ Razor views
+│       └── wwwroot/                        - Static assets
 ```
+
+**Build Commands Context**: When documentation refers to `GameSpace/GameSpace`, it means:
+- From repo root: `cd GameSpace/GameSpace` (the project directory)
+- Absolute path: `C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\`
 
 ## Key Patterns & Conventions
 
@@ -286,20 +319,29 @@ public async Task<Result> DoSomethingAsync(int id)
 
 ## Known Issues & Technical Debt
 
-From `/Areas/MiniGame/docs/COMPREHENSIVE_AUDIT_REPORT.md`:
+### Current Build Status
 
-### Critical Issues
+**As of October 4, 2025**: The project has **88 build errors** (down from 1,466+ → 263 → 88). Significant progress has been made.
 
-1. **Dependency Injection Errors** (8 controllers)
-   - Some controllers missing `base(context)` constructor calls
-   - Results in null `_context` references
+**Remaining Error Categories**:
+1. **Razor View syntax errors** (~15 errors) - Malformed Razor syntax, missing properties in ViewModels
+2. **ViewModel property mismatches** (~30 errors) - ViewModels missing properties referenced in views
+3. **Type conversion errors** (~20 errors) - Incorrect ToString() overloads, type mismatches
+4. **Navigation property issues** (~10 errors) - Missing or incorrect navigation properties
+5. **Other errors** (~13 errors) - Miscellaneous issues
 
-2. **DbContext Confusion** (4 services)
-   - Some services using wrong context (ApplicationDbContext vs GameSpacedatabaseContext)
+**Common Remaining Issues**:
+- `PetRuleReadModel` missing properties: `Name`, `MaxPets`, `FeedingCost`, `FeedingReward`
+- `PetColorChangeSettingsViewModel` missing `SettingId` property
+- Razor syntax issues in `_AdminLayout.cshtml` and `_Layout.cshtml` (CSS-in-Razor problems)
+- `ToString()` format string errors on non-DateTime types
+- Type comparison mismatches (`string` vs `int`)
 
-3. **Entity/ViewModel Placement**
-   - Some entities placed in `/ViewModels/` directory
-   - Some ViewModels in `/Models/` directory
+**Already Fixed**:
+- ✅ Major property name corrections (User_Point → UserPoint, etc.)
+- ✅ DbSet naming issues (WalletHistory → WalletHistories)
+- ✅ Service interface method implementations
+- ✅ Critical controller dependency issues
 
 ### Common Anti-Patterns to Avoid
 
@@ -308,6 +350,8 @@ From `/Areas/MiniGame/docs/COMPREHENSIVE_AUDIT_REPORT.md`:
 - **Don't**: Use `DateTime.Now` (use `IAppClock.Now`)
 - **Don't**: Skip permission checks in admin controllers
 - **Don't**: Bind entities directly to forms
+- **Don't**: Assume property names without checking the actual entity definition in `Models/`
+- **Don't**: Use navigation properties without verifying they exist in `GameSpacedatabaseContext.cs`
 
 ## MiniGame Area Deep Dive
 
@@ -346,20 +390,33 @@ The most complex area with 4 major subsystems:
 
 ## Documentation Locations
 
-- `/schema/MiniGame_area功能彙整.txt` - MiniGame feature overview (Chinese)
-- `/schema/專案規格敘述1.txt`, `專案規格敘述2.txt` - Project specifications
-- `/schema/管理者權限相關描述.txt` - Manager permission system docs
-- `/Areas/MiniGame/docs/` - Code audit reports, fix progress tracking
 - `/Areas/MiniGame/Views/AdminPet/README_NewFeatures.md` - Pet feature docs
+- Root directory error reports:
+  - `BUILD_ERROR_SUMMARY.md` - Current build error summary (start here)
+  - `INDEX.md` - Guide to all build error documentation
+  - `build_analysis_report.md` - Detailed error analysis
+  - `quick_fix_guide.md` - Step-by-step fix instructions
+  - `AGENTS.md` - General repository guidelines for AI agents
 
 ## Development Workflow
 
 1. **Starting Development**: Ensure SQL Server is running and databases exist
-2. **Adding Features**: Create service interface, implementation, register in DI, create controller/views
-3. **Database Changes**: For main DB, update schema scripts in `/schema/` (database-first)
-4. **Identity Changes**: Create EF migration for `ApplicationDbContext`
+2. **Before Making Changes**:
+   - Run `dotnet build GameSpace.sln --no-restore` to check current build status
+   - Review error reports in root directory if build fails
+3. **Adding Features**:
+   - Create service interface, implementation, register in DI
+   - Create controller/views
+   - **Always verify entity property names** by checking `/Models/` before writing service code
+4. **Database Changes**:
+   - Main DB uses database-first approach (scaffolded from existing DB)
+   - For Identity changes: Create EF migration for `ApplicationDbContext`
 5. **Testing**: Use provided test manager accounts, verify permissions work correctly
-6. **Committing**: Follow existing patterns, keep ViewModels separate from entities
+6. **Verifying Property Names**:
+   - Check entity definitions in `GameSpacedatabaseContext.cs` (100,000+ line file)
+   - Use custom extensions in `GameSpacedatabaseContext.Partial.cs`
+   - DbSet names may differ from entity names (e.g., `WalletHistories` not `WalletHistory`)
+7. **Committing**: Follow existing patterns, keep ViewModels separate from entities
 
 ## Security Considerations
 
@@ -369,6 +426,67 @@ The most complex area with 4 major subsystems:
 - **Idempotency**: Mutation endpoints in MiniGame area use idempotency keys
 - **Content Filtering**: social_hub uses MuteFilter for user-generated content
 
+## Troubleshooting Build Errors
+
+### Current Priority Fixes (88 errors remaining)
+
+**High Priority - ViewModel Properties**:
+1. Add missing properties to `PetRuleReadModel`:
+   - `Name`, `MaxPets`, `FeedingCost`, `FeedingReward`
+   - Location: `Areas/MiniGame/ViewModels/`
+
+2. Add `SettingId` to `PetColorChangeSettingsViewModel`
+
+**High Priority - Razor Syntax**:
+1. Fix CSS-in-Razor issues:
+   - `Areas/MiniGame/Views/Shared/_AdminLayout.cshtml:66` - `media` context error
+   - `Areas/MiniGame/Views/Shared/_Layout.cshtml:113` - `keyframes` context error
+   - These are likely `<style>` blocks inside Razor - move to separate CSS files or use proper `<style>` tags
+
+2. Fix `Write()` method calls in generated Razor code:
+   - `Areas/MiniGame/Views/AdminPet/ListWithQuery.cshtml` - Empty Write() calls
+   - Check for syntax errors like `@()` or `@{ }` with missing content
+
+**Medium Priority - Type Errors**:
+1. Fix `ToString()` format string errors:
+   - `Areas/MiniGame/Views/EVouchers/Edit.cshtml:118` - Remove format argument or cast to DateTime
+   - `Areas/MiniGame/Views/Settings/PetBackgroundChangeSettings/Index.cshtml:92` - Same issue
+
+2. Fix type comparison:
+   - `Areas/MiniGame/Views/Permission/UserRights.cshtml:32` - Comparing `string == int`
+   - Either convert types or fix the property being compared
+
+### When Entity Property Errors Occur
+
+If you encounter errors like `'EntityName' does not contain a definition for 'PropertyName'`:
+
+1. **Locate the entity definition**: Open `GameSpace/GameSpace/Models/EntityName.cs`
+2. **Find the actual property name**: Property names are case-sensitive and may differ from expectations
+3. **Common naming patterns**:
+   - Some properties use underscores: `User_email`, `User_Point`
+   - Some use PascalCase: `UserId`, `UserPoint`
+   - ID properties may be `Id` or `ID` or variations like `CouponId`
+4. **Check DbSet names**: In `GameSpacedatabaseContext.cs`, the DbSet name may be different:
+   - `WalletHistories` (not `WalletHistory`)
+   - `Evouchers` (not `EVouchers`)
+   - `ManagerData` (not `Managers`)
+
+### When Service Interface Errors Occur
+
+If you see `'IServiceName' does not contain a definition for 'MethodName'`:
+
+1. Add the method signature to the interface in `Areas/{Area}/Services/IServiceName.cs`
+2. Implement the method in the concrete service class
+3. Verify the method is registered in DI (check `Program.cs` or `ServiceExtensions.cs`)
+
+### When ViewModel Property Errors Occur
+
+If Razor views show errors about missing ViewModel properties:
+
+1. Open the ViewModel class (usually in `Areas/{Area}/ViewModels/`)
+2. Add the missing property with appropriate type and attributes
+3. Ensure the property is populated in the controller action
+
 ## Quick Reference
 
 **File Counts**: 56 controllers, 66 services, 84 models, 270 views
@@ -377,3 +495,17 @@ The most complex area with 4 major subsystems:
 **Framework**: .NET 8.0
 **Database**: SQL Server (LocalDB/Express)
 **Server**: `DESKTOP-8HQIS1S\SQLEXPRESS` (development)
+**Current Build Status**: 88 errors (October 4, 2025) - Down from 1,466 errors
+
+**Key Files for Context**:
+- `BUILD_ERROR_SUMMARY.md` - Historical build error documentation (October 3, 2025)
+- `AGENTS.md` - General repository guidelines for AI agents
+- `INDEX.md` - Guide to all build error documentation
+- `schema/` - Database schema scripts and seed data
+
+**Code Style** (from AGENTS.md):
+- C# with .NET 8, 4 spaces indent (no tabs)
+- Allman brace style (braces on new lines)
+- PascalCase for types/methods, camelCase for locals, `_camelCase` for private fields
+- One class per file
+- Run `dotnet format GameSpace.sln` before committing
