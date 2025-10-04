@@ -24,8 +24,21 @@ namespace GameSpace.Areas.MiniGame.Models
         public DateTime? AcquiredTime { get; set; }
 
         // Optional fields referenced by views
+        [Display(Name = "Value")]
         public decimal? Value { get; set; }
+
+        [Display(Name = "Expiry Date")]
         public DateTime? ExpiryDate { get; set; }
+
+        [Display(Name = "Is Used")]
+        public bool IsUsed { get; set; }
+
+        [Display(Name = "Used Date")]
+        public DateTime? UsedDate { get; set; }
+
+        [Display(Name = "Description")]
+        [StringLength(1000, ErrorMessage = "描述長度不可超過 1000 字元")]
+        public string? Description { get; set; }
     }
 }
 

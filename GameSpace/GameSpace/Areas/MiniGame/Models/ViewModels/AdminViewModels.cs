@@ -6,50 +6,109 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     // 管理員相關 ViewModels
     public class AdminManagerCreateViewModel
     {
-        [Required]
-        [StringLength(50)]
+        [Required(ErrorMessage = "管理者名稱為必填")]
+        [StringLength(50, ErrorMessage = "管理者名稱長度不能超過50個字符")]
         public string Manager_Name { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(50)]
+
+        [Required(ErrorMessage = "管理者帳號為必填")]
+        [StringLength(50, ErrorMessage = "管理者帳號長度不能超過50個字符")]
         public string Manager_Account { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(100)]
+
+        [Required(ErrorMessage = "密碼為必填")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "密碼長度必須在6-100個字符之間")]
         public string Manager_Password { get; set; } = string.Empty;
-        
-        [Required]
-        [EmailAddress]
-        [StringLength(100)]
+
+        /// <summary>
+        /// Password alias for compatibility
+        /// </summary>
+        public string Password
+        {
+            get => Manager_Password;
+            set => Manager_Password = value;
+        }
+
+        [Required(ErrorMessage = "確認密碼為必填")]
+        [Compare("Manager_Password", ErrorMessage = "確認密碼與密碼不一致")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "電子郵件為必填")]
+        [EmailAddress(ErrorMessage = "電子郵件格式不正確")]
+        [StringLength(100, ErrorMessage = "電子郵件長度不能超過100個字符")]
         public string Manager_Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Role IDs for role assignment
+        /// </summary>
+        public List<int> RoleIds { get; set; } = new List<int>();
+
+        /// <summary>
+        /// Whether the manager is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
     }
 
     public class AdminManagerEditViewModel
     {
         public int Manager_Id { get; set; }
-        
-        [Required]
-        [StringLength(50)]
+
+        [Required(ErrorMessage = "管理者名稱為必填")]
+        [StringLength(50, ErrorMessage = "管理者名稱長度不能超過50個字符")]
         public string Manager_Name { get; set; } = string.Empty;
-        
-        [Required]
-        [StringLength(50)]
+
+        [Required(ErrorMessage = "管理者帳號為必填")]
+        [StringLength(50, ErrorMessage = "管理者帳號長度不能超過50個字符")]
         public string Manager_Account { get; set; } = string.Empty;
-        
-        [StringLength(100)]
+
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "密碼長度必須在6-100個字符之間")]
         public string? Manager_Password { get; set; }
-        
-        [Required]
-        [EmailAddress]
-        [StringLength(100)]
+
+        [Required(ErrorMessage = "電子郵件為必填")]
+        [EmailAddress(ErrorMessage = "電子郵件格式不正確")]
+        [StringLength(100, ErrorMessage = "電子郵件長度不能超過100個字符")]
         public string Manager_Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// New password for password change (optional)
+        /// </summary>
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "新密碼長度必須在6-100個字符之間")]
+        public string? NewPassword { get; set; }
+
+        /// <summary>
+        /// Confirm new password
+        /// </summary>
+        [Compare("NewPassword", ErrorMessage = "確認新密碼與新密碼不一致")]
+        public string? ConfirmNewPassword { get; set; }
+
+        /// <summary>
+        /// Role IDs for role assignment
+        /// </summary>
+        public List<int> RoleIds { get; set; } = new List<int>();
     }
 
     public class AdminManagerRoleCreateViewModel
     {
+        [Required(ErrorMessage = "角色名稱為必填")]
+        [StringLength(50, ErrorMessage = "角色名稱長度不能超過50個字符")]
+        public string role_name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "角色描述為必填")]
+        [StringLength(200, ErrorMessage = "角色描述長度不能超過200個字符")]
+        public string role_description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Permission IDs to assign to this role
+        /// </summary>
+        public List<int> PermissionIds { get; set; } = new List<int>();
+
+        /// <summary>
+        /// Whether the role is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        // Legacy properties for backward compatibility
         [Required]
         public int Manager_Id { get; set; }
-        
+
         [Required]
         public int ManagerRole_Id { get; set; }
     }
@@ -198,12 +257,38 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class AdjustEVouchersModel
     {
+        [Required(ErrorMessage = "用戶ID為必填")]
         public int UserId { get; set; }
+
+        [Required(ErrorMessage = "電子券類型ID為必填")]
         public int EvoucherTypeId { get; set; }
+
+        /// <summary>
+        /// Alias for view compatibility
+        /// </summary>
+        public int EVoucherTypeId
+        {
+            get => EvoucherTypeId;
+            set => EvoucherTypeId = value;
+        }
+
+        [Required(ErrorMessage = "數量為必填")]
+        [Range(1, 10, ErrorMessage = "數量必須在1-10之間")]
         public int Quantity { get; set; }
+
+        [StringLength(200, ErrorMessage = "原因長度不可超過200字元")]
         public string? Reason { get; set; }
+
+        [Range(0, 999999.99, ErrorMessage = "自訂金額必須在0-999999.99之間")]
         public decimal? CustomValue { get; set; }
+
+        [StringLength(500, ErrorMessage = "描述長度不可超過500字元")]
         public string? Description { get; set; }
+
+        /// <summary>
+        /// Expiry date for the e-vouchers
+        /// </summary>
+        public DateTime? ExpiryDate { get; set; }
     }
 
     public class GrantCouponsModel
@@ -342,6 +427,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
         // Additional properties for Edit scenarios
         public int UserID { get => UserId; set => UserId = value; }
+        public int EVoucherTypeID { get => EvoucherTypeId; set => EvoucherTypeId = value; }
         public string EvoucherCode { get => EVoucherCode; set => EVoucherCode = value; }
         public DateTime AcquiredTime { get; set; }
         public DateTime? UsedTime { get; set; }
@@ -350,24 +436,40 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
 
     public class AdminEVoucherTypeCreateViewModel
     {
-        [Required]
-        [StringLength(100)]
+        [Required(ErrorMessage = "禮券類型名稱為必填")]
+        [StringLength(100, ErrorMessage = "禮券類型名稱長度不能超過100個字符")]
         public string Name { get; set; } = string.Empty;
-        
-        [Required]
+
+        [Required(ErrorMessage = "禮券描述為必填")]
+        [StringLength(500, ErrorMessage = "禮券描述長度不能超過500個字符")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "面額為必填")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "面額必須大於0.01")]
         public decimal ValueAmount { get; set; }
-        
-        public DateTime ValidFrom { get; set; }
-        public DateTime ValidTo { get; set; }
-        
+
+        [Required(ErrorMessage = "有效期限為必填")]
+        [Range(1, 365, ErrorMessage = "有效期限必須在1-365天之間")]
+        public int ValidDays { get; set; } = 30;
+
+        [StringLength(500, ErrorMessage = "禮券圖片網址長度不能超過500個字符")]
+        [Url(ErrorMessage = "禮券圖片網址格式不正確")]
+        public string? ImageUrl { get; set; }
+
+        /// <summary>
+        /// Whether the evoucher type is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        // Legacy properties for backward compatibility
+        public DateTime ValidFrom { get; set; } = DateTime.Now;
+        public DateTime ValidTo { get; set; } = DateTime.Now.AddDays(30);
+
         [Required]
         public int PointsCost { get; set; }
-        
+
         [Required]
         public int TotalAvailable { get; set; }
-        
-        [StringLength(500)]
-        public string? Description { get; set; }
     }
 
     public class EVoucherCreateVM
@@ -389,15 +491,41 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     // 簽到相關 ViewModels
     public class AdminSignInCreateViewModel
     {
-        [Required]
+        [Required(ErrorMessage = "用戶ID為必填")]
         public int UserId { get; set; }
-        
+
+        [Required(ErrorMessage = "簽到活動名稱為必填")]
+        [StringLength(100, ErrorMessage = "簽到活動名稱長度不能超過100個字符")]
+        public string SignInName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "簽到活動描述為必填")]
+        [StringLength(500, ErrorMessage = "簽到活動描述長度不能超過500個字符")]
+        public string SignInDescription { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "獎勵點數為必填")]
+        [Range(1, int.MaxValue, ErrorMessage = "獎勵點數必須大於0")]
+        public int RewardPoints { get; set; } = 100;
+
+        [Required(ErrorMessage = "開始日期為必填")]
+        [DataType(DataType.DateTime)]
+        public DateTime StartDate { get; set; } = DateTime.Now;
+
+        [Required(ErrorMessage = "結束日期為必填")]
+        [DataType(DataType.DateTime)]
+        public DateTime EndDate { get; set; } = DateTime.Now.AddDays(7);
+
+        /// <summary>
+        /// Whether the sign-in activity is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        // Legacy properties for backward compatibility
         public DateTime SignTime { get; set; } = DateTime.Now;
-        
+
         public int PointsGained { get; set; } = 0;
-        
+
         public int ExpGained { get; set; } = 0;
-        
+
         [StringLength(50)]
         public string? CouponGained { get; set; }
     }
@@ -415,26 +543,88 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
 
+        // Properties for individual record display (used when model represents a single record)
+        /// <summary>
+        /// 簽到記錄ID
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// 簽到日期
+        /// </summary>
+        public DateTime SignInDate { get; set; }
+
+        /// <summary>
+        /// 用戶ID
+        /// </summary>
+        public int UserId { get; set; }
+
+        /// <summary>
+        /// 用戶名稱
+        /// </summary>
+        public string UserName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 獲得點數
+        /// </summary>
+        public int PointsEarned { get; set; }
+
+        /// <summary>
+        /// 連續天數
+        /// </summary>
+        public int ConsecutiveDays { get; set; }
+
         /// <summary>
         /// 獎勵類型
         /// </summary>
         public string? BonusType { get; set; }
+
+        /// <summary>
+        /// IP位址
+        /// </summary>
+        public string? IPAddress { get; set; }
     }
 
     // 寵物相關 ViewModels
     public class AdminPetCreateViewModel
     {
-        [Required]
+        [Required(ErrorMessage = "用戶ID為必填")]
         public int UserId { get; set; }
-        
-        [Required]
-        [StringLength(50)]
+
+        [Required(ErrorMessage = "寵物名稱為必填")]
+        [StringLength(50, ErrorMessage = "寵物名稱長度不能超過50個字符")]
         public string PetName { get; set; } = string.Empty;
-        
+
+        [Required(ErrorMessage = "寵物描述為必填")]
+        [StringLength(500, ErrorMessage = "寵物描述長度不能超過500個字符")]
+        public string PetDescription { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "寵物類型為必填")]
+        [StringLength(20, ErrorMessage = "寵物類型長度不能超過20個字符")]
+        public string PetType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "稀有度為必填")]
+        [StringLength(20, ErrorMessage = "稀有度長度不能超過20個字符")]
+        public string Rarity { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "掉落機率為必填")]
+        [Range(0.01, 100, ErrorMessage = "掉落機率必須在0.01-100之間")]
+        public decimal DropRate { get; set; } = 1.0m;
+
+        [StringLength(500, ErrorMessage = "寵物圖片網址長度不能超過500個字符")]
+        [Url(ErrorMessage = "寵物圖片網址格式不正確")]
+        public string? PetImageUrl { get; set; }
+
+        /// <summary>
+        /// Whether the pet is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        // Legacy properties for backward compatibility
         [Required]
         [StringLength(10)]
         public string SkinColor { get; set; } = string.Empty;
-        
+
         [Required]
         [StringLength(20)]
         public string BackgroundColor { get; set; } = string.Empty;
@@ -496,26 +686,56 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     // 小遊戲相關 ViewModels
     public class AdminMiniGameCreateViewModel
     {
-        [Required]
+        [Required(ErrorMessage = "用戶ID為必填")]
         public int UserId { get; set; }
-        
+
+        [Required(ErrorMessage = "遊戲名稱為必填")]
+        [StringLength(100, ErrorMessage = "遊戲名稱長度不能超過100個字符")]
+        public string GameName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "遊戲描述為必填")]
+        [StringLength(500, ErrorMessage = "遊戲描述長度不能超過500個字符")]
+        public string GameDescription { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "遊戲類型為必填")]
+        [StringLength(50, ErrorMessage = "遊戲類型長度不能超過50個字符")]
+        public string GameType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "消耗點數為必填")]
+        [Range(0, int.MaxValue, ErrorMessage = "消耗點數必須大於等於0")]
+        public int CostPoints { get; set; } = 0;
+
+        [Required(ErrorMessage = "獎勵點數為必填")]
+        [Range(0, int.MaxValue, ErrorMessage = "獎勵點數必須大於等於0")]
+        public int RewardPoints { get; set; } = 100;
+
+        [Required(ErrorMessage = "最大遊玩次數為必填")]
+        [Range(1, 1000, ErrorMessage = "最大遊玩次數必須在1-1000之間")]
+        public int MaxPlayCount { get; set; } = 3;
+
+        [StringLength(500, ErrorMessage = "遊戲圖片網址長度不能超過500個字符")]
+        [Url(ErrorMessage = "遊戲圖片網址格式不正確")]
+        public string? GameImageUrl { get; set; }
+
+        /// <summary>
+        /// Whether the game is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        // Legacy properties for backward compatibility
         [Required]
         public int PetID { get; set; }
-        
-        [Required]
-        [StringLength(50)]
-        public string GameType { get; set; } = string.Empty;
-        
+
         public DateTime StartTime { get; set; } = DateTime.Now;
         public DateTime? EndTime { get; set; }
-        
+
         [StringLength(20)]
         public string? Result { get; set; }
-        
+
         public int PointsEarned { get; set; } = 0;
         public int ExpEarned { get; set; } = 0;
         public int CouponEarned { get; set; } = 0;
-        
+
         [StringLength(100)]
         public string? SessionID { get; set; }
     }
@@ -526,6 +746,52 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public int TotalCount { get; set; }
         public int PageSize { get; set; } = 10;
         public int CurrentPage { get; set; } = 1;
+
+        // Properties for individual record display (used when model represents a single record)
+        /// <summary>
+        /// 遊戲記錄ID
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// 開始時間
+        /// </summary>
+        public DateTime StartTime { get; set; }
+
+        /// <summary>
+        /// 用戶ID
+        /// </summary>
+        public int UserId { get; set; }
+
+        /// <summary>
+        /// 用戶名稱
+        /// </summary>
+        public string UserName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 遊戲名稱
+        /// </summary>
+        public string GameName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 遊戲結果 (Win/Lose/Draw)
+        /// </summary>
+        public string Result { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 分數
+        /// </summary>
+        public int Score { get; set; }
+
+        /// <summary>
+        /// 獲得點數
+        /// </summary>
+        public int PointsEarned { get; set; }
+
+        /// <summary>
+        /// 遊戲時長（秒）
+        /// </summary>
+        public int Duration { get; set; }
     }
 
     // 系統統計模型

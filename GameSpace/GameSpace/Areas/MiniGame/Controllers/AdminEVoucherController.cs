@@ -288,7 +288,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
 
             var eVoucher = await _context.Evouchers
-                .Include(e => e.Users)
+                .Include(e => e.User)
                 .Include(e => e.EvoucherType)
                 .FirstOrDefaultAsync(m => m.EvoucherId == id);
 
@@ -675,7 +675,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             // 取得使用此類型的電子禮券統計
             var relatedVouchers = await _context.Evouchers
-                .Include(e => e.Users)
+                .Include(e => e.User)
                 .Where(e => e.EvoucherTypeId == id)
                 .ToListAsync();
 

@@ -417,14 +417,13 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(r => r.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null)
                     return null;
 
                 // 返回第一個角色的權限（假設一個管理員只有一個角色）
-                return manager.ManagerRoles.FirstOrDefault()?.ManagerRolePermission;
+                return manager.ManagerRoles.FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -461,13 +460,8 @@ namespace GameSpace.Areas.MiniGame.Services
                 // 清除現有角色（假設一個管理員只能有一個角色）
                 manager.ManagerRoles.Clear();
 
-                // 創建並加入新角色關聯
-                var managerRole = new ManagerRole
-                {
-                    ManagerId = managerId,
-                    ManagerRoleId = roleId
-                };
-                manager.ManagerRoles.Add(managerRole);
+                // 直接加入角色權限（因為是多對多關係）
+                manager.ManagerRoles.Add(role);
 
                 await _context.SaveChangesAsync();
                 return true;

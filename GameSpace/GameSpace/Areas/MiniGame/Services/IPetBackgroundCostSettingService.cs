@@ -28,6 +28,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 狀態管理
         Task<bool> ToggleActiveStatusAsync(int id);
         Task<bool> SetActiveStatusAsync(int id, bool isActive);
+        Task<bool> ToggleActiveAsync(int settingId);
 
         // 批次操作
         Task<bool> UpdateMultipleCostsAsync(Dictionary<int, int> costMapping);

@@ -11,6 +11,16 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
     {
         public int RuleId { get; set; }
         public string RuleName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Name alias for compatibility with views
+        /// </summary>
+        public string Name
+        {
+            get => RuleName;
+            set => RuleName = value;
+        }
+
         public string Description { get; set; } = string.Empty;
         public int ConsecutiveDays { get; set; }
         public int PointsReward { get; set; }

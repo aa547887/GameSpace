@@ -51,11 +51,7 @@
                         </tr>
                         <tr>
                             <td><strong>註冊日期:</strong></td>
-                            <td>@Model.Administrator_registration_date?.ToString("yyyy-MM-dd HH:mm")</td>
-                        </tr>
-                        <tr>
-                            <td><strong>最後登入:</strong></td>
-                            <td>@(Model.LastLoginAt?.ToString("yyyy-MM-dd HH:mm") ?? "從未登入")</td>
+                            <td>@Model.AdministratorRegistrationDate?.ToString("yyyy-MM-dd HH:mm")</td>
                         </tr>
                         <tr>
                             <td><strong>鎖定狀態:</strong></td>
@@ -92,9 +88,9 @@
                                     <div class="card">
                                         <div class="card-body">
                                             <h6 class="card-title">
-                                                <span class="badge badge-primary">@role.ManagerRolePermission.role_name</span>
+                                                <span class="badge badge-primary">@role.RoleName</span>
                                             </h6>
-                                            <p class="card-text text-muted">@role.ManagerRolePermission.role_description</p>
+                                            <p class="card-text text-muted">角色權限</p>
                                         </div>
                                     </div>
                                 </div>
@@ -119,21 +115,47 @@
                         <div class="row">
                             @foreach (var role in Model.ManagerRoles)
                             {
-                                @if (role.ManagerRolePermission.ManagerRolePermissions != null && role.ManagerRolePermission.ManagerRolePermissions.Any())
-                                {
-                                    <div class="col-md-6 mb-3">
-                                        <h6>@role.ManagerRolePermission.role_name 權限</h6>
-                                        <ul class="list-unstyled">
-                                            @foreach (var permission in role.ManagerRolePermission.ManagerRolePermissions)
-                                            {
-                                                <li class="mb-1">
-                                                    <i class="fas fa-check text-success"></i>
-                                                    @permission.ManagerPermission.Permission_Name
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
-                                }
+                                <div class="col-md-6 mb-3">
+                                    <h6>@role.RoleName 權限</h6>
+                                    <ul class="list-unstyled">
+                                        @if (role.AdministratorPrivilegesManagement == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 管理員特權管理
+                                            </li>
+                                        }
+                                        @if (role.UserStatusManagement == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 用戶狀態管理
+                                            </li>
+                                        }
+                                        @if (role.ShoppingPermissionManagement == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 購物權限管理
+                                            </li>
+                                        }
+                                        @if (role.MessagePermissionManagement == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 訊息權限管理
+                                            </li>
+                                        }
+                                        @if (role.PetRightsManagement == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 寵物權限管理
+                                            </li>
+                                        }
+                                        @if (role.CustomerService == true)
+                                        {
+                                            <li class="mb-1">
+                                                <i class="fas fa-check text-success"></i> 客服
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
                             }
                         </div>
                     }
@@ -162,20 +184,11 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>@Model.Administrator_registration_date?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@Model.AdministratorRegistrationDate?.ToString("yyyy-MM-dd HH:mm")</td>
                                     <td><span class="badge badge-success">註冊</span></td>
                                     <td>管理者帳號建立</td>
                                     <td>-</td>
                                 </tr>
-                                @if (Model.LastLoginAt.HasValue)
-                                {
-                                    <tr>
-                                        <td>@Model.LastLoginAt.Value.ToString("yyyy-MM-dd HH:mm")</td>
-                                        <td><span class="badge badge-info">登入</span></td>
-                                        <td>最後一次登入</td>
-                                        <td>-</td>
-                                    </tr>
-                                }
                                 @if (Model.Manager_LockoutEnabled && Model.Manager_LockoutEnd.HasValue)
                                 {
                                     <tr>

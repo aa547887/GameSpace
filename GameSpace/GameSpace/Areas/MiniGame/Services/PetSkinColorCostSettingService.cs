@@ -190,6 +190,25 @@ namespace GameSpace.Areas.MiniGame.Services
             }
         }
 
+        public async Task<bool> ToggleActiveAsync(int settingId)
+        {
+            try
+            {
+                var setting = await GetByIdAsync(settingId);
+                if (setting == null) return false;
+
+                setting.IsActive = !setting.IsActive;
+                setting.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // 批次操作
         public async Task<bool> UpdateMultipleCostsAsync(Dictionary<int, int> costMapping)
         {

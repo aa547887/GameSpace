@@ -106,7 +106,7 @@ namespace GameSpace.Areas.MiniGame.Services
             var startDate = DateTime.UtcNow.Date.AddDays(-days);
             var users = await _context.Users
                 .Where(u => u.User_CreatedAt >= startDate)
-                .GroupBy(u => u.User_CreatedAt.Date)
+                .GroupBy(u => u.User_CreatedAt.Value.Date)
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .ToListAsync();
 

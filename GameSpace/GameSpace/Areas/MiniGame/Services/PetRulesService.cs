@@ -93,14 +93,14 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<IEnumerable<PetSkinColorPointSettings>> GetAllSkinColorSettingsAsync()
         {
             return await _context.PetSkinColorPointSettings
-                .OrderBy(s => s.Level)
+                .OrderBy(s => s.RequiredLevel)
                 .ToListAsync();
         }
 
         public async Task<PetSkinColorPointSettings?> GetSkinColorSettingByLevelAsync(int level)
         {
             return await _context.PetSkinColorPointSettings
-                .FirstOrDefaultAsync(s => s.Level == level);
+                .FirstOrDefaultAsync(s => s.RequiredLevel == level);
         }
 
         public async Task<bool> UpdateSkinColorSettingAsync(PetSkinColorPointSettings setting)
@@ -120,21 +120,21 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<int> GetSkinColorCostForLevelAsync(int level)
         {
             var setting = await GetSkinColorSettingByLevelAsync(level);
-            return setting?.PointsCost ?? 50; // 預設 50 點數
+            return setting?.PointCost ?? 50; // 預設 50 點數
         }
 
         // Pet 背景變更規則
         public async Task<IEnumerable<PetBackgroundPointSettings>> GetAllBackgroundSettingsAsync()
         {
             return await _context.PetBackgroundPointSettings
-                .OrderBy(s => s.Level)
+                .OrderBy(s => s.RequiredLevel)
                 .ToListAsync();
         }
 
         public async Task<PetBackgroundPointSettings?> GetBackgroundSettingByLevelAsync(int level)
         {
             return await _context.PetBackgroundPointSettings
-                .FirstOrDefaultAsync(s => s.Level == level);
+                .FirstOrDefaultAsync(s => s.RequiredLevel == level);
         }
 
         public async Task<bool> UpdateBackgroundSettingAsync(PetBackgroundPointSettings setting)
@@ -154,7 +154,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<int> GetBackgroundCostForLevelAsync(int level)
         {
             var setting = await GetBackgroundSettingByLevelAsync(level);
-            return setting?.PointsCost ?? 30; // 預設 30 點數
+            return setting?.PointCost ?? 30; // 預設 30 點數
         }
 
         // Pet 互動獎勵規則

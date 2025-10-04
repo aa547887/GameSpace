@@ -1,45 +1,45 @@
 @model GameSpace.Areas.MiniGame.Models.ViewModels.PetListQueryModel
 @{
-    ViewData["Title"] = "·|­û­Ó§OÃdª«²M³æ§t¬d¸ß";
+    ViewData["Title"] = "ï¿½|ï¿½ï¿½ï¿½Ó§Oï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½tï¿½dï¿½ï¿½";
     Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">·|­û­Ó§OÃdª«²M³æ§t¬d¸ß</h1>
+        <h1 class="h3 mb-0 text-gray-800">ï¿½|ï¿½ï¿½ï¿½Ó§Oï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½tï¿½dï¿½ï¿½</h1>
     </div>
 
-    <!-- ¶i¶¥·j´Mªí³æ -->
+    <!-- ï¿½iï¿½ï¿½ï¿½jï¿½Mï¿½ï¿½ï¿½ï¿½ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">¶i¶¥·j´M±ø¥ó</h6>
+            <h6 class="m-0 font-weight-bold text-primary">ï¿½iï¿½ï¿½ï¿½jï¿½Mï¿½ï¿½ï¿½ï¿½</h6>
         </div>
         <div class="card-body">
             <form method="get" id="searchForm">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="userId">¥Î¤áID</label>
-                            <input type="text" class="form-control" id="userId" name="userId" placeholder="¿é¤J¥Î¤áID">
+                            <label for="userId">ï¿½Î¤ï¿½ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="ï¿½ï¿½Jï¿½Î¤ï¿½ID">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="userName">¥Î¤á¦WºÙ</label>
-                            <input type="text" class="form-control" id="userName" name="userName" placeholder="¿é¤J¥Î¤á¦WºÙ">
+                            <label for="userName">ï¿½Î¤ï¿½Wï¿½ï¿½</label>
+                            <input type="text" class="form-control" id="userName" name="userName" placeholder="ï¿½ï¿½Jï¿½Î¤ï¿½Wï¿½ï¿½">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="petName">Ãdª«¦WºÙ</label>
-                            <input type="text" class="form-control" id="petName" name="petName" placeholder="¿é¤JÃdª«¦WºÙ">
+                            <label for="petName">ï¿½dï¿½ï¿½ï¿½Wï¿½ï¿½</label>
+                            <input type="text" class="form-control" id="petName" name="petName" placeholder="ï¿½ï¿½Jï¿½dï¿½ï¿½ï¿½Wï¿½ï¿½">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="petId">Ãdª«ID</label>
-                            <input type="text" class="form-control" id="petId" name="petId" placeholder="¿é¤JÃdª«ID">
+                            <label for="petId">ï¿½dï¿½ï¿½ID</label>
+                            <input type="text" class="form-control" id="petId" name="petId" placeholder="ï¿½ï¿½Jï¿½dï¿½ï¿½ID">
                         </div>
                     </div>
                 </div>
@@ -47,43 +47,43 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="minLevel">³Ì¤pµ¥¯Å</label>
-                            <input type="number" class="form-control" id="minLevel" name="minLevel" min="1" placeholder="³Ì¤pµ¥¯Å">
+                            <label for="minLevel">ï¿½Ì¤pï¿½ï¿½ï¿½ï¿½</label>
+                            <input type="number" class="form-control" id="minLevel" name="minLevel" min="1" placeholder="ï¿½Ì¤pï¿½ï¿½ï¿½ï¿½">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="maxLevel">³Ì¤jµ¥¯Å</label>
-                            <input type="number" class="form-control" id="maxLevel" name="maxLevel" min="1" placeholder="³Ì¤jµ¥¯Å">
+                            <label for="maxLevel">ï¿½Ì¤jï¿½ï¿½ï¿½ï¿½</label>
+                            <input type="number" class="form-control" id="maxLevel" name="maxLevel" min="1" placeholder="ï¿½Ì¤jï¿½ï¿½ï¿½ï¿½">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="skinColor">½§¦â</label>
+                            <label for="skinColor">ï¿½ï¿½ï¿½ï¿½</label>
                             <select class="form-control" id="skinColor" name="skinColor">
-                                <option value="">¥þ³¡</option>
-                                <option value="¬õ¦â">¬õ¦â</option>
-                                <option value="ÂÅ¦â">ÂÅ¦â</option>
-                                <option value="ºñ¦â">ºñ¦â</option>
-                                <option value="¶À¦â">¶À¦â</option>
-                                <option value="µµ¦â">µµ¦â</option>
-                                <option value="¾í¦â">¾í¦â</option>
-                                <option value="¯»¦â">¯»¦â</option>
+                                <option value="">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½Å¦ï¿½">ï¿½Å¦ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="background">­I´º</label>
+                            <label for="background">ï¿½Iï¿½ï¿½</label>
                             <select class="form-control" id="background" name="background">
-                                <option value="">¥þ³¡</option>
-                                <option value="´ËªL">´ËªL</option>
-                                <option value="®üÃä">®üÃä</option>
-                                <option value="«°¥«">«°¥«</option>
-                                <option value="¤ÓªÅ">¤ÓªÅ</option>
-                                <option value="ªá¶é">ªá¶é</option>
-                                <option value="³·¤s">³·¤s</option>
-                                <option value="¨Fºz">¨Fºz</option>
+                                <option value="">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ËªL">ï¿½ËªL</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½Óªï¿½">ï¿½Óªï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½">ï¿½ï¿½ï¿½</option>
+                                <option value="ï¿½ï¿½ï¿½s">ï¿½ï¿½ï¿½s</option>
+                                <option value="ï¿½Fï¿½z">ï¿½Fï¿½z</option>
                             </select>
                         </div>
                     </div>
@@ -92,42 +92,42 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="isActive">ª¬ºA</label>
+                            <label for="isActive">ï¿½ï¿½ï¿½A</label>
                             <select class="form-control" id="isActive" name="isActive">
-                                <option value="">¥þ³¡</option>
-                                <option value="true">¬¡ÅD</option>
-                                <option value="false">«D¬¡ÅD</option>
+                                <option value="">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="true">ï¿½ï¿½ï¿½D</option>
+                                <option value="false">ï¿½Dï¿½ï¿½ï¿½D</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="sortBy">±Æ§Ç¤è¦¡</label>
+                            <label for="sortBy">ï¿½Æ§Ç¤è¦¡</label>
                             <select class="form-control" id="sortBy" name="sortBy">
-                                <option value="createdAt">«Ø¥ß®É¶¡</option>
-                                <option value="level">µ¥¯Å</option>
-                                <option value="experience">¸gÅç­È</option>
-                                <option value="name">Ãdª«¦WºÙ</option>
+                                <option value="createdAt">ï¿½Ø¥ß®É¶ï¿½</option>
+                                <option value="level">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="experience">ï¿½gï¿½ï¿½ï¿½</option>
+                                <option value="name">ï¿½dï¿½ï¿½ï¿½Wï¿½ï¿½</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="sortOrder">±Æ§Ç¶¶§Ç</label>
+                            <label for="sortOrder">ï¿½Æ§Ç¶ï¿½ï¿½ï¿½</label>
                             <select class="form-control" id="sortOrder" name="sortOrder">
-                                <option value="desc">­°§Ç</option>
-                                <option value="asc">¤É§Ç</option>
+                                <option value="desc">ï¿½ï¿½ï¿½ï¿½</option>
+                                <option value="asc">ï¿½É§ï¿½</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="pageSize">¨C­¶Åã¥Ü</label>
+                            <label for="pageSize">ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½</label>
                             <select class="form-control" id="pageSize" name="pageSize">
-                                <option value="10">10 µ§</option>
-                                <option value="25">25 µ§</option>
-                                <option value="50">50 µ§</option>
-                                <option value="100">100 µ§</option>
+                                <option value="10">10 ï¿½ï¿½</option>
+                                <option value="25">25 ï¿½ï¿½</option>
+                                <option value="50">50 ï¿½ï¿½</option>
+                                <option value="100">100 ï¿½ï¿½</option>
                             </select>
                         </div>
                     </div>
@@ -135,27 +135,27 @@
 
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> ·j´M
+                        <i class="fas fa-search"></i> ï¿½jï¿½M
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> ­«¸m
+                        <i class="fas fa-undo"></i> ï¿½ï¿½ï¿½m
                     </button>
                     <button type="button" class="btn btn-success" onclick="exportPets()">
-                        <i class="fas fa-download"></i> ¶×¥X
+                        <i class="fas fa-download"></i> ï¿½×¥X
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ²Î­p¸ê°T -->
+    <!-- ï¿½Î­pï¿½ï¿½T -->
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Á`Ãdª«¼Æ</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">ï¿½`ï¿½dï¿½ï¿½ï¿½ï¿½</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPets">1,234</div>
                         </div>
                         <div class="col-auto">
@@ -171,7 +171,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">¬¡ÅDÃdª«</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">ï¿½ï¿½ï¿½Dï¿½dï¿½ï¿½</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="activePets">1,100</div>
                         </div>
                         <div class="col-auto">
@@ -187,7 +187,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">¥­§¡µ¥¯Å</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="averageLevel">15.6</div>
                         </div>
                         <div class="col-auto">
@@ -203,7 +203,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Á`Áý­¹¦¸¼Æ</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">ï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalFeedings">25,678</div>
                         </div>
                         <div class="col-auto">
@@ -215,28 +215,28 @@
         </div>
     </div>
 
-    <!-- Ãdª«²M³æ -->
+    <!-- ï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½ -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Ãdª«²M³æ</h6>
-            <span class="badge badge-info" id="resultCount">¦@ 0 °¦Ãdª«</span>
+            <h6 class="m-0 font-weight-bold text-primary">ï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½</h6>
+            <span class="badge badge-info" id="resultCount">ï¿½@ 0 ï¿½ï¿½ï¿½dï¿½ï¿½</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Ãdª«ID</th>
-                            <th>¥Î¤áID</th>
-                            <th>¥Î¤á¦WºÙ</th>
-                            <th>Ãdª«¦WºÙ</th>
-                            <th>µ¥¯Å</th>
-                            <th>¸gÅç­È</th>
-                            <th>½§¦â</th>
-                            <th>­I´º</th>
-                            <th>ª¬ºA</th>
-                            <th>«Ø¥ß®É¶¡</th>
-                            <th>¾Þ§@</th>
+                            <th>ï¿½dï¿½ï¿½ID</th>
+                            <th>ï¿½Î¤ï¿½ID</th>
+                            <th>ï¿½Î¤ï¿½Wï¿½ï¿½</th>
+                            <th>ï¿½dï¿½ï¿½ï¿½Wï¿½ï¿½</th>
+                            <th>ï¿½ï¿½ï¿½ï¿½</th>
+                            <th>ï¿½gï¿½ï¿½ï¿½</th>
+                            <th>ï¿½ï¿½ï¿½ï¿½</th>
+                            <th>ï¿½Iï¿½ï¿½</th>
+                            <th>ï¿½ï¿½ï¿½A</th>
+                            <th>ï¿½Ø¥ß®É¶ï¿½</th>
+                            <th>ï¿½Þ§@</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -247,8 +247,8 @@
                                 <tr>
                                     <td>@pet.Id</td>
                                     <td>@pet.UserId</td>
-                                    <td>@pet.UserName</td>
-                                    <td>@pet.Name</td>
+                                    <td>@(pet.User?.UserName ?? "N/A")</td>
+                                    <td>@pet.PetName</td>
                                     <td>
                                         <span class="badge badge-primary">@pet.Level</span>
                                     </td>
@@ -256,27 +256,20 @@
                                     <td>
                                         <span class="badge badge-info" style="background-color: @pet.SkinColor;">@pet.SkinColor</span>
                                     </td>
-                                    <td>@pet.Background</td>
+                                    <td>@pet.BackgroundColor</td>
                                     <td>
-                                        @if (pet.IsActive)
-                                        {
-                                            <span class="badge badge-success">¬¡ÅD</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge badge-secondary">«D¬¡ÅD</span>
-                                        }
+                                        <span class="badge badge-success">ï¿½ï¿½ï¿½D</span>
                                     </td>
-                                    <td>@pet.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                    <td>@pet.LevelUpTime.ToString("yyyy-MM-dd")</td>
                                     <td>
                                         <button class="btn btn-sm btn-warning" onclick="editPet(@pet.Id)">
-                                            <i class="fas fa-edit"></i> ½s¿è
+                                            <i class="fas fa-edit"></i> ï¿½sï¿½ï¿½
                                         </button>
                                         <button class="btn btn-sm btn-info" onclick="viewPetDetails(@pet.Id)">
-                                            <i class="fas fa-eye"></i> ¸Ô±¡
+                                            <i class="fas fa-eye"></i> ï¿½Ô±ï¿½
                                         </button>
                                         <button class="btn btn-sm btn-danger" onclick="deletePet(@pet.Id)">
-                                            <i class="fas fa-trash"></i> §R°£
+                                            <i class="fas fa-trash"></i> ï¿½Rï¿½ï¿½
                                         </button>
                                     </td>
                                 </tr>
@@ -285,22 +278,22 @@
                         else
                         {
                             <tr>
-                                <td colspan="11" class="text-center">½Ð¿é¤J·j´M±ø¥ó¶i¦æ¬d¸ß</td>
+                                <td colspan="11" class="text-center">ï¿½Ð¿ï¿½Jï¿½jï¿½Mï¿½ï¿½ï¿½ï¿½iï¿½ï¿½dï¿½ï¿½</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
 
-            <!-- ¤À­¶ -->
+            <!-- ï¿½ï¿½ï¿½ï¿½ -->
             @if (Model != null && Model.Pagination != null)
             {
-                <nav aria-label="Ãdª«²M³æ¤À­¶">
+                <nav aria-label="ï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½">
                     <ul class="pagination justify-content-center">
                         @if (Model.Pagination.HasPreviousPage)
                         {
                             <li class="page-item">
-                                <a class="page-link" href="?page=@(Model.Pagination.CurrentPage - 1)">¤W¤@­¶</a>
+                                <a class="page-link" href="?page=@(Model.Pagination.CurrentPage - 1)">ï¿½Wï¿½@ï¿½ï¿½</a>
                             </li>
                         }
                         
@@ -314,7 +307,7 @@
                         @if (Model.Pagination.HasNextPage)
                         {
                             <li class="page-item">
-                                <a class="page-link" href="?page=@(Model.Pagination.CurrentPage + 1)">¤U¤@­¶</a>
+                                <a class="page-link" href="?page=@(Model.Pagination.CurrentPage + 1)">ï¿½Uï¿½@ï¿½ï¿½</a>
                             </li>
                         }
                     </ul>
@@ -330,36 +323,36 @@ function resetForm() {
 }
 
 function exportPets() {
-    // ¶×¥XÃdª«²M³æ
-    alert("¶×¥X¥\¯à¶}µo¤¤...");
+    // ï¿½×¥Xï¿½dï¿½ï¿½ï¿½Mï¿½ï¿½
+    alert("ï¿½×¥Xï¿½\ï¿½ï¿½}ï¿½oï¿½ï¿½...");
 }
 
 function editPet(petId) {
-    // ½s¿èÃdª«
-    alert("½s¿èÃdª«: " + petId);
+    // ï¿½sï¿½ï¿½ï¿½dï¿½ï¿½
+    alert("ï¿½sï¿½ï¿½ï¿½dï¿½ï¿½: " + petId);
 }
 
 function viewPetDetails(petId) {
-    // ¬d¬ÝÃdª«¸Ô±¡
-    alert("¬d¬ÝÃdª«¸Ô±¡: " + petId);
+    // ï¿½dï¿½ï¿½ï¿½dï¿½ï¿½ï¿½Ô±ï¿½
+    alert("ï¿½dï¿½ï¿½ï¿½dï¿½ï¿½ï¿½Ô±ï¿½: " + petId);
 }
 
 function deletePet(petId) {
-    if (confirm("½T©w­n§R°£¦¹Ãdª«¶Ü¡H¦¹¾Þ§@µLªk´_­ì¡C")) {
-        // §R°£Ãdª«
-        alert("Ãdª«¤w§R°£: " + petId);
+    if (confirm("ï¿½Tï¿½wï¿½nï¿½Rï¿½ï¿½ï¿½ï¿½ï¿½dï¿½ï¿½ï¿½Ü¡Hï¿½ï¿½ï¿½Þ§@ï¿½Lï¿½kï¿½_ï¿½ï¿½C")) {
+        // ï¿½Rï¿½ï¿½ï¿½dï¿½ï¿½
+        alert("ï¿½dï¿½ï¿½ï¿½wï¿½Rï¿½ï¿½: " + petId);
         location.reload();
     }
 }
 
-// §ó·sµ²ªG­p¼Æ
+// ï¿½ï¿½sï¿½ï¿½ï¿½Gï¿½pï¿½ï¿½
 function updateResultCount() {
     const rows = document.querySelectorAll("tbody tr");
-    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("½Ð¿é¤J") ? 1 : 0);
-    document.getElementById("resultCount").textContent = `¦@ ${count} °¦Ãdª«`;
+    const count = rows.length - (rows.length > 0 && rows[0].cells[0].textContent.includes("ï¿½Ð¿ï¿½J") ? 1 : 0);
+    document.getElementById("resultCount").textContent = `ï¿½@ ${count} ï¿½ï¿½ï¿½dï¿½ï¿½`;
 }
 
-// ­¶­±¸ü¤J®É°õ¦æ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½É°ï¿½ï¿½ï¿½
 document.addEventListener("DOMContentLoaded", function() {
     updateResultCount();
 });

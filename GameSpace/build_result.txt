@@ -1,0 +1,9 @@
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\MissingViewModels.cs(31,56): error CS0118: 'MiniGame' 是 命名空間，但卻當成 類型 使用 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+
+建置失敗。
+
+C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\Areas\MiniGame\Models\ViewModels\MissingViewModels.cs(31,56): error CS0118: 'MiniGame' 是 命名空間，但卻當成 類型 使用 [C:\Users\n2029\Desktop\GameSpace\GameSpace\GameSpace\GameSpace.csproj]
+    0 個警告
+    1 個錯誤
+
+經過時間 00:00:02.79

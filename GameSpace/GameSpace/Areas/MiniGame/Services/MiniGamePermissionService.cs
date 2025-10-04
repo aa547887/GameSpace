@@ -29,19 +29,18 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null || !manager.IsActive) return false;
 
                 return permission switch
                 {
-                    "UserStatusManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true),
-                    "PetRightsManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true),
-                    "ShoppingPermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true),
-                    "MessagePermissionManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true),
-                    "CustomerService" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true),
-                    "AdministratorPrivilegesManagement" => manager.ManagerRoles.Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true),
+                    "UserStatusManagement" => manager.ManagerRoles.Any(r => r?.UserStatusManagement == true),
+                    "PetRightsManagement" => manager.ManagerRoles.Any(r => r?.PetRightsManagement == true),
+                    "ShoppingPermissionManagement" => manager.ManagerRoles.Any(r => r?.ShoppingPermissionManagement == true),
+                    "MessagePermissionManagement" => manager.ManagerRoles.Any(r => r?.MessagePermissionManagement == true),
+                    "CustomerService" => manager.ManagerRoles.Any(r => r?.CustomerService == true),
+                    "AdministratorPrivilegesManagement" => manager.ManagerRoles.Any(r => r?.AdministratorPrivilegesManagement == true),
                     _ => false
                 };
             }
@@ -68,22 +67,21 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null || !manager.IsActive) return permissions;
 
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.AdministratorPrivilegesManagement == true))
+                if (manager.ManagerRoles.Any(r => r?.AdministratorPrivilegesManagement == true))
                     permissions.Add("AdministratorPrivilegesManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.UserStatusManagement == true))
+                if (manager.ManagerRoles.Any(r => r?.UserStatusManagement == true))
                     permissions.Add("UserStatusManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.ShoppingPermissionManagement == true))
+                if (manager.ManagerRoles.Any(r => r?.ShoppingPermissionManagement == true))
                     permissions.Add("ShoppingPermissionManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.MessagePermissionManagement == true))
+                if (manager.ManagerRoles.Any(r => r?.MessagePermissionManagement == true))
                     permissions.Add("MessagePermissionManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.PetRightsManagement == true))
+                if (manager.ManagerRoles.Any(r => r?.PetRightsManagement == true))
                     permissions.Add("PetRightsManagement");
-                if (manager.ManagerRoles.Any(r => r.ManagerRolePermission?.CustomerService == true))
+                if (manager.ManagerRoles.Any(r => r?.CustomerService == true))
                     permissions.Add("CustomerService");
             }
             catch
@@ -94,21 +92,20 @@ namespace GameSpace.Areas.MiniGame.Services
             return permissions;
         }
 
-        public async Task<ManagerRoleInfo?> GetManagerRoleInfoAsync(int managerId)
+        public async Task<ManagerRoleInfoViewModel?> GetManagerRoleInfoAsync(int managerId)
         {
             try
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.ManagerId == managerId);
 
                 if (manager == null) return null;
 
                 var permissions = await GetManagerPermissionsAsync(managerId);
-                var roleName = manager.ManagerRoles.FirstOrDefault()?.ManagerRolePermission?.RoleName ?? "Unknown";
+                var roleName = manager.ManagerRoles.FirstOrDefault()?.RoleName ?? "Unknown";
 
-                return new ManagerRoleInfo
+                return new ManagerRoleInfoViewModel
                 {
                     ManagerId = manager.ManagerId,
                     ManagerName = manager.ManagerName ?? string.Empty,
@@ -116,12 +113,43 @@ namespace GameSpace.Areas.MiniGame.Services
                     RoleName = roleName,
                     Permissions = permissions,
                     IsActive = manager.IsActive,
-                    LastLoginTime = null
+                    LastLoginTime = manager.LastLoginAt ?? DateTime.Now
                 };
             }
             catch
             {
                 return null;
+            }
+        }
+
+        public async Task<bool> UpdateManagerPermissionsAsync(int managerId, List<string> permissions)
+        {
+            try
+            {
+                var manager = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .FirstOrDefaultAsync(m => m.ManagerId == managerId);
+
+                if (manager == null) return false;
+
+                // 獲取管理員的主要角色權限
+                var rolePermission = manager.ManagerRoles.FirstOrDefault();
+                if (rolePermission == null) return false;
+
+                // 更新權限
+                rolePermission.UserStatusManagement = permissions.Contains("UserStatusManagement");
+                rolePermission.PetRightsManagement = permissions.Contains("PetRightsManagement") || permissions.Contains("PetManagement");
+                rolePermission.ShoppingPermissionManagement = permissions.Contains("ShoppingPermissionManagement") || permissions.Contains("ShoppingManagement");
+                rolePermission.MessagePermissionManagement = permissions.Contains("MessagePermissionManagement") || permissions.Contains("MessageManagement");
+                rolePermission.CustomerService = permissions.Contains("CustomerService");
+                rolePermission.AdministratorPrivilegesManagement = permissions.Contains("AdministratorPrivilegesManagement") || permissions.Contains("Administrator");
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -171,13 +199,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.UserStatusManagement == true);
+                    mr?.UserStatusManagement == true);
             }
             catch
             {
@@ -194,13 +221,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.PetRightsManagement == true);
+                    mr?.PetRightsManagement == true);
             }
             catch
             {
@@ -217,13 +243,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.ShoppingPermissionManagement == true);
+                    mr?.ShoppingPermissionManagement == true);
             }
             catch
             {
@@ -240,13 +265,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.MessagePermissionManagement == true);
+                    mr?.MessagePermissionManagement == true);
             }
             catch
             {
@@ -263,13 +287,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.CustomerService == true);
+                    mr?.CustomerService == true);
             }
             catch
             {
@@ -286,13 +309,12 @@ namespace GameSpace.Areas.MiniGame.Services
             {
                 var manager = await _context.ManagerData
                     .Include(m => m.ManagerRoles)
-                    .ThenInclude(mr => mr.ManagerRolePermission)
                     .FirstOrDefaultAsync(m => m.Manager_Id == managerId);
 
                 if (manager == null) return false;
 
                 return manager.ManagerRoles.Any(mr =>
-                    mr.ManagerRolePermission?.AdministratorPrivilegesManagement == true);
+                    mr?.AdministratorPrivilegesManagement == true);
             }
             catch
             {
@@ -691,44 +713,106 @@ namespace GameSpace.Areas.MiniGame.Services
             };
         }
 
-        public async Task<PermissionStatistics> GetPermissionStatisticsAsync()
+        public async Task<PermissionStatisticsViewModel> GetPermissionStatisticsAsync()
         {
             try
             {
                 var totalUsers = await _context.Users.CountAsync();
-                var usersWithRights = await _context.UserRights
-                    .Select(ur => ur.UserId)
-                    .Distinct()
+                var activeUsers = await _context.Users.Where(u => u.IsActive).CountAsync();
+
+                // 統計管理員
+                var totalManagers = await _context.ManagerData.CountAsync();
+                var activeManagers = await _context.ManagerData.Where(m => m.IsActive).CountAsync();
+
+                // 統計用戶權限（基於 UserRight 表）
+                var totalUserRights = await _context.UserRights.CountAsync();
+                var activeUserRights = await _context.UserRights
+                    .Where(ur => ur.UserStatus == true || ur.ShoppingPermission == true ||
+                                ur.MessagePermission == true || ur.SalesAuthority == true)
                     .CountAsync();
 
-                var allRights = await _context.UserRights.ToListAsync();
-                var now = DateTime.UtcNow;
+                // 統計權限類型
+                var totalRightTypes = 7; // 預定義的權限類型數量
 
-                var activeRights = allRights.Count(r => r.IsActive && (r.ExpiresAt == null || r.ExpiresAt > now));
-                var expiredRights = allRights.Count(r => r.ExpiresAt != null && r.ExpiresAt <= now);
+                // 統計操作日誌
+                var totalOperationLogs = await _context.AdminOperationLogs.CountAsync();
 
-                var rightsByType = allRights
-                    .GroupBy(r => r.RightType)
-                    .ToDictionary(g => g.Key, g => g.Count());
-
-                var rightsByLevel = allRights
-                    .GroupBy(r => r.RightLevel)
-                    .ToDictionary(g => g.Key, g => g.Count());
-
-                return new PermissionStatistics
+                // 權限類型統計
+                var rightTypeStats = new List<RightTypeStatisticsViewModel>
                 {
+                    new RightTypeStatisticsViewModel
+                    {
+                        RightType = "General",
+                        Count = totalUsers,
+                        ActiveCount = activeUsers,
+                        Percentage = totalUsers > 0 ? (double)activeUsers / totalUsers * 100 : 0
+                    },
+                    new RightTypeStatisticsViewModel
+                    {
+                        RightType = "Shopping",
+                        Count = await _context.UserRights.CountAsync(ur => ur.ShoppingPermission == true),
+                        ActiveCount = await _context.UserRights.CountAsync(ur => ur.ShoppingPermission == true),
+                        Percentage = 0
+                    },
+                    new RightTypeStatisticsViewModel
+                    {
+                        RightType = "Message",
+                        Count = await _context.UserRights.CountAsync(ur => ur.MessagePermission == true),
+                        ActiveCount = await _context.UserRights.CountAsync(ur => ur.MessagePermission == true),
+                        Percentage = 0
+                    },
+                    new RightTypeStatisticsViewModel
+                    {
+                        RightType = "Sales",
+                        Count = await _context.UserRights.CountAsync(ur => ur.SalesAuthority == true),
+                        ActiveCount = await _context.UserRights.CountAsync(ur => ur.SalesAuthority == true),
+                        Percentage = 0
+                    }
+                };
+
+                // 管理員角色統計
+                var managerRoleStats = await _context.ManagerData
+                    .Include(m => m.ManagerRoles)
+                    .GroupBy(m => m.ManagerRoles.FirstOrDefault()!.RoleName ?? "Unknown")
+                    .Select(g => new ManagerRoleStatisticsViewModel
+                    {
+                        RoleName = g.Key,
+                        Count = g.Count(),
+                        Percentage = totalManagers > 0 ? (double)g.Count() / totalManagers * 100 : 0
+                    })
+                    .ToListAsync();
+
+                // 操作日誌統計
+                var operationLogStats = await _context.AdminOperationLogs
+                    .GroupBy(log => log.Operation)
+                    .Select(g => new OperationLogStatisticsViewModel
+                    {
+                        Operation = g.Key,
+                        Count = g.Count(),
+                        LastOperationTime = g.Max(log => log.OperationTime)
+                    })
+                    .OrderByDescending(s => s.Count)
+                    .Take(10)
+                    .ToListAsync();
+
+                return new PermissionStatisticsViewModel
+                {
+                    TotalManagers = totalManagers,
+                    ActiveManagers = activeManagers,
                     TotalUsers = totalUsers,
-                    UsersWithRights = usersWithRights,
-                    TotalRights = allRights.Count,
-                    ActiveRights = activeRights,
-                    ExpiredRights = expiredRights,
-                    RightsByType = rightsByType,
-                    RightsByLevel = rightsByLevel
+                    ActiveUsers = activeUsers,
+                    TotalUserRights = totalUserRights,
+                    ActiveUserRights = activeUserRights,
+                    TotalRightTypes = totalRightTypes,
+                    TotalOperationLogs = totalOperationLogs,
+                    RightTypeStatistics = rightTypeStats,
+                    ManagerRoleStatistics = managerRoleStats,
+                    OperationLogStatistics = operationLogStats
                 };
             }
             catch
             {
-                return new PermissionStatistics();
+                return new PermissionStatisticsViewModel();
             }
         }
 
@@ -809,6 +893,453 @@ namespace GameSpace.Areas.MiniGame.Services
             catch
             {
                 return new PagedResult<PermissionOperationLog>();
+            }
+        }
+
+        // ========== 新增的介面方法實作 ==========
+
+        /// <summary>
+        /// 根據查詢條件獲取用戶權限列表
+        /// </summary>
+        public async Task<PagedResult<UserRightViewModel>> GetUserRightsAsync(UserRightsQuery query)
+        {
+            try
+            {
+                // 由於 UserRight 的擴展屬性是 NotMapped，我們需要從其他來源構建數據
+                // 這裡我們使用 Users 表來模擬用戶權限數據
+                var usersQuery = _context.Users.AsQueryable();
+
+                // 應用查詢條件
+                if (!string.IsNullOrEmpty(query.UserId))
+                {
+                    if (int.TryParse(query.UserId, out int userIdInt))
+                    {
+                        usersQuery = usersQuery.Where(u => u.UserId == userIdInt);
+                    }
+                }
+
+                var totalCount = await usersQuery.CountAsync();
+
+                var users = await usersQuery
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .Include(u => u.UserRight)
+                    .ToListAsync();
+
+                var userRights = users.Select(u => new UserRightViewModel
+                {
+                    UserRightId = u.UserId, // 使用 UserId 作為標識
+                    UserId = u.UserId,
+                    UserName = u.UserName,
+                    UserAccount = u.UserAccount,
+                    RightName = "基本權限",
+                    RightType = "General",
+                    RightLevel = 1,
+                    Description = "用戶基本權限",
+                    IsActive = u.IsActive,
+                    ExpiresAt = null,
+                    CreatedAt = u.User_registration_date ?? DateTime.Now,
+                    UpdatedAt = null
+                }).ToList();
+
+                return new PagedResult<UserRightViewModel>
+                {
+                    Items = userRights,
+                    TotalCount = totalCount,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+            }
+            catch
+            {
+                return new PagedResult<UserRightViewModel>
+                {
+                    Items = new List<UserRightViewModel>(),
+                    TotalCount = 0,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize
+                };
+            }
+        }
+
+        /// <summary>
+        /// 獲取所有用戶列表
+        /// </summary>
+        public async Task<List<UserViewModel>> GetAllUsersAsync()
+        {
+            try
+            {
+                var users = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderBy(u => u.UserName)
+                    .Take(100) // 限制返回數量
+                    .Select(u => new UserViewModel
+                    {
+                        UserId = u.UserId,
+                        UserName = u.UserName,
+                        UserAccount = u.UserAccount,
+                        UserEmail = u.User_email ?? string.Empty,
+                        IsActive = u.IsActive,
+                        CreatedAt = u.User_registration_date ?? DateTime.Now,
+                        LastLoginTime = u.LastLoginAt
+                    })
+                    .ToListAsync();
+
+                return users;
+            }
+            catch
+            {
+                return new List<UserViewModel>();
+            }
+        }
+
+        /// <summary>
+        /// 獲取所有權限類型
+        /// </summary>
+        public async Task<List<RightTypeViewModel>> GetRightTypesAsync()
+        {
+            // 由於沒有 RightType 表，返回預定義的權限類型
+            return await Task.FromResult(new List<RightTypeViewModel>
+            {
+                new RightTypeViewModel
+                {
+                    TypeId = 1,
+                    TypeName = "General",
+                    DisplayName = "一般權限",
+                    Description = "基本功能訪問權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 2,
+                    TypeName = "MiniGame",
+                    DisplayName = "小遊戲權限",
+                    Description = "小遊戲相關功能權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 3,
+                    TypeName = "Pet",
+                    DisplayName = "寵物權限",
+                    Description = "寵物管理相關權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 4,
+                    TypeName = "Reward",
+                    DisplayName = "獎勵權限",
+                    Description = "獎勵領取相關權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 5,
+                    TypeName = "Premium",
+                    DisplayName = "高級權限",
+                    Description = "高級功能訪問權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 6,
+                    TypeName = "Shopping",
+                    DisplayName = "購物權限",
+                    Description = "購物相關功能權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                },
+                new RightTypeViewModel
+                {
+                    TypeId = 7,
+                    TypeName = "Message",
+                    DisplayName = "訊息權限",
+                    Description = "訊息相關功能權限",
+                    CreatedAt = DateTime.Now,
+                    IsActive = true
+                }
+            });
+        }
+
+        /// <summary>
+        /// 添加用戶權限（新簽名）
+        /// </summary>
+        public async Task<bool> AddUserRightAsync(int userId, string rightName, string rightType,
+            int rightLevel, string description, DateTime? expiresAt)
+        {
+            return await AddUserRightAsync(userId, rightName, description, rightType, rightLevel, expiresAt);
+        }
+
+        /// <summary>
+        /// 更新用戶權限（新簽名）
+        /// </summary>
+        public async Task<bool> UpdateUserRightAsync(int userRightId, int rightLevel,
+            string description, DateTime? expiresAt, bool isActive)
+        {
+            var updateModel = new UserRightUpdateModel
+            {
+                RightLevel = rightLevel,
+                Description = description,
+                ExpiresAt = expiresAt,
+                IsActive = isActive
+            };
+
+            return await UpdateUserRightAsync(userRightId, updateModel);
+        }
+
+        /// <summary>
+        /// 根據ID獲取用戶權限
+        /// </summary>
+        public async Task<UserRightViewModel?> GetUserRightByIdAsync(int userRightId)
+        {
+            try
+            {
+                // 使用 UserId 作為 UserRightId
+                var user = await _context.Users
+                    .Include(u => u.UserRight)
+                    .FirstOrDefaultAsync(u => u.UserId == userRightId);
+
+                if (user == null) return null;
+
+                return new UserRightViewModel
+                {
+                    UserRightId = user.UserId,
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    UserAccount = user.UserAccount,
+                    RightName = "基本權限",
+                    RightType = "General",
+                    RightLevel = 1,
+                    Description = "用戶基本權限",
+                    IsActive = user.IsActive,
+                    ExpiresAt = null,
+                    CreatedAt = user.User_registration_date ?? DateTime.Now,
+                    UpdatedAt = null
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 根據用戶ID獲取用戶權限列表
+        /// </summary>
+        public async Task<List<UserRightViewModel>> GetUserRightsByUserIdAsync(int userId)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.UserRight)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+
+                if (user == null) return new List<UserRightViewModel>();
+
+                var rights = new List<UserRightViewModel>();
+
+                // 添加基本權限
+                rights.Add(new UserRightViewModel
+                {
+                    UserRightId = user.UserId * 1000 + 1,
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    UserAccount = user.UserAccount,
+                    RightName = "基本權限",
+                    RightType = "General",
+                    RightLevel = 1,
+                    Description = "用戶基本訪問權限",
+                    IsActive = user.IsActive,
+                    ExpiresAt = null,
+                    CreatedAt = user.User_registration_date ?? DateTime.Now
+                });
+
+                // 根據 UserRight 表添加特殊權限
+                if (user.UserRight != null)
+                {
+                    if (user.UserRight.ShoppingPermission == true)
+                    {
+                        rights.Add(new UserRightViewModel
+                        {
+                            UserRightId = user.UserId * 1000 + 2,
+                            UserId = user.UserId,
+                            UserName = user.UserName,
+                            UserAccount = user.UserAccount,
+                            RightName = "購物權限",
+                            RightType = "Shopping",
+                            RightLevel = 1,
+                            Description = "允許用戶購物",
+                            IsActive = user.UserRight.ShoppingPermission ?? false,
+                            CreatedAt = user.User_registration_date ?? DateTime.Now
+                        });
+                    }
+
+                    if (user.UserRight.MessagePermission == true)
+                    {
+                        rights.Add(new UserRightViewModel
+                        {
+                            UserRightId = user.UserId * 1000 + 3,
+                            UserId = user.UserId,
+                            UserName = user.UserName,
+                            UserAccount = user.UserAccount,
+                            RightName = "訊息權限",
+                            RightType = "Message",
+                            RightLevel = 1,
+                            Description = "允許用戶發送訊息",
+                            IsActive = user.UserRight.MessagePermission ?? false,
+                            CreatedAt = user.User_registration_date ?? DateTime.Now
+                        });
+                    }
+
+                    if (user.UserRight.SalesAuthority == true)
+                    {
+                        rights.Add(new UserRightViewModel
+                        {
+                            UserRightId = user.UserId * 1000 + 4,
+                            UserId = user.UserId,
+                            UserName = user.UserName,
+                            UserAccount = user.UserAccount,
+                            RightName = "銷售權限",
+                            RightType = "Sales",
+                            RightLevel = 2,
+                            Description = "允許用戶銷售商品",
+                            IsActive = user.UserRight.SalesAuthority ?? false,
+                            CreatedAt = user.User_registration_date ?? DateTime.Now
+                        });
+                    }
+                }
+
+                return rights;
+            }
+            catch
+            {
+                return new List<UserRightViewModel>();
+            }
+        }
+
+        /// <summary>
+        /// 添加權限類型
+        /// </summary>
+        public async Task<bool> AddRightTypeAsync(string typeName, string displayName, string description)
+        {
+            // 由於沒有 RightType 表，這個方法返回成功但不執行任何操作
+            // 實際應用中應該創建 RightType 表或使用配置文件
+            await Task.CompletedTask;
+            return true;
+        }
+
+        /// <summary>
+        /// 更新權限類型
+        /// </summary>
+        public async Task<bool> UpdateRightTypeAsync(int typeId, string displayName, string description)
+        {
+            // 由於沒有 RightType 表，這個方法返回成功但不執行任何操作
+            await Task.CompletedTask;
+            return true;
+        }
+
+        /// <summary>
+        /// 刪除權限類型
+        /// </summary>
+        public async Task<bool> DeleteRightTypeAsync(int typeId)
+        {
+            // 由於沒有 RightType 表，這個方法返回成功但不執行任何操作
+            await Task.CompletedTask;
+            return true;
+        }
+
+        /// <summary>
+        /// 獲取操作日誌列表
+        /// </summary>
+        public async Task<PagedResult<OperationLogViewModel>> GetOperationLogsAsync(int page, int pageSize)
+        {
+            try
+            {
+                var query = _context.AdminOperationLogs.AsQueryable();
+
+                var totalCount = await query.CountAsync();
+
+                var logs = await query
+                    .OrderByDescending(log => log.OperationTime)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Include(log => log.Manager)
+                    .Select(log => new OperationLogViewModel
+                    {
+                        LogId = log.LogId,
+                        ManagerId = log.ManagerId,
+                        ManagerName = log.Manager != null ? log.Manager.ManagerName : "Unknown",
+                        Operation = log.Operation,
+                        Details = log.Details,
+                        TargetUserId = log.TargetUserId,
+                        TargetUserName = string.Empty, // 可以通過額外查詢獲取
+                        OperationTime = log.OperationTime,
+                        IpAddress = log.IpAddress ?? string.Empty
+                    })
+                    .ToListAsync();
+
+                return new PagedResult<OperationLogViewModel>
+                {
+                    Items = logs,
+                    TotalCount = totalCount,
+                    PageNumber = page,
+                    PageSize = pageSize
+                };
+            }
+            catch
+            {
+                return new PagedResult<OperationLogViewModel>
+                {
+                    Items = new List<OperationLogViewModel>(),
+                    TotalCount = 0,
+                    PageNumber = page,
+                    PageSize = pageSize
+                };
+            }
+        }
+
+        /// <summary>
+        /// 根據ID獲取操作日誌
+        /// </summary>
+        public async Task<OperationLogViewModel?> GetOperationLogByIdAsync(int logId)
+        {
+            try
+            {
+                var log = await _context.AdminOperationLogs
+                    .Include(l => l.Manager)
+                    .FirstOrDefaultAsync(l => l.LogId == logId);
+
+                if (log == null) return null;
+
+                string targetUserName = string.Empty;
+                if (log.TargetUserId.HasValue)
+                {
+                    var user = await _context.Users.FindAsync(log.TargetUserId.Value);
+                    targetUserName = user?.UserName ?? string.Empty;
+                }
+
+                return new OperationLogViewModel
+                {
+                    LogId = log.LogId,
+                    ManagerId = log.ManagerId,
+                    ManagerName = log.Manager?.ManagerName ?? "Unknown",
+                    Operation = log.Operation,
+                    Details = log.Details,
+                    TargetUserId = log.TargetUserId,
+                    TargetUserName = targetUserName,
+                    OperationTime = log.OperationTime,
+                    IpAddress = log.IpAddress ?? string.Empty
+                };
+            }
+            catch
+            {
+                return null;
             }
         }
     }

@@ -386,7 +386,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
             try
             {
                 var options = await _petRulesService.GetAllColorOptionsAsync();
-                var option = options.FirstOrDefault(o => o.OptionID == id);
+                var option = options.FirstOrDefault(o => o.ColorOptionId == id);
 
                 if (option == null)
                 {
@@ -562,11 +562,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
                 // 更新等級1的換色成本設定
                 var settings = await _petRulesService.GetAllSkinColorSettingsAsync();
-                var setting = settings.FirstOrDefault(s => s.Level == 1);
+                var setting = settings.FirstOrDefault(s => s.RequiredLevel == 1);
 
                 if (setting != null)
                 {
-                    setting.PointsCost = pointsRequired;
+                    setting.PointCost = pointsRequired;
                     await _petRulesService.UpdateSkinColorSettingAsync(setting);
                 }
 
@@ -605,11 +605,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }
 
                 var settings = await _petRulesService.GetAllBackgroundSettingsAsync();
-                var setting = settings.FirstOrDefault(s => s.Level == 1);
+                var setting = settings.FirstOrDefault(s => s.RequiredLevel == 1);
 
                 if (setting != null)
                 {
-                    setting.PointsCost = pointsRequired;
+                    setting.PointCost = pointsRequired;
                     await _petRulesService.UpdateBackgroundSettingAsync(setting);
                 }
 

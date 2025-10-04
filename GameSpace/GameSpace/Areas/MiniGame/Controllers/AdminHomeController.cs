@@ -140,7 +140,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Take(5)
                 .Select(s => new RecentActivityModel
                 {
-                    Id = s.SignInId,
+                    Id = s.LogId,
                     Type = "SignIn",
                     UserId = s.UserId,
                     UserName = s.User.UserName,
@@ -160,7 +160,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     Type = "Game",
                     UserId = g.UserId,
                     UserName = g.User.UserName,
-                    Description = $"遊戲 {g.GameName} 獲得 {g.PointsGained} 點",
+                    Description = $"遊戲獲得 {g.PointsGained} 點",
                     Timestamp = g.StartTime
                 })
                 .ToListAsync();
@@ -309,7 +309,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Take(3)
                 .Select(s => new RecentActivityModel
                 {
-                    Id = s.SignInId,
+                    Id = s.LogId,
                     Type = "SignIn",
                     UserId = s.UserId,
                     UserName = s.User.UserName,
@@ -329,7 +329,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     Type = "Game",
                     UserId = g.UserId,
                     UserName = g.User.UserName,
-                    Description = $"遊戲 {g.GameName} 獲得 {g.PointsGained} 點",
+                    Description = $"遊戲獲得 {g.PointsGained} 點",
                     Timestamp = g.StartTime
                 })
                 .ToListAsync();
