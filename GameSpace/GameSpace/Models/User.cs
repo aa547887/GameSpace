@@ -79,6 +79,49 @@ public partial class User
         set => UserAccount = value;
     }
 
+    // Case-variant aliases for AdminUserController compatibility
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string User_Email
+    {
+        get => User_email;
+        set => User_email = value;
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? User_Phone
+    {
+        get => User_phone;
+        set => User_phone = value;
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public DateTime? User_Birthday
+    {
+        get => User_birthday;
+        set => User_birthday = value;
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? User_Gender
+    {
+        get => User_gender;
+        set => User_gender = value;
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? User_Address
+    {
+        get => User_address;
+        set => User_address = value;
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string User_Password
+    {
+        get => UserPassword;
+        set => UserPassword = value;
+    }
+
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<GroupBlock> GroupBlockBlockedByUsers { get; set; } = new List<GroupBlock>();
