@@ -2,9 +2,9 @@
 
 namespace GamiPort.Areas.MiniGame.Controllers
 {
+	[Area("MiniGame")]
 	public class HomeController : Controller
 	{
-		[Area("MiniGame")]
 		public IActionResult Index()
 		{
 			return View();
