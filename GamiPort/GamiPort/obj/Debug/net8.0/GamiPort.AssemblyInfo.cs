@@ -11,11 +11,12 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute("Bootstrap5")]
 [assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("aspnet-GamiPort-f671c6f1-0385-48dd-b8ea-6e0b1e4c6e25")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ada94488679eb26d108cba8e2356d541aeaa0321")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+def602c5d9d684851914fa4bc616c7bb777a153d")]
 [assembly: System.Reflection.AssemblyProductAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GamiPort")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

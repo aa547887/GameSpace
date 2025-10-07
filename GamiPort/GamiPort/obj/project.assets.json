@@ -8042,23 +8042,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\ispan\\.nuget\\packages\\": {},
+    "C:\\Users\\green\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\GamiPort.csproj",
+      "projectUniqueName": "C:\\Users\\green\\Desktop\\GameSpace\\Forum\\GamiPort\\GamiPort\\GamiPort.csproj",
       "projectName": "GamiPort",
-      "projectPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\GamiPort.csproj",
-      "packagesPath": "C:\\Users\\ispan\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ispan\\source\\repos\\Final Project\\Project\\GamiPort\\GamiPort\\obj\\",
+      "projectPath": "C:\\Users\\green\\Desktop\\GameSpace\\Forum\\GamiPort\\GamiPort\\GamiPort.csproj",
+      "packagesPath": "C:\\Users\\green\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\green\\Desktop\\GameSpace\\Forum\\GamiPort\\GamiPort\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\ispan\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\green\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -8135,7 +8135,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
