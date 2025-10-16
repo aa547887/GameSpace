@@ -52,4 +52,8 @@
     <Folder Include="Areas\social_hub\Models\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\GameSpace\GameSpace\GameSpace.csproj" />
+  </ItemGroup>
+
 </Project>
