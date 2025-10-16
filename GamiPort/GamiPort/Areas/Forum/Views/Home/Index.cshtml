@@ -1,1 +1,144 @@
-﻿論壇
+﻿@{
+    ViewData["Title"] = "論壇 - 熱門";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
+    <style>
+        /* 只針對輪播，壓回容器寬度，單張滿版，不再撐版 */
+        .hero-swiper,
+        .hero-swiper .swiper,
+        .hero-swiper .swiper-container,
+        .hero-swiper .swiper-wrapper {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          overflow: hidden;
+        }
+        .hero-swiper .swiper-slide {
+          width: 100% !important;
+          max-width: 100% !important;
+          flex: 0 0 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box;
+        }
+        .hero-swiper img, .hero-swiper video, .hero-swiper canvas {
+          display:block; width:100%; height:auto; max-width:100%;
+          object-fit: cover; /* 不想裁切就刪掉 */
+        }
+
+        /* 收合態保險（避免右側回彈） */
+        html.sidebar-collapsed .container,
+        html.sidebar-collapsed .container-fluid,
+        html.sidebar-collapsed .row,
+        html.sidebar-collapsed [class*="col-"] { min-width: 0; }
+        .app-main { min-width: 0; }
+    </style>
+}
+
+<!-- 左側主內容 -->
+<div class="board-header d-flex align-items-center mb-2">
+    <h2 class="m-0">論壇 / 熱門</h2>
+    <a class="btn btn-primary btn-sm ms-auto" href="/forum/create">＋ 發表主題</a>
+</div>
+
+<ul id="sortTabs" class="nav nav-pills sort-tabs mb-2">
+    <li class="nav-item"><a class="nav-link active" data-sort="lastReply" href="#">最新回覆</a></li>
+    <li class="nav-item"><a class="nav-link" data-sort="created" href="#">發文時間</a></li>
+    <li class="nav-item"><a class="nav-link" data-sort="hot" href="#">熱門</a></li>
+    <li class="nav-item"><a class="nav-link" data-filter="admin" href="#">管理員</a></li>
+    <li class="nav-item"><a class="nav-link" data-filter="insight" href="#">洞察</a></li>
+</ul>
+
+<div id="threadList"></div>
+
+<div class="pager">
+    <button id="prevBtn" class="btn btn-outline-secondary btn-sm">上一頁</button>
+    <span id="pageInfo" class="text-muted"></span>
+    <button id="nextBtn" class="btn btn-outline-secondary btn-sm">下一頁</button>
+</div>
+
+<!-- 右欄（只有 ForumLayout 會渲染這段） -->
+@section RightRail {
+    <div class="card shadow-sm p-3 mb-3">排行榜（假資料）</div>
+    <div class="card shadow-sm p-3">熱門標籤 / 公告</div>
+}
+
+@section Scripts {
+    <script>
+        // ---- 假資料（之後換 API 或 Model）----
+        const mockData = [
+          { id:101, title:"版規更新：洗版與廣告處置", author:"Moderator",
+            createdAt:"2025-10-10T08:10:00Z", lastRepliedAt:"2025-10-14T03:20:00Z",
+            up:56, down:3, replies:124, isPinned:true, isAnnounce:true, isAdmin:true, isInsight:false },
+          { id:102, title:"玩家留存下滑？三個關鍵洞察", author:"分析師A",
+            createdAt:"2025-10-13T01:00:00Z", lastRepliedAt:"2025-10-14T02:05:00Z",
+            up:120, down:12, replies:88, isPinned:false, isAnnounce:false, isAdmin:false, isInsight:true },
+          { id:103, title:"新手入門小遊戲清單", author:"阿明",
+            createdAt:"2025-10-12T09:00:00Z", lastRepliedAt:"2025-10-13T21:15:00Z",
+            up:42, down:1, replies:33, isPinned:false, isAnnounce:false, isAdmin:false, isInsight:false },
+        ];
+
+        let state = { sort:"lastReply", filter:"all", page:1, size:10 };
+        const fmt = s => new Date(s).toLocaleString('zh-TW',{hour12:false}).replace(/\//g,'/');
+        const hot = t => (t.up*2 + t.replies*1.5 - t.down);
+
+        function render(){
+          let rows = [...mockData];
+          if (state.filter==='admin')   rows = rows.filter(x=>x.isAdmin);
+          if (state.filter==='insight') rows = rows.filter(x=>x.isInsight);
+
+          if (state.sort==='lastReply') rows.sort((a,b)=> new Date(b.lastRepliedAt)-new Date(a.lastRepliedAt));
+          if (state.sort==='created')   rows.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+          if (state.sort==='hot')       rows.sort((a,b)=> hot(b)-hot(a));
+
+          const start = (state.page-1)*state.size;
+          const pageItems = rows.slice(start, start+state.size);
+
+          threadList.innerHTML = pageItems.map(t=>`
+            <div class="thread-row">
+              <div class="thread-score">
+                <span class="badge-score ${t.up>=t.down?'badge-up':'badge-down'}">
+                  ${t.up - t.down >= 0 ? '+' : ''}${t.up - t.down}
+                </span>
+              </div>
+              <div class="thread-main">
+                <div class="thread-tags">
+                  ${t.isPinned?'<span class="tag tag-pin">置頂</span>':''}
+                  ${t.isAdmin?'<span class="tag tag-admin">管理員</span>':''}
+                  ${t.isInsight?'<span class="tag tag-insight">洞察</span>':''}
+                  ${t.isAnnounce?'<span class="tag tag-admin">公告</span>':''}
+                </div>
+                <h3 class="title"><a href="/t/${t.id}">${t.title}</a></h3>
+                <div class="thread-meta">
+                  <span>作者：${t.author}</span>
+                  <span>發文：${fmt(t.createdAt)}</span>
+                  <span>最後回覆：${fmt(t.lastRepliedAt)}</span>
+                </div>
+              </div>
+              <div class="thread-actions"><span class="replies">回覆 ${t.replies}</span></div>
+            </div>
+          `).join('') || '<div class="text-muted p-3">沒有資料</div>';
+
+          const totalPages = Math.max(1, Math.ceil(rows.length/state.size));
+          pageInfo.textContent = `${state.page} / ${totalPages}`;
+          prevBtn.disabled = state.page<=1;
+          nextBtn.disabled = state.page>=totalPages;
+        }
+
+        prevBtn.addEventListener('click', ()=>{ state.page=Math.max(1,state.page-1); render(); });
+        nextBtn.addEventListener('click', ()=>{ state.page=state.page+1; render(); });
+        document.querySelectorAll('#sortTabs .nav-link').forEach(a=>{
+          a.addEventListener('click', e=>{
+            e.preventDefault();
+            document.querySelectorAll('#sortTabs .nav-link').forEach(n=>n.classList.remove('active'));
+            a.classList.add('active');
+            if (a.dataset.sort){ state.sort=a.dataset.sort; state.page=1; }
+            if (a.dataset.filter){ state.filter=a.dataset.filter; state.page=1; }
+            render();
+          });
+        });
+
+        render();
+    </script>
+}

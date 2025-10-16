@@ -1,82 +1,10 @@
-﻿# === GameSpace / Visual Studio / .NET + Vue 完整版 .gitignore ===
-# 來源：綜合 VisualStudio.gitignore + 前端常見規則，精簡且保守（可直接用）
-
-# --- Visual Studio / Rider / VS Code（使用者環境） ---
+﻿# Visual Studio local cache
 .vs/
-.idea/
-.vscode/
-
-# --- .NET 建置輸出 ---
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Ll][Ll][Vv][Mm]/
-# dotnet publish 輸出（各框架）
-**/publish/
-
-# --- NuGet / 套件 ---
-*.nupkg
-*.snupkg
-packages/
-# 還原產物
-project.lock.json
-project.fragment.lock.json
-artifacts/
-
-# --- 測試 / 覆蓋率 ---
-TestResults/
-*.trx
-*.coverage
-*.coveragexml
-
-# --- 使用者/暫存檔 ---
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
-*.rsuser
-*.swp
-*.tmp
-*.temp
-*.bak
 
-# --- 前端（Node / Vue / Vite / Webpack） ---
-node_modules/
-dist/
-build/
-.cache/
-.temp/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-# 依專案需要：若你的前端靜態資源透過 LibMan 或第三方拉取
-wwwroot/lib/
-
-# --- 影像/二進位等大型檔案（通常不版控） ---
-*.dll
-*.exe
-*.pdb
-*.db
-*.sqlite
-*.7z
-*.zip
-
-# --- 其他工具 ---
-_ReSharper*/
-*.DotSettings.user
-*.orig
-*.rej
-
-# --- 排除產生於文件夾層級的 macOS/Windows 附檔 ---
-.DS_Store
-Thumbs.db
-
-# === 規則完成 ===
+# .NET build outputs
+**/bin/
+**/obj/

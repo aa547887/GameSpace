@@ -50,6 +50,7 @@
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="Areas\social_hub\Models\" />
+    <Folder Include="wwwroot\images\Forum\" />
   </ItemGroup>
 
 </Project>
