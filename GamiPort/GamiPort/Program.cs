@@ -51,9 +51,20 @@ namespace GamiPort
 				{
 					// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
 					// options.SignIn.RequireConfirmedAccount = false;
-					options.SignIn.RequireConfirmedAccount = true;
+					options.SignIn.RequireConfirmedAccount = false;
 				})
 				.AddEntityFrameworkStores<ApplicationDbContext>();
+
+			builder.Services.ConfigureApplicationCookie(opt =>
+			{
+				opt.LoginPath = "/Login/Login";
+				opt.AccessDeniedPath = "/Login/Denied";
+				opt.Cookie.Name = "GamiPort.User";   // 與後台 AdminCookie 不同名，避免混用
+													 // 視需求：opt.SlidingExpiration = true;
+			});
+
+			// 建議明確加入授權服務（供 [Authorize] 等使用）
+			builder.Services.AddAuthorization();
 
 			// ------------------------------------------------------------
 			// (C) 你的通知服務（放在 social_hub 區域命名空間也OK）
