@@ -13,5 +13,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 		public IActionResult Index() => View();
 		// GET: /social_hub/Home/Friends
 		public IActionResult Friends() => View();
+
+		public IActionResult Combos() => View();
 	}
 }
