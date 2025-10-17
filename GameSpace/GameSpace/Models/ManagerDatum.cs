@@ -25,17 +25,19 @@ public partial class ManagerDatum
 
     public DateTime? ManagerLockoutEnd { get; set; }
 
+    public virtual ICollection<CsAgent> CsAgentCreatedByManagerNavigations { get; set; } = new List<CsAgent>();
+
+    public virtual CsAgent? CsAgentManager { get; set; }
+
+    public virtual ICollection<CsAgent> CsAgentUpdatedByManagerNavigations { get; set; } = new List<CsAgent>();
+
     public virtual ICollection<Mute> Mutes { get; set; } = new List<Mute>();
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<ProductInfoAuditLog> ProductInfoAuditLogs { get; set; } = new List<ProductInfoAuditLog>();
-
-    public virtual ICollection<ProductInfo> ProductInfoProductCreatedByNavigations { get; set; } = new List<ProductInfo>();
-
-    public virtual ICollection<ProductInfo> ProductInfoProductUpdatedByNavigations { get; set; } = new List<ProductInfo>();
+    public virtual ICollection<SoOrderStatusHistory> SoOrderStatusHistories { get; set; } = new List<SoOrderStatusHistory>();
 
     public virtual ICollection<SupportTicket> SupportTicketAssignedManagers { get; set; } = new List<SupportTicket>();
 

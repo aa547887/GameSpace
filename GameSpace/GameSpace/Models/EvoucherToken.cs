@@ -14,4 +14,8 @@ public partial class EvoucherToken
     public DateTime ExpiresAt { get; set; }
 
     public bool IsRevoked { get; set; }
+
+    public virtual Evoucher Evoucher { get; set; } = null!;
+
+    public virtual ICollection<EvoucherRedeemLog> EvoucherRedeemLogs { get; set; } = new List<EvoucherRedeemLog>();
 }

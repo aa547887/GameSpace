@@ -1,6 +1,6 @@
-﻿using GameSpace.Areas.social_hub.Filters;     // RequireManagerPermissions
+﻿using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Areas.social_hub.Permissions; // IManagerPermissionService
 using GameSpace.Areas.social_hub.Services;
-using GameSpace.Data;
 using GameSpace.Infrastructure.Login;          // ILoginIdentity
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -12,40 +12,58 @@ using System.Threading.Tasks;
 
 namespace GameSpace.Areas.social_hub.Controllers
 {
+	/// <summary>
+	/// 穢語清單：列表 / 明細 / 新增 / 編輯 / 刪除 / 重載
+	/// 入口 Gate 由 <see cref="SocialHubAuthAttribute"/> 負責。
+	/// - 登入來源：<see cref="ILoginIdentity"/>（唯一）
+	/// - 權限來源：<see cref="IManagerPermissionService"/>（只取 can_edit_mute_all）
+	/// - 規則：
+	///   1) 只要是管理員即可進入本頁（[SocialHubAuth] 已檔非管理身分）
+	///   2) can_edit_mute_all = true → 能編輯/刪除所有詞
+	///      can_edit_mute_all = false → 只能編輯/刪除「自己建立」的詞
+	/// </summary>
 	[Area("social_hub")]
+	[SocialHubAuth]
 	public class MutesController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
 		private readonly IMuteFilter _muteFilter;
-		private readonly ILoginIdentity _login;   // ★ 統一來源
+		private readonly ILoginIdentity _login;           // ★ 唯一登入來源
+		private readonly IManagerPermissionService _perm; // ★ 權限服務（can_edit_mute_all）
 
-		public MutesController(GameSpacedatabaseContext context, IMuteFilter muteFilter, ILoginIdentity login)
+		public MutesController(
+			GameSpacedatabaseContext context,
+			IMuteFilter muteFilter,
+			ILoginIdentity login,
+			IManagerPermissionService perm)
 		{
 			_context = context;
 			_muteFilter = muteFilter;
 			_login = login;
+			_perm = perm;
 		}
 
-		// 取得目前頁面所需身分資訊（唯一來源：ILoginIdentity）
+		/// <summary>
+		/// 取目前頁面所需的 UI 身分資料。
+		/// isManager：是否為管理員；managerId：管理員ID（非管理員時為 0）
+		/// canManage：是否可顯示管理按鈕（這裡＝isManager）
+		/// canAdminAll：是否有 can_edit_mute_all → 能編輯所有人的詞
+		/// </summary>
 		private async Task<(bool isManager, int managerId, bool canManage, bool canAdminAll)> GetUiContextAsync()
 		{
 			var me = await _login.GetAsync();
-			var isMgr = me.IsAuthenticated && string.Equals(me.Kind, "manager", StringComparison.OrdinalIgnoreCase) && me.ManagerId.HasValue;
+			var isMgr = me.IsAuthenticated
+						&& string.Equals(me.Kind, "manager", StringComparison.OrdinalIgnoreCase)
+						&& me.ManagerId.HasValue;
 			var mid = isMgr ? me.ManagerId!.Value : 0;
 
-			// 可管理頁面：只要是管理員即可（如需更細權限，這裡可以再加布林欄位檢查）
+			// 只要是管理員即可進入/看到管理功能（細項限制另判）
 			bool canManage = isMgr;
 
-			// 總管/可管理全部：看 ManagerRoles 是否有 AdministratorPrivilegesManagement
+			// 由 CS_Agent_Permission 取 can_edit_mute_all
 			bool canAdminAll = false;
 			if (isMgr)
-			{
-				canAdminAll = await _context.ManagerData
-					.AsNoTracking()
-					.Where(m => m.ManagerId == mid)
-					.SelectMany(m => m.ManagerRoles)
-					.AnyAsync(rp => rp.AdministratorPrivilegesManagement == true);
-			}
+				canAdminAll = await _perm.HasCsEditMuteAllPermissionAsync(mid);
 
 			return (isMgr, mid, canManage, canAdminAll);
 		}
@@ -58,15 +76,15 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await GetUiContextAsync();
 			ViewBag.CanManageMutes = ctx.canManage;
 			ViewBag.IsManager = ctx.isManager;
-			ViewBag.CanAdminAll = ctx.canAdminAll;
+			ViewBag.CanAdminAll = ctx.canAdminAll; // 是否可編輯所有詞
 			ViewBag.ManagerId = ctx.managerId;
 
-			// 一般使用者：僅看啟用
+			// 列表查詢：目前設計為「管理員看全部；非管理員則只看啟用」
 			var baseQuery = _context.Mutes.AsNoTracking();
 			if (!ctx.canManage)
 				baseQuery = baseQuery.Where(m => m.IsActive == true);
 
-			// 搜尋
+			// 搜尋（支援：id:、mid: / mgr:、純數字、關鍵字、啟用/停用）
 			var qTrim = (q ?? string.Empty).Trim();
 			ViewBag.Q = qTrim;
 			if (!string.IsNullOrEmpty(qTrim))
@@ -107,8 +125,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			// 分頁
 			var totalItems = await baseQuery.CountAsync();
 			var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)PageSize));
-			if (page < 1) page = 1;
-			if (page > totalPages) page = totalPages;
+			page = Math.Clamp(page, 1, totalPages);
 
 			var list = await baseQuery
 				.OrderByDescending(m => m.MuteId)
@@ -116,7 +133,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 				.Take(PageSize)
 				.ToListAsync();
 
-			// 管理員姓名對照
+			// 讓列表能顯示管理員名稱
 			var ids = list.Where(x => x.ManagerId.HasValue).Select(x => x.ManagerId!.Value).Distinct().ToList();
 			var nameMap = new Dictionary<int, string>();
 			if (ids.Count > 0)
@@ -157,6 +174,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var mute = await _context.Mutes.AsNoTracking().FirstOrDefaultAsync(m => m.MuteId == id.Value);
 			if (mute == null) return NotFound();
 
+			// 非管理員僅能看啟用
 			if (!ctx.canManage && mute.IsActive != true) return NotFound();
 
 			ViewBag.ManagerName = mute.ManagerId.HasValue ? await GetManagerNameAsync(mute.ManagerId.Value) : null;
@@ -164,19 +182,21 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 
 		// GET: social_hub/Mutes/Create
-		[RequireManagerPermissions] // 由屬性保證：一定是管理員且已登入
-		public IActionResult Create()
+		[RequireManagerPermissions] // 屬性確保：一定是管理員且已登入
+		public async Task<IActionResult> Create()
 		{
+			var ctx = await GetUiContextAsync();
 			ViewBag.CanManageMutes = true;
 			ViewBag.IsManager = true;
-			ViewBag.CanAdminAll = true; // 只是頁面徽章，不影響權限邏輯
+			ViewBag.CanAdminAll = ctx.canAdminAll; // 顯示徽章用途
+			ViewBag.ManagerId = ctx.managerId;
 			return View();
 		}
 
 		// POST: social_hub/Mutes/Create
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		[RequireManagerPermissions] // 由屬性保證身分
+		[RequireManagerPermissions]
 		public async Task<IActionResult> Create([Bind("Word,Replacement,IsActive")] Mute input)
 		{
 			const int MaxWordLength = 50;
@@ -185,6 +205,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			input.Word = (input.Word ?? string.Empty).Trim();
 			input.Replacement = (input.Replacement ?? string.Empty).Trim();
 
+			// 基本驗證
 			if (string.IsNullOrEmpty(input.Word))
 				ModelState.AddModelError("Word", "請輸入詞彙。");
 			else if (input.Word.Length > MaxWordLength)
@@ -193,21 +214,25 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (!string.IsNullOrEmpty(input.Replacement) && input.Replacement.Length > MaxReplacementLength)
 				ModelState.AddModelError("Replacement", $"替代字長度不可超過 {MaxReplacementLength} 個字。");
 
+			// 重複詞檢查
 			if (ModelState.IsValid)
 			{
 				var dup = await _context.Mutes.AsNoTracking().AnyAsync(x => x.Word == input.Word);
 				if (dup) ModelState.AddModelError("Word", "此詞已存在。");
 			}
 
+			var ctx = await GetUiContextAsync();
 			if (!ModelState.IsValid)
 			{
 				ViewBag.CanManageMutes = true;
 				ViewBag.IsManager = true;
-				ViewBag.CanAdminAll = true;
+				ViewBag.CanAdminAll = ctx.canAdminAll;
+				ViewBag.ManagerId = ctx.managerId;
 				return View(input);
 			}
 
-			var me = await _login.GetAsync(); // ★ 唯一來源
+			// 建立者寫入 ManagerId
+			var me = await _login.GetAsync();
 			var entity = new Mute
 			{
 				Word = input.Word,
@@ -238,7 +263,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await GetUiContextAsync();
 			ViewBag.ManagerName = entity.ManagerId.HasValue ? await GetManagerNameAsync(entity.ManagerId.Value) : null;
 
-			// 非總管 → 只能編輯自己建立的
+			// 非 can_edit_mute_all → 只能編輯自己建立的
 			if (!(ctx.canAdminAll || (entity.ManagerId.HasValue && entity.ManagerId.Value == ctx.managerId)))
 				return Forbid();
 
@@ -264,12 +289,15 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (entity == null) return NotFound();
 
 			var ctx = await GetUiContextAsync();
+
+			// 非 can_edit_mute_all → 只能編輯自己建立的
 			if (!(ctx.canAdminAll || (entity.ManagerId.HasValue && entity.ManagerId.Value == ctx.managerId)))
 				return Forbid();
 
 			input.Word = (input.Word ?? string.Empty).Trim();
 			input.Replacement = (input.Replacement ?? string.Empty).Trim();
 
+			// 驗證
 			if (string.IsNullOrEmpty(input.Word))
 				ModelState.AddModelError("Word", "請輸入詞彙。");
 			else if (input.Word.Length > MaxWordLength)
@@ -278,6 +306,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (!string.IsNullOrEmpty(input.Replacement) && input.Replacement.Length > MaxReplacementLength)
 				ModelState.AddModelError("Replacement", $"替代字長度不可超過 {MaxReplacementLength} 個字。");
 
+			// 重複詞檢查（排除自己）
 			if (ModelState.IsValid)
 			{
 				var dup = await _context.Mutes.AnyAsync(x => x.MuteId != id && x.Word == input.Word);
@@ -292,6 +321,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 				ViewBag.ManagerId = ctx.managerId;
 				ViewBag.ManagerName = entity.ManagerId.HasValue ? await GetManagerNameAsync(entity.ManagerId.Value) : null;
 
+				// 回填目前值（避免 View 直接讀取 input）
 				entity.Word = input.Word;
 				entity.Replacement = string.IsNullOrWhiteSpace(input.Replacement) ? null : input.Replacement;
 				entity.IsActive = input.IsActive;
@@ -323,6 +353,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			var ctx = await GetUiContextAsync();
 			ViewBag.ManagerName = entity.ManagerId.HasValue ? await GetManagerNameAsync(entity.ManagerId.Value) : null;
 
+			// 非 can_edit_mute_all → 只能刪除自己建立的
 			if (!(ctx.canAdminAll || (entity.ManagerId.HasValue && entity.ManagerId.Value == ctx.managerId)))
 				return Forbid();
 
@@ -343,6 +374,8 @@ namespace GameSpace.Areas.social_hub.Controllers
 			if (entity == null) return RedirectToAction(nameof(Index));
 
 			var ctx = await GetUiContextAsync();
+
+			// 非 can_edit_mute_all → 只能刪除自己建立的
 			if (!(ctx.canAdminAll || (entity.ManagerId.HasValue && entity.ManagerId.Value == ctx.managerId)))
 				return Forbid();
 
@@ -355,20 +388,33 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-		// POST: 重載詞庫
+		/// <summary>
+		/// 重載詞庫：支援 AJAX 與傳統導頁。
+		/// - AJAX：回 200 + { ok:true }，前端可立即顯示成功 Toast（不換頁）
+		/// - 傳統表單：TempData Toast + Redirect 到 Index
+		/// </summary>
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequireManagerPermissions]
 		public async Task<IActionResult> Reload()
 		{
 			await _muteFilter.RefreshAsync();
+
+			// 由前端在 fetch 加上 X-Requested-With: XMLHttpRequest
+			if (Request.Headers.TryGetValue("X-Requested-With", out var x)
+				&& string.Equals(x, "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+			{
+				return Ok(new { ok = true });
+			}
+
 			TempData["Toast.Success"] = "已重載詞庫快取。";
-			TempData["Toast.AutoHideMs"] = 4000;
+			TempData["Toast.AutoHideMs"] = 2000;
 			return RedirectToAction(nameof(Index));
 		}
 
 		// ===== Helpers =====
 
+		/// <summary>嘗試從 Manager 資料物件取出顯示名稱。</summary>
 		private static string ExtractManagerName(object mgr)
 		{
 			if (mgr == null) return string.Empty;
@@ -385,6 +431,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 			return string.Empty;
 		}
 
+		/// <summary>查詢並回傳 Manager 顯示名稱（找不到回 null）。</summary>
 		private async Task<string?> GetManagerNameAsync(int managerId)
 		{
 			var mgr = await _context.Set<ManagerDatum>()
