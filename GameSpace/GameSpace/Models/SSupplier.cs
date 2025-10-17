@@ -24,6 +24,4 @@ public partial class SSupplier
     public int? DeletedBy { get; set; }
 
     public virtual ICollection<SGameProductDetail> SGameProductDetails { get; set; } = new List<SGameProductDetail>();
-
-    public virtual ICollection<SOtherProductDetail> SOtherProductDetails { get; set; } = new List<SOtherProductDetail>();
 }

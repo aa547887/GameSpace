@@ -2,9 +2,9 @@
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
+	[Area("OnlineStore")]
 	public class HomeController : Controller
 	{
-		[Area("OnlineStore")]
 		public IActionResult Index()
 		{
 			return View();

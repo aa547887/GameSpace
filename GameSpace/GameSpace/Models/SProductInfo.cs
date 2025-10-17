@@ -41,9 +41,9 @@ public partial class SProductInfo
 
     public int? DeletedBy { get; set; }
 
-    public virtual SGameProductDetail? SGameProductDetail { get; set; }
+    public bool IsPhysical { get; set; }
 
-    public virtual SOtherProductDetail? SOtherProductDetail { get; set; }
+    public virtual SGameProductDetail? SGameProductDetail { get; set; }
 
     public virtual SProductCode? SProductCode { get; set; }
 
