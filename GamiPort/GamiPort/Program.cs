@@ -1,5 +1,7 @@
 using GamiPort.Data;                       // ApplicationDbContext（Identity用）
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+using GamiPort.Areas.social_hub.Services.Abstractions;
+using GamiPort.Areas.social_hub.Services.Application;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +21,10 @@ namespace GamiPort
 				builder.Configuration.GetConnectionString("GameSpace")
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+
+
+			// Razor Pages UI 也需要 MVC 支援
+			builder.Services.AddControllersWithViews(); // 不要 AddApplicationPart(GameSpace...)
 
 			// ------------------------------------------------------------
 			// (A) DbContext 註冊
@@ -58,12 +64,11 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			// (C) 你的通知服務（放在 social_hub 區域命名空間也OK）
 			// ------------------------------------------------------------
-			builder.Services.AddScoped<
-				GamiPort.Areas.social_hub.Services.Notifications.INotificationService,
-				GamiPort.Areas.social_hub.Services.Notifications.NotificationService
-			>();
 
-			// ------------------------------------------------------------
+			builder.Services.AddMemoryCache();
+			builder.Services.AddScoped<INotificationStore, NotificationStore>();
+			builder.Services.AddScoped<IRelationService, RelationService>();
+			// -----------------------------------------------
 			// MVC & Razor Pages
 			//   - Razor Pages 供 Identity UI 使用
 			//   - MVC 給你 Areas / Controllers / Views
@@ -110,9 +115,13 @@ namespace GamiPort
 			app.UseStaticFiles();
 			app.UseRouting();
 
+
 			// ★ 驗證一定要在授權之前
 			app.UseAuthentication();
 			app.UseAuthorization();
+
+			// ★ 這行要在 MapControllers 之前，讓 API 有 [ValidateAntiForgeryToken] 可用
+			app.MapControllers();
 
 			// ------------------------------------------------------------
 			// 路由：Areas 要先註冊（比 default 先）
@@ -129,6 +138,7 @@ namespace GamiPort
 
 			// Identity UI（/Identity/...）
 			app.MapRazorPages();
+
 
 			app.Run();
 		}

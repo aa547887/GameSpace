@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;   // ConfigurationBuilder / IConfigura
 
 namespace GamiPort.Models
 {
-
 	public partial class GameSpacedatabaseContext : DbContext
 	{
 		// 無參數建構子：
