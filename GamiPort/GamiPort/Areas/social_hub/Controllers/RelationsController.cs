@@ -1,7 +1,7 @@
 ﻿// =============================================================
 // 交友 API：前端用 JSON 丟進 RelationCommand，服務驗證通過才寫入 DB
 // 免登入可測（[AllowAnonymous]）；若之後要開權限，改回 [Authorize] 即可
-// 回傳統一小駝峰鍵名：{ noOp, relationId, newStatusCode, reason }
+// 回傳統一小駝峰鍵名：{ noOp, relationId, newStatusId, newStatusCode, reason }
 // =============================================================
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +28,14 @@ namespace GamiPort.Areas.social_hub.Controllers
 			if (!r.Succeeded) return BadRequest(new { reason = r.Reason });
 
 			// 成功或 No-Op 都回 200，讓前端依 noOp 決定 UI 提示
-			return Ok(new { noOp = r.NoOp, relationId = r.RelationId, newStatusCode = r.NewStatusCode, reason = r.Reason });
+			return Ok(new
+			{
+				noOp = r.NoOp,
+				relationId = r.RelationId,
+				newStatusId = r.NewStatusId,       // ★ 新增
+				newStatusCode = r.NewStatusCode,
+				reason = r.Reason
+			});
 		}
 	}
 }

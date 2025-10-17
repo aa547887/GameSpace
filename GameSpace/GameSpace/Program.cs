@@ -7,21 +7,13 @@ using GameSpace.Data;
 using GameSpace.Infrastructure.Login;
 using GameSpace.Infrastructure.Time;
 using GameSpace.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections; // for HttpTransportType
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 // ---- ASP.NET Core 路由/DI（為路由列印診斷用）----
-using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 // ---- 型別別名（避免撞名）----
 using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
@@ -168,6 +160,8 @@ namespace GameSpace
 					}
 				};
 			});
+
+		
 
 			// ========== 11) 授權政策（需要就用） ==========
 			builder.Services.AddAuthorization(options =>
