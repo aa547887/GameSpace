@@ -1,0 +1,42 @@
+﻿@using GamiPort.Areas.OnlineStore.DTO
+@model CartSummaryDto
+
+<h2>購物車</h2>
+<table class="table table-striped align-middle">
+    <thead><tr><th>商品</th><th class="text-end">單價</th><th class="text-center">數量</th><th class="text-end">小計</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var it in Model.Items)
+        {
+            <tr>
+                <td>@it.ProductName</td>
+                <td class="text-end">@it.UnitPrice.ToString("N0")</td>
+                <td class="text-center">
+                    <form asp-action="UpdateQty" method="post" class="d-inline">
+                        <input type="hidden" name="productId" value="@it.ProductId" />
+                        <input type="number" name="qty" value="@it.Quantity" min="0" class="form-control d-inline" style="width:80px" />
+                        <button class="btn btn-sm btn-secondary ms-1">更新</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+                <td class="text-end">@it.LineSubtotal.ToString("N0")</td>
+                <td class="text-end">
+                    <form asp-action="Remove" method="post" class="d-inline">
+                        <input type="hidden" name="productId" value="@it.ProductId" />
+                        <button class="btn btn-sm btn-outline-danger">移除</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="2"></th>
+            <th class="text-center">合計數量：@Model.TotalQty</th>
+            <th class="text-end">小計：@Model.Subtotal.ToString("N0")</th>
+            <th class="text-end">
+                <form asp-action="Clear" method="post"><button class="btn btn-sm btn-outline-secondary">清空</button>@Html.AntiForgeryToken()</form>
+            </th>
+        </tr>
+    </tfoot>
+</table>
