@@ -17,5 +17,9 @@ public partial class EvoucherRedeemLog
 
     public string Status { get; set; } = null!;
 
+    public virtual Evoucher Evoucher { get; set; } = null!;
+
+    public virtual EvoucherToken? Token { get; set; }
+
     public virtual User User { get; set; } = null!;
 }

@@ -45,5 +45,7 @@ public partial class MiniGame
 
     public bool Aborted { get; set; }
 
+    public virtual Pet Pet { get; set; } = null!;
+
     public virtual User User { get; set; } = null!;
 }

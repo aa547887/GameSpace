@@ -21,9 +21,7 @@ public partial class Coupon
 
     public int? UsedInOrderId { get; set; }
 
-    public virtual CouponType? CouponType { get; set; }
-
-    public virtual OrderInfo? UsedInOrder { get; set; }
+    public virtual CouponType CouponType { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
 }

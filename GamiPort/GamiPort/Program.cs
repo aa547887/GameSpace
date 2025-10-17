@@ -22,6 +22,10 @@ namespace GamiPort
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
+
+			// Razor Pages UI 也需要 MVC 支援
+			builder.Services.AddControllersWithViews(); // 不要 AddApplicationPart(GameSpace...)
+
 			// ------------------------------------------------------------
 			// (A) DbContext 註冊
 			// 1) ApplicationDbContext：Identity 儲存（登入/使用者/Claims）

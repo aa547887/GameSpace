@@ -71,6 +71,8 @@ public partial class User
 
     public virtual ICollection<Relation> RelationUserIdSmallNavigations { get; set; } = new List<Relation>();
 
+    public virtual ICollection<SoOrderInfo> SoOrderInfos { get; set; } = new List<SoOrderInfo>();
+
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<SupportTicket> SupportTickets { get; set; } = new List<SupportTicket>();
