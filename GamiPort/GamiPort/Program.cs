@@ -58,7 +58,7 @@ namespace GamiPort
 			builder.Services.ConfigureApplicationCookie(opt =>
 			{
 				opt.LoginPath = "/Login/Login";
-				opt.AccessDeniedPath = "/Login/Denied";
+				opt.AccessDeniedPath = "/Login/Login/Denied";
 				opt.Cookie.Name = "GamiPort.User";   // 與後台 AdminCookie 不同名，避免混用
 													 // 視需求：opt.SlidingExpiration = true;
 			});

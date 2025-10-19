@@ -1,13 +1,15 @@
-﻿using System.Security.Claims;
-using GamiPort.Data;                     // ApplicationDbContext（Identity 用）
+﻿using GamiPort.Data;                     // ApplicationDbContext（Identity 用）
 using GamiPort.Models;                   // GameSpacedatabaseContext（業務資料）
 using GamiPort.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
-namespace GamiPort.Controllers
+namespace GamiPort.Areas.Login.Controllers
 {
+	[Area("Login")]
 	public class LoginController : Controller
 	{
 		private readonly GameSpacedatabaseContext _bizDb;
@@ -39,7 +41,7 @@ namespace GamiPort.Controllers
 			// 1) 以你的 Users 表驗證帳密
 			var user = await _bizDb.Users
 				.Include(u => u.UserIntroduce)
-				.FirstOrDefaultAsync(u => u.UserName == vm.UserName);
+				.FirstOrDefaultAsync(u => u.UserAccount == vm.UserAccount);
 
 			if (user == null)
 			{
@@ -95,17 +97,27 @@ namespace GamiPort.Controllers
 			if (!string.IsNullOrWhiteSpace(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
 				return Redirect(vm.ReturnUrl);
 
-			return RedirectToAction("Index", "Home");
+			return RedirectToAction("Index", "Home", new { area = "" });
 		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Logout()
+		[Authorize] // 已登入者才需要登出
+		public async Task<IActionResult> Logout(string? returnUrl = null)
 		{
-			await _signInManager.SignOutAsync();
-			return RedirectToAction("Index", "Home");
+			await _signInManager.SignOutAsync();                 // 清掉 GamiPort.User
+
+			// 若同時有其他 Cookie/外部登入，可視需要一併清：
+			// await HttpContext.SignOutAsync("AdminCookie");
+			// await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+			// HttpContext.Session?.Clear();
+
+			return Redirect(returnUrl ?? Url.Action("Index", "Home", new { area = "" })!);
 		}
 
-		public IActionResult Denied() => View(); // Program.cs 設定的 AccessDeniedPath
+		// AccessDeniedPath 導向的頁
+		[HttpGet]
+		[AllowAnonymous]
+		public IActionResult Denied() => View();
 	}
 }
