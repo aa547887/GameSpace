@@ -111,18 +111,23 @@ public async Task<IActionResult> Details(int id)
 				.FirstOrDefaultAsync();
 
 			// 明細
-			var items = await _context.SoOrderItems.AsNoTracking()
-				.Where(i => i.OrderId == id)
-				.OrderBy(i => i.LineNo)
-				.Select(i => new OrderDetailVm.OrderItemRow
+			// 明細（JOIN 產品表拿名稱；左外連接避免商品已被刪除/下架）
+			var items = await (
+				from i in _context.SoOrderItems.AsNoTracking()
+				join p in _context.SProductInfos.AsNoTracking()  // ← 這個 DbSet 名稱請用你專案實際的，例如 SProductInfoes/SProductInfos
+					on i.ProductId equals p.ProductId into gp
+				from p in gp.DefaultIfEmpty()
+				where i.OrderId == id
+				orderby i.LineNo
+				select new OrderDetailVm.OrderItemRow
 				{
 					LineNo = i.LineNo,
 					ProductId = i.ProductId,
-					ProductName = null,        // 之後 JOIN S_ProductInfo 再替換
+					ProductName = p != null ? p.ProductName : "(已下架/刪除)", // ← 關鍵
 					UnitPrice = i.UnitPrice,
 					Quantity = i.Quantity
-				})
-				.ToListAsync();
+				}
+			).ToListAsync();
 
 			// 組合 VM（若 Subtotal/ShippingFee/Discount 尚未建欄，保留 null 即可）
 			var vm = new OrderDetailVm
