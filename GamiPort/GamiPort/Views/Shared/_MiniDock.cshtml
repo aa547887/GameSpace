@@ -1,418 +1,326 @@
-﻿@* Views/Shared/_MiniDock.cshtml *@
-<div id="miniDock" aria-live="polite">
-    <!-- 主按鈕 -->
-    <button type="button" class="md-main btn btn-primary rounded-circle shadow" aria-label="開啟工具列">
-        <i class="bi bi-grid-fill"></i>
-    </button>
-
-    <!-- 工具列（往上長） -->
-    <div class="md-tools" hidden></div>
-
-    <!-- 釘選按鈕列（永遠在工具列的左邊一欄） -->
-    <div class="md-pins" aria-label="釘選工具區"></div>
-
-    <!-- 面板樣板 -->
-    <template id="md-panel-tpl">
-        <section class="md-panel card shadow" role="dialog" aria-modal="false">
-            <header class="card-header py-2 px-3 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-window-stack text-secondary"></i>
-                    <strong class="md-title small mb-0">對話</strong>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <button class="btn btn-light btn-sm md-min" type="button" title="最小化"><i class="bi bi-dash"></i></button>
-                    <button class="btn btn-light btn-sm md-close" type="button" title="關閉"><i class="bi bi-x-lg"></i></button>
-                </div>
-            </header>
-            <div class="card-body p-2 d-flex flex-column">
-                <div class="flex-grow-1 border rounded bg-light-subtle p-3 text-muted small">
-                    這裡是示意內容（之後可換成聊天/工具 UI）。
-                </div>
-                <div class="input-group mt-2">
-                    <input class="form-control" placeholder="輸入訊息…" />
-                    <button class="btn btn-primary">送出</button>
-                </div>
-            </div>
-        </section>
-    </template>
-</div>
+﻿@* =============================================================
+   _MiniDock.cshtml
+   功能：
+     1) 右下「主按鈕（FAB）」，點開展現三個動作鈕（Speed-Dial）。
+        - 動作 #1：好友對話 → 顯示/隱藏本面板（好友清單）
+        - 動作 #2/#3：預留（先 disabled）
+     2) 好友清單面板（預設隱藏）。每張卡片三按鈕，其中第一顆是「對話」，
+        會帶 data-chat-open="<UserId>"，交由 _FloatingDock 的單窗聊天處理。
+   資料來源：GET /social_hub/relations/friends（RelationsQueryController）
+   注意：
+     - 本檔「只列出清單與觸發聊天」，不維護聊天 state。
+   ============================================================= *@
+@{
+    // RelationsQueryController：讀好友清單（僅已互為好友，可改 onlyAccepted=false 觀察全部關聯）
+    var friendsApi = Url.Action("Friends", "RelationsQuery", new { area = "social_hub", onlyAccepted = true, take = 12 });
+}
 
 <style>
-    /* ---- 固定尺寸（與 JS 同步） ---- */
-    :root {
-        --md-edge: 24px; /* 右下角邊界 */
-        --md-gap: 12px; /* 元件間距 */
-        --md-main: 56px; /* 主按鈕直徑 */
-        --md-col: 48px; /* 工具/釘選按鈕直徑（同欄寬） */
-    }
-
-    /* ---- 基本定位 ---- */
-    #miniDock .md-main {
+    /* ---------- 面板（好友清單） ---------- */
+    .miniDock {
         position: fixed;
-        right: var(--md-edge);
-        bottom: var(--md-edge);
-        width: var(--md-main);
-        height: var(--md-main);
-        display: grid;
-        place-items: center;
-        z-index: 1060;
+        right: 12px;
+        top: 140px;
+        width: 280px;
+        z-index: 1030;
+        display: none;
     }
 
-    #miniDock .md-tools {
-        position: fixed;
-        right: var(--md-edge);
-        bottom: calc(var(--md-edge) + var(--md-main) + var(--md-gap));
-        z-index: 1060;
-        display: flex;
-        flex-direction: column;
-        gap: var(--md-gap);
-    }
-
-        #miniDock .md-tools[hidden] {
-            display: none !important;
+        .miniDock.show {
+            display: block;
         }
 
-    /* 釘選列：由 JS 動態設定 right，永遠與工具列保持一欄距離 */
-    #miniDock .md-pins {
-        position: fixed;
-        bottom: calc(var(--md-edge) + var(--md-main) + var(--md-gap));
-        z-index: 1060;
-        display: flex;
-        flex-direction: column;
-        gap: var(--md-gap);
-    }
-
-    #miniDock .md-tool, #miniDock .md-pin {
-        width: var(--md-col);
-        height: var(--md-col);
-        display: grid;
-        place-items: center;
-    }
-
-    /* ---- 面板（右→左、下→上貼齊） ---- */
-    #miniDock .md-panel {
-        position: fixed;
-        width: 360px;
-        height: 340px;
-        z-index: 1059;
-        border-radius: 14px;
-        overflow: hidden;
-    }
-
-        #miniDock .md-panel[hidden] {
-            display: none !important;
+        .miniDock .md-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: .5rem .5rem 0 0;
         }
 
-    /* =========================
-               現代化樣式（Material 3 風格）
-               ========================= */
-    #miniDock {
-        --md-fab-size: var(--md-main);
-        --md-pin-size: var(--md-col);
-        --md-primary: #2563eb; /* blue-600 */
-        --md-primary-2: #1e40af; /* blue-800 */
-        --md-surface: #ffffff;
-        --md-on-surface: #111827;
-        --md-shadow: 0 8px 20px rgba(2,6,23,.18), 0 2px 8px rgba(2,6,23,.12);
-        --md-ring: 0 0 0 4px rgba(37,99,235,.25);
-    }
-
-        /* 主按鈕（FAB） */
-        #miniDock .md-main {
-            border: 0;
-            border-radius: 9999px;
-            color: #fff;
-            background: linear-gradient(135deg,var(--md-primary),var(--md-primary-2));
-            box-shadow: var(--md-shadow);
-            transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+        .miniDock .md-title {
+            font-weight: 600;
         }
 
-            #miniDock .md-main:hover {
-                transform: translateY(-2px) scale(1.02);
-                filter: brightness(1.05);
-            }
-
-            #miniDock .md-main:active {
-                transform: translateY(0) scale(.98);
-                filter: brightness(.98);
-            }
-
-            #miniDock .md-main:focus-visible {
-                outline: none;
-                box-shadow: var(--md-ring), var(--md-shadow);
-            }
-
-        /* 工具/釘選按鈕的共同造型 */
-        #miniDock .md-tool > i, #miniDock .md-pin > button > i {
-            pointer-events: none;
+        .miniDock .md-head .md-tools {
+            display: flex;
+            gap: 6px;
         }
 
-        #miniDock .md-tool,
-        #miniDock .md-pin > .btn-outline-primary {
-            border: 0;
-            border-radius: 9999px;
-            background: var(--md-surface);
-            color: var(--md-on-surface);
-            box-shadow: var(--md-shadow);
-            transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+        .miniDock .md-body {
+            border: 1px solid #e9ecef;
+            border-top: 0;
+            background: #fff;
+            border-radius: 0 0 .5rem .5rem;
+            max-height: 48vh;
+            overflow: auto;
         }
 
-            #miniDock .md-tool:hover,
-            #miniDock .md-pin > .btn-outline-primary:hover {
-                transform: translateY(-1px);
-                filter: brightness(1.02);
-            }
-
-            #miniDock .md-tool:active,
-            #miniDock .md-pin > .btn-outline-primary:active {
-                transform: translateY(0) scale(.98);
-            }
-
-            #miniDock .md-tool:focus-visible,
-            #miniDock .md-pin > .btn-outline-primary:focus-visible {
-                outline: none;
-                box-shadow: var(--md-ring), var(--md-shadow);
-            }
-
-        /* 釘選按鈕右上角的關閉 X（小圓點外凸） */
-        #miniDock .md-pin {
-            position: relative;
+        .miniDock .md-card {
+            border-bottom: 1px solid #f1f3f5;
+            padding: 10px;
         }
 
-            #miniDock .md-pin .md-pin-close {
-                position: absolute;
-                right: 0;
-                top: 0;
-                transform: translate(45%,-45%);
-                width: 20px;
-                height: 20px;
-                padding: 0;
-                border: 0;
-                border-radius: 9999px;
+            .miniDock .md-card:last-child {
+                border-bottom: 0;
+            }
+
+        .miniDock .md-name {
+            font-weight: 600;
+        }
+
+        .miniDock .md-id {
+            color: #6c757d;
+            font-size: .85rem;
+            margin-left: 4px;
+        }
+
+        .miniDock .md-actions {
+            margin-top: 6px;
+            display: flex;
+            gap: 6px;
+        }
+
+            .miniDock .md-actions button {
+                flex: 1;
+                border: 1px solid #dee2e6;
                 background: #fff;
-                color: #111827;
-                box-shadow: 0 3px 10px rgba(0,0,0,.18);
-                display: grid;
-                place-items: center;
+                border-radius: .375rem;
+                height: 32px;
                 cursor: pointer;
             }
 
-    @@media (max-width: 576px) {
-        #miniDock .md-pin .md-pin-close {
-            transform: translate(35%,-35%);
-            width: 18px;
-            height: 18px;
-        }
-    }
+                .miniDock .md-actions button[disabled] {
+                    opacity: .6;
+                    cursor: not-allowed;
+                }
 
-    /* 小膠囊提示（可選，使用 data-label） */
-    #miniDock .md-pin[data-label]::after,
-    #miniDock .md-tool[data-label]::after {
-        content: attr(data-label);
-        position: absolute;
-        right: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%) translateX(-6px);
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: rgba(17,24,39,.9);
-        color: #fff;
-        font-size: 12px;
-        white-space: nowrap;
-        opacity: 0;
-        pointer-events: none;
-        transition: .2s ease;
-    }
-
-    #miniDock .md-pin:hover::after, #miniDock .md-tool:hover::after {
-        opacity: 1;
-        transform: translateY(-50%) translateX(0);
-    }
-
-    /* 可選：Glass 風格（將 #miniDock 加 data-theme="glass"） */
-    #miniDock[data-theme="glass"] {
-        --md-surface: rgba(255,255,255,.14);
-        --md-on-surface: #f8fafc;
-        --md-shadow: 0 10px 30px rgba(2,6,23,.24);
-    }
-
-        #miniDock[data-theme="glass"] .md-tool,
-        #miniDock[data-theme="glass"] .md-pin > .btn-outline-primary {
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,.25);
+        .miniDock .md-badge {
+            display: inline-block;
+            min-width: 18px;
+            padding: 0 6px;
+            line-height: 18px;
+            font-size: .75rem;
+            color: #fff;
+            background: #dc3545;
+            border-radius: 999px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
 
-        #miniDock[data-theme="glass"] .md-pin .md-pin-close {
-            background: rgba(255,255,255,.9);
-            border: 1px solid rgba(255,255,255,.5);
+    /* ---------- 右下 FAB（主按鈕 + 三顆動作）- 調整間距版 ---------- */
+    :root {
+        /* 想再大一點就把 16/14/76 這三個數值往上調 */
+        --fab-right: calc(env(safe-area-inset-right, 0px) + 16px); /* 距離螢幕右側 */
+        --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); /* 距離螢幕下緣 */
+        --fab-gap: 14px; /* 小按鈕彼此間距 */
+        --fab-actions-bottom-offset: 76px; /* 小按鈕群與主按鈕的垂直距離 */
+    }
+
+    .gp-fab {
+        position: fixed;
+        right: var(--fab-right);
+        bottom: var(--fab-bottom);
+        z-index: 1076;
+    }
+
+        .gp-fab .fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            border: 0;
+            background: #0d6efd;
+            color: #fff;
+            box-shadow: 0 10px 25px rgba(13,110,253,.35);
+            cursor: pointer;
+            font-size: 22px;
         }
+
+        /* 小按鈕群：改成距離主按鈕更遠、間距更大 */
+        .gp-fab .fab-actions {
+            position: absolute;
+            right: 12px; /* 從主按鈕中心往右偏一點，避免重疊 */
+            bottom: var(--fab-actions-bottom-offset); /* 與主按鈕的空隙（原本 64，現在 76） */
+            display: flex;
+            flex-direction: column;
+            gap: var(--fab-gap);
+            pointer-events: none;
+        }
+
+        .gp-fab .fab-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 0;
+            background: #fff;
+            color: #212529;
+            box-shadow: 0 8px 20px rgba(0,0,0,.18);
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity .18s, transform .18s;
+        }
+
+        .gp-fab.open .fab-actions {
+            pointer-events: auto;
+        }
+
+        .gp-fab.open .fab-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .gp-fab .fab-btn[disabled] {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .gp-fab .fab-tip {
+            position: absolute;
+            right: 54px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #212529;
+            color: #fff;
+            font-size: .75rem;
+            padding: 4px 6px;
+            border-radius: .375rem;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .gp-fab .fab-wrap {
+            position: relative;
+        }
+
+            .gp-fab .fab-wrap:hover .fab-tip {
+                display: block;
+            }
+
+    /* 手機窄螢幕：靠左一點，避免吃到瀏海安全區 */
+    @@media (max-width:420px) {
+        .gp-fab
+
+    {
+        right: calc(env(safe-area-inset-right, 0px) + 2vw);
+        bottom: var(--fab-bottom);
+    }
+
+    }
 </style>
 
+<!-- 好友清單面板（預設隱藏；由 FAB 的「好友對話」鈕切換顯示） -->
+<div id="MiniDock" class="miniDock" data-mini-dock>
+    <div class="md-head">
+        <div class="md-title">好友清單</div>
+        <div class="md-tools">
+            <button type="button" title="重新整理" id="btnReload">↻</button>
+            <button type="button" title="關閉" id="btnClose">×</button>
+        </div>
+    </div>
+    <div class="md-body" id="mdList">
+        <div style="padding:10px;color:#6c757d;">載入中…</div>
+    </div>
+</div>
+
+<!-- 右下 FAB：主按鈕 + 三顆動作鈕（#1 好友對話、#2/#3 保留） -->
+<div class="gp-fab" id="gpFab">
+    <button class="fab-main" id="fabMain" aria-expanded="false" title="快速動作">＋</button>
+    <div class="fab-actions" aria-hidden="true">
+        <div class="fab-wrap">
+            <button class="fab-btn" id="fabFriend" title="好友對話">💬</button>
+            <div class="fab-tip">好友對話</div>
+        </div>
+        <div class="fab-wrap">
+            <button class="fab-btn" id="fabReserve1" disabled title="保留">⭐</button>
+            <div class="fab-tip">保留</div>
+        </div>
+        <div class="fab-wrap">
+            <button class="fab-btn" id="fabReserve2" disabled title="保留">🕘</button>
+            <div class="fab-tip">保留</div>
+        </div>
+    </div>
+</div>
+
 <script>
-    (function () {
-      const dock    = document.getElementById('miniDock');
-      if (!dock) return;
+    (() => {
+      // ---------------------- 好友清單載入 ----------------------
+      const API = "@friendsApi";
+      const listEl = document.getElementById('mdList');
+      const btnReload = document.getElementById('btnReload');
+      const btnClose  = document.getElementById('btnClose');
+      const panel     = document.getElementById('MiniDock');
 
-      /* --- 節點 --- */
-      const mainBtn = dock.querySelector('.md-main');
-      const toolBox = dock.querySelector('.md-tools');
-      const pinsBox = dock.querySelector('.md-pins');
-      const tpl     = dock.querySelector('#md-panel-tpl');
+      async function loadFriends(){
+        listEl.innerHTML = `<div style="padding:10px;color:#6c757d;">載入中…</div>`;
+        try{
+          const r = await fetch(API);
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const arr = await r.json();
 
-      /* --- 設定 --- */
-      const TOOLS  = ['A','B','C','D','E','F'];
-      const TITLES = {A:'對話 A',B:'對話 B',C:'對話 C',D:'對話 D',E:'對話 E',F:'對話 F'};
+          if (!Array.isArray(arr) || arr.length === 0){
+            listEl.innerHTML = `<div style="padding:10px;color:#6c757d;">目前沒有好友資料。</div>`;
+            return;
+          }
 
-      /* --- 狀態 --- */
-      const panels = new Map();     // id -> {el}
-      const pins   = new Map();     // id -> pinEl
-      const order  = [];            // 右→左、下→上 排列
-
-      /* --- 常數（與 CSS 同步） --- */
-      const EDGE = 24, GAP = 12, MAIN = 56, COL = 48;
-
-      /* ========== 建工具列 ========== */
-      function buildTools(){
-        toolBox.replaceChildren();
-        TOOLS.forEach(id=>{
-          const b = document.createElement('button');
-          b.type='button';
-          b.className='md-tool btn rounded-circle shadow';
-          b.title = TITLES[id] || ('對話 ' + id);
-          b.setAttribute('data-label', b.title);   // 滑上顯示膠囊提示
-          b.innerHTML = `<i class="bi bi-chat-dots"></i>`;
-          b.addEventListener('click', ()=>{ openPanel(id); layout(); });
-          toolBox.appendChild(b);
-        });
-      }
-      buildTools();
-
-      /* ========== 釘選處理 ========== */
-      function createPin(id){
-        if (pins.has(id)) return pins.get(id);
-        const wrap = document.createElement('div');
-        wrap.className = 'md-pin';
-        wrap.setAttribute('data-label', TITLES[id] || ('對話 ' + id));
-        wrap.innerHTML = `
-          <button type="button" class="btn btn-outline-primary rounded-circle shadow" style="width:${COL}px;height:${COL}px">
-            <i class="bi bi-chat-dots"></i>
-          </button>
-          <button type="button" class="btn btn-light border md-pin-close" title="移除"><i class="bi bi-x-lg"></i></button>
-        `;
-        const goBtn = wrap.querySelector('.btn-outline-primary');
-        const xBtn  = wrap.querySelector('.md-pin-close');
-
-        goBtn.addEventListener('click', ()=>{ openPanel(id); hidePin(id); layout(); });
-        xBtn.addEventListener('click',  ()=>{ closePanel(id); });
-
-        pins.set(id, wrap);
-        pinsBox.appendChild(wrap);
-        return wrap;
-      }
-      function showPin(id){ const n = pins.get(id); if(n) n.hidden=false; updateRails(); }
-      function hidePin(id){ const n = pins.get(id); if(n) n.hidden=true;  updateRails(); }
-      function removePin(id){
-        const n = pins.get(id);
-        if(n){ n.remove(); pins.delete(id); updateRails(); }
-      }
-      function hasVisiblePin(){
-        return Array.from(pinsBox.children).some(el=>!el.hidden);
-      }
-
-      /* ========== 面板 開/縮/關 ========== */
-      function openPanel(id){
-        let rec = panels.get(id);
-        if(!rec){
-          const el = tpl.content.firstElementChild.cloneNode(true);
-          el.dataset.id = id;
-          el.querySelector('.md-title').textContent = TITLES[id] || ('對話 ' + id);
-          el.querySelector('.md-min').addEventListener('click', ()=> minimizePanel(id));
-          el.querySelector('.md-close').addEventListener('click', ()=> closePanel(id));
-          dock.appendChild(el);
-          rec = {el};
-          panels.set(id, rec);
+          listEl.innerHTML = "";
+          for (const x of arr){
+            const id   = x.friendUserId;
+            const name = x.displayName ?? ("User #" + id);
+            const card = document.createElement('div');
+            card.className = "md-card";
+            card.innerHTML = `
+              <div>
+                <span class="md-name">${name}</span>
+                <span class="md-id">#${id}</span>
+                <!-- 之後可在這裡放未讀徽章：<span class="md-badge" data-chat-badge="${id}">3</span> -->
+              </div>
+              <div class="md-actions">
+                <button data-chat-open="${id}" title="與 ${name} 對話">💬 對話</button>
+                <button disabled title="保留">🕘 保留</button>
+                <button disabled title="保留">⭐ 保留</button>
+              </div>`;
+            listEl.appendChild(card);
+          }
+        }catch(e){
+          listEl.innerHTML = `<div style="padding:10px;color:#dc3545;">載入失敗：${e.message || e}</div>`;
+          console.error(e);
         }
-        rec.el.hidden = false;
-        hidePin(id);                 // 面板與 pin 互斥
-
-        // 送到最右下（排序尾端）
-        const idx = order.indexOf(id);
-        if (idx >= 0) order.splice(idx,1);
-        order.push(id);
-
-        layout();
       }
 
-      function minimizePanel(id){
-        const rec = panels.get(id);
-        if(!rec) return;
-        rec.el.hidden = true;
-        createPin(id); showPin(id);  // 釘選常駐，直到手動關閉
-        layout();
+      btnReload?.addEventListener('click', loadFriends);
+      btnClose ?.addEventListener('click', () => panel.classList.remove('show'));
+
+      // ---------------------- 右下 FAB 動作 ----------------------
+      const fab     = document.getElementById('gpFab');
+      const fabMain = document.getElementById('fabMain');
+      const fabFriend = document.getElementById('fabFriend');
+
+      function toggleFab(open){
+        fab.classList.toggle('open', open);
+        fabMain.setAttribute('aria-expanded', open ? 'true' : 'false');
       }
 
-      function closePanel(id){
-        const rec = panels.get(id);
-        if(rec){ rec.el.remove(); panels.delete(id); }
-        removePin(id);
-        const idx = order.indexOf(id);
-        if(idx>=0) order.splice(idx,1);
-        layout();
-      }
-
-      /* ========== 工具/釘選欄水平位置 & 面板讓位（防重疊） ========== */
-      function updateRails(){
-        const toolsVisible = !toolBox.hidden;
-        const pinRight = EDGE + (toolsVisible ? (COL + GAP) : 0);
-        pinsBox.style.right = pinRight + 'px';
-      }
-
-      const PANEL_W = 360, PANEL_H = 340;
-      function layout(){
-        // 清理不存在的 id
-        for(let i=order.length-1;i>=0;i--){ if(!panels.has(order[i])) order.splice(i,1); }
-
-        updateRails();
-
-        const toolsVisible = !toolBox.hidden;
-        const pinsVisible  = hasVisiblePin();
-
-        // 需要讓出的右側寬度：主鈕 + 工具列(可見) + 釘選列(有可視)
-        const reservedRight =
-            EDGE + MAIN + GAP
-          + (toolsVisible ? (COL + GAP) : 0)
-          + (pinsVisible  ? (COL + GAP) : 0);
-
-        const vw = document.documentElement.clientWidth;
-        const usable = Math.max(0, vw - (reservedRight + EDGE));    // 左邊留 24px 安全邊
-        const maxCol = Math.max(1, Math.floor(usable / (PANEL_W + GAP)));
-
-        const visibleIds = order.filter(id => {
-          const rec = panels.get(id);
-          return rec && !rec.el.hidden;
-        });
-
-        visibleIds.forEach((id, i)=>{
-          const rec = panels.get(id);
-          const col = i % maxCol;                     // 右→左
-          const row = Math.floor(i / maxCol);         // 下→上
-          rec.el.style.right  = (reservedRight + col*(PANEL_W + GAP)) + 'px';
-          rec.el.style.bottom = (EDGE + row*(PANEL_H + GAP)) + 'px';
-        });
-      }
-
-      /* ========== 事件繫結 ========== */
-      mainBtn.addEventListener('click', ()=>{
-        toolBox.hidden = !toolBox.hidden;
-        updateRails();
-        layout();
+      fabMain.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFab(!fab.classList.contains('open'));
       });
-      window.addEventListener('resize', layout);
-      window.addEventListener('scroll', layout, {passive:true});
 
-      // 初始：只顯示主按鈕
-      toolBox.hidden = true;
-      updateRails();
-      layout();
+      // 點外面收起
+      document.addEventListener('click', () => toggleFab(false));
+
+      // 動作 #1：好友對話 → 顯示/隱藏面板；初次打開時載入清單
+      fabFriend.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isShow = panel.classList.toggle('show');
+        if (isShow && (!listEl.dataset.loaded || listEl.dataset.loaded === "0")){
+          loadFriends().then(()=> { listEl.dataset.loaded = "1"; });
+        }
+      });
+
+      // 初始化：不自動載入，等使用者點「好友對話」再載
     })();
 </script>

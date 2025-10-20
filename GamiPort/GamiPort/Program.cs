@@ -1,7 +1,14 @@
-using GamiPort.Data;                       // ApplicationDbContext（Identity用）
-using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+// =======================
+// Program.cs（完整覆蓋版）
+// 目的：支援 Dev 模式下以 Cookie 取得 UserId、SignalR 聊天、Areas/MVC/RazorPages 與 Identity
+// =======================
+
+using GamiPort.Data;                           // ApplicationDbContext（Identity / 登入資料）
+using GamiPort.Models;                         // GameSpacedatabaseContext（業務資料：聊天、通知…）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
+using GamiPort.Infrastructure.Login;           // ILoginIdentity / DevCookieLoginIdentity / DevQueryLoginMiddleware
+using GamiPort.Areas.social_hub.Hubs;          // ChatHub（SignalR Hub）
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,80 +18,90 @@ namespace GamiPort
 	{
 		public static void Main(string[] args)
 		{
+			// 建立主機組態/DI 容器
 			var builder = WebApplication.CreateBuilder(args);
 
 			// ------------------------------------------------------------
-			// 連線字串（兩個 DbContext 都用同一組；若未來分庫，可分開取）
-			// 會依序找 "GameSpace" -> "GameSpacedatabase"；都沒有就丟錯
+			// 連線字串：兩個 DbContext 共用同一組；未來要分庫可再拆
+			// 依序嘗試 "GameSpace" -> "GameSpacedatabase" -> 否則丟例外
 			// ------------------------------------------------------------
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-
-			// Razor Pages UI 也需要 MVC 支援
-			builder.Services.AddControllersWithViews(); // 不要 AddApplicationPart(GameSpace...)
+			// ------------------------------------------------------------
+			// MVC / RazorPages 服務（合併成一次註冊，並保留 JSON 選項）
+			// AddControllersWithViews：提供傳統 MVC + Areas + Views
+			// AddRazorPages：提供 Identity 預設 UI（/Identity/...）
+			// ------------------------------------------------------------
+			builder.Services
+				.AddControllersWithViews()
+				.AddJsonOptions(opt =>
+				{
+					// 統一大小寫；避免 API 自動小寫屬性名稱造成前端困惑
+					opt.JsonSerializerOptions.PropertyNamingPolicy = null;
+				});
+			builder.Services.AddRazorPages();
 
 			// ------------------------------------------------------------
 			// (A) DbContext 註冊
-			// 1) ApplicationDbContext：Identity 儲存（登入/使用者/Claims）
-			// 2) GameSpacedatabaseContext：你的業務資料（通知、文章、客服…）
-			//    這兩個在 DI 內是不同型別，互不衝突
+			// 1) ApplicationDbContext：Identity（登入/使用者/Claims）
+			// 2) GameSpacedatabaseContext：你的業務資料表（聊天、通知、客服…）
 			// ------------------------------------------------------------
 			builder.Services.AddDbContext<ApplicationDbContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// 可選（開發期除錯）：options.EnableSensitiveDataLogging();
+				// options.EnableSensitiveDataLogging(); // 可選：開發期除錯
 			});
 
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// 可選（讀多寫少頁面）：options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking); // 可選：以查詢為主的頁面
 			});
 
-			// EF 的開發者例外頁（/errors + /migrations endpoint）
+			// EF 開發者例外頁（顯示更完整的 Db 例外，含 /errors 與 migrations 支援）
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 			// ------------------------------------------------------------
-			// (B) Identity 註冊
-			// AddDefaultIdentity 內含「Razor Pages UI、Cookies、SecurityStamp 驗證」等預設
-			// Store 指向 ApplicationDbContext（上面已註冊）
+			// (B) Identity 設定（若暫時不用也可先保留，之後無縫接）
+			// AddDefaultIdentity 會配置 Cookie、SecurityStamp 驗證等
 			// ------------------------------------------------------------
 			builder.Services
 				.AddDefaultIdentity<IdentityUser>(options =>
 				{
-					// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
-					// options.SignIn.RequireConfirmedAccount = false;
+					// 若尚無寄信服務，可在開發環境改成 false；這裡保留你的設定
 					options.SignIn.RequireConfirmedAccount = true;
 				})
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 
 			// ------------------------------------------------------------
-			// (C) 你的通知服務（放在 social_hub 區域命名空間也OK）
+			// (C) 專案服務註冊（通知、朋友關係等）
 			// ------------------------------------------------------------
-
 			builder.Services.AddMemoryCache();
 			builder.Services.AddScoped<INotificationStore, NotificationStore>();
 			builder.Services.AddScoped<IRelationService, RelationService>();
-			// -----------------------------------------------
-			// MVC & Razor Pages
-			//   - Razor Pages 供 Identity UI 使用
-			//   - MVC 給你 Areas / Controllers / Views
+
 			// ------------------------------------------------------------
-			builder.Services.AddControllersWithViews()
-				// 可選：統一 JSON 大小寫（避免「API自動小寫」疑惑）
-				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
+			// (D) 目前使用者來源（關鍵）：開發期用 Cookie 存 UserId
+			// ILoginIdentity：全站統一從這裡取得 UserId
+			// DevCookieLoginIdentity：優先讀 Cookie "gp_dev_uid"，否則讀 appsettings.Development.json:DevLogin:UserId
+			// ------------------------------------------------------------
+			builder.Services.AddHttpContextAccessor();                         // 讓服務可以讀取目前 HttpContext
+			builder.Services.AddScoped<ILoginIdentity, DevCookieLoginIdentity>(); // 開發期的身分來源
 
-			builder.Services.AddRazorPages();
+			// ------------------------------------------------------------
+			// (E) SignalR（聊天即時通訊）
+			// ------------------------------------------------------------
+			builder.Services.AddSignalR(); // 註冊 SignalR 服務（Hub 需要）
 
-			// 可選：讓 AJAX 好帶防偽 Token（和你前面 fetch header 'RequestVerificationToken' 對應）
+			// ------------------------------------------------------------
+			// (F) Anti-forgery：若你在 Controller 有 [ValidateAntiForgeryToken]，前端可用此標頭傳遞
+			// ------------------------------------------------------------
 			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
-			builder.Services.AddHttpContextAccessor();
-
+			// 建立應用程式
 			var app = builder.Build();
 
 			// ------------------------------------------------------------
@@ -92,39 +109,44 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			if (app.Environment.IsDevelopment())
 			{
-				// 顯示 EF 錯誤詳情頁 & migrations endpoint
+				// 顯示 EF 錯誤詳情頁、提供 migrations 端點
 				app.UseMigrationsEndPoint();
 
-				// 可選：啟動時檢測連線（快速煙霧測試）
-				using (var scope = app.Services.CreateScope())
-				{
-					var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-					var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
-					// 失敗會丟例外，方便你第一時間知道連線字串或權限問題
-					db1.Database.CanConnect();
-					db2.Database.CanConnect();
-				}
+				// （可選）啟動時檢查 DB 是否可連線，快速發現連線字串/權限問題
+				using var scope = app.Services.CreateScope();
+				var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+				var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
+				db1.Database.CanConnect();
+				db2.Database.CanConnect();
+
+				// 開發期便利功能：支援網址 ?asUser=30000001 → 寫入 Cookie "gp_dev_uid"
+				// 讓你不必做登入就能測聊天室
+				app.UseDevQueryLoginParameter();
 			}
 			else
 			{
+				// 正式環境：例外處理頁 + HSTS
 				app.UseExceptionHandler("/Home/Error");
 				app.UseHsts();
 			}
 
-			app.UseHttpsRedirection();
-			app.UseStaticFiles();
-			app.UseRouting();
+			// 靜態檔、路由等基本中介軟體
+			app.UseHttpsRedirection();  // 自動轉 https
+			app.UseStaticFiles();       // 提供 wwwroot 內檔案
+			app.UseRouting();           // 啟用端點路由
 
-
-			// ★ 驗證一定要在授權之前
+			// 身分驗證 / 授權（順序：先驗證再授權）
 			app.UseAuthentication();
 			app.UseAuthorization();
 
-			// ★ 這行要在 MapControllers 之前，讓 API 有 [ValidateAntiForgeryToken] 可用
+			// ------------------------------------------------------------
+			// MVC 控制器端點（Attribute Routing 的控制器也會在這裡生效）
+			// ------------------------------------------------------------
 			app.MapControllers();
 
 			// ------------------------------------------------------------
-			// 路由：Areas 要先註冊（比 default 先）
+			// 傳統路由（先 Areas 再 default）
+			// /{area}/{controller}/{action}/{id?}
 			// ------------------------------------------------------------
 			app.MapControllerRoute(
 				name: "areas",
@@ -136,10 +158,16 @@ namespace GamiPort
 				pattern: "{controller=Home}/{action=Index}/{id?}"
 			);
 
-			// Identity UI（/Identity/...）
+			// Razor Pages（Identity 預設 UI 需要）
 			app.MapRazorPages();
 
+			// ------------------------------------------------------------
+			// SignalR Hub 路由：前端會連線到 /social_hub/chatHub
+			// 你的 _FloatingDock.cshtml / chat-dock.js 會連這個位址
+			// ------------------------------------------------------------
+			app.MapHub<ChatHub>("/social_hub/chatHub");
 
+			// 啟動應用
 			app.Run();
 		}
 	}
