@@ -2,10 +2,9 @@
 
 namespace GamiPort.Areas.Forum.Controllers
 {
-	[Area("Forum")]
 	public class HomeController : Controller
 	{
-		
+		[Area("Forum")]
 		public IActionResult Index()
 		{
 			return View();

@@ -2,9 +2,9 @@
 
 namespace GamiPort.Areas.MemberManagement.Controllers
 {
-	[Area("MemberManagement")]
 	public class HomeController : Controller
 	{
+		[Area("MemberManagement")]
 		public IActionResult Index()
 		{
 			return View();

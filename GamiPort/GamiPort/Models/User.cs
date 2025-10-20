@@ -71,8 +71,6 @@ public partial class User
 
     public virtual ICollection<Relation> RelationUserIdSmallNavigations { get; set; } = new List<Relation>();
 
-    public virtual ICollection<SoOrderInfo> SoOrderInfos { get; set; } = new List<SoOrderInfo>();
-
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<SupportTicket> SupportTickets { get; set; } = new List<SupportTicket>();
@@ -80,8 +78,6 @@ public partial class User
     public virtual ICollection<ThreadPost> ThreadPosts { get; set; } = new List<ThreadPost>();
 
     public virtual ICollection<Thread> Threads { get; set; } = new List<Thread>();
-
-    public virtual UserHome? UserHome { get; set; }
 
     public virtual UserIntroduce? UserIntroduce { get; set; }
 

@@ -37,7 +37,11 @@ public partial class ManagerDatum
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<SoOrderStatusHistory> SoOrderStatusHistories { get; set; } = new List<SoOrderStatusHistory>();
+    public virtual ICollection<ProductInfoAuditLog> ProductInfoAuditLogs { get; set; } = new List<ProductInfoAuditLog>();
+
+    public virtual ICollection<ProductInfo> ProductInfoProductCreatedByNavigations { get; set; } = new List<ProductInfo>();
+
+    public virtual ICollection<ProductInfo> ProductInfoProductUpdatedByNavigations { get; set; } = new List<ProductInfo>();
 
     public virtual ICollection<SupportTicket> SupportTicketAssignedManagers { get; set; } = new List<SupportTicket>();
 
