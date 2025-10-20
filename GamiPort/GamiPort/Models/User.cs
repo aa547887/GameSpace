@@ -1,4 +1,5 @@
-﻿using GamiPort.Models;
+﻿using System;
+using System.Collections.Generic;
 
 namespace GamiPort.Models;
 
@@ -46,7 +47,7 @@ public partial class User
 
     public virtual MemberSalesProfile? MemberSalesProfile { get; set; }
 
-	public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
+    public virtual ICollection<MiniGame> MiniGames { get; set; } = new List<MiniGame>();
 
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
 
