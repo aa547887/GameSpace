@@ -1,5 +1,4 @@
 ﻿@* Views/Shared/_Layout.cshtml *@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -21,26 +20,18 @@
     @RenderSection("Styles", required: false) @* 頁面額外樣式才用這個 *@
 </head>
 <body>
-    @await Component.InvokeAsync("TopbarLevel1")
+    @await Html.PartialAsync("_TopbarLevel1")
 
     <div class="layout-wrap">
         <aside class="layout-sidebar d-none d-lg-block">
             @await Html.PartialAsync("_Sidebar")
         </aside>
-
         <main class="layout-main">
-            @await Html.PartialAsync("_TopbarLevel2")
-
-            <div class="container-fluid py-3">
-                <div class="row g-4">
-                    <div class="col-12 col-xxl-9">
-                        @RenderBody()
-                    </div>
-                    <aside class="col-xl-3 d-none d-xl-block">
-                        <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
-                        </div>
-                    </aside>
+            <!-- 頂部置中：水平置中 + 靠上，縮小上方間距 -->
+            <div class="container d-flex justify-content-center align-items-start pt-3 pb-5"
+                 style="min-height: calc(100vh - 64px);">
+                <div class="w-100" style="max-width: 520px;">
+                    @RenderBody()
                 </div>
             </div>
         </main>

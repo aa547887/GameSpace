@@ -71,10 +71,22 @@ namespace GamiPort
 			builder.Services
 				.AddDefaultIdentity<IdentityUser>(options =>
 				{
-					// 若尚無寄信服務，可在開發環境改成 false；這裡保留你的設定
-					options.SignIn.RequireConfirmedAccount = true;
+					// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
+					// options.SignIn.RequireConfirmedAccount = false;
+					options.SignIn.RequireConfirmedAccount = false;
 				})
 				.AddEntityFrameworkStores<ApplicationDbContext>();
+
+			builder.Services.ConfigureApplicationCookie(opt =>
+			{
+				opt.LoginPath = "/Login/Login";
+				opt.AccessDeniedPath = "/Login/Login/Denied";
+				opt.Cookie.Name = "GamiPort.User";   // 與後台 AdminCookie 不同名，避免混用
+													 // 視需求：opt.SlidingExpiration = true;
+			});
+
+			// 建議明確加入授權服務（供 [Authorize] 等使用）
+			builder.Services.AddAuthorization();
 
 			// ------------------------------------------------------------
 			// (C) 專案服務註冊（通知、朋友關係等）
