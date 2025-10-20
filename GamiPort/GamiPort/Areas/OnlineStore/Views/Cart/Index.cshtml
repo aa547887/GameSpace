@@ -1,42 +1,103 @@
-﻿@using GamiPort.Areas.OnlineStore.DTO
-@model CartSummaryDto
+﻿@using System.Text.Json
+@using GamiPort.Areas.OnlineStore.DTO
+@model CartVm
 
-<h2>購物車</h2>
+@{
+    ViewData["Title"] = "購物車";
+    // 把 JSON 字串的規則說明，轉成字串陣列
+    var ruleNotes = string.IsNullOrWhiteSpace(Model.Summary.Rule_Notes_Json)
+        ? Array.Empty<string>()
+        : (JsonSerializer.Deserialize<string[]>(Model.Summary.Rule_Notes_Json) ?? Array.Empty<string>());
+}
+
+<h2 class="mb-3">購物車</h2>
+
 <table class="table table-striped align-middle">
-    <thead><tr><th>商品</th><th class="text-end">單價</th><th class="text-center">數量</th><th class="text-end">小計</th><th></th></tr></thead>
+    <thead>
+        <tr>
+            <th>商品</th>
+            <th class="text-end">單價</th>
+            <th class="text-center">數量</th>
+            <th class="text-end">小計</th>
+            <th style="width:140px;"></th>
+        </tr>
+    </thead>
     <tbody>
-        @foreach (var it in Model.Items)
+        @foreach (var it in Model.Lines)
         {
             <tr>
-                <td>@it.ProductName</td>
-                <td class="text-end">@it.UnitPrice.ToString("N0")</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (!string.IsNullOrWhiteSpace(it.Image_Thumb))
+                        {
+                            <img src="@it.Image_Thumb" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:.5rem;" />
+                        }
+                        <span>@it.Product_Name</span>
+                        @if (!string.IsNullOrEmpty(it.Status_Badge))
+                        {
+                            <span class="badge bg-secondary ms-2">@it.Status_Badge</span>
+                        }
+                    </div>
+                </td>
+                <td class="text-end">@it.Unit_Price.ToString("N0")</td>
                 <td class="text-center">
                     <form asp-action="UpdateQty" method="post" class="d-inline">
-                        <input type="hidden" name="productId" value="@it.ProductId" />
-                        <input type="number" name="qty" value="@it.Quantity" min="0" class="form-control d-inline" style="width:80px" />
-                        <button class="btn btn-sm btn-secondary ms-1">更新</button>
+                        <input type="hidden" name="productId" value="@it.Product_Id" />
+                        <input type="number" name="qty" value="@it.Quantity" min="0" class="form-control d-inline" style="width:90px" />
                         @Html.AntiForgeryToken()
+                        <button class="btn btn-sm btn-outline-primary ms-2">更新</button>
                     </form>
                 </td>
-                <td class="text-end">@it.LineSubtotal.ToString("N0")</td>
+                <td class="text-end">@it.Line_Subtotal.ToString("N0")</td>
                 <td class="text-end">
                     <form asp-action="Remove" method="post" class="d-inline">
-                        <input type="hidden" name="productId" value="@it.ProductId" />
-                        <button class="btn btn-sm btn-outline-danger">移除</button>
+                        <input type="hidden" name="productId" value="@it.Product_Id" />
                         @Html.AntiForgeryToken()
+                        <button class="btn btn-sm btn-outline-danger">移除</button>
                     </form>
                 </td>
             </tr>
         }
     </tbody>
-    <tfoot>
-        <tr>
-            <th colspan="2"></th>
-            <th class="text-center">合計數量：@Model.TotalQty</th>
-            <th class="text-end">小計：@Model.Subtotal.ToString("N0")</th>
-            <th class="text-end">
-                <form asp-action="Clear" method="post"><button class="btn btn-sm btn-outline-secondary">清空</button>@Html.AntiForgeryToken()</form>
-            </th>
-        </tr>
-    </tfoot>
 </table>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row gy-2">
+            <div class="col-md-6">
+                <div>件數（全部）：@Model.Summary.Item_Count_Total</div>
+                @if (Model.Summary.Item_Count_Physical > 0)
+                {
+                    <div>件數（實體）：@Model.Summary.Item_Count_Physical</div>
+                }
+                <div>小計（全部）：@Model.Summary.Subtotal.ToString("N0")</div>
+                <div>小計（實體）：@Model.Summary.Subtotal_Physical.ToString("N0")</div>
+                <div>總重量(g)：@Model.Summary.Total_Weight_G.ToString("N0")</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-end">運費：@Model.Summary.Shipping_Fee.ToString("N0")</div>
+                @if (Model.Summary.Discount > 0)
+                {
+                    <div class="text-end">優惠折抵：-@Model.Summary.Discount.ToString("N0")</div>
+                }
+                <h5 class="text-end mt-2">應付總額：@Model.Summary.Grand_Total.ToString("N0")</h5>
+            </div>
+        </div>
+
+        @if (ruleNotes.Length > 0)
+        {
+            <hr />
+            <ul class="small text-muted mb-0">
+                @foreach (var s in ruleNotes)
+                {
+                    <li>@s</li>
+                }
+            </ul>
+        }
+
+        @if (!Model.Summary.Can_Checkout)
+        {
+            <div class="alert alert-warning mt-3">無法結帳：@Model.Summary.Block_Reason</div>
+        }
+    </div>
+</div>

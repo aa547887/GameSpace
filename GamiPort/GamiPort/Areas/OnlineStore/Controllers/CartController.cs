@@ -13,13 +13,13 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		public CartController(ICartService svc) => _svc = svc;
 
 		[HttpGet]
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(int shipMethodId = 1, string destZip = "320", string? coupon = null)
 		{
-			var anon = AnonCookie.GetOrSet(HttpContext);      // 2-1
+			var anon = AnonCookie.GetOrSet(HttpContext);
 			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-			var vm = await _svc.GetAsync(cartId);             // 回傳 CartSummaryDto
-			return View(vm);                                   // 對應 Index.cshtml
 
+			var vm = await _svc.GetFullAsync(cartId, shipMethodId, destZip, coupon);
+			return View(vm); // @model CartVm
 		}
 
 		[HttpPost, ValidateAntiForgeryToken]

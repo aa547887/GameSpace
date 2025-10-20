@@ -4,7 +4,8 @@ using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
+// [Cart][FIX] 匯入購物車服務的命名空間（若已存在可略）
+using GamiPort.Areas.OnlineStore.Services;
 namespace GamiPort
 {
 	public class Program
@@ -78,6 +79,15 @@ namespace GamiPort
 				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
 			builder.Services.AddRazorPages();
+
+			//購物車使用
+			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
+			builder.Services.AddHttpContextAccessor();
+
+			// [Cart][FIX] 註冊購物車服務（ICartService -> SqlCartService）
+			builder.Services.AddScoped<ICartService, SqlCartService>();
+
+
 
 			// 可選：讓 AJAX 好帶防偽 Token（和你前面 fetch header 'RequestVerificationToken' 對應）
 			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
