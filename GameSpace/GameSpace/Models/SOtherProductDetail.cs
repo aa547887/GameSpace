@@ -28,4 +28,10 @@ public partial class SOtherProductDetail
     public string? Material { get; set; }
 
     public bool IsDeleted { get; set; }
+
+    public virtual SMerchType? MerchType { get; set; }
+
+    public virtual SProductInfo Product { get; set; } = null!;
+
+    public virtual SSupplier Supplier { get; set; } = null!;
 }

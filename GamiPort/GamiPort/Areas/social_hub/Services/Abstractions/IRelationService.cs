@@ -4,12 +4,7 @@ using System.Threading.Tasks;
 namespace GamiPort.Areas.social_hub.Services.Abstractions
 {
 	/// <summary>
-	/// 交友關係的單一入口服務（集中驗證＋寫入；不通過就拒絕寫 DB）。
-	/// 設計原則：
-	///  - 狀態不綁數字：以 status_code（字串）查 DB → 取得對應 status_id（有快取）
-	///  - No-Op 最佳化：狀態未改變不寫 DB，回傳 Succeeded=true, NoOp=true
-	///  - 對稱關係：以 (UserIdSmall, UserIdLarge) 唯一化一筆紀錄
-	///  - 單一服務層：所有動作（friend_request/accept/reject/cancel_request/block/unblock/set_nickname）走同一入口
+	/// 交友動作命令。
 	/// </summary>
 	public interface IRelationService
 	{
@@ -18,30 +13,26 @@ namespace GamiPort.Areas.social_hub.Services.Abstractions
 
 	/// <summary>前端（按鈕 data-*）丟進來的參數</summary>
 	public sealed record RelationCommand(
-		int ActorUserId,          // 操作者（誰按了按鈕）
+		int ActorUserId,          // 操作者
 		int TargetUserId,         // 目標對象
-		string ActionCode,        // friend_request / accept / reject / cancel_request / block / unblock / set_nickname
-		string? Nickname = null   // 只有 set_nickname 用得到（上限 10）
+		string ActionCode,        // friend_request / accept / reject / cancel_request / block / unblock / unfriend / set_nickname
+		string? Nickname = null   // 僅 set_nickname 使用
 	);
 
-	/// <summary>統一回傳結果（成功/失敗＋NoOp＋新狀態）</summary>
+	/// <summary>
+	/// 交友動作結果（同時回新狀態 ID + Code，前端可顯示，後端可用 ID 判斷）。
+	/// </summary>
 	public sealed record RelationResult(
-		bool Succeeded,
-		bool NoOp = false,
-		int? RelationId = null,
-		string? NewStatusCode = null,
-		string? Reason = null
+		bool Succeeded,           // 是否成功（非驗證/DB 錯誤）
+		bool NoOp,                // 本次是否沒有造成狀態變更
+		int? RelationId,          // 關係主鍵
+		string? NewStatusCode,    // 新狀態碼（"pending" / "accepted" / "blocked" / "removed" / "rejected" / "none"...）
+		int? NewStatusId,         // 新狀態 ID（1=pending, 2=accepted, 3=blocked, 4=removed, 5=rejected, 6=none）
+		string? Reason            // 失敗/拒絕時的理由（BadRequest 用）
 	);
 
-	public enum RelationError
+	public interface IRelationService
 	{
-		None = 0,
-		SelfRelationNotAllowed,
-		UserNotFound,
-		TargetNotFound,
-		InvalidAction,
-		InvalidTransition,
-		NicknameTooLong,
-		DbError
+		Task<RelationResult> ExecuteAsync(RelationCommand cmd, CancellationToken ct = default);
 	}
 }

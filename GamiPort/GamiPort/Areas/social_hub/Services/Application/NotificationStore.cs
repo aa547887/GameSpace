@@ -2,8 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using GamiPort.Areas.social_hub.Services.Abstractions;
-using GamiPort.Models; // GameSpacedatabaseContext 與 EF 實體
+using GamiPort.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage; // ★ 新增這行
 
 namespace GamiPort.Areas.social_hub.Services.Application
 {
@@ -22,7 +23,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 
 		public async Task<StoreResult> CreateAsync(StoreCommand cmd, CancellationToken ct = default)
 		{
-			// 0) 文字長度
+			// 0) 文字長度檢查
 			var title = (cmd.Title ?? string.Empty).Trim();
 			var message = cmd.Message?.Trim();
 			if (title.Length > TitleMaxLen) return Fail(NotificationError.TitleTooLong, $"Title 長度上限 {TitleMaxLen}。");
@@ -68,10 +69,16 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				if (!senderMgrOk) return Fail(NotificationError.SenderManagerNotFound, $"SenderManagerId={smid} 不存在。");
 			}
 
-			// 4) 交易：通過才寫入
-			await using var tx = await _db.Database.BeginTransactionAsync(ct);
+			// 4) 交易控制（★關鍵修正：支援外部交易）
+			var hasAmbient = _db.Database.CurrentTransaction != null; // 外面是否已經有交易
+			IDbContextTransaction? tx = null;
+
 			try
 			{
+				if (!hasAmbient)
+					tx = await _db.Database.BeginTransactionAsync(ct); // 只有沒有外部交易時才自己開
+
+				// 4.1 寫入主檔
 				var n = new Notification
 				{
 					SourceId = cmd.SourceId,
@@ -81,19 +88,24 @@ namespace GamiPort.Areas.social_hub.Services.Application
 					SenderManagerId = cmd.SenderManagerId,
 					Title = title,
 					Message = message,
-					CreatedAt = DateTime.UtcNow // DB 已有 default，也可保留顯式設定
+					CreatedAt = DateTime.UtcNow
 				};
 
 				_db.Notifications.Add(n);
-				await _db.SaveChangesAsync(ct); // 先拿到 NotificationId
+				await _db.SaveChangesAsync(ct); // 取得 NotificationId
 
+				// 4.2 寫入收件人（至少一個）
 				if (cmd.ToUserId is int toUserId)
 				{
 					_db.NotificationRecipients.Add(new NotificationRecipient
 					{
 						NotificationId = n.NotificationId,
+						// ⚠ 這裡請用你實體的實際欄位名：
+						// 如果你的欄位叫 UserId / ManagerId 就用下面兩行；
+						// 如果是 ToUserId / ToManagerId，請改成相對應欄位。
 						UserId = toUserId,
 						ManagerId = null
+						// ToUserId = toUserId
 					});
 				}
 				if (cmd.ToManagerId is int toManagerId)
@@ -103,20 +115,32 @@ namespace GamiPort.Areas.social_hub.Services.Application
 						NotificationId = n.NotificationId,
 						UserId = null,
 						ManagerId = toManagerId
+						// ToManagerId = toManagerId
 					});
 				}
 
 				await _db.SaveChangesAsync(ct);
-				await tx.CommitAsync(ct);
+
+				if (!hasAmbient)
+					await tx!.CommitAsync(ct); // 只有自己開的交易才在這裡 Commit
+
 				return new StoreResult(true, n.NotificationId);
 			}
 			catch (DbUpdateException ex)
 			{
-				await tx.RollbackAsync(ct);
+				if (tx is not null)
+					await tx.RollbackAsync(ct); // 只有自己開的交易才在這裡 Rollback
+
 				return Fail(NotificationError.DbError, ex.GetType().Name);
+			}
+			finally
+			{
+				if (tx is not null)
+					await tx.DisposeAsync(); // 只有自己開的才需要 Dispose
 			}
 		}
 
-		private static StoreResult Fail(NotificationError e, string reason) => new(false, null, e, reason);
+		private static StoreResult Fail(NotificationError e, string reason)
+			=> new(false, null, e, reason);
 	}
 }

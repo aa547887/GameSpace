@@ -1,7 +1,11 @@
-using GamiPort.Data;
+using GamiPort.Data;                       // ApplicationDbContext（Identity用）
+using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+using GamiPort.Areas.social_hub.Services.Abstractions;
+using GamiPort.Areas.social_hub.Services.Application;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
+// [Cart][FIX] 匯入購物車服務的命名空間（若已存在可略）
+using GamiPort.Areas.OnlineStore.Services;
 namespace GamiPort
 {
 	public class Program
@@ -10,40 +14,106 @@ namespace GamiPort
 		{
 			var builder = WebApplication.CreateBuilder(args);
 
-			// 連線字串：沿用你的 GameSpace / GameSpacedatabase
+			// ------------------------------------------------------------
+			// 連線字串（兩個 DbContext 都用同一組；若未來分庫，可分開取）
+			// 會依序找 "GameSpace" -> "GameSpacedatabase"；都沒有就丟錯
+			// ------------------------------------------------------------
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-			// ★ (A) 先註冊 ApplicationDbContext（Identity 的 Store 會用到）
+
+			// Razor Pages UI 也需要 MVC 支援
+			builder.Services.AddControllersWithViews(); // 不要 AddApplicationPart(GameSpace...)
+
+			// ------------------------------------------------------------
+			// (A) DbContext 註冊
+			// 1) ApplicationDbContext：Identity 儲存（登入/使用者/Claims）
+			// 2) GameSpacedatabaseContext：你的業務資料（通知、文章、客服…）
+			//    這兩個在 DI 內是不同型別，互不衝突
+			// ------------------------------------------------------------
 			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-				options.UseSqlServer(gameSpaceConn));
+			{
+				options.UseSqlServer(gameSpaceConn);
+				// 可選（開發期除錯）：options.EnableSensitiveDataLogging();
+			});
 
-			// 若你的專案還有業務 DbContext（例如 GameSpacedatabaseContext），在這裡一起註冊：
-			// builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
-			//     options.UseSqlServer(gameSpaceConn));
+			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
+			{
+				options.UseSqlServer(gameSpaceConn);
+				// 可選（讀多寫少頁面）：options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+			});
 
+			// EF 的開發者例外頁（/errors + /migrations endpoint）
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			// ★ (B) 再註冊 Identity，並把 Store 指向 ApplicationDbContext
+			// ------------------------------------------------------------
+			// (B) Identity 註冊
+			// AddDefaultIdentity 內含「Razor Pages UI、Cookies、SecurityStamp 驗證」等預設
+			// Store 指向 ApplicationDbContext（上面已註冊）
+			// ------------------------------------------------------------
 			builder.Services
 				.AddDefaultIdentity<IdentityUser>(options =>
 				{
-					// 你現有設定：需要信箱驗證才可登入；若沒有寄信流程，可先暫時關掉
+					// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
+					// options.SignIn.RequireConfirmedAccount = false;
 					options.SignIn.RequireConfirmedAccount = true;
 				})
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 
-			builder.Services.AddControllersWithViews();
+			// ------------------------------------------------------------
+			// (C) 你的通知服務（放在 social_hub 區域命名空間也OK）
+			// ------------------------------------------------------------
+
+			builder.Services.AddMemoryCache();
+			builder.Services.AddScoped<INotificationStore, NotificationStore>();
+			builder.Services.AddScoped<IRelationService, RelationService>();
+			// -----------------------------------------------
+			// MVC & Razor Pages
+			//   - Razor Pages 供 Identity UI 使用
+			//   - MVC 給你 Areas / Controllers / Views
+			// ------------------------------------------------------------
+			builder.Services.AddControllersWithViews()
+				// 可選：統一 JSON 大小寫（避免「API自動小寫」疑惑）
+				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
+
 			builder.Services.AddRazorPages();
+
+			//購物車使用
+			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
+			builder.Services.AddHttpContextAccessor();
+
+			// [Cart][FIX] 註冊購物車服務（ICartService -> SqlCartService）
+			builder.Services.AddScoped<ICartService, SqlCartService>();
+
+
+
+			// 可選：讓 AJAX 好帶防偽 Token（和你前面 fetch header 'RequestVerificationToken' 對應）
+			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+
+			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
+			builder.Services.AddHttpContextAccessor();
 
 			var app = builder.Build();
 
-			// HTTP pipeline
+			// ------------------------------------------------------------
+			// HTTP Pipeline（中介軟體順序很重要）
+			// ------------------------------------------------------------
 			if (app.Environment.IsDevelopment())
 			{
+				// 顯示 EF 錯誤詳情頁 & migrations endpoint
 				app.UseMigrationsEndPoint();
+
+				// 可選：啟動時檢測連線（快速煙霧測試）
+				using (var scope = app.Services.CreateScope())
+				{
+					var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+					var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
+					// 失敗會丟例外，方便你第一時間知道連線字串或權限問題
+					db1.Database.CanConnect();
+					db2.Database.CanConnect();
+				}
 			}
 			else
 			{
@@ -55,19 +125,30 @@ namespace GamiPort
 			app.UseStaticFiles();
 			app.UseRouting();
 
-			// ★ (C) 你原本漏掉這行：必須在 Authorization 前呼叫
+
+			// ★ 驗證一定要在授權之前
 			app.UseAuthentication();
 			app.UseAuthorization();
 
+			// ★ 這行要在 MapControllers 之前，讓 API 有 [ValidateAntiForgeryToken] 可用
+			app.MapControllers();
+
+			// ------------------------------------------------------------
+			// 路由：Areas 要先註冊（比 default 先）
+			// ------------------------------------------------------------
 			app.MapControllerRoute(
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}"
 			);
+
 			app.MapControllerRoute(
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}"
 			);
+
+			// Identity UI（/Identity/...）
 			app.MapRazorPages();
+
 
 			app.Run();
 		}
