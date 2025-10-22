@@ -2,8 +2,10 @@ using GamiPort.Data;                       // ApplicationDbContext（Identity用）
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;       // 只為了 IPasswordHasher<User>/PasswordHasher<User>
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using GamiPort.Areas.Login.Services;
 
 namespace GamiPort
 {
@@ -23,20 +25,20 @@ namespace GamiPort
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
 
-			// Razor Pages UI 也需要 MVC 支援
-			builder.Services.AddControllersWithViews(); // 不要 AddApplicationPart(GameSpace...)
-
 			// ------------------------------------------------------------
 			// (A) DbContext 註冊
 			// 1) ApplicationDbContext：Identity 儲存（登入/使用者/Claims）
 			// 2) GameSpacedatabaseContext：你的業務資料（通知、文章、客服…）
 			//    這兩個在 DI 內是不同型別，互不衝突
 			// ------------------------------------------------------------
-			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-			{
-				options.UseSqlServer(gameSpaceConn);
-				// 可選（開發期除錯）：options.EnableSensitiveDataLogging();
-			});
+
+
+			//  Identity 用的 DbContext"使用自訂的，所以用不到
+			//builder.Services.AddDbContext<ApplicationDbContext>(options =>
+			//{
+			//	options.UseSqlServer(gameSpaceConn);
+			//	// 可選（開發期除錯）：options.EnableSensitiveDataLogging();
+			//});
 
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
@@ -52,22 +54,42 @@ namespace GamiPort
 			// AddDefaultIdentity 內含「Razor Pages UI、Cookies、SecurityStamp 驗證」等預設
 			// Store 指向 ApplicationDbContext（上面已註冊）
 			// ------------------------------------------------------------
-			builder.Services
-				.AddDefaultIdentity<IdentityUser>(options =>
-				{
-					// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
-					// options.SignIn.RequireConfirmedAccount = false;
-					options.SignIn.RequireConfirmedAccount = false;
-				})
-				.AddEntityFrameworkStores<ApplicationDbContext>();
+			//builder.Services
+			//	.AddDefaultIdentity<IdentityUser>(options =>
+			//	{
+			//		// 若暫時沒有寄信機制，開發環境建議關閉信箱驗證需求
+			//		// options.SignIn.RequireConfirmedAccount = false;
+			//		options.SignIn.RequireConfirmedAccount = false;
+			//	})
+			//	.AddEntityFrameworkStores<ApplicationDbContext>();
 
-			builder.Services.ConfigureApplicationCookie(opt =>
-			{
-				opt.LoginPath = "/Login/Login";
-				opt.AccessDeniedPath = "/Login/Login/Denied";
-				opt.Cookie.Name = "GamiPort.User";   // 與後台 AdminCookie 不同名，避免混用
-													 // 視需求：opt.SlidingExpiration = true;
-			});
+
+			//builder.Services.ConfigureApplicationCookie(opt =>
+			//{
+			//	opt.LoginPath = "/Login/Login";
+			//	opt.AccessDeniedPath = "/Login/Login/Denied";
+			//	opt.Cookie.Name = "GamiPort.User";   // 與後台 AdminCookie 不同名，避免混用
+			//										 // 視需求：opt.SlidingExpiration = true;
+			//});
+
+			// ------------------------------------------------------------
+			// 驗證：改用 Cookie（完全不使用 Identity）
+			// ------------------------------------------------------------
+			builder.Services
+				.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+				.AddCookie(opts =>
+				{
+					// 依你的登入頁面路由（Area=Login, Controller=Login, Action=Index）
+					opts.LoginPath = "/Login/Login/Login";
+					opts.LogoutPath = "/Login/Login/Logout";
+					opts.AccessDeniedPath = "/Login/Login/Denied";
+					opts.Cookie.Name = "GamiPort.User";     // 與後台 AdminCookie 保持不同名稱
+					opts.Cookie.HttpOnly = true;
+					opts.Cookie.SameSite = SameSiteMode.Lax;
+					opts.ExpireTimeSpan = TimeSpan.FromDays(7);
+					opts.SlidingExpiration = true;
+				});
+
 
 			// 建議明確加入授權服務（供 [Authorize] 等使用）
 			builder.Services.AddAuthorization();
@@ -88,6 +110,10 @@ namespace GamiPort
 				// 可選：統一 JSON 大小寫（避免「API自動小寫」疑惑）
 				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
+			builder.Services.AddTransient<
+				GamiPort.Areas.Login.Services.IEmailSender,
+				GamiPort.Areas.Login.Services.NullEmailSender>();
+
 			builder.Services.AddRazorPages();
 
 			// 可選：讓 AJAX 好帶防偽 Token（和你前面 fetch header 'RequestVerificationToken' 對應）
@@ -95,8 +121,14 @@ namespace GamiPort
 
 			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
 			builder.Services.AddHttpContextAccessor();
+			builder.Services.AddScoped<GamiPort.Services.ICurrentUserService,
+						   GamiPort.Services.CurrentUserService>();
+			// 沒用 Identity 也可以用密碼雜湊服務（沿用 Microsoft 的 hasher）
+			builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
 
 			var app = builder.Build();
+
 
 			// ------------------------------------------------------------
 			// HTTP Pipeline（中介軟體順序很重要）
@@ -109,10 +141,10 @@ namespace GamiPort
 				// 可選：啟動時檢測連線（快速煙霧測試）
 				using (var scope = app.Services.CreateScope())
 				{
-					var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+					//var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 					var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
 					// 失敗會丟例外，方便你第一時間知道連線字串或權限問題
-					db1.Database.CanConnect();
+					//db1.Database.CanConnect();
 					db2.Database.CanConnect();
 				}
 			}
