@@ -2,12 +2,10 @@
 // ★ Token 與寄信
 using GamiPort.Areas.Login.Services;                 // TokenUtility.NewUrlSafeToken()
 using GamiPort.Models;
-using GamiPort.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.Text.Json;
 
 namespace GamiPort.Areas.Login.Controllers
@@ -185,6 +183,39 @@ namespace GamiPort.Areas.Login.Controllers
 		[HttpGet]
 		public IActionResult Success(int id) => View(model: id);
 
+		// -------- 測試寄信功能 --------
+		[HttpGet]
+		public async Task<IActionResult> TestEmail()
+		{
+			try
+			{
+				// 看一下現在注入進來的是哪個實作（SmtpEmailSender / NullEmailSender）
+				var impl = _email.GetType().FullName ?? "(unknown)";
+
+				// 模擬驗證信連結（這裡只是範例）
+				var confirmUrl = Url.Action(
+					"Confirm", "Email",
+					new { area = "Login", uid = 10000001, token = "sampleToken" },
+					Request.Scheme
+				);
+
+				// 寄送測試信
+				await _email.SendAsync(
+					"aa0953693201@gmail.com", // ← 你的收件信箱
+					"請驗證你的 Email",
+					$"請點擊以下連結完成驗證（24 小時內有效）：\n{confirmUrl}"
+				);
+
+				return Content($"✅ 測試信件已寄出（使用：{impl}）。請檢查收件匣/垃圾信/寄件備份。");
+			}
+			catch (Exception ex)
+			{
+				// 若寄信失敗，把錯誤顯示出來
+				return Content("❌ 寄信失敗：\n" + ex.ToString());
+			}
+		}
+
+
 		// ===== Helper：單一交易 + 一次 SaveChanges，兩表同時成功/失敗 =====
 		private async Task<(int UserId, string EmailConfirmToken)> CreateUserAtomicAsync(RegisterStep1VM step1, UserIntroduceVM step2)
 		{
@@ -272,5 +303,7 @@ namespace GamiPort.Areas.Login.Controllers
 			await file.CopyToAsync(ms);
 			return ms.ToArray();
 		}
+
+
 	}
 }

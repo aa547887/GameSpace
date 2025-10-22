@@ -1,12 +1,13 @@
 ﻿// Areas/Login/Controllers/LoginController.cs
-using System.Security.Claims;
 using GamiPort.Models;
 using GamiPort.Models.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity; // 只用 IPasswordHasher<User>
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace GamiPort.Areas.Login.Controllers
 {
@@ -23,28 +24,27 @@ namespace GamiPort.Areas.Login.Controllers
 			_hasher = hasher;
 		}
 
-		// GET: /Login/Login/Login 以及 /Login/Login
-		[HttpGet]
-		[Route("/Login/Login")]
-		[Route("/Login/Login/Login")]
+		// GET: /Login/Login
+		[HttpGet("Login")]
+		[AllowAnonymous]
 		public IActionResult Login(string? returnUrl = null)
 			=> View(new LoginVM { ReturnUrl = returnUrl });
 
-		// POST: /Login/Login/Login 以及 /Login/Login
+		// POST: /Login/Login
+		[HttpPost("Login")]
 		[ValidateAntiForgeryToken]
-		[HttpPost]
-		[Route("/Login/Login")]
-		[Route("/Login/Login/Login")]
+		[AllowAnonymous]
 		public async Task<IActionResult> Login(LoginVM vm)
 		{
-			if (!ModelState.IsValid) return View(vm);
+			if (!ModelState.IsValid)
+				return View(vm);
 
-			var inputAccount = vm.UserAccount?.Trim() ?? string.Empty;
-			// ★ 大小寫敏感查詢（Latin1_General_CS_AS 只是常見的 CS 排序規則，支援 NVARCHAR）
+			var inputAccount = (vm.UserAccount ?? string.Empty).Trim();
+
+			// 大小寫敏感查詢
 			var user = await _db.Users
 				.Where(u => EF.Functions.Collate(u.UserAccount, "Latin1_General_CS_AS") == inputAccount)
-				.FirstOrDefaultAsync();
-
+				.SingleOrDefaultAsync();
 
 			if (user == null)
 			{
@@ -52,9 +52,28 @@ namespace GamiPort.Areas.Login.Controllers
 				return View(vm);
 			}
 
-			var verify = PasswordVerificationResult.Failed;
-			try { verify = _hasher.VerifyHashedPassword(user, user.UserPassword, vm.UserPassword); }
-			catch { if (user.UserPassword == vm.UserPassword) verify = PasswordVerificationResult.Success; }
+			PasswordVerificationResult verify;
+			try
+			{
+				// 嘗試使用 Identity 格式驗證
+				verify = _hasher.VerifyHashedPassword(user, user.UserPassword, vm.UserPassword);
+			}
+			catch (FormatException)
+			{
+				// ⚠️ 若舊資料是明文，就改用明文比對
+				if (user.UserPassword == vm.UserPassword)
+				{
+					verify = PasswordVerificationResult.Success;
+
+					// 立刻升級為雜湊存回資料庫
+					user.UserPassword = _hasher.HashPassword(user, vm.UserPassword);
+					await _db.SaveChangesAsync();
+				}
+				else
+				{
+					verify = PasswordVerificationResult.Failed;
+				}
+			}
 
 			if (verify == PasswordVerificationResult.Failed)
 			{
@@ -62,18 +81,29 @@ namespace GamiPort.Areas.Login.Controllers
 				return View(vm);
 			}
 
-			var intro = await _db.UserIntroduces.FirstOrDefaultAsync(x => x.UserId == user.UserId);
+			// 信箱未驗證不得登入
+			if (!user.UserEmailConfirmed)
+			{
+				ModelState.AddModelError(string.Empty, "請先完成 Email 驗證後再登入。");
+				return View(vm);
+			}
+
+			var intro = await _db.UserIntroduces
+				.AsNoTracking()
+				.FirstOrDefaultAsync(x => x.UserId == user.UserId);
+
 			var nick = intro?.UserNickName ?? user.UserName;
 			var email = intro?.Email ?? string.Empty;
 
 			var claims = new List<Claim>
-			{
-				new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-				new Claim(ClaimTypes.Name, user.UserName),
-				new Claim(ClaimTypes.Email, email),
-				new Claim("UserNickName", nick),
-				new Claim("EmailConfirmed", user.UserEmailConfirmed ? "true" : "false")
-			};
+		{
+			new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            // 直接把暱稱放到 Name，前端顯示更簡單
+            new Claim(ClaimTypes.Name, nick),
+			new Claim(ClaimTypes.Email, email),
+			new Claim("UserNickName", nick),
+			new Claim("EmailConfirmed", user.UserEmailConfirmed ? "true" : "false"),
+		};
 
 			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 			var principal = new ClaimsPrincipal(identity);
@@ -81,13 +111,18 @@ namespace GamiPort.Areas.Login.Controllers
 			await HttpContext.SignInAsync(
 				CookieAuthenticationDefaults.AuthenticationScheme,
 				principal,
-				new AuthenticationProperties { IsPersistent = vm.RememberMe, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7) });
+				new AuthenticationProperties
+				{
+					IsPersistent = vm.RememberMe,
+					ExpiresUtc = vm.RememberMe ? DateTimeOffset.UtcNow.AddDays(7) : null
+				});
 
 			if (!string.IsNullOrWhiteSpace(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
-				return Redirect(vm.ReturnUrl);
+				return LocalRedirect(vm.ReturnUrl);
 
 			return RedirectToAction("Index", "Home", new { area = "" });
 		}
+		
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]

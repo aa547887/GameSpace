@@ -112,7 +112,8 @@ namespace GamiPort
 
 			builder.Services.AddTransient<
 				GamiPort.Areas.Login.Services.IEmailSender,
-				GamiPort.Areas.Login.Services.NullEmailSender>();
+				//GamiPort.Areas.Login.Services.NullEmailSender>();
+				GamiPort.Areas.Login.Services.SmtpEmailSender > ();
 
 			builder.Services.AddRazorPages();
 
