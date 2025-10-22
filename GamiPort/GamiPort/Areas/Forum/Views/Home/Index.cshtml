@@ -65,80 +65,16 @@
 }
 
 @section Scripts {
-    <script>
-        // ---- 假資料（之後換 API 或 Model）----
-        const mockData = [
-          { id:101, title:"版規更新：洗版與廣告處置", author:"Moderator",
-            createdAt:"2025-10-10T08:10:00Z", lastRepliedAt:"2025-10-14T03:20:00Z",
-            up:56, down:3, replies:124, isPinned:true, isAnnounce:true, isAdmin:true, isInsight:false },
-          { id:102, title:"玩家留存下滑？三個關鍵洞察", author:"分析師A",
-            createdAt:"2025-10-13T01:00:00Z", lastRepliedAt:"2025-10-14T02:05:00Z",
-            up:120, down:12, replies:88, isPinned:false, isAnnounce:false, isAdmin:false, isInsight:true },
-          { id:103, title:"新手入門小遊戲清單", author:"阿明",
-            createdAt:"2025-10-12T09:00:00Z", lastRepliedAt:"2025-10-13T21:15:00Z",
-            up:42, down:1, replies:33, isPinned:false, isAnnounce:false, isAdmin:false, isInsight:false },
-        ];
+    <script type="module">
+        import { ThreadList } from '/js/forum/thread-list.js';
 
-        let state = { sort:"lastReply", filter:"all", page:1, size:10 };
-        const fmt = s => new Date(s).toLocaleString('zh-TW',{hour12:false}).replace(/\//g,'/');
-        const hot = t => (t.up*2 + t.replies*1.5 - t.down);
+        // 從 Server 注入 forumId（你可用 ViewBag / Model）
+        const forumId = @(ViewBag.ForumId ?? 1);
 
-        function render(){
-          let rows = [...mockData];
-          if (state.filter==='admin')   rows = rows.filter(x=>x.isAdmin);
-          if (state.filter==='insight') rows = rows.filter(x=>x.isInsight);
+        // 建立與初始化列表元件
+        const list = ThreadList({ mount: 'threadList', forumId });
+        list.init();
 
-          if (state.sort==='lastReply') rows.sort((a,b)=> new Date(b.lastRepliedAt)-new Date(a.lastRepliedAt));
-          if (state.sort==='created')   rows.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
-          if (state.sort==='hot')       rows.sort((a,b)=> hot(b)-hot(a));
-
-          const start = (state.page-1)*state.size;
-          const pageItems = rows.slice(start, start+state.size);
-
-          threadList.innerHTML = pageItems.map(t=>`
-            <div class="thread-row">
-              <div class="thread-score">
-                <span class="badge-score ${t.up>=t.down?'badge-up':'badge-down'}">
-                  ${t.up - t.down >= 0 ? '+' : ''}${t.up - t.down}
-                </span>
-              </div>
-              <div class="thread-main">
-                <div class="thread-tags">
-                  ${t.isPinned?'<span class="tag tag-pin">置頂</span>':''}
-                  ${t.isAdmin?'<span class="tag tag-admin">管理員</span>':''}
-                  ${t.isInsight?'<span class="tag tag-insight">洞察</span>':''}
-                  ${t.isAnnounce?'<span class="tag tag-admin">公告</span>':''}
-                </div>
-                <h3 class="title"><a href="/t/${t.id}">${t.title}</a></h3>
-                <div class="thread-meta">
-                  <span>作者：${t.author}</span>
-                  <span>發文：${fmt(t.createdAt)}</span>
-                  <span>最後回覆：${fmt(t.lastRepliedAt)}</span>
-                </div>
-              </div>
-              <div class="thread-actions"><span class="replies">回覆 ${t.replies}</span></div>
-            </div>
-          `).join('') || '<div class="text-muted p-3">沒有資料</div>';
-
-          const totalPages = Math.max(1, Math.ceil(rows.length/state.size));
-          pageInfo.textContent = `${state.page} / ${totalPages}`;
-          prevBtn.disabled = state.page<=1;
-          nextBtn.disabled = state.page>=totalPages;
-        }
-
-        prevBtn.addEventListener('click', ()=>{ state.page=Math.max(1,state.page-1); render(); });
-        nextBtn.addEventListener('click', ()=>{ state.page=state.page+1; render(); });
-        document.querySelectorAll('#sortTabs .nav-link').forEach(a=>{
-          a.addEventListener('click', e=>{
-            e.preventDefault();
-            document.querySelectorAll('#sortTabs .nav-link').forEach(n=>n.classList.remove('active'));
-            a.classList.add('active');
-            if (a.dataset.sort){ state.sort=a.dataset.sort; state.page=1; }
-            if (a.dataset.filter){ state.filter=a.dataset.filter; state.page=1; }
-            render();
-          });
-        });
-
-        render();
+        // 右欄先保持寫死卡片，之後再抽成 Ranking 元件
     </script>
 }
