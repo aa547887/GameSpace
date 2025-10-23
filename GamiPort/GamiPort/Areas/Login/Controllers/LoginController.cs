@@ -1,5 +1,4 @@
-﻿// Areas/Login/Controllers/LoginController.cs
-using GamiPort.Models;
+﻿using GamiPort.Models;
 using GamiPort.Models.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
