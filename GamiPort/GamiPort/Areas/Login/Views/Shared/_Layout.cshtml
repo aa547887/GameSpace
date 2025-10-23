@@ -30,7 +30,7 @@
     @RenderSection("Styles", required: false) @* 頁面額外樣式才用這個 *@
 </head>
 <body>
-    @await Html.PartialAsync("_TopbarLevel1")
+    @await Component.InvokeAsync("TopbarLevel1")
 
     <div class="layout-wrap">
         <aside class="layout-sidebar d-none d-lg-block">

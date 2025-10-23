@@ -1,8 +1,9 @@
-﻿using GamiPort.Data;                     // ApplicationDbContext（Identity 用）
-using GamiPort.Models;                   // GameSpacedatabaseContext（業務資料）
+﻿using GamiPort.Models;
 using GamiPort.Models.ViewModels;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity; // 只用 IPasswordHasher<User>
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -10,114 +11,128 @@ using System.Security.Claims;
 namespace GamiPort.Areas.Login.Controllers
 {
 	[Area("Login")]
+	[Route("[area]/[controller]/[action]")]
 	public class LoginController : Controller
 	{
-		private readonly GameSpacedatabaseContext _bizDb;
-		private readonly UserManager<IdentityUser> _userManager;
-		private readonly SignInManager<IdentityUser> _signInManager;
+		private readonly GameSpacedatabaseContext _db;
+		private readonly IPasswordHasher<User> _hasher;
 
-		public LoginController(
-			GameSpacedatabaseContext bizDb,
-			UserManager<IdentityUser> userManager,
-			SignInManager<IdentityUser> signInManager)
+		public LoginController(GameSpacedatabaseContext db, IPasswordHasher<User> hasher)
 		{
-			_bizDb = bizDb;
-			_userManager = userManager;
-			_signInManager = signInManager;
+			_db = db;
+			_hasher = hasher;
 		}
 
-		[HttpGet]
+		// GET: /Login/Login
+		[HttpGet("Login")]
+		[AllowAnonymous]
 		public IActionResult Login(string? returnUrl = null)
-		{
-			return View(new LoginVM { ReturnUrl = returnUrl });
-		}
+			=> View(new LoginVM { ReturnUrl = returnUrl });
 
-		[HttpPost]
+		// POST: /Login/Login
+		[HttpPost("Login")]
 		[ValidateAntiForgeryToken]
+		[AllowAnonymous]
 		public async Task<IActionResult> Login(LoginVM vm)
 		{
-			if (!ModelState.IsValid) return View(vm);
+			if (!ModelState.IsValid)
+				return View(vm);
 
-			// 1) 以你的 Users 表驗證帳密
-			var user = await _bizDb.Users
-				.Include(u => u.UserIntroduce)
-				.FirstOrDefaultAsync(u => u.UserAccount == vm.UserAccount);
+			var inputAccount = (vm.UserAccount ?? string.Empty).Trim();
+
+			// 大小寫敏感查詢
+			var user = await _db.Users
+				.Where(u => EF.Functions.Collate(u.UserAccount, "Latin1_General_CS_AS") == inputAccount)
+				.SingleOrDefaultAsync();
 
 			if (user == null)
 			{
-				ModelState.AddModelError(string.Empty, "帳號或密碼錯誤。");
+				ModelState.AddModelError(nameof(vm.UserAccount), "帳號或密碼錯誤。");
 				return View(vm);
 			}
 
-			// 密碼驗證 — 先用明碼；日後切到 BCrypt（註解在下面）
-			var passwordOk = user.UserPassword == vm.UserPassword;
-
-			// 建議：導入 BCrypt 後改用下列語句
-			// var passwordOk = BCrypt.Net.BCrypt.Verify(vm.UserPassword, user.UserPassword);
-
-			if (!passwordOk)
+			PasswordVerificationResult verify;
+			try
 			{
-				// TODO: 可在此累計 AccessFailedCount 與 Lockout 機制
-				ModelState.AddModelError(string.Empty, "帳號或密碼錯誤。");
-				return View(vm);
+				// 嘗試使用 Identity 格式驗證
+				verify = _hasher.VerifyHashedPassword(user, user.UserPassword, vm.UserPassword);
 			}
-
-			// 2) 檢查 / 建立對應的 IdentityUser
-			var identityId = $"U:{user.UserId}";
-			var identityUser = await _userManager.FindByIdAsync(identityId);
-			if (identityUser == null)
+			catch (FormatException)
 			{
-				identityUser = new IdentityUser
+				// ⚠️ 若舊資料是明文，就改用明文比對
+				if (user.UserPassword == vm.UserPassword)
 				{
-					Id = identityId,
-					UserName = user.UserName,
-					Email = user.UserIntroduce?.Email, // 若沒有就留 null
-					EmailConfirmed = user.UserEmailConfirmed
-				};
-				// 建一個隨機密碼（不會用到 PasswordSignIn）
-				var tempPwd = $"Tmp{Guid.NewGuid():N}!aA1";
-				var createResult = await _userManager.CreateAsync(identityUser, tempPwd);
-				if (!createResult.Succeeded)
+					verify = PasswordVerificationResult.Success;
+
+					// 立刻升級為雜湊存回資料庫
+					user.UserPassword = _hasher.HashPassword(user, vm.UserPassword);
+					await _db.SaveChangesAsync();
+				}
+				else
 				{
-					ModelState.AddModelError(string.Empty, "建立登入資訊失敗。");
-					return View(vm);
+					verify = PasswordVerificationResult.Failed;
 				}
 			}
 
-			// 3) 用 SignInManager 登入（把你的 UserId 一併放到 Claims）
-			var claims = new List<Claim>
+			if (verify == PasswordVerificationResult.Failed)
 			{
-				new Claim("AppUserId", user.UserId.ToString()), // 自家 UserId（數字）
-                new Claim(ClaimTypes.Name, user.UserName)        // 顯示用途
-            };
+				ModelState.AddModelError(nameof(vm.UserAccount), "帳號或密碼錯誤。");
+				return View(vm);
+			}
 
-			await _signInManager.SignOutAsync(); // 保險：避免殘留舊登入
-			await _signInManager.SignInWithClaimsAsync(identityUser, isPersistent: vm.RememberMe, claims);
+			// 信箱未驗證不得登入
+			if (!user.UserEmailConfirmed)
+			{
+				ModelState.AddModelError(string.Empty, "請先完成 Email 驗證後再登入。");
+				return View(vm);
+			}
+
+			var intro = await _db.UserIntroduces
+				.AsNoTracking()
+				.FirstOrDefaultAsync(x => x.UserId == user.UserId);
+
+			var nick = intro?.UserNickName ?? user.UserName;
+			var email = intro?.Email ?? string.Empty;
+
+			var claims = new List<Claim>
+		{
+			new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            // 直接把暱稱放到 Name，前端顯示更簡單
+            new Claim(ClaimTypes.Name, nick),
+			new Claim(ClaimTypes.Email, email),
+			new Claim("UserNickName", nick),
+			new Claim("EmailConfirmed", user.UserEmailConfirmed ? "true" : "false"),
+		};
+
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+			var principal = new ClaimsPrincipal(identity);
+
+			await HttpContext.SignInAsync(
+				CookieAuthenticationDefaults.AuthenticationScheme,
+				principal,
+				new AuthenticationProperties
+				{
+					IsPersistent = vm.RememberMe,
+					ExpiresUtc = vm.RememberMe ? DateTimeOffset.UtcNow.AddDays(7) : null
+				});
 
 			if (!string.IsNullOrWhiteSpace(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
-				return Redirect(vm.ReturnUrl);
+				return LocalRedirect(vm.ReturnUrl);
 
 			return RedirectToAction("Index", "Home", new { area = "" });
 		}
+		
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		[Authorize] // 已登入者才需要登出
-		public async Task<IActionResult> Logout(string? returnUrl = null)
+		[Route("/Login/Login/Logout")]
+		public async Task<IActionResult> Logout()
 		{
-			await _signInManager.SignOutAsync();                 // 清掉 GamiPort.User
-
-			// 若同時有其他 Cookie/外部登入，可視需要一併清：
-			// await HttpContext.SignOutAsync("AdminCookie");
-			// await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-			// HttpContext.Session?.Clear();
-
-			return Redirect(returnUrl ?? Url.Action("Index", "Home", new { area = "" })!);
+			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+			return RedirectToAction("Index", "Home", new { area = "" });
 		}
 
-		// AccessDeniedPath 導向的頁
 		[HttpGet]
-		[AllowAnonymous]
 		public IActionResult Denied() => View();
 	}
 }

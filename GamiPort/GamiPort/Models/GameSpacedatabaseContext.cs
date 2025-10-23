@@ -157,8 +157,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<ShipMethod> ShipMethods { get; set; }
 
-    public virtual DbSet<SignInRule> SignInRules { get; set; }
-
     public virtual DbSet<SoCart> SoCarts { get; set; }
 
     public virtual DbSet<SoCartItem> SoCartItems { get; set; }
@@ -173,7 +171,11 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SoOrderStatusHistory> SoOrderStatusHistories { get; set; }
 
+    public virtual DbSet<SoPayMethod> SoPayMethods { get; set; }
+
     public virtual DbSet<SoPaymentTransaction> SoPaymentTransactions { get; set; }
+
+    public virtual DbSet<SoRemoteZip> SoRemoteZips { get; set; }
 
     public virtual DbSet<SoRemoteZipcode> SoRemoteZipcodes { get; set; }
 
@@ -184,6 +186,8 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<SoShipWeightRule> SoShipWeightRules { get; set; }
 
     public virtual DbSet<SoShipment> SoShipments { get; set; }
+
+    public virtual DbSet<SoShippingConfig> SoShippingConfigs { get; set; }
 
     public virtual DbSet<SoStockMovement> SoStockMovements { get; set; }
 
@@ -1605,7 +1609,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<RemoteZipcode>(entity =>
         {
-            entity.HasKey(e => e.Zipcode).HasName("PK__RemoteZi__FCD74345135C1046");
+            entity.HasKey(e => e.Zipcode).HasName("PK__RemoteZi__FCD7434565B1594F");
 
             entity.Property(e => e.Zipcode)
                 .HasMaxLength(10)
@@ -2066,26 +2070,24 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("method_name");
         });
 
-        modelBuilder.Entity<SignInRule>(entity =>
+        modelBuilder.Entity<ShipMethod>(entity =>
         {
-            entity.ToTable("SignInRule");
+            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_SignInRule_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.HasIndex(e => e.SignInDay, "UQ_SignInRule_SignInDay_Active")
-                .IsUnique()
-                .HasFilter("([IsActive]=(1))");
-
-            entity.Property(e => e.CouponTypeCode).HasMaxLength(50);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-
-            entity.HasOne(d => d.CouponTypeCodeNavigation).WithMany(p => p.SignInRules)
-                .HasPrincipalKey(p => p.Name)
-                .HasForeignKey(d => d.CouponTypeCode)
-                .HasConstraintName("FK_SignInRule_CouponType_Name");
+            entity.Property(e => e.ShipMethodId)
+                .ValueGeneratedNever()
+                .HasColumnName("ship_method_id");
+            entity.Property(e => e.AllowRemoteSurcharge).HasColumnName("allow_remote_surcharge");
+            entity.Property(e => e.BaseFee)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("base_fee");
+            entity.Property(e => e.ForStorePickup).HasColumnName("for_store_pickup");
+            entity.Property(e => e.FreeThreshold)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("free_threshold");
+            entity.Property(e => e.MethodName)
+                .HasMaxLength(50)
+                .HasColumnName("method_name");
         });
 
         modelBuilder.Entity<SoCart>(entity =>
@@ -2221,7 +2223,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoCoupon>(entity =>
         {
-            entity.HasKey(e => e.CouponCode).HasName("PK__SO_Coupo__ADE5CBB61082DB4D");
+            entity.HasKey(e => e.CouponCode).HasName("PK__SO_Coupo__ADE5CBB6EFA67F48");
 
             entity.ToTable("SO_Coupons");
 
@@ -2310,6 +2312,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasIndex(e => new { e.OrderDate, e.OrderCode }, "IX_SO_OrderInfoes_OrderDate_OrderCode");
 
+            entity.HasIndex(e => new { e.PayMethodId, e.OrderDate }, "IX_SO_OrderInfoes_PayMethod_Date");
+
             entity.HasIndex(e => new { e.PaymentStatus, e.OrderDate }, "IX_SO_OrderInfoes_PaymentStatus");
 
             entity.HasIndex(e => new { e.OrderStatus, e.OrderDate }, "IX_SO_OrderInfoes_Status_Date");
@@ -2341,6 +2345,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.OrderTotal)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("order_total");
+            entity.Property(e => e.PayMethodId).HasColumnName("pay_method_id");
             entity.Property(e => e.PaymentAt).HasColumnName("payment_at");
             entity.Property(e => e.PaymentStatus)
                 .HasMaxLength(30)
@@ -2354,6 +2359,10 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("subtotal");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.PayMethod).WithMany(p => p.SoOrderInfos)
+                .HasForeignKey(d => d.PayMethodId)
+                .HasConstraintName("FK_SO_OrderInfoes_PayMethod");
 
             entity.HasOne(d => d.User).WithMany(p => p.SoOrderInfos)
                 .HasForeignKey(d => d.UserId)
@@ -2442,6 +2451,33 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasConstraintName("FK_SO_OrderStatusHistory_Order");
         });
 
+        modelBuilder.Entity<SoPayMethod>(entity =>
+        {
+            entity.HasKey(e => e.PayMethodId);
+
+            entity.ToTable("SO_PayMethods");
+
+            entity.HasIndex(e => new { e.IsEnabled, e.SortOrder, e.PayMethodId }, "IX_SO_PayMethods_EnabledSort");
+
+            entity.HasIndex(e => e.MethodCode, "UQ_SO_PayMethods_Code").IsUnique();
+
+            entity.Property(e => e.PayMethodId).HasColumnName("pay_method_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsEnabled)
+                .HasDefaultValue(true)
+                .HasColumnName("is_enabled");
+            entity.Property(e => e.MethodCode)
+                .HasMaxLength(30)
+                .HasColumnName("method_code");
+            entity.Property(e => e.MethodName)
+                .HasMaxLength(50)
+                .HasColumnName("method_name");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
         modelBuilder.Entity<SoPaymentTransaction>(entity =>
         {
             entity.HasKey(e => e.PaymentId).HasName("PK__SO_Payme__ED1FC9EABB1568CA");
@@ -2495,6 +2531,20 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasConstraintName("FK_SO_PaymentTransactions_Order");
         });
 
+        modelBuilder.Entity<SoRemoteZip>(entity =>
+        {
+            entity.HasKey(e => e.Zipcode).HasName("PK__SO_Remot__FCD74345F0ADD6F6");
+
+            entity.ToTable("SO_RemoteZip");
+
+            entity.Property(e => e.Zipcode)
+                .HasMaxLength(10)
+                .HasColumnName("zipcode");
+            entity.Property(e => e.Note)
+                .HasMaxLength(50)
+                .HasColumnName("note");
+        });
+
         modelBuilder.Entity<SoRemoteZipcode>(entity =>
         {
             entity.HasKey(e => e.Zipcode).HasName("PK__SO_Remot__FCD74345FACAC8A8");
@@ -2542,7 +2592,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoShipPieceRule>(entity =>
         {
-            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipP__E92A929698BEB5FB");
+            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipP__E92A9296679F45DF");
 
             entity.ToTable("SO_ShipPieceRules");
 
@@ -2559,7 +2609,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoShipWeightRule>(entity =>
         {
-            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipW__E92A9296649D49F4");
+            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipW__E92A92967BE05456");
 
             entity.ToTable("SO_ShipWeightRules");
 
@@ -2629,6 +2679,20 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.ShipMethod).WithMany(p => p.SoShipments)
                 .HasForeignKey(d => d.ShipMethodId)
                 .HasConstraintName("FK_SO_Shipments_ShipMethod");
+        });
+
+        modelBuilder.Entity<SoShippingConfig>(entity =>
+        {
+            entity.HasKey(e => e.CfgKey).HasName("PK__SO_Shipp__5FF01142B38B6A36");
+
+            entity.ToTable("SO_ShippingConfig");
+
+            entity.Property(e => e.CfgKey)
+                .HasMaxLength(50)
+                .HasColumnName("cfg_key");
+            entity.Property(e => e.CfgValue)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("cfg_value");
         });
 
         modelBuilder.Entity<SoStockMovement>(entity =>

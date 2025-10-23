@@ -57,8 +57,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<ManagerDatum> ManagerData { get; set; }
 
-    public virtual DbSet<ManagerRole> ManagerRoles { get; set; }
-
     public virtual DbSet<ManagerRolePermission> ManagerRolePermissions { get; set; }
 
     public virtual DbSet<MemberSalesProfile> MemberSalesProfiles { get; set; }
@@ -80,12 +78,6 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<NotificationSource> NotificationSources { get; set; }
 
     public virtual DbSet<Pet> Pets { get; set; }
-
-    public virtual DbSet<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; }
-
-    public virtual DbSet<PetLevelRewardSetting> PetLevelRewardSettings { get; set; }
-
-    public virtual DbSet<PetSkinColorCostSetting> PetSkinColorCostSettings { get; set; }
 
     public virtual DbSet<PlayerMarketOrderInfo> PlayerMarketOrderInfos { get; set; }
 
@@ -157,8 +149,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<ShipMethod> ShipMethods { get; set; }
 
-    public virtual DbSet<SignInRule> SignInRules { get; set; }
-
     public virtual DbSet<SoCart> SoCarts { get; set; }
 
     public virtual DbSet<SoCartItem> SoCartItems { get; set; }
@@ -173,7 +163,11 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SoOrderStatusHistory> SoOrderStatusHistories { get; set; }
 
+    public virtual DbSet<SoPayMethod> SoPayMethods { get; set; }
+
     public virtual DbSet<SoPaymentTransaction> SoPaymentTransactions { get; set; }
+
+    public virtual DbSet<SoRemoteZip> SoRemoteZips { get; set; }
 
     public virtual DbSet<SoRemoteZipcode> SoRemoteZipcodes { get; set; }
 
@@ -185,6 +179,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SoShipment> SoShipments { get; set; }
 
+    public virtual DbSet<SoShippingConfig> SoShippingConfigs { get; set; }
+
     public virtual DbSet<SoStockMovement> SoStockMovements { get; set; }
 
     public virtual DbSet<SupportTicket> SupportTickets { get; set; }
@@ -192,8 +188,6 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<SupportTicketAssignment> SupportTicketAssignments { get; set; }
 
     public virtual DbSet<SupportTicketMessage> SupportTicketMessages { get; set; }
-
-    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
 
     public virtual DbSet<Thread> Threads { get; set; }
 
@@ -266,8 +260,6 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.ToTable("Coupon");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_Coupon_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.AcquiredTime }, "IX_Coupon_user_used");
 
             entity.HasIndex(e => e.CouponCode, "UQ_Coupon_CouponCode").IsUnique();
@@ -276,7 +268,6 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.AcquiredTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.CouponCode).HasMaxLength(50);
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.UsedInOrderId).HasColumnName("UsedInOrderID");
             entity.Property(e => e.UsedTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.UserId).HasColumnName("UserID");
@@ -296,12 +287,7 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.ToTable("CouponType");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_CouponType_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.HasIndex(e => e.Name, "UQ_CouponType_Name").IsUnique();
-
             entity.Property(e => e.CouponTypeId).HasColumnName("CouponTypeID");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.Description).HasMaxLength(600);
             entity.Property(e => e.DiscountType).HasMaxLength(20);
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(18, 2)");
@@ -433,15 +419,12 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.ToTable("EVoucher");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_EVoucher_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => new { e.UserId, e.IsUsed, e.AcquiredTime }, "IX_EVoucher_user_used");
 
             entity.HasIndex(e => e.EvoucherCode, "UQ_EVoucher_EVoucherCode").IsUnique();
 
             entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
             entity.Property(e => e.AcquiredTime).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.EvoucherCode)
                 .HasMaxLength(50)
                 .HasColumnName("EVoucherCode");
@@ -466,12 +449,9 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("EVoucherRedeemLog");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_EVoucherRedeemLog_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => new { e.EvoucherId, e.UserId, e.ScannedAt }, "IX_EVoucherRedeemLog_voucher_user");
 
             entity.Property(e => e.RedeemId).HasColumnName("RedeemID");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
             entity.Property(e => e.ScannedAt).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.Status).HasMaxLength(20);
@@ -498,12 +478,9 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("EVoucherToken", tb => tb.HasTrigger("trg_EVoucherToken_Delete_Nullify_RedeemLog"));
 
-            entity.HasIndex(e => e.IsDeleted, "IX_EVoucherToken_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => e.Token, "UQ_EVoucherToken_Token").IsUnique();
 
             entity.Property(e => e.TokenId).HasColumnName("TokenID");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.EvoucherId).HasColumnName("EVoucherID");
             entity.Property(e => e.Token)
                 .HasMaxLength(64)
@@ -519,10 +496,7 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.ToTable("EVoucherType");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_EVoucherType_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.Property(e => e.EvoucherTypeId).HasColumnName("EVoucherTypeID");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.Description).HasMaxLength(600);
             entity.Property(e => e.Name).HasMaxLength(50);
             entity.Property(e => e.ValueAmount).HasColumnType("decimal(18, 2)");
@@ -812,8 +786,6 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.HasKey(e => e.ManagerId).HasName("PK__ManagerD__AE5FEFAD638D88FF");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerData_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => e.ManagerEmail, "UQ__ManagerD__0890969EC9C76047").IsUnique();
 
             entity.HasIndex(e => e.ManagerAccount, "UQ__ManagerD__62B5E21119A93877").IsUnique();
@@ -822,7 +794,6 @@ public partial class GameSpacedatabaseContext : DbContext
                 .ValueGeneratedNever()
                 .HasColumnName("Manager_Id");
             entity.Property(e => e.AdministratorRegistrationDate).HasColumnName("Administrator_registration_date");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.ManagerAccessFailedCount).HasColumnName("Manager_AccessFailedCount");
             entity.Property(e => e.ManagerAccount)
                 .HasMaxLength(30)
@@ -842,29 +813,25 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ManagerPassword)
                 .HasMaxLength(200)
                 .HasColumnName("Manager_Password");
-        });
 
-        modelBuilder.Entity<ManagerRole>(entity =>
-        {
-            entity.HasKey(e => new { e.ManagerId, e.ManagerRoleId }).HasName("PK__ManagerR__6270897EA52FCCCF");
-
-            entity.ToTable("ManagerRole");
-
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerRole_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.Property(e => e.ManagerId).HasColumnName("Manager_Id");
-            entity.Property(e => e.ManagerRoleId).HasColumnName("ManagerRole_Id");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-
-            entity.HasOne(d => d.Manager).WithMany(p => p.ManagerRoles)
-                .HasForeignKey(d => d.ManagerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ManagerRo__Manag__0BE6BFCF");
-
-            entity.HasOne(d => d.ManagerRoleNavigation).WithMany(p => p.ManagerRoles)
-                .HasForeignKey(d => d.ManagerRoleId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ManagerRo__Manag__0CDAE408");
+            entity.HasMany(d => d.ManagerRoles).WithMany(p => p.Managers)
+                .UsingEntity<Dictionary<string, object>>(
+                    "ManagerRole",
+                    r => r.HasOne<ManagerRolePermission>().WithMany()
+                        .HasForeignKey("ManagerRoleId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__ManagerRo__Manag__0CDAE408"),
+                    l => l.HasOne<ManagerDatum>().WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__ManagerRo__Manag__0BE6BFCF"),
+                    j =>
+                    {
+                        j.HasKey("ManagerId", "ManagerRoleId").HasName("PK__ManagerR__6270897EA52FCCCF");
+                        j.ToTable("ManagerRole");
+                        j.IndexerProperty<int>("ManagerId").HasColumnName("Manager_Id");
+                        j.IndexerProperty<int>("ManagerRoleId").HasColumnName("ManagerRole_Id");
+                    });
         });
 
         modelBuilder.Entity<ManagerRolePermission>(entity =>
@@ -873,13 +840,10 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("ManagerRolePermission");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerRolePermission_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.Property(e => e.ManagerRoleId)
                 .ValueGeneratedNever()
                 .HasColumnName("ManagerRole_Id");
             entity.Property(e => e.CustomerService).HasColumnName("customer_service");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.PetRightsManagement).HasColumnName("Pet_Rights_Management");
             entity.Property(e => e.RoleName)
                 .HasMaxLength(50)
@@ -956,14 +920,11 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("MiniGame");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_MiniGame_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => new { e.UserId, e.StartTime }, "IX_MiniGame_user_time");
 
             entity.Property(e => e.PlayId).HasColumnName("PlayID");
             entity.Property(e => e.CouponGained).HasMaxLength(50);
             entity.Property(e => e.CouponGainedTime).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.EndTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.ExpGainedTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.PetId).HasColumnName("PetID");
@@ -1132,13 +1093,10 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.ToTable("Pet");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_Pet_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => e.UserId, "IX_Pet_user");
 
             entity.Property(e => e.PetId).HasColumnName("PetID");
             entity.Property(e => e.BackgroundColor).HasMaxLength(20);
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.LevelUpTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.PetName).HasMaxLength(50);
             entity.Property(e => e.PointsChangedBackgroundColor).HasColumnName("PointsChanged_BackgroundColor");
@@ -1150,78 +1108,12 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.SkinColor)
                 .HasMaxLength(10)
                 .IsUnicode(false);
-            entity.Property(e => e.TotalPointsGainedLevelUp)
-                .HasDefaultValue(0)
-                .HasColumnName("TotalPointsGained_LevelUp");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.User).WithMany(p => p.Pets)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Pet_Users");
-        });
-
-        modelBuilder.Entity<PetBackgroundCostSetting>(entity =>
-        {
-            entity.HasKey(e => e.SettingId).HasName("PK__PetBackg__54372B1DE392F9C5");
-
-            entity.HasIndex(e => e.BackgroundCode, "UQ_PetBackgroundCostSettings_BackgroundCode").IsUnique();
-
-            entity.Property(e => e.BackgroundCode).HasMaxLength(50);
-            entity.Property(e => e.BackgroundName).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.PreviewImagePath).HasMaxLength(200);
-            entity.Property(e => e.Rarity).HasMaxLength(20);
-
-            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.PetBackgroundCostSettings)
-                .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK_PetBackgroundCostSettings_UpdatedBy_Manager");
-        });
-
-        modelBuilder.Entity<PetLevelRewardSetting>(entity =>
-        {
-            entity.HasKey(e => e.SettingId);
-
-            entity.HasIndex(e => new { e.LevelRangeStart, e.LevelRangeEnd }, "IX_PetLevelRewardSettings_LevelRange").HasFilter("([IsDeleted]=(0) AND [IsActive]=(1))");
-
-            entity.HasIndex(e => new { e.LevelRangeStart, e.LevelRangeEnd }, "UQ_PetLevelRewardSettings_LevelRange").IsUnique();
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-        });
-
-        modelBuilder.Entity<PetSkinColorCostSetting>(entity =>
-        {
-            entity.HasKey(e => e.SettingId);
-
-            entity.HasIndex(e => new { e.IsActive, e.DisplayOrder }, "IX_PetSkinColorCostSettings_IsActive_DisplayOrder").HasFilter("([IsDeleted]=(0))");
-
-            entity.HasIndex(e => e.Rarity, "IX_PetSkinColorCostSettings_Rarity").HasFilter("([IsDeleted]=(0) AND [IsActive]=(1))");
-
-            entity.HasIndex(e => e.ColorCode, "UQ_PetSkinColorCostSettings_ColorCode").IsUnique();
-
-            entity.Property(e => e.ColorCode)
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.ColorHex)
-                .HasMaxLength(7)
-                .IsUnicode(false);
-            entity.Property(e => e.ColorName).HasMaxLength(50);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.PointsCost).HasDefaultValue(2000);
-            entity.Property(e => e.PreviewImagePath).HasMaxLength(500);
-            entity.Property(e => e.Rarity)
-                .HasMaxLength(20)
-                .HasDefaultValue("普通");
         });
 
         modelBuilder.Entity<PlayerMarketOrderInfo>(entity =>
@@ -1605,7 +1497,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<RemoteZipcode>(entity =>
         {
-            entity.HasKey(e => e.Zipcode).HasName("PK__RemoteZi__FCD74345135C1046");
+            entity.HasKey(e => e.Zipcode).HasName("PK__RemoteZi__FCD7434565B1594F");
 
             entity.Property(e => e.Zipcode)
                 .HasMaxLength(10)
@@ -2048,7 +1940,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<ShipMethod>(entity =>
         {
-            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E1E67D2AD5");
+            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
 
             entity.Property(e => e.ShipMethodId)
                 .ValueGeneratedNever()
@@ -2064,28 +1956,6 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.MethodName)
                 .HasMaxLength(50)
                 .HasColumnName("method_name");
-        });
-
-        modelBuilder.Entity<SignInRule>(entity =>
-        {
-            entity.ToTable("SignInRule");
-
-            entity.HasIndex(e => e.IsDeleted, "IX_SignInRule_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.HasIndex(e => e.SignInDay, "UQ_SignInRule_SignInDay_Active")
-                .IsUnique()
-                .HasFilter("([IsActive]=(1))");
-
-            entity.Property(e => e.CouponTypeCode).HasMaxLength(50);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-
-            entity.HasOne(d => d.CouponTypeCodeNavigation).WithMany(p => p.SignInRules)
-                .HasPrincipalKey(p => p.Name)
-                .HasForeignKey(d => d.CouponTypeCode)
-                .HasConstraintName("FK_SignInRule_CouponType_Name");
         });
 
         modelBuilder.Entity<SoCart>(entity =>
@@ -2221,7 +2091,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoCoupon>(entity =>
         {
-            entity.HasKey(e => e.CouponCode).HasName("PK__SO_Coupo__ADE5CBB61082DB4D");
+            entity.HasKey(e => e.CouponCode).HasName("PK__SO_Coupo__ADE5CBB6EFA67F48");
 
             entity.ToTable("SO_Coupons");
 
@@ -2310,6 +2180,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasIndex(e => new { e.OrderDate, e.OrderCode }, "IX_SO_OrderInfoes_OrderDate_OrderCode");
 
+            entity.HasIndex(e => new { e.PayMethodId, e.OrderDate }, "IX_SO_OrderInfoes_PayMethod_Date");
+
             entity.HasIndex(e => new { e.PaymentStatus, e.OrderDate }, "IX_SO_OrderInfoes_PaymentStatus");
 
             entity.HasIndex(e => new { e.OrderStatus, e.OrderDate }, "IX_SO_OrderInfoes_Status_Date");
@@ -2341,6 +2213,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.OrderTotal)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("order_total");
+            entity.Property(e => e.PayMethodId).HasColumnName("pay_method_id");
             entity.Property(e => e.PaymentAt).HasColumnName("payment_at");
             entity.Property(e => e.PaymentStatus)
                 .HasMaxLength(30)
@@ -2354,6 +2227,10 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("subtotal");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.PayMethod).WithMany(p => p.SoOrderInfos)
+                .HasForeignKey(d => d.PayMethodId)
+                .HasConstraintName("FK_SO_OrderInfoes_PayMethod");
 
             entity.HasOne(d => d.User).WithMany(p => p.SoOrderInfos)
                 .HasForeignKey(d => d.UserId)
@@ -2442,6 +2319,33 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasConstraintName("FK_SO_OrderStatusHistory_Order");
         });
 
+        modelBuilder.Entity<SoPayMethod>(entity =>
+        {
+            entity.HasKey(e => e.PayMethodId);
+
+            entity.ToTable("SO_PayMethods");
+
+            entity.HasIndex(e => new { e.IsEnabled, e.SortOrder, e.PayMethodId }, "IX_SO_PayMethods_EnabledSort");
+
+            entity.HasIndex(e => e.MethodCode, "UQ_SO_PayMethods_Code").IsUnique();
+
+            entity.Property(e => e.PayMethodId).HasColumnName("pay_method_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsEnabled)
+                .HasDefaultValue(true)
+                .HasColumnName("is_enabled");
+            entity.Property(e => e.MethodCode)
+                .HasMaxLength(30)
+                .HasColumnName("method_code");
+            entity.Property(e => e.MethodName)
+                .HasMaxLength(50)
+                .HasColumnName("method_name");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
         modelBuilder.Entity<SoPaymentTransaction>(entity =>
         {
             entity.HasKey(e => e.PaymentId).HasName("PK__SO_Payme__ED1FC9EABB1568CA");
@@ -2495,6 +2399,20 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasConstraintName("FK_SO_PaymentTransactions_Order");
         });
 
+        modelBuilder.Entity<SoRemoteZip>(entity =>
+        {
+            entity.HasKey(e => e.Zipcode).HasName("PK__SO_Remot__FCD74345F0ADD6F6");
+
+            entity.ToTable("SO_RemoteZip");
+
+            entity.Property(e => e.Zipcode)
+                .HasMaxLength(10)
+                .HasColumnName("zipcode");
+            entity.Property(e => e.Note)
+                .HasMaxLength(50)
+                .HasColumnName("note");
+        });
+
         modelBuilder.Entity<SoRemoteZipcode>(entity =>
         {
             entity.HasKey(e => e.Zipcode).HasName("PK__SO_Remot__FCD74345FACAC8A8");
@@ -2542,7 +2460,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoShipPieceRule>(entity =>
         {
-            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipP__E92A929698BEB5FB");
+            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipP__E92A9296679F45DF");
 
             entity.ToTable("SO_ShipPieceRules");
 
@@ -2559,7 +2477,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SoShipWeightRule>(entity =>
         {
-            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipW__E92A9296649D49F4");
+            entity.HasKey(e => e.RuleId).HasName("PK__SO_ShipW__E92A92967BE05456");
 
             entity.ToTable("SO_ShipWeightRules");
 
@@ -2629,6 +2547,20 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.ShipMethod).WithMany(p => p.SoShipments)
                 .HasForeignKey(d => d.ShipMethodId)
                 .HasConstraintName("FK_SO_Shipments_ShipMethod");
+        });
+
+        modelBuilder.Entity<SoShippingConfig>(entity =>
+        {
+            entity.HasKey(e => e.CfgKey).HasName("PK__SO_Shipp__5FF01142B38B6A36");
+
+            entity.ToTable("SO_ShippingConfig");
+
+            entity.Property(e => e.CfgKey)
+                .HasMaxLength(50)
+                .HasColumnName("cfg_key");
+            entity.Property(e => e.CfgValue)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("cfg_value");
         });
 
         modelBuilder.Entity<SoStockMovement>(entity =>
@@ -2782,29 +2714,6 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasOne(d => d.Ticket).WithMany(p => p.SupportTicketMessages)
                 .HasForeignKey(d => d.TicketId)
                 .HasConstraintName("FK_Support_Ticket_Messages_Tickets");
-        });
-
-        modelBuilder.Entity<SystemSetting>(entity =>
-        {
-            entity.HasKey(e => e.SettingId).HasName("PK__SystemSe__54372B1DF394C630");
-
-            entity.HasIndex(e => e.SettingKey, "UQ_SystemSettings_SettingKey").IsUnique();
-
-            entity.Property(e => e.Category)
-                .HasMaxLength(100)
-                .HasDefaultValue("General");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.SettingKey).HasMaxLength(200);
-            entity.Property(e => e.SettingType)
-                .HasMaxLength(50)
-                .HasDefaultValue("String");
-
-            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.SystemSettings)
-                .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK_SystemSettings_UpdatedBy_Manager");
         });
 
         modelBuilder.Entity<Thread>(entity =>
@@ -3016,14 +2925,11 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.HasKey(e => e.LogId);
 
-            entity.HasIndex(e => e.IsDeleted, "IX_UserSignInStats_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => new { e.UserId, e.SignTime }, "IX_UserSignInStats_user_time");
 
             entity.Property(e => e.LogId).HasColumnName("LogID");
             entity.Property(e => e.CouponGained).HasMaxLength(50);
             entity.Property(e => e.CouponGainedTime).HasDefaultValueSql("(sysutcdatetime())");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.ExpGainedTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.PointsGainedTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.SignTime).HasDefaultValueSql("(sysutcdatetime())");
@@ -3057,12 +2963,9 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("User_Wallet");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_User_Wallet_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.Property(e => e.UserId)
                 .ValueGeneratedNever()
                 .HasColumnName("User_Id");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.UserPoint).HasColumnName("User_Point");
 
             entity.HasOne(d => d.User).WithOne(p => p.UserWallet)
@@ -3119,17 +3022,12 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("WalletHistory");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_WalletHistory_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.HasIndex(e => new { e.ChangeType, e.ChangeTime }, "IX_WalletHistory_type_time");
-
             entity.HasIndex(e => new { e.UserId, e.ChangeTime }, "IX_WalletHistory_user_time");
 
             entity.Property(e => e.LogId).HasColumnName("LogID");
             entity.Property(e => e.ChangeTime).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.ChangeType).HasMaxLength(20);
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.Description).HasMaxLength(200);
             entity.Property(e => e.ItemCode).HasMaxLength(50);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 

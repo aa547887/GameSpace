@@ -21,13 +21,5 @@ public partial class ManagerRolePermission
 
     public bool? CustomerService { get; set; }
 
-    public bool IsDeleted { get; set; }
-
-    public DateTime? DeletedAt { get; set; }
-
-    public int? DeletedBy { get; set; }
-
-    public string? DeleteReason { get; set; }
-
-    public virtual ICollection<ManagerRole> ManagerRoles { get; set; } = new List<ManagerRole>();
+    public virtual ICollection<ManagerDatum> Managers { get; set; } = new List<ManagerDatum>();
 }
