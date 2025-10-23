@@ -68,12 +68,20 @@ namespace GamiPort
 			builder.Services.AddMemoryCache();
 			builder.Services.AddScoped<INotificationStore, NotificationStore>();
 			builder.Services.AddScoped<IRelationService, RelationService>();
-			// -----------------------------------------------
-			// MVC & Razor Pages
-			//   - Razor Pages 供 Identity UI 使用
-			//   - MVC 給你 Areas / Controllers / Views
-			// ------------------------------------------------------------
-			builder.Services.AddControllersWithViews()
+
+
+            // (D) Forum 模組 Services
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Forums.IForumsService,
+                                       GamiPort.Areas.Forum.Services.Forums.ForumsService>();
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.IThreadsService,
+                                       GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
+            //                         GamiPort.Areas.Forum.Services.Threads
+            // -----------------------------------------------
+            // MVC & Razor Pages
+            //   - Razor Pages 供 Identity UI 使用
+            //   - MVC 給你 Areas / Controllers / Views
+            // ------------------------------------------------------------
+            builder.Services.AddControllersWithViews()
 				// 可選：統一 JSON 大小寫（避免「API自動小寫」疑惑）
 				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
@@ -84,13 +92,13 @@ namespace GamiPort
 
 			// 可選：全域 using HttpContext 的場合（有時在 Service 要讀取 User/Claims）
 			builder.Services.AddHttpContextAccessor();
-
 			var app = builder.Build();
 
-			// ------------------------------------------------------------
-			// HTTP Pipeline（中介軟體順序很重要）
-			// ------------------------------------------------------------
-			if (app.Environment.IsDevelopment())
+
+            // ------------------------------------------------------------
+            // HTTP Pipeline（中介軟體順序很重要）
+            // ------------------------------------------------------------
+            if (app.Environment.IsDevelopment())
 			{
 				// 顯示 EF 錯誤詳情頁 & migrations endpoint
 				app.UseMigrationsEndPoint();

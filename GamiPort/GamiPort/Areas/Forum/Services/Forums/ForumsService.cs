@@ -2,20 +2,19 @@
 using GamiPort.Areas.Forum.Dtos.Forum;
 using GamiPort.Areas.Forum.Dtos.Threads;
 using Microsoft.EntityFrameworkCore;
-using System;
-
+using GamiPort.Models;
 namespace GamiPort.Areas.Forum.Services.Forums
 {
     public class ForumsService : IForumsService
     {
-        private readonly AppDbContext _db;
-        public ForumsService(AppDbContext db) => _db = db;
+        private readonly GameSpacedatabaseContext _db;
+        public ForumsService(GameSpacedatabaseContext db) => _db = db;
 
         public async Task<IReadOnlyList<ForumListItemDto>> GetForumsAsync()
         {
             return await _db.Forums.AsNoTracking()
                 .OrderBy(f => f.Name)
-                .Select(f => new ForumListItemDto(f.ForumId, f.GameId, f.Name, f.Description))
+                .Select(f => new ForumListItemDto(f.ForumId, f.GameId??0, f.Name, f.Description))
                 .ToListAsync();
         }
 
@@ -23,14 +22,14 @@ namespace GamiPort.Areas.Forum.Services.Forums
         {
             var f = await _db.Forums.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ForumId == forumId);
-            return f == null ? null : new ForumDetailDto(f.ForumId, f.GameId, f.Name, f.Description);
+            return f == null ? null : new ForumDetailDto(f.ForumId, f.GameId ?? 0, f.Name, f.Description);
         }
 
         public async Task<ForumDetailDto?> GetForumByGameAsync(int gameId)
         {
             var f = await _db.Forums.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.GameId == gameId);
-            return f == null ? null : new ForumDetailDto(f.ForumId, f.GameId, f.Name, f.Description);
+            return f == null ? null : new ForumDetailDto(f.ForumId, f.GameId ?? 0, f.Name, f.Description);
         }
 
         public async Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
@@ -53,7 +52,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
                     t.ThreadId,
                     t.Title,
                     t.Status,
-                    t.CreatedAt,
+                    t.CreatedAt ?? DateTime.MinValue,
                     t.UpdatedAt,
                     _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId)
                 ))

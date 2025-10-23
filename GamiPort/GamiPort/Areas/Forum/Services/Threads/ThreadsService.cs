@@ -1,14 +1,15 @@
 ﻿using GamiPort.Areas.Forum.Dtos.Common;
 using GamiPort.Areas.Forum.Dtos.Threads;
 using Microsoft.EntityFrameworkCore;
+using GamiPort.Models;
 using System;
 
 namespace GamiPort.Areas.Forum.Services.Threads
 {
     public class ThreadsService : IThreadsService
     {
-        private readonly DbContext _db;
-        public ThreadsService(DbContext db) => _db = db;
+        private readonly GameSpacedatabaseContext _db;
+        public ThreadsService(GameSpacedatabaseContext db) => _db = db;
 
         public async Task<ThreadDetailDto?> GetThreadAsync(long threadId)
         {
@@ -20,11 +21,11 @@ namespace GamiPort.Areas.Forum.Services.Threads
                 .Where(p => p.ThreadId == threadId)
                 .OrderBy(p => p.CreatedAt)
                 .Select(p => new ThreadPostRowDto(
-                    p.Id, p.ThreadId, p.AuthorUserId, p.ContentMd, p.CreatedAt, p.ParentPostId))
+                    p.Id, p.ThreadId??0, p.AuthorUserId ?? 0, p.ContentMd, p.CreatedAt ?? DateTime.MinValue, p.ParentPostId))
                 .ToListAsync();
 
             return new ThreadDetailDto(
-                t.ThreadId, t.Title, t.Status, t.AuthorUserId, t.CreatedAt, posts);
+                t.ThreadId, t.Title, t.Status, t.AuthorUserId ?? 0, t.CreatedAt ?? DateTime.MinValue, posts);
         }
 
         public async Task<PagedResult<ThreadPostRowDto>> GetThreadPostsAsync(long threadId, int page, int size)
@@ -38,7 +39,7 @@ namespace GamiPort.Areas.Forum.Services.Threads
             var items = await q.Skip((page - 1) * size)
                 .Take(size)
                 .Select(p => new ThreadPostRowDto(
-                    p.Id, p.ThreadId, p.AuthorUserId, p.ContentMd, p.CreatedAt, p.ParentPostId))
+                    p.Id, p.ThreadId ?? 0, p.AuthorUserId ?? 0, p.ContentMd, p.CreatedAt ?? DateTime.MinValue, p.ParentPostId))
                 .ToListAsync();
 
             return new PagedResult<ThreadPostRowDto>(items, page, size, total);
