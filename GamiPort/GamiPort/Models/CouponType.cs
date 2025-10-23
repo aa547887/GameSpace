@@ -11,9 +11,9 @@ public partial class CouponType
 
     public string DiscountType { get; set; } = null!;
 
-    public decimal DiscountValue { get; set; }
+    public decimal? DiscountValue { get; set; }
 
-    public decimal MinSpend { get; set; }
+    public decimal? MinSpend { get; set; }
 
     public DateTime ValidFrom { get; set; }
 

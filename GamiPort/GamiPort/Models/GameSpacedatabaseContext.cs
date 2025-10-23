@@ -57,8 +57,6 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<ManagerDatum> ManagerData { get; set; }
 
-    public virtual DbSet<ManagerRole> ManagerRoles { get; set; }
-
     public virtual DbSet<ManagerRolePermission> ManagerRolePermissions { get; set; }
 
     public virtual DbSet<MemberSalesProfile> MemberSalesProfiles { get; set; }
@@ -156,6 +154,8 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<SVRevenueByPeriod> SVRevenueByPeriods { get; set; }
 
     public virtual DbSet<ShipMethod> ShipMethods { get; set; }
+
+    public virtual DbSet<SignInRule> SignInRules { get; set; }
 
     public virtual DbSet<SoCart> SoCarts { get; set; }
 
@@ -816,8 +816,6 @@ public partial class GameSpacedatabaseContext : DbContext
         {
             entity.HasKey(e => e.ManagerId).HasName("PK__ManagerD__AE5FEFAD638D88FF");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerData_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.HasIndex(e => e.ManagerEmail, "UQ__ManagerD__0890969EC9C76047").IsUnique();
 
             entity.HasIndex(e => e.ManagerAccount, "UQ__ManagerD__62B5E21119A93877").IsUnique();
@@ -826,7 +824,6 @@ public partial class GameSpacedatabaseContext : DbContext
                 .ValueGeneratedNever()
                 .HasColumnName("Manager_Id");
             entity.Property(e => e.AdministratorRegistrationDate).HasColumnName("Administrator_registration_date");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.ManagerAccessFailedCount).HasColumnName("Manager_AccessFailedCount");
             entity.Property(e => e.ManagerAccount)
                 .HasMaxLength(30)
@@ -846,29 +843,25 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ManagerPassword)
                 .HasMaxLength(200)
                 .HasColumnName("Manager_Password");
-        });
 
-        modelBuilder.Entity<ManagerRole>(entity =>
-        {
-            entity.HasKey(e => new { e.ManagerId, e.ManagerRoleId }).HasName("PK__ManagerR__6270897EA52FCCCF");
-
-            entity.ToTable("ManagerRole");
-
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerRole_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
-            entity.Property(e => e.ManagerId).HasColumnName("Manager_Id");
-            entity.Property(e => e.ManagerRoleId).HasColumnName("ManagerRole_Id");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
-
-            entity.HasOne(d => d.Manager).WithMany(p => p.ManagerRoles)
-                .HasForeignKey(d => d.ManagerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ManagerRo__Manag__0BE6BFCF");
-
-            entity.HasOne(d => d.ManagerRoleNavigation).WithMany(p => p.ManagerRoles)
-                .HasForeignKey(d => d.ManagerRoleId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ManagerRo__Manag__0CDAE408");
+            entity.HasMany(d => d.ManagerRoles).WithMany(p => p.Managers)
+                .UsingEntity<Dictionary<string, object>>(
+                    "ManagerRole",
+                    r => r.HasOne<ManagerRolePermission>().WithMany()
+                        .HasForeignKey("ManagerRoleId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__ManagerRo__Manag__0CDAE408"),
+                    l => l.HasOne<ManagerDatum>().WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__ManagerRo__Manag__0BE6BFCF"),
+                    j =>
+                    {
+                        j.HasKey("ManagerId", "ManagerRoleId").HasName("PK__ManagerR__6270897EA52FCCCF");
+                        j.ToTable("ManagerRole");
+                        j.IndexerProperty<int>("ManagerId").HasColumnName("Manager_Id");
+                        j.IndexerProperty<int>("ManagerRoleId").HasColumnName("ManagerRole_Id");
+                    });
         });
 
         modelBuilder.Entity<ManagerRolePermission>(entity =>
@@ -877,13 +870,10 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.ToTable("ManagerRolePermission");
 
-            entity.HasIndex(e => e.IsDeleted, "IX_ManagerRolePermission_IsDeleted").HasFilter("([IsDeleted]=(0))");
-
             entity.Property(e => e.ManagerRoleId)
                 .ValueGeneratedNever()
                 .HasColumnName("ManagerRole_Id");
             entity.Property(e => e.CustomerService).HasColumnName("customer_service");
-            entity.Property(e => e.DeleteReason).HasMaxLength(500);
             entity.Property(e => e.PetRightsManagement).HasColumnName("Pet_Rights_Management");
             entity.Property(e => e.RoleName)
                 .HasMaxLength(50)
@@ -1167,7 +1157,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<PetBackgroundCostSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingId).HasName("PK__PetBackg__54372B1DE392F9C5");
+            entity.HasKey(e => e.SettingId).HasName("PK__PetBackg__54372B1D7E12EEE3");
 
             entity.HasIndex(e => e.BackgroundCode, "UQ_PetBackgroundCostSettings_BackgroundCode").IsUnique();
 
@@ -2052,7 +2042,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<ShipMethod>(entity =>
         {
-            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E1E67D2AD5");
+            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
 
             entity.Property(e => e.ShipMethodId)
                 .ValueGeneratedNever()
@@ -2070,24 +2060,26 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("method_name");
         });
 
-        modelBuilder.Entity<ShipMethod>(entity =>
+        modelBuilder.Entity<SignInRule>(entity =>
         {
-            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
+            entity.ToTable("SignInRule");
 
-            entity.Property(e => e.ShipMethodId)
-                .ValueGeneratedNever()
-                .HasColumnName("ship_method_id");
-            entity.Property(e => e.AllowRemoteSurcharge).HasColumnName("allow_remote_surcharge");
-            entity.Property(e => e.BaseFee)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("base_fee");
-            entity.Property(e => e.ForStorePickup).HasColumnName("for_store_pickup");
-            entity.Property(e => e.FreeThreshold)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("free_threshold");
-            entity.Property(e => e.MethodName)
-                .HasMaxLength(50)
-                .HasColumnName("method_name");
+            entity.HasIndex(e => e.IsDeleted, "IX_SignInRule_IsDeleted").HasFilter("([IsDeleted]=(0))");
+
+            entity.HasIndex(e => e.SignInDay, "UQ_SignInRule_SignInDay_Active")
+                .IsUnique()
+                .HasFilter("([IsActive]=(1))");
+
+            entity.Property(e => e.CouponTypeCode).HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.DeleteReason).HasMaxLength(500);
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasOne(d => d.CouponTypeCodeNavigation).WithMany(p => p.SignInRules)
+                .HasPrincipalKey(p => p.Name)
+                .HasForeignKey(d => d.CouponTypeCode)
+                .HasConstraintName("FK_SignInRule_CouponType_Name");
         });
 
         modelBuilder.Entity<SoCart>(entity =>
@@ -2850,7 +2842,7 @@ public partial class GameSpacedatabaseContext : DbContext
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingId).HasName("PK__SystemSe__54372B1DF394C630");
+            entity.HasKey(e => e.SettingId).HasName("PK__SystemSe__54372B1D4E2C6147");
 
             entity.HasIndex(e => e.SettingKey, "UQ_SystemSettings_SettingKey").IsUnique();
 

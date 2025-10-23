@@ -1,35 +1,46 @@
-﻿using GamiPort.Infrastructure.Login;
-using GamiPort.Models;
+﻿using GamiPort.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+// ✅ 改：改用我們自己的統一介面來「吃登入」；不再依賴 ILoginIdentity
+using GamiPort.Infrastructure.Security; // IAppCurrentUser
 
 namespace GamiPort.Areas.social_hub.Controllers
 {
 	/// <summary>
 	/// 一對一聊天：歷史查詢 / 好友最新預覽 + 未讀
 	/// （即時傳送、已讀回報放在 SignalR Hub）
+	/// 【重點】本版改為注入 IAppCurrentUser 來讀取目前登入者：
+	///   - 快速路徑：直接讀取 Claims("AppUserId") -> _me.UserId（無 DB）
+	///   - 備援路徑：_me.GetUserIdAsync()（解析 NameIdentifier 或內部呼叫 ILoginIdentity 做 DB 對應）
 	/// </summary>
 	[Area("social_hub")]
 	[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 	public sealed class ChatController : Controller
 	{
 		private readonly GameSpacedatabaseContext _db;
-		private readonly ILoginIdentity _login;
+		private readonly IAppCurrentUser _me; // ✅ 改：統一入口，集中「吃登入」邏輯
 
-		public ChatController(GameSpacedatabaseContext db, ILoginIdentity login)
+		public ChatController(GameSpacedatabaseContext db, IAppCurrentUser me)
 		{
 			_db = db;
-			_login = login;
+			_me = me;
 		}
 
 		// ==========================================================
 		// 共用：目前使用者（只吃正式登入 Cookie）
+		// 讀取順序：
+		//   1) _me.UserId：直接讀 Claims("AppUserId")（最快、無 DB）
+		//   2) _me.GetUserIdAsync()：備援解析 NameIdentifier 或呼叫 ILoginIdentity 做一次 DB 對應
 		// ==========================================================
 		private async Task<int> GetMeAsync()
 		{
-			var id = await _login.GetAsync();
-			return id.IsAuthenticated && id.UserId is > 0 ? id.UserId.Value : 0;
+			// 快速路徑：_me.UserId 會把 "AppUserId" Claim 轉成 int（沒有就 0）
+			var uid = _me.UserId;
+			if (uid > 0) return uid;
+
+			// 備援路徑：必要時才呼叫（可能解析 NameIdentifier 或透過 ILoginIdentity 做一次 DB 對應）
+			return await _me.GetUserIdAsync();
 		}
 
 		/// <summary>確認 Users 中是否存在（你的主鍵屬性是 UserId）</summary>
@@ -49,6 +60,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 
 			return dt.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture);
 		}
+
 		// ==========================================================
 		// 1) 歷史（分頁）
 		//    GET /social_hub/Chat/History?otherId=1002&take=20
