@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using GameSpace.Models; // ManagerDatum, GameSpacedatabaseContext
+using GameSpace.Models.ViewModels; // LoginInput, VerifyEmailInput, LoginSuccessVM
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -35,13 +37,13 @@ namespace GameSpace.Controllers
 		// GET: /Login
 		[HttpGet]
 		[AllowAnonymous]
-		public IActionResult Index() => View("Login", new LoginInput());
+		public IActionResult Index() => View("Login", new LoginInputVM());
 
 		// POST: /Login
 		[HttpPost]
 		[AllowAnonymous]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Index(LoginInput input)
+		public async Task<IActionResult> Index(LoginInputVM input)
 		{
 			if (!ModelState.IsValid) return View("Login", input);
 
@@ -113,14 +115,14 @@ namespace GameSpace.Controllers
 			if (pending == null) return RedirectToAction(nameof(Index));
 
 			var maskedEmail = MaskEmail(pending.ManagerEmail);
-			return View(new VerifyEmailInput { MaskedEmail = maskedEmail });
+			return View(new VerifyEmailInputVM { MaskedEmail = maskedEmail });
 		}
 
 		// POST: /Login/VerifyEmail
 		[HttpPost]
 		[AllowAnonymous]
 		[IgnoreAntiforgeryToken]
-		public async Task<IActionResult> VerifyEmail(VerifyEmailInput input)
+		public async Task<IActionResult> VerifyEmail(VerifyEmailInputVM input)
 		{
 			var pending = await GetPendingOtpUserAsync();
 			if (pending == null)
@@ -185,7 +187,7 @@ namespace GameSpace.Controllers
 				await HttpContext.SignOutAsync(IdentityConstants.TwoFactorRememberMeScheme);
 
 			//(可選)清 Session
-			 HttpContext.Session?.Clear();
+			HttpContext.Session?.Clear();
 
 			return RedirectToAction("Index", "Home", new { area = "" });
 		}
@@ -362,37 +364,6 @@ namespace GameSpace.Controllers
 			var head = name.Substring(0, Math.Min(1, name.Length));
 			var tail = name.Length > 1 ? name[^1..] : "";
 			return $"{head}{new string('•', maskLen)}{tail}@{domain}";
-		}
-
-		// ========= ViewModels =========
-		public class LoginInput
-		{
-			[Required(ErrorMessage = "請輸入帳號")]
-			[Display(Name = "管理者帳號")]
-			public string ManagerAccount { get; set; } = "";
-
-			[Required(ErrorMessage = "請輸入密碼")]
-			[DataType(DataType.Password)]
-			[Display(Name = "密碼")]
-			public string ManagerPassword { get; set; } = "";
-		}
-
-		public class VerifyEmailInput
-		{
-			[Display(Name = "驗證碼")]
-			[Required(ErrorMessage = "請輸入驗證碼")]
-			[StringLength(6, MinimumLength = 6, ErrorMessage = "驗證碼為 6 碼")]
-			public string Code { get; set; } = "";
-
-			// 顯示用
-			public string? MaskedEmail { get; set; }
-		}
-
-		public class LoginSuccessVM
-		{
-			public int ManagerId { get; set; }
-			public string ManagerName { get; set; } = "";
-			public List<string> Positions { get; set; } = new();
 		}
 	}
 }
