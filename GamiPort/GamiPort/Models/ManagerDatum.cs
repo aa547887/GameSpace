@@ -25,21 +25,11 @@ public partial class ManagerDatum
 
     public DateTime? ManagerLockoutEnd { get; set; }
 
-    public bool IsDeleted { get; set; }
-
-    public DateTime? DeletedAt { get; set; }
-
-    public int? DeletedBy { get; set; }
-
-    public string? DeleteReason { get; set; }
-
     public virtual ICollection<CsAgent> CsAgentCreatedByManagerNavigations { get; set; } = new List<CsAgent>();
 
     public virtual CsAgent? CsAgentManager { get; set; }
 
     public virtual ICollection<CsAgent> CsAgentUpdatedByManagerNavigations { get; set; } = new List<CsAgent>();
-
-    public virtual ICollection<ManagerRole> ManagerRoles { get; set; } = new List<ManagerRole>();
 
     public virtual ICollection<Mute> Mutes { get; set; } = new List<Mute>();
 
@@ -64,4 +54,6 @@ public partial class ManagerDatum
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<SystemSetting> SystemSettings { get; set; } = new List<SystemSetting>();
+
+    public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
 }
