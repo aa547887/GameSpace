@@ -8,14 +8,9 @@ using Microsoft.EntityFrameworkCore.Storage; // ★ 新增這行
 
 namespace GamiPort.Areas.social_hub.Services.Application
 {
-	/// <summary>
-	/// 通知寫入服務（集中驗證、交易保護；通過才寫入）。
-	/// </summary>
 	public sealed class NotificationStore : INotificationStore
 	{
 		private readonly GameSpacedatabaseContext _db;
-
-		// 與資料庫對應的長度限制（見 OnModelCreating）
 		private const int TitleMaxLen = 100;
 		private const int MessageMaxLen = 255;
 
@@ -90,7 +85,6 @@ namespace GamiPort.Areas.social_hub.Services.Application
 					Message = message,
 					CreatedAt = DateTime.UtcNow
 				};
-
 				_db.Notifications.Add(n);
 				await _db.SaveChangesAsync(ct); // 取得 NotificationId
 

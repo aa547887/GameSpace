@@ -1,11 +1,17 @@
-using GamiPort.Data;                       // ApplicationDbContext¡]Identity¥Î¡^
-using GamiPort.Models;                     // GameSpacedatabaseContext¡]·~°È¸ê®Æ¡^
+ï»¿// =======================
+// Program.csï¼ˆç´” Cookie ç‰ˆï¼›ä¸ä½¿ç”¨ Identityï¼Œä¸æœƒå»ºç«‹ AspNetUsersï¼‰
+// ç›®çš„ï¼šä½¿ç”¨è‡ªè¨‚ Cookie é©—è­‰ï¼›ä¿ç•™ MVC / RazorPagesã€Anti-forgeryã€è·¯ç”±èˆ‡é–‹ç™¼æœŸ EF åµéŒ¯ã€‚
+// =======================
+
+using GamiPort.Data;                       // ApplicationDbContextï¼ˆç›®å‰æœªä½¿ç”¨ï¼Œä½†ä¿ç•™å‘½åç©ºé–“ï¼‰
+using GamiPort.Models;                     // GameSpacedatabaseContextï¼ˆæ¥­å‹™è³‡æ–™ï¼‰
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;       // åªç‚ºäº† IPasswordHasher<User>/PasswordHasher<User>
 using Microsoft.EntityFrameworkCore;
-// [Cart][FIX] ¶×¤JÁÊª«¨®ªA°Èªº©R¦WªÅ¶¡¡]­Y¤w¦s¦b¥i²¤¡^
-using GamiPort.Areas.OnlineStore.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using GamiPort.Areas.Login.Services;
+
 namespace GamiPort
 {
 	public class Program
@@ -15,105 +21,91 @@ namespace GamiPort
 			var builder = WebApplication.CreateBuilder(args);
 
 			// ------------------------------------------------------------
-			// ³s½u¦r¦ê¡]¨â­Ó DbContext ³£¥Î¦P¤@²Õ¡F­Y¥¼¨Ó¤À®w¡A¥i¤À¶}¨ú¡^
-			// ·|¨Ì§Ç§ä "GameSpace" -> "GameSpacedatabase"¡F³£¨S¦³´N¥á¿ù
+			// é€£ç·šå­—ä¸²ï¼ˆå…©å€‹ DbContext ç†è«–å¯å…±ç”¨ï¼›æœ¬ç‰ˆåƒ…ä½¿ç”¨æ¥­å‹™ DBï¼‰
+			// æœƒä¾åºæ‰¾ "GameSpace" -> "GameSpacedatabase"ï¼›éƒ½æ²’æœ‰å°±ä¸ŸéŒ¯
 			// ------------------------------------------------------------
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
-
-			// Razor Pages UI ¤]»İ­n MVC ¤ä´©
-			builder.Services.AddControllersWithViews(); // ¤£­n AddApplicationPart(GameSpace...)
-
 			// ------------------------------------------------------------
-			// (A) DbContext µù¥U
-			// 1) ApplicationDbContext¡GIdentity Àx¦s¡]µn¤J/¨Ï¥ÎªÌ/Claims¡^
-			// 2) GameSpacedatabaseContext¡G§Aªº·~°È¸ê®Æ¡]³qª¾¡B¤å³¹¡B«ÈªA¡K¡^
-			//    ³o¨â­Ó¦b DI ¤º¬O¤£¦P«¬§O¡A¤¬¤£½Ä¬ğ
+			// DbContextï¼ˆåªè¨»å†Šæ¥­å‹™ DBï¼›ä¸è¨»å†Š Identity çš„ ApplicationDbContextï¼‰
 			// ------------------------------------------------------------
-			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-			{
-				options.UseSqlServer(gameSpaceConn);
-				// ¥i¿ï¡]¶}µo´Á°£¿ù¡^¡Goptions.EnableSensitiveDataLogging();
-			});
-
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// ¥i¿ï¡]Åª¦h¼g¤Ö­¶­±¡^¡Goptions.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking); // è®€å¤šé é¢å¯é–‹
 			});
 
-			// EF ªº¶}µoªÌ¨Ò¥~­¶¡]/errors + /migrations endpoint¡^
+			// EF é–‹ç™¼è€…ä¾‹å¤–é ï¼ˆé¡¯ç¤ºå®Œæ•´ EF ä¾‹å¤–ã€/migrations ç«¯é»ï¼‰
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 			// ------------------------------------------------------------
-			// (B) Identity µù¥U
-			// AddDefaultIdentity ¤º§t¡uRazor Pages UI¡BCookies¡BSecurityStamp ÅçÃÒ¡vµ¥¹w³]
-			// Store «ü¦V ApplicationDbContext¡]¤W­±¤wµù¥U¡^
+			// é©—è­‰ï¼šä½¿ç”¨ Cookieï¼ˆå®Œå…¨ä¸èµ° Identityï¼‰
 			// ------------------------------------------------------------
 			builder.Services
-				.AddDefaultIdentity<IdentityUser>(options =>
+				.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+				.AddCookie(opts =>
 				{
-					// ­Y¼È®É¨S¦³±H«H¾÷¨î¡A¶}µoÀô¹Ò«ØÄ³Ãö³¬«H½cÅçÃÒ»İ¨D
-					// options.SignIn.RequireConfirmedAccount = false;
-					options.SignIn.RequireConfirmedAccount = true;
-				})
-				.AddEntityFrameworkStores<ApplicationDbContext>();
+					// ä¾ä½ çš„ç™»å…¥é é¢å¯¦éš›è·¯ç”±ï¼ˆArea=Login, Controller=Login, Action=Loginï¼‰
+					opts.LoginPath = "/Login/Login/Login";
+					opts.LogoutPath = "/Login/Login/Logout";
+					opts.AccessDeniedPath = "/Login/Login/Denied";
+					opts.Cookie.Name = "GamiPort.User"; // èˆ‡å¾Œå° Cookie ä¿æŒä¸åŒå
+					opts.Cookie.HttpOnly = true;
+					opts.Cookie.SameSite = SameSiteMode.Lax;
+					opts.ExpireTimeSpan = TimeSpan.FromDays(7);
+					opts.SlidingExpiration = true;
+				});
+
+			builder.Services.AddAuthorization();
 
 			// ------------------------------------------------------------
-			// (C) §Aªº³qª¾ªA°È¡]©ñ¦b social_hub °Ï°ì©R¦WªÅ¶¡¤]OK¡^
+			// å°ˆæ¡ˆæœå‹™ï¼ˆé€šçŸ¥ã€å¥½å‹é—œä¿‚ç­‰ï¼‰
 			// ------------------------------------------------------------
-
 			builder.Services.AddMemoryCache();
 			builder.Services.AddScoped<INotificationStore, NotificationStore>();
 			builder.Services.AddScoped<IRelationService, RelationService>();
-			// -----------------------------------------------
-			// MVC & Razor Pages
-			//   - Razor Pages ¨Ñ Identity UI ¨Ï¥Î
-			//   - MVC µ¹§A Areas / Controllers / Views
+
+			// ------------------------------------------------------------
+			// MVC / RazorPages / JSON å‘½åç­–ç•¥ & Anti-forgery
 			// ------------------------------------------------------------
 			builder.Services.AddControllersWithViews()
-				// ¥i¿ï¡G²Î¤@ JSON ¤j¤p¼g¡]Á×§K¡uAPI¦Û°Ê¤p¼g¡vºÃ´b¡^
 				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
 			builder.Services.AddRazorPages();
 
-			//ÁÊª«¨®¨Ï¥Î
-			// ¥i¿ï¡G¥ş°ì using HttpContext ªº³õ¦X¡]¦³®É¦b Service ­nÅª¨ú User/Claims¡^
-			builder.Services.AddHttpContextAccessor();
-
-			// [Cart][FIX] µù¥UÁÊª«¨®ªA°È¡]ICartService -> SqlCartService¡^
-			builder.Services.AddScoped<ICartService, SqlCartService>();
-
-
-
-			// ¥i¿ï¡GÅı AJAX ¦n±a¨¾°° Token¡]©M§A«e­± fetch header 'RequestVerificationToken' ¹ïÀ³¡^
+			// AJAX çš„é˜²å½ Tokenï¼ˆå‰ç«¯è«‹ä»¥ header "RequestVerificationToken" å¸¶å…¥ï¼‰
 			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-			// ¥i¿ï¡G¥ş°ì using HttpContext ªº³õ¦X¡]¦³®É¦b Service ­nÅª¨ú User/Claims¡^
+			// ------------------------------------------------------------
+			// å…¶ä»–è¼”åŠ©æœå‹™ï¼ˆä¸èµ° Identity ä½†ä»å¯ç”¨çš„é›œæ¹Šã€Emailã€å–ç”¨ HttpContextï¼‰
+			// ------------------------------------------------------------
 			builder.Services.AddHttpContextAccessor();
+			builder.Services.AddScoped<GamiPort.Services.ICurrentUserService, GamiPort.Services.CurrentUserService>();
+			builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
+			builder.Services.AddTransient<IEmailSender,
+				// è‹¥å°šæœªè¨­å®š SMTPï¼Œæš«æ™‚å¯æ”¹æˆ NullEmailSender
+				SmtpEmailSender>();
+
+			// ------------------------------------------------------------
+			// å»ºç«‹ App
+			// ------------------------------------------------------------
 			var app = builder.Build();
 
 			// ------------------------------------------------------------
-			// HTTP Pipeline¡]¤¤¤¶³nÅé¶¶§Ç«Ü­«­n¡^
+			// HTTP Pipeline
 			// ------------------------------------------------------------
 			if (app.Environment.IsDevelopment())
 			{
-				// Åã¥Ü EF ¿ù»~¸Ô±¡­¶ & migrations endpoint
 				app.UseMigrationsEndPoint();
 
-				// ¥i¿ï¡G±Ò°Ê®ÉÀË´ú³s½u¡]§Ö³t·ÏÃú´ú¸Õ¡^
-				using (var scope = app.Services.CreateScope())
-				{
-					var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-					var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
-					// ¥¢±Ñ·|¥á¨Ò¥~¡A¤è«K§A²Ä¤@®É¶¡ª¾¹D³s½u¦r¦ê©ÎÅv­­°İÃD
-					db1.Database.CanConnect();
-					db2.Database.CanConnect();
-				}
+				// å•Ÿå‹•æ™‚å¿«é€Ÿæª¢æŸ¥ DB é€£ç·šï¼ˆææ—©ç™¼ç¾é€£ç·šå­—ä¸²æˆ–æ¬Šé™å•é¡Œï¼‰
+				using var scope = app.Services.CreateScope();
+				var db = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
+				db.Database.CanConnect();
 			}
 			else
 			{
@@ -125,30 +117,24 @@ namespace GamiPort
 			app.UseStaticFiles();
 			app.UseRouting();
 
-
-			// ¡¹ ÅçÃÒ¤@©w­n¦b±ÂÅv¤§«e
+			// é©—è­‰ä¸€å®šåœ¨æˆæ¬Šä¹‹å‰
 			app.UseAuthentication();
 			app.UseAuthorization();
 
-			// ¡¹ ³o¦æ­n¦b MapControllers ¤§«e¡AÅı API ¦³ [ValidateAntiForgeryToken] ¥i¥Î
+			// MVC Controllersï¼ˆå« Attribute Routingï¼‰
 			app.MapControllers();
 
-			// ------------------------------------------------------------
-			// ¸ô¥Ñ¡GAreas ­n¥ıµù¥U¡]¤ñ default ¥ı¡^
-			// ------------------------------------------------------------
+			// å‚³çµ±è·¯ç”±ï¼ˆå…ˆ Areas å† defaultï¼‰
 			app.MapControllerRoute(
 				name: "areas",
-				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}"
-			);
+				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 			app.MapControllerRoute(
 				name: "default",
-				pattern: "{controller=Home}/{action=Index}/{id?}"
-			);
+				pattern: "{controller=Home}/{action=Index}/{id?}");
 
-			// Identity UI¡]/Identity/...¡^
+			// Razor Pagesï¼ˆè‹¥ä½ æœ‰ä½¿ç”¨ï¼‰
 			app.MapRazorPages();
-
 
 			app.Run();
 		}

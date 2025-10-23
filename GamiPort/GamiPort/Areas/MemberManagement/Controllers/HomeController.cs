@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace GamiPort.Areas.MemberManagement.Controllers
+namespace GamiPort.Areas.Login.Controllers
 {
-	[Area("MemberManagement")]
+	[Area("Login")]
 	public class HomeController : Controller
 	{
 		public IActionResult Index()

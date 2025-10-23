@@ -6,12 +6,6 @@ namespace GamiPort.Areas.social_hub.Services.Abstractions
 	/// <summary>
 	/// 交友動作命令。
 	/// </summary>
-	public interface IRelationService
-	{
-		Task<RelationResult> ExecuteAsync(RelationCommand cmd, CancellationToken ct = default);
-	}
-
-	/// <summary>前端（按鈕 data-*）丟進來的參數</summary>
 	public sealed record RelationCommand(
 		int ActorUserId,          // 操作者
 		int TargetUserId,         // 目標對象
