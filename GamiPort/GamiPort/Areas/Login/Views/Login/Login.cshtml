@@ -31,8 +31,12 @@
 
             <button type="submit" class="btn btn-primary w-100">登入</button>
             <environment include="Development">
-            <button type="button" id="Member1" class="btn btn-outline-secondary">使用者1</button>
+                <button type="button" id="Member1" class="btn btn-outline-secondary">使用者1</button>
+                <button type="button" id="Member2" class="btn btn-outline-secondary">使用者 #10000002</button>
+                <button type="button" id="Member200" class="btn btn-outline-secondary">使用者 #10000200</button>
             </environment>
+
+
         </form>
     </div>
 </div>
@@ -42,16 +46,36 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-         //最高管理者資料填入
+             //最高管理者資料填入
+            (function () {
+                    const btn = document.getElementById('Member1');
+                btn?.addEventListener('click', function () {
+                            const acc = document.getElementById('UserAccount');
+                        const pwd = document.getElementById('UserPassword');
+                        if (acc) acc.value = 'dragonknight88';
+                        if (pwd) pwd.value = 'Password001@@';
+                    acc?.focus();
+                });
+        })();
+         (function () {
+            const btn = document.getElementById('Member2');
+                btn?.addEventListener('click', function () {
+                            const acc = document.getElementById('UserAccount');
+                        const pwd = document.getElementById('UserPassword');
+                        if (acc) acc.value = 'tech_guru_92';
+                        if (pwd) pwd.value = 'SecurePass002#';
+                    acc?.focus();
+                    });
+        })();
         (function () {
-                const btn = document.getElementById('Member1');
-            btn?.addEventListener('click', function () {
-                        const acc = document.getElementById('UserAccount');
-                    const pwd = document.getElementById('UserPassword');
-                    if (acc) acc.value = 'dragonknight88';
-                    if (pwd) pwd.value = 'Password001@@';
-                acc?.focus();
-            });
-    })();
-</script>
+            const btn = document.getElementById('Member200');
+                btn?.addEventListener('click', function () {
+                            const acc = document.getElementById('UserAccount');
+                        const pwd = document.getElementById('UserPassword');
+                        if (acc) acc.value = 'mexican_chef_85';
+                        if (pwd) pwd.value = 'TacoMaster200[';
+                    acc?.focus();
+                    });
+        })();
+    </script>
 }

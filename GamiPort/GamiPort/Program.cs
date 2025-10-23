@@ -1,16 +1,21 @@
-// =======================
-// Program.cs¡]§¹¾ãÂĞ»\ª©¡^
-// ¥Øªº¡G¤ä´© Dev ¼Ò¦¡¤U¥H Cookie ¨ú±o UserId¡BSignalR ²á¤Ñ¡BAreas/MVC/RazorPages »P Identity
+ï»¿// =======================
+// Program.csï¼ˆæ­£å¼ç™»å…¥å„ªå…ˆç‰ˆï¼‰
+// ç›®çš„ï¼šåªåƒ Identity ç™»å…¥ Cookie çš„ Claims å–å¾—ç›®å‰ä½¿ç”¨è€… UserIdï¼›
+//      ä¸å†å•Ÿç”¨ ?asUser / gp_dev_uid ç­‰é–‹ç™¼å›é€€ã€‚
+//      å…§å«ï¼šDbContextã€Identityã€SignalRã€Areas/MVC/RazorPagesã€Anti-forgeryã€è·¯ç”±ã€‚
 // =======================
 
-using GamiPort.Data;                           // ApplicationDbContext¡]Identity / µn¤J¸ê®Æ¡^
-using GamiPort.Models;                         // GameSpacedatabaseContext¡]·~°È¸ê®Æ¡G²á¤Ñ¡B³qª¾¡K¡^
+using GamiPort.Data;                           // ApplicationDbContextï¼ˆIdentity / ç™»å…¥è³‡æ–™ï¼‰
+using GamiPort.Models;                         // GameSpacedatabaseContextï¼ˆæ¥­å‹™è³‡æ–™ï¼šèŠå¤©ã€é€šçŸ¥ã€å¥½å‹â€¦ï¼‰
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using GamiPort.Infrastructure.Login;           // ILoginIdentity / DevCookieLoginIdentity / DevQueryLoginMiddleware
-using GamiPort.Areas.social_hub.Hubs;          // ChatHub¡]SignalR Hub¡^
+using GamiPort.Infrastructure.Login;           // ILoginIdentity / AppClaimsFactory / ClaimFirstLoginIdentity
+using GamiPort.Areas.social_hub.Hubs;          // ChatHubï¼ˆSignalR Hubï¼‰
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
+// â˜… æ–°å¢ï¼šèŠå¤©å®¤å…±ç”¨è¨­å®š/å¸¸æ•¸ï¼ˆMessagePolicyOptions ç­‰ï¼‰
+using GamiPort.Areas.social_hub.SignalR;
 
 namespace GamiPort
 {
@@ -18,12 +23,12 @@ namespace GamiPort
 	{
 		public static void Main(string[] args)
 		{
-			// «Ø¥ß¥D¾÷²ÕºA/DI ®e¾¹
+			// 1) å»ºç«‹ä¸»æ©Ÿèˆ‡ DI å®¹å™¨
 			var builder = WebApplication.CreateBuilder(args);
 
 			// ------------------------------------------------------------
-			// ³s½u¦r¦ê¡G¨â­Ó DbContext ¦@¥Î¦P¤@²Õ¡F¥¼¨Ó­n¤À®w¥i¦A©î
-			// ¨Ì§Ç¹Á¸Õ "GameSpace" -> "GameSpacedatabase" -> §_«h¥á¨Ò¥~
+			// 2) é€£ç·šå­—ä¸²ï¼šå…©å€‹ DbContextï¼ˆIdentity èˆ‡æ¥­å‹™ DBï¼‰å…±ç”¨åŒä¸€çµ„ï¼›
+			//    è‹¥æœªä¾†è¦åˆ†åº«ï¼Œå¯å¦å¤–åœ¨ appsettings åŠ å¦ä¸€çµ„é€£ç·šå­—ä¸²ä¸¦åˆ†æµã€‚
 			// ------------------------------------------------------------
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
@@ -31,135 +36,141 @@ namespace GamiPort
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
 			// ------------------------------------------------------------
-			// MVC / RazorPages ªA°È¡]¦X¨Ö¦¨¤@¦¸µù¥U¡A¨Ã«O¯d JSON ¿ï¶µ¡^
-			// AddControllersWithViews¡G´£¨Ñ¶Ç²Î MVC + Areas + Views
-			// AddRazorPages¡G´£¨Ñ Identity ¹w³] UI¡]/Identity/...¡^
+			// 3) MVC / RazorPages æœå‹™
+			//    - AddControllersWithViewsï¼šæä¾›å‚³çµ± MVC + Areas + Views
+			//    - AddRazorPagesï¼šæä¾› Identity é è¨­ UIï¼ˆ/Identity/...ï¼‰æˆ–è‡ªè¨‚ Razor Pages
 			// ------------------------------------------------------------
 			builder.Services
 				.AddControllersWithViews()
 				.AddJsonOptions(opt =>
 				{
-					// ²Î¤@¤j¤p¼g¡FÁ×§K API ¦Û°Ê¤p¼gÄİ©Ê¦WºÙ³y¦¨«eºİ§x´b
+					// çµ±ä¸€ JSON å‘½åï¼›ä¸è‡ªå‹•è½‰å°é§å³°ï¼Œé¿å…å‰ç«¯/å¾Œç«¯å±¬æ€§åä¸ä¸€è‡´
 					opt.JsonSerializerOptions.PropertyNamingPolicy = null;
 				});
 			builder.Services.AddRazorPages();
 
 			// ------------------------------------------------------------
-			// (A) DbContext µù¥U
-			// 1) ApplicationDbContext¡GIdentity¡]µn¤J/¨Ï¥ÎªÌ/Claims¡^
-			// 2) GameSpacedatabaseContext¡G§Aªº·~°È¸ê®Æªí¡]²á¤Ñ¡B³qª¾¡B«ÈªA¡K¡^
+			// 4) DbContext è¨»å†Š
+			//    - ApplicationDbContextï¼šIdentityï¼ˆç™»å…¥/ä½¿ç”¨è€…/Claimsï¼‰
+			//    - GameSpacedatabaseContextï¼šä½ çš„æ¥­å‹™è³‡æ–™ï¼ˆèŠå¤©ã€é€šçŸ¥ã€å¥½å‹ç­‰è¡¨ï¼‰
 			// ------------------------------------------------------------
 			builder.Services.AddDbContext<ApplicationDbContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// options.EnableSensitiveDataLogging(); // ¥i¿ï¡G¶}µo´Á°£¿ù
+				// options.EnableSensitiveDataLogging(); // å¯é¸ï¼šé–‹ç™¼æœŸè¿½è¹¤ SQL åƒæ•¸
 			});
 
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking); // ¥i¿ï¡G¥H¬d¸ß¬°¥Dªº­¶­±
+				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking); // å¯é¸ï¼šæŸ¥è©¢é‡å¤§é é¢ä½¿ç”¨
 			});
 
-			// EF ¶}µoªÌ¨Ò¥~­¶¡]Åã¥Ü§ó§¹¾ãªº Db ¨Ò¥~¡A§t /errors »P migrations ¤ä´©¡^
+			// EF é–‹ç™¼è€…ä¾‹å¤–é ï¼ˆé¡¯ç¤ºå®Œæ•´ EF ä¾‹å¤–ã€æä¾› migrations ç«¯é»ï¼‰
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 			// ------------------------------------------------------------
-			// (B) Identity ³]©w¡]­Y¼È®É¤£¥Î¤]¥i¥ı«O¯d¡A¤§«áµLÁ_±µ¡^
-			// AddDefaultIdentity ·|°t¸m Cookie¡BSecurityStamp ÅçÃÒµ¥
+			// 5) Identity è¨­å®š
+			//    - AddDefaultIdentity æœƒè¨­å®š Cookieã€SecurityStamp é©—è­‰ç­‰é è¨­
+			//    - ä¸å¼·åˆ¶ä¿¡ç®±é©—è­‰ï¼ˆä½ æœ‰è‡ªå·±çš„ç™»å…¥é ï¼‰
 			// ------------------------------------------------------------
 			builder.Services
 				.AddDefaultIdentity<IdentityUser>(options =>
 				{
-					// ­Y¼È®É¨S¦³±H«H¾÷¨î¡A¶}µoÀô¹Ò«ØÄ³Ãö³¬«H½cÅçÃÒ»İ¨D
-					// options.SignIn.RequireConfirmedAccount = false;
 					options.SignIn.RequireConfirmedAccount = false;
 				})
 				.AddEntityFrameworkStores<ApplicationDbContext>();
 
+			// è‡ªè¨‚æ‡‰ç”¨ç¨‹å¼ Cookie è¡Œç‚ºï¼šç™»å…¥/æ‹’çµ•è·¯å¾‘ã€Cookie åç¨±ç­‰
 			builder.Services.ConfigureApplicationCookie(opt =>
 			{
 				opt.LoginPath = "/Login/Login";
 				opt.AccessDeniedPath = "/Login/Login/Denied";
-				opt.Cookie.Name = "GamiPort.User";   // »P«á¥x AdminCookie ¤£¦P¦W¡AÁ×§K²V¥Î
-													 // µø»İ¨D¡Gopt.SlidingExpiration = true;
+				opt.Cookie.Name = "GamiPort.User";     // èˆ‡å…¶ä»–å¾Œå°/å­ç³»çµ± Cookie å€éš”
+													   // opt.SlidingExpiration = true;       // å¯é¸ï¼šæ»‘å‹•éæœŸ
 			});
 
-			// «ØÄ³©ú½T¥[¤J±ÂÅvªA°È¡]¨Ñ [Authorize] µ¥¨Ï¥Î¡^
+			// [Authorize] æˆæ¬Šæœå‹™ï¼ˆè‹¥èŠå¤©/é—œä¿‚ API è¦æ±‚ç™»å…¥ï¼‰
 			builder.Services.AddAuthorization();
 
 			// ------------------------------------------------------------
-			// (C) ±M®×ªA°Èµù¥U¡]³qª¾¡BªB¤ÍÃö«Yµ¥¡^
+			// 6) å°ˆæ¡ˆæœå‹™ï¼ˆé€šçŸ¥ã€å¥½å‹é—œä¿‚ç­‰ï¼‰
 			// ------------------------------------------------------------
 			builder.Services.AddMemoryCache();
 			builder.Services.AddScoped<INotificationStore, NotificationStore>();
 			builder.Services.AddScoped<IRelationService, RelationService>();
 
 			// ------------------------------------------------------------
-			// (D) ¥Ø«e¨Ï¥ÎªÌ¨Ó·½¡]ÃöÁä¡^¡G¶}µo´Á¥Î Cookie ¦s UserId
-			// ILoginIdentity¡G¥ş¯¸²Î¤@±q³o¸Ì¨ú±o UserId
-			// DevCookieLoginIdentity¡GÀu¥ıÅª Cookie "gp_dev_uid"¡A§_«hÅª appsettings.Development.json:DevLogin:UserId
+			// 6.x) â˜… èŠå¤©å®¤æ ¸å¿ƒ DIï¼ˆé‡æ§‹å¾Œéœ€è¦ï¼‰
 			// ------------------------------------------------------------
-			builder.Services.AddHttpContextAccessor();                         // ÅıªA°È¥i¥HÅª¨ú¥Ø«e HttpContext
-			builder.Services.AddScoped<ILoginIdentity, DevCookieLoginIdentity>(); // ¶}µo´Áªº¨­¤À¨Ó·½
+			// è¨Šæ¯ç­–ç•¥ï¼ˆä¾‹å¦‚æ–‡å­—æœ€å¤§é•·åº¦ï¼‰ï¼Œå¯ç”± appsettings è¦†å¯«ï¼›ä¸è¨­å‰‡æ¡é è¨­å€¼ï¼ˆMaxContentLength=255ï¼‰
+			builder.Services.Configure<MessagePolicyOptions>(builder.Configuration.GetSection("Chat:MessagePolicy"));
+			// DM æ¥­å‹™é‚è¼¯é›†ä¸­æ–¼ Serviceï¼ˆHub/Controller ä¸€å¾‹å§”æ´¾ï¼‰
+			builder.Services.AddScoped<IChatService, ChatService>();
+			// å°è£å»£æ’­ï¼ˆç›®å‰ç”¨ SignalRï¼›æœªä¾†å¯æ›¿æ›ç‚ºå…¶ä»–æ¨é€æ©Ÿåˆ¶ï¼‰
+			builder.Services.AddSingleton<IChatNotifier, SignalRChatNotifier>();
 
 			// ------------------------------------------------------------
-			// (E) SignalR¡]²á¤Ñ§Y®É³q°T¡^
+			// 7) â˜… æ ¸å¿ƒï¼šç›®å‰ä½¿ç”¨è€…è­˜åˆ¥ï¼ˆåªåƒç™»å…¥ Cookieï¼‰
+			//    - AppClaimsFactoryï¼šå»ºç«‹/åˆ·æ–° ClaimsPrincipal æ™‚ï¼Œè‡ªå‹•æŠŠ Users.UserId è£œåˆ° Claim("AppUserId")
+			//    - ILoginIdentityï¼šä½¿ç”¨ ClaimFirstLoginIdentityï¼ˆå„ªå…ˆè®€ "AppUserId"ï¼›å‚™æ´è§£æ "U:<id>" æˆ– UserName å°æ‡‰ï¼‰
 			// ------------------------------------------------------------
-			builder.Services.AddSignalR(); // µù¥U SignalR ªA°È¡]Hub »İ­n¡^
+			builder.Services.AddHttpContextAccessor();
+			builder.Services.AddScoped<IUserClaimsPrincipalFactory<IdentityUser>, AppClaimsFactory>();
+			builder.Services.AddScoped<ILoginIdentity, ClaimFirstLoginIdentity>();
 
 			// ------------------------------------------------------------
-			// (F) Anti-forgery¡G­Y§A¦b Controller ¦³ [ValidateAntiForgeryToken]¡A«eºİ¥i¥Î¦¹¼ĞÀY¶Ç»¼
+			// 8) SignalRï¼ˆèŠå¤©å³æ™‚é€šè¨Šï¼‰
+			// ------------------------------------------------------------
+			builder.Services.AddSignalR();
+
+			// ------------------------------------------------------------
+			// 9) Anti-forgeryï¼šè‹¥ Controller ä½¿ç”¨ [ValidateAntiForgeryToken]ï¼Œ
+			//    å‰ç«¯å¯åœ¨ fetch header å¤¾å¸¶ RequestVerificationTokenã€‚
 			// ------------------------------------------------------------
 			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-			// «Ø¥ßÀ³¥Îµ{¦¡
+			// 10) å»ºç«‹æ‡‰ç”¨
 			var app = builder.Build();
 
 			// ------------------------------------------------------------
-			// HTTP Pipeline¡]¤¤¤¶³nÅé¶¶§Ç«Ü­«­n¡^
+			// 11) HTTP Pipelineï¼ˆä¸­ä»‹è»Ÿé«”é †åºå¾ˆé‡è¦ï¼‰
 			// ------------------------------------------------------------
 			if (app.Environment.IsDevelopment())
 			{
-				// Åã¥Ü EF ¿ù»~¸Ô±¡­¶¡B´£¨Ñ migrations ºİÂI
+				// EF éŒ¯èª¤è©³æƒ…é  / migrations ç«¯é»
 				app.UseMigrationsEndPoint();
 
-				// ¡]¥i¿ï¡^±Ò°Ê®ÉÀË¬d DB ¬O§_¥i³s½u¡A§Ö³tµo²{³s½u¦r¦ê/Åv­­°İÃD
+				// å•Ÿå‹•æ™‚å¿«é€Ÿæª¢æŸ¥ DB é€£ç·šï¼ˆææ—©ç™¼ç¾é€£ç·šå­—ä¸²æˆ–æ¬Šé™å•é¡Œï¼‰
 				using var scope = app.Services.CreateScope();
 				var db1 = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 				var db2 = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
 				db1.Database.CanConnect();
 				db2.Database.CanConnect();
 
-				// ¶}µo´Á«K§Q¥\¯à¡G¤ä´©ºô§} ?asUser=30000001 ¡÷ ¼g¤J Cookie "gp_dev_uid"
-				// Åı§A¤£¥²°µµn¤J´N¯à´ú²á¤Ñ«Ç
-				app.UseDevQueryLoginParameter();
+				// âš ï¸ æ­£å¼ç™»å…¥å„ªå…ˆï¼šä¸å†æ› ?asUser/gp_dev_uid çš„é–‹ç™¼ä¸­ä»‹ï¼Œé¿å…æ··æ·†èº«åˆ†ä¾†æº
+				// app.UseMiddleware<GamiPort.Infrastructure.Login.DevQueryLoginMiddleware>();
 			}
 			else
 			{
-				// ¥¿¦¡Àô¹Ò¡G¨Ò¥~³B²z­¶ + HSTS
+				// æ­£å¼ç’°å¢ƒï¼šä¾‹å¤–è™•ç† + HSTS
 				app.UseExceptionHandler("/Home/Error");
 				app.UseHsts();
 			}
 
-			// ÀRºAÀÉ¡B¸ô¥Ñµ¥°ò¥»¤¤¤¶³nÅé
-			app.UseHttpsRedirection();  // ¦Û°ÊÂà https
-			app.UseStaticFiles();       // ´£¨Ñ wwwroot ¤ºÀÉ®×
-			app.UseRouting();           // ±Ò¥ÎºİÂI¸ô¥Ñ
+			// éœæ…‹æª”ã€è·¯ç”±èˆ‡å®‰å…¨æ€§ä¸­ä»‹
+			app.UseHttpsRedirection();
+			app.UseStaticFiles();
+			app.UseRouting();
 
-			// ¨­¤ÀÅçÃÒ / ±ÂÅv¡]¶¶§Ç¡G¥ıÅçÃÒ¦A±ÂÅv¡^
+			// èº«åˆ†é©—è­‰ / æˆæ¬Šï¼ˆé †åºä¸€å®šæ˜¯å…ˆé©—è­‰å†æˆæ¬Šï¼‰
 			app.UseAuthentication();
 			app.UseAuthorization();
 
-			// ------------------------------------------------------------
-			// MVC ±±¨î¾¹ºİÂI¡]Attribute Routing ªº±±¨î¾¹¤]·|¦b³o¸Ì¥Í®Ä¡^
-			// ------------------------------------------------------------
+			// MVC æ§åˆ¶å™¨ï¼ˆå« Attribute Routingï¼‰
 			app.MapControllers();
 
-			// ------------------------------------------------------------
-			// ¶Ç²Î¸ô¥Ñ¡]¥ı Areas ¦A default¡^
-			// /{area}/{controller}/{action}/{id?}
-			// ------------------------------------------------------------
+			// å‚³çµ±è·¯ç”±ï¼ˆå…ˆ Areas å† defaultï¼‰
 			app.MapControllerRoute(
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}"
@@ -170,16 +181,13 @@ namespace GamiPort
 				pattern: "{controller=Home}/{action=Index}/{id?}"
 			);
 
-			// Razor Pages¡]Identity ¹w³] UI »İ­n¡^
+			// Razor Pagesï¼ˆIdentity é è¨­ UI éœ€è¦ï¼‰
 			app.MapRazorPages();
 
-			// ------------------------------------------------------------
-			// SignalR Hub ¸ô¥Ñ¡G«eºİ·|³s½u¨ì /social_hub/chatHub
-			// §Aªº _FloatingDock.cshtml / chat-dock.js ·|³s³o­Ó¦ì§}
-			// ------------------------------------------------------------
+			// SignalR Hub è·¯ç”±ï¼šå‰ç«¯ï¼ˆ_FloatingDock ç­‰ï¼‰é€£è‡³æ­¤ä½å€
 			app.MapHub<ChatHub>("/social_hub/chatHub");
 
-			// ±Ò°ÊÀ³¥Î
+			// 12) å•Ÿå‹•æ‡‰ç”¨
 			app.Run();
 		}
 	}
