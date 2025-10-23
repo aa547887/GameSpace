@@ -49,6 +49,8 @@ public partial class SProductInfo
 
     public virtual ICollection<SProductImage> SProductImages { get; set; } = new List<SProductImage>();
 
+    public virtual ICollection<SoCartItem> SoCartItems { get; set; } = new List<SoCartItem>();
+
     public virtual ICollection<SoOrderItem> SoOrderItems { get; set; } = new List<SoOrderItem>();
 
     public virtual ICollection<SoStockMovement> SoStockMovements { get; set; } = new List<SoStockMovement>();
