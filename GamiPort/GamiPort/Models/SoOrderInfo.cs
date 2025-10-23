@@ -33,6 +33,10 @@ public partial class SoOrderInfo
 
     public decimal? GrandTotal { get; set; }
 
+    public int? PayMethodId { get; set; }
+
+    public virtual SoPayMethod? PayMethod { get; set; }
+
     public virtual SoOrderAddress? SoOrderAddress { get; set; }
 
     public virtual ICollection<SoOrderItem> SoOrderItems { get; set; } = new List<SoOrderItem>();
