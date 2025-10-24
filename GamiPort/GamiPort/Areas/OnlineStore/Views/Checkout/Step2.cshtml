@@ -1,0 +1,118 @@
+﻿@model CheckoutStep2Vm
+
+@{
+    ViewData["Title"] = "結帳（2/3）付款方式";
+    var full = ViewBag.Full; // CartVm（含 Lines + Summary）
+}
+
+<h2 class="mb-3">結帳（2/3）付款方式</h2>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form id="checkout-step2-form" asp-action="Step2" method="post" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label">付款方式</label>
+
+                @* 來源於 Controller 的暫時清單 *@
+                <select asp-for="PayMethodId" class="form-select" id="PayMethodId">
+                    @foreach (var pm in (IEnumerable<dynamic>)ViewBag.PayMethods)
+                    {
+                        <option value="@pm.PayMethodId">@pm.MethodName</option>
+                    }
+                </select>
+                <span asp-validation-for="PayMethodId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">優惠碼（可留空）</label>
+                <input asp-for="CouponCode" class="form-control" />
+                <span asp-validation-for="CouponCode" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-action="Step1" class="btn btn-outline-secondary">上一步</a>
+
+                <!-- 預設 disabled；表單有效才開 -->
+                <button id="btnStep2Next" type="submit" class="btn btn-primary" disabled>
+                    下一步：確認下單
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 重要：_CheckoutSummary 的 model 是 CartSummaryDto，必須傳 full.Summary -->
+        <partial name="_CheckoutSummary" model="full.Summary" />
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        /* ts-nocheck */
+        (function () {
+            const $form = $("#checkout-step2-form");
+            const $next = $("#btnStep2Next");
+
+            if ($.validator && $.validator.unobtrusive) {
+                $.validator.unobtrusive.parse($form);
+            }
+
+            function toggleNextByValidity() {
+                const valid = $form.valid();
+                $next.prop("disabled", !valid);
+            }
+
+            toggleNextByValidity();
+
+            // Step2 的摘要重算：只帶 coupon，其餘（ship/zip）讀 Draft（由 Controller SummaryBox 補齊）
+            (function attachSummaryRefresh(){
+                var $coupon = document.getElementById('CouponCode'); // asp-for 會生成這個 id
+                var timer;
+                function deb(fn){ clearTimeout(timer); timer = setTimeout(fn, 400); }
+
+                async function refreshSummary(){
+                    var cp  = ($coupon && $coupon.value) ? $coupon.value : '';
+                    var url = '/OnlineStore/Checkout/SummaryBox?shipMethodId=0&destZip=&coupon=' + encodeURIComponent(cp);
+
+                    var res  = await fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest' }});
+                    if(!res.ok) return;
+                    var html = await res.text();
+
+                    var box = document.getElementById('summaryBox');
+                    if(!box) return;
+
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = html.trim();
+                    var newBox = tmp.querySelector('#summaryBox');
+                    if (newBox) box.replaceWith(newBox);
+                }
+
+                if ($coupon) $coupon.addEventListener('input', function(){ deb(refreshSummary); });
+            })();
+
+            // 單欄位即時驗證
+            $form.on("keyup change", "input, select, textarea", function () {
+                const $field = $(this);
+                if ($field.attr("name")) {
+                    $form.validate().element($field);
+                }
+                toggleNextByValidity();
+            });
+
+            // 送出攔截
+            $form.on("submit", function (e) {
+                if (!$form.valid()) {
+                    e.preventDefault();
+                    const $firstError = $form.find(".input-validation-error").first();
+                    if ($firstError.length) $firstError.trigger("focus");
+                    return false;
+                }
+                $next.prop("disabled", true).text("處理中…");
+            });
+        })();
+    </script>
+}

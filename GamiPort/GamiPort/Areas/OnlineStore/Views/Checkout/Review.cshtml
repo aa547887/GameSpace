@@ -1,0 +1,66 @@
+﻿@model GamiPort.Areas.OnlineStore.ViewModels.CheckoutStep2Vm
+
+@{
+    ViewData["Title"] = "結帳（3/3）確認訂單";
+    // 右側摘要使用 ViewBag.Full.Summary（CartSummaryDto）
+    var full = ViewBag.Full;
+}
+
+<h2 class="mb-3">結帳（3/3）確認訂單</h2>
+
+@if (TempData["Msg"] is string msg)
+{
+    <div class="alert alert-info mt-3">@msg</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        <!-- 這裡先只顯示 Step2 可用到的資訊（付款方式/優惠碼）。
+             Step1 的收件資訊目前在 TempData，若要顯示，之後 M11 我們會改成組合 VM 一起帶入。 -->
+        <div class="card mb-3">
+            <div class="card-header">付款與優惠</div>
+            <div class="card-body">
+                <div>付款方式 ID：<strong>@Model.PayMethodId</strong></div>
+                @if (!string.IsNullOrWhiteSpace(Model.CouponCode))
+                {
+                    <div>優惠碼：<code>@Model.CouponCode</code></div>
+                }
+                <div class="text-muted small mt-2">（收件/地址等資訊先不顯示；待 M11 會改成正式建單頁面一併呈現）</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 右側摘要（CartSummaryDto） -->
+        <partial name="_CheckoutSummary" model="full.Summary" />
+    </div>
+</div>
+
+<form id="place-order-form" asp-action="PlaceOrder" method="post" class="mt-2">
+    @Html.AntiForgeryToken()
+    <a asp-action="Step2" class="btn btn-outline-secondary">上一步</a>
+    <button id="btnPlaceOrder" type="submit" class="btn btn-success">確認下單</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const form = document.getElementById('place-order-form');
+            const btn  = document.getElementById('btnPlaceOrder');
+            if (!form || !btn) return;
+            form.addEventListener('submit', function () {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.textContent;
+                btn.textContent = '處理中…';
+            });
+            document.addEventListener('DOMContentLoaded', function () {
+                if (btn && btn.disabled) {
+                    btn.disabled = false;
+                    if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;
+                }
+            });
+        })();
+    </script>
+}

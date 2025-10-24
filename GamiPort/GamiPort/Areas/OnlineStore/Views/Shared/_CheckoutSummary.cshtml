@@ -1,0 +1,33 @@
+﻿@using GamiPort.Areas.OnlineStore.DTO
+@model CartSummaryDto
+
+@* 外層 id="summaryBox" 讓 JS 可以 replace *@
+<div id="summaryBox" class="card">
+    <div class="card-header">結帳摘要</div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <span>商品小計</span>
+            <strong>@Model.Subtotal.ToString("N0")</strong>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <span>運費</span>
+            <strong>@Model.Shipping_Fee.ToString("N0")</strong>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <span>優惠折抵</span>
+            <strong class="text-danger">@((Model.CouponDiscount ?? 0m).ToString("N0"))</strong>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.CouponMessage))
+        {
+            <div class="text-muted small mt-1">@Model.CouponMessage</div>
+        }
+    </div>
+
+    <div class="card-footer d-flex justify-content-between">
+        <span>應付金額</span>
+        <strong class="fs-5">@Model.Grand_Total.ToString("N0")</strong>
+    </div>
+</div>
