@@ -23,5 +23,5 @@ public partial class ProductInfoAuditLog
 
     public virtual ManagerDatum? Manager { get; set; }
 
-    
+    public virtual ProductInfo Product { get; set; } = null!;
 }

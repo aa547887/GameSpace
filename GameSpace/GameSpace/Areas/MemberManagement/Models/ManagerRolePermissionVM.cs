@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
+﻿using GameSpace.Models;
+using System;
+using System.ComponentModel.DataAnnotations;
+using GameSpace.Areas.MemberManagement.Models;
 
 namespace GameSpace.Areas.MemberManagement.Models
 { 

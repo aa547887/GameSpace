@@ -37,8 +37,6 @@ public partial class ManagerDatum
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; } = new List<PetBackgroundCostSetting>();
-
     public virtual ICollection<SoOrderStatusHistory> SoOrderStatusHistories { get; set; } = new List<SoOrderStatusHistory>();
 
     public virtual ICollection<SupportTicket> SupportTicketAssignedManagers { get; set; } = new List<SupportTicket>();
@@ -52,8 +50,6 @@ public partial class ManagerDatum
     public virtual ICollection<SupportTicket> SupportTicketClosedByManagers { get; set; } = new List<SupportTicket>();
 
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
-
-    public virtual ICollection<SystemSetting> SystemSettings { get; set; } = new List<SystemSetting>();
 
     public virtual ICollection<ManagerRolePermission> ManagerRoles { get; set; } = new List<ManagerRolePermission>();
 }

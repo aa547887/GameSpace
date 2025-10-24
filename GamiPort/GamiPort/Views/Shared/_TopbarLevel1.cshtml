@@ -8,11 +8,17 @@
         </button>
 
         <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="~/">
-            <img src="~/picture/Gamiport.png" alt="Logo" height="24" />
-            GamiPort
+            <img src="~/images/logo.svg" alt="Logo" height="24" />
+            Brand
         </a>
                
         <ul class="navbar-nav ms-auto align-items-lg-center">
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link position-relative" asp-area="OnlineStore" asp-controller="Cart" asp-action="Index">
+                    購物車
+                    <span id="cartCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                </a>
+            </li>
             <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 A</a></li>
             <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 B</a></li>
             <li class="nav-item ms-2"><a class="btn btn-primary" href="#">登入</a></li>

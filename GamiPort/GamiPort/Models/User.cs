@@ -25,8 +25,6 @@ public partial class User
 
     public DateTime? UserLockoutEnd { get; set; }
 
-    public DateTime CreateAccount { get; set; }
-
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
