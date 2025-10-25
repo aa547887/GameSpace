@@ -10,12 +10,14 @@ using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
 using Microsoft.AspNetCore.Identity;       // 僅用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若尚未設定可換 NullEmailSender）
 
 // === 新增的 using（本檔新增了這些服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（SignalR Hub）
-using GamiPort.Data;
+
 // [Cart][FIX] 匯入購物車服務的命名空間（若已存在可略）
 using GamiPort.Areas.OnlineStore.Services;
 
@@ -83,7 +85,7 @@ namespace GamiPort
 
 			// === Chat 服務註冊（缺這兩個會讓 ChatHub 無法被建立） ===
 			// IChatService：與資料庫互動（寫訊息、計算未讀…）→ 需用 DbContext，建議 Scoped
-			builder.Services.AddScoped<IChatService,ChatService>();
+			builder.Services.AddScoped<IChatService, ChatService>();
 
 			// IChatNotifier：透過 IHubContext<ChatHub> 對用戶/群組廣播 → 可 Singleton（IHubContext 執行緒安全）
 			builder.Services.AddSingleton<IChatNotifier, SignalRChatNotifier>();
@@ -97,7 +99,7 @@ namespace GamiPort
 
 			builder.Services.AddRazorPages();
 
-			// 可選：讓 AJAX 好帶防偽 Token（和你前面 fetch header 'RequestVerificationToken' 對應）
+			// AJAX 的防偽 Token（前端請以 header "RequestVerificationToken" 帶入）
 			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
 			// ------------------------------------------------------------
@@ -145,6 +147,27 @@ namespace GamiPort
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
 
+			// 購物車使用
+			builder.Services.AddHttpContextAccessor();
+
+			// ★ 必要：Session 需要 IDistributedCache（用記憶體即可）
+			builder.Services.AddDistributedMemoryCache();              // [Cart][ADD]
+
+			// [Cart][FIX] 註冊購物車服務（ICartService -> SqlCartService）
+			builder.Services.AddScoped<ICartService, SqlCartService>();
+
+			// ★ 啟用 Session（設定專屬 cookie 名稱避免與別的相衝）
+			builder.Services.AddSession(options =>                     // [Cart][ADD]
+			{
+				options.Cookie.Name = ".GamiPort.Cart.Session";
+				options.Cookie.HttpOnly = true;
+				options.Cookie.IsEssential = true;
+				options.IdleTimeout = TimeSpan.FromHours(2);
+			});
+
+			// Program.cs （找到 builder.Services.AddControllersWithViews(); 附近）
+			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+
 
 			// ------------------------------------------------------------
 			// 建立 App
@@ -173,6 +196,9 @@ namespace GamiPort
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
 			app.UseRouting();
+
+			// 訂單組加的
+			app.UseSession();     // [Cart][ADD] 必須在 Auth 之前，否則讀不到 Session
 
 			// 驗證一定在授權之前
 			app.UseAuthentication();

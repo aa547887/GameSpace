@@ -1,4 +1,10 @@
-﻿@* Views/Shared/_Layout.cshtml *@
+﻿@* Views/Shared/_Layout.cshtml (OnlineStore 區域版型) *@
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+@{
+    // ✅ 與根版型一致：產生 Anti-Forgery Token（寫 cookie + 提供 RequestToken）
+    var af = Xsrf.GetAndStoreTokens(Context);
+}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -6,20 +12,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"]</title>
 
-    <!-- 基底套件 -->
+    <!-- ✅ Anti-Forgery：前端 fetch 可從這個 meta 讀 token，夾到 RequestVerificationToken header -->
+    <meta name="request-verification-token" content="@af.RequestToken" />
+
+    <!-- 基底套件（建議與根版型同版號以免衝突） -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <!-- 全站共用樣式（用 Layout 載入，partial 不要宣告 section） -->
+    <!-- 共用樣式（保持原本結構） -->
     <link href="~/css/layout-shell.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar1.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar2.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
 
-    @RenderSection("Styles", required: false) @* 頁面額外樣式才用這個 *@
+    @RenderSection("Styles", required: false)
 </head>
 <body>
+    @* ❌ 原本：@await Html.PartialAsync("_TopbarLevel1")
+       ✅ 改成 ViewComponent，與根版型一致，避免不同呼叫路徑造成載入差異 *@
     @await Component.InvokeAsync("TopbarLevel1")
 
     <div class="layout-wrap">
@@ -49,26 +60,21 @@
         @await Html.PartialAsync("_Footer")
     </footer>
 
-    @await Html.PartialAsync("_MiniDock")
+    @* ❌ 原本：不分登入狀態載入（匿名頁面會觸發好友/通知腳本去打需要授權的 API）
+       ✅ 與根版型相同：只在登入後載入，避免 console 出現一堆 401/錯誤 *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_QuickFab")
+        @await Html.PartialAsync("_FriendDock")
+        @await Html.PartialAsync("_FloatingDock")
+    }
 
-    <!-- [FIX] 刪掉 CDN jQuery（會觸發 SRI 錯誤） -->
-    @* <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-              integrity="sha256-7N2BqM2eR7YkN7OZkQZ3r3d8G8Yz2QfX7WXE5f1f5wE="
-              crossorigin="anonymous"></script> *@
-
-    <!-- [FIX] 刪掉重複的 _MiniDock（你剛才有兩次） -->
-    @* @await Html.PartialAsync("_MiniDock") *@
-
-    <!-- ✅ 先載 jQuery（本機檔，避免 SRI 問題） -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-
-    <!-- ✅ 再載 Bootstrap（只載一次） -->
+    @* ✅ 先載 Bootstrap Bundle，才能讓 sidebar.js 啟動 tooltip 等 bootstrap.* API *@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- ✅ 全站共用腳本（只載一次） -->
+    @* 共用腳本（保持原順序，確保在 Bootstrap 之後） *@
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
 
-    <!-- ✅ 讓各 View（Step1/Step2）注入自己的 _ValidationScriptsPartial 與頁面腳本 -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>
