@@ -15,6 +15,10 @@ using Microsoft.EntityFrameworkCore;
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（SignalR Hub）
+using GamiPort.Data;
+// [Cart][FIX] 匯入購物車服務的命名空間（若已存在可略）
+using GamiPort.Areas.OnlineStore.Services;
+
 
 namespace GamiPort
 {

@@ -49,13 +49,26 @@
         @await Html.PartialAsync("_Footer")
     </footer>
 
-    @await Html.PartialAsync("_QuickFab")
-    @await Html.PartialAsync("_FriendDock")
-    @await Html.PartialAsync("_FloatingDock")
+    @await Html.PartialAsync("_MiniDock")
+
+    <!-- [FIX] 刪掉 CDN jQuery（會觸發 SRI 錯誤） -->
+    @* <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+              integrity="sha256-7N2BqM2eR7YkN7OZkQZ3r3d8G8Yz2QfX7WXE5f1f5wE="
+              crossorigin="anonymous"></script> *@
+
+    <!-- [FIX] 刪掉重複的 _MiniDock（你剛才有兩次） -->
+    @* @await Html.PartialAsync("_MiniDock") *@
+
+    <!-- ✅ 先載 jQuery（本機檔，避免 SRI 問題） -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <!-- ✅ 再載 Bootstrap（只載一次） -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- 全站共用腳本 -->
+
+    <!-- ✅ 全站共用腳本（只載一次） -->
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
 
+    <!-- ✅ 讓各 View（Step1/Step2）注入自己的 _ValidationScriptsPartial 與頁面腳本 -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>

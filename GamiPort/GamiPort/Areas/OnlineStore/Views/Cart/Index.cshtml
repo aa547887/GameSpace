@@ -1,103 +1,424 @@
-﻿@using System.Text.Json
-@using GamiPort.Areas.OnlineStore.DTO
-@model CartVm
-
-@{
-    ViewData["Title"] = "購物車";
-    // 把 JSON 字串的規則說明，轉成字串陣列
-    var ruleNotes = string.IsNullOrWhiteSpace(Model.Summary.Rule_Notes_Json)
-        ? Array.Empty<string>()
-        : (JsonSerializer.Deserialize<string[]>(Model.Summary.Rule_Notes_Json) ?? Array.Empty<string>());
+﻿@{
+    ViewData["Title"] = "我的購物車";
+    var initShipMethodId = (int)(ViewData["shipMethodId"] ?? 1);
+    var initDestZip = (string)(ViewData["destZip"] ?? "320");
+    var initCoupon = (string)(ViewData["couponCode"] ?? "");
 }
 
-<h2 class="mb-3">購物車</h2>
+@* 反 CSRF：給 AJAX 用 *@
+<form id="af-token-form">@Html.AntiForgeryToken()</form>
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>商品</th>
-            <th class="text-end">單價</th>
-            <th class="text-center">數量</th>
-            <th class="text-end">小計</th>
-            <th style="width:140px;"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var it in Model.Lines)
-        {
-            <tr>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        @if (!string.IsNullOrWhiteSpace(it.Image_Thumb))
-                        {
-                            <img src="@it.Image_Thumb" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:.5rem;" />
-                        }
-                        <span>@it.Product_Name</span>
-                        @if (!string.IsNullOrEmpty(it.Status_Badge))
-                        {
-                            <span class="badge bg-secondary ms-2">@it.Status_Badge</span>
-                        }
-                    </div>
-                </td>
-                <td class="text-end">@it.Unit_Price.ToString("N0")</td>
-                <td class="text-center">
-                    <form asp-action="UpdateQty" method="post" class="d-inline">
-                        <input type="hidden" name="productId" value="@it.Product_Id" />
-                        <input type="number" name="qty" value="@it.Quantity" min="0" class="form-control d-inline" style="width:90px" />
-                        @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-outline-primary ms-2">更新</button>
-                    </form>
-                </td>
-                <td class="text-end">@it.Line_Subtotal.ToString("N0")</td>
-                <td class="text-end">
-                    <form asp-action="Remove" method="post" class="d-inline">
-                        <input type="hidden" name="productId" value="@it.Product_Id" />
-                        @Html.AntiForgeryToken()
-                        <button class="btn btn-sm btn-outline-danger">移除</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="container py-4">
 
-<div class="card mt-3">
-    <div class="card-body">
-        <div class="row gy-2">
-            <div class="col-md-6">
-                <div>件數（全部）：@Model.Summary.Item_Count_Total</div>
-                @if (Model.Summary.Item_Count_Physical > 0)
-                {
-                    <div>件數（實體）：@Model.Summary.Item_Count_Physical</div>
-                }
-                <div>小計（全部）：@Model.Summary.Subtotal.ToString("N0")</div>
-                <div>小計（實體）：@Model.Summary.Subtotal_Physical.ToString("N0")</div>
-                <div>總重量(g)：@Model.Summary.Total_Weight_G.ToString("N0")</div>
+    <h2 class="mb-3">@ViewData["Title"]</h2>
+    <environment include="Development">
+        <div class="mb-3">
+            <button id="devSeed" class="btn btn-outline-secondary btn-sm">插入測試品項</button>
+        </div>
+    </environment>
+
+
+    <!-- 上方：配送/郵遞區號/優惠碼 -->
+    <div class="row g-3 align-items-end mb-3">
+        <div class="col-12 col-md-3">
+            <label class="form-label">配送方式</label>
+            <select id="shipMethodSelect" class="form-select">
+                <option value="1">宅配</option>
+                <option value="2">超商取貨</option>
+                <option value="3">黑貓冷凍</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">郵遞區號</label>
+            <input id="destZipInput" class="form-control" maxlength="10" />
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">優惠碼</label>
+            <div class="input-group">
+                <input id="couponInput" class="form-control" placeholder="輸入優惠碼" />
+                <button id="applyCoupon" class="btn btn-primary" type="button">套用</button>
+                <button id="clearCoupon" class="btn btn-outline-secondary" type="button">清除</button>
             </div>
-            <div class="col-md-6">
-                <div class="text-end">運費：@Model.Summary.Shipping_Fee.ToString("N0")</div>
-                @if (Model.Summary.Discount > 0)
-                {
-                    <div class="text-end">優惠折抵：-@Model.Summary.Discount.ToString("N0")</div>
-                }
-                <h5 class="text-end mt-2">應付總額：@Model.Summary.Grand_Total.ToString("N0")</h5>
+            <div id="couponMsg" class="small mt-1"></div>
+        </div>
+    </div>
+
+    <!-- 明細表格 -->
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="width:72px;">圖</th>
+                    <th>商品</th>
+                    <th class="text-end" style="width:120px;">單價</th>
+                    <th class="text-center" style="width:160px;">數量</th>
+                    <th class="text-end" style="width:140px;">小計</th>
+                    <th style="width:80px;"></th>
+                </tr>
+            </thead>
+            <tbody id="cartTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 空車版面（預設隱藏） -->
+    <div id="emptyView" class="text-center py-5 d-none">
+        <p class="fs-5 mb-3">你的購物車是空的</p>
+        <a href="/OnlineStore/Products" class="btn btn-primary">去逛逛</a>
+    </div>
+
+    <!-- 總計區 -->
+    <div id="summaryPanel" class="card ms-auto" style="max-width:480px;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+                <span>小計</span><strong id="subtotal">—</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>折扣</span><strong id="discount">—</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>運費</span><strong id="shipping">—</strong>
+            </div>
+            <hr />
+            <div class="d-flex justify-content-between fs-5">
+                <span>應付金額</span><strong id="grandTotal">—</strong>
             </div>
         </div>
+        <div class="card-footer d-flex justify-content-between">
+            <button id="btnClear" class="btn btn-outline-danger">清空購物車</button>
+            <a class="btn btn-success"
+               asp-area="OnlineStore"
+               asp-controller="Checkout"
+               asp-action="Step1">
+                前往結帳
+            </a>
+        </div>
+    </div>
 
-        @if (ruleNotes.Length > 0)
-        {
-            <hr />
-            <ul class="small text-muted mb-0">
-                @foreach (var s in ruleNotes)
-                {
-                    <li>@s</li>
-                }
-            </ul>
-        }
-
-        @if (!Model.Summary.Can_Checkout)
-        {
-            <div class="alert alert-warning mt-3">無法結帳：@Model.Summary.Block_Reason</div>
-        }
+</div>
+<!-- Toast 容器（右上角） -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080">
+    <div id="appToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="appToastBody">發生錯誤</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // =================== 可調參數 ===================
+        const SHOW_ZERO_BADGE = false;    // true: 0 也顯示徽章；false: 0 隱藏
+        const INPUT_DEBOUNCE  = 500;      // 直接輸入的防抖毫秒
+        const QTY_MIN = 1, QTY_MAX = 99;  // 數量邊界
+        // ===============================================
+
+        // Anti-Forgery
+        function getAfToken() {
+          return document.querySelector('#af-token-form input[name="__RequestVerificationToken"]').value;
+        }
+
+        // 全域狀態
+        const state = {
+          shipMethodId: @initShipMethodId,
+          destZip: '@initDestZip',
+          couponCode: '@initCoupon',
+          busy: false,
+          debounceTimer: null
+        };
+
+        // Bootstrap Toast
+        let toastRef = null;
+        function showToast(msg, variant = 'danger') {
+          const el = document.getElementById('appToast');
+          const body = document.getElementById('appToastBody');
+          body.textContent = msg || '發生錯誤';
+          el.classList.remove('text-bg-danger','text-bg-success','text-bg-warning','text-bg-info');
+          el.classList.add('text-bg-' + (variant || 'danger'));
+          if (!toastRef) toastRef = new bootstrap.Toast(el, { delay: 2500 });
+          toastRef.show();
+        }
+        function showError(msg){ showToast(msg || '操作失敗', 'danger'); }
+        function showInfo(msg){ showToast(msg || '已更新', 'success'); }
+
+        // Busy 狀態：統一 disable/enable 按鈕與輸入
+        function setBusy(on) {
+          state.busy = !!on;
+          const root = document;
+          // 主要互動元件
+          root.querySelectorAll('button, input, select, a.btn').forEach(el => {
+            if (el.id === 'devSeed') return; // DEV 按鈕不一定要鎖
+            el.disabled = on || el.dataset.lock === '1';
+            el.classList.toggle('disabled', !!(on || el.disabled));
+          });
+        }
+
+        // 數字 → $1,234
+        function money(n) {
+          if (n === null || n === undefined) return '—';
+          return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        // ====== 載入整車（Full） ======
+        async function loadFull() {
+          const url = new URL(location.origin + '/OnlineStore/Cart/Full');
+          url.searchParams.set('shipMethodId', state.shipMethodId);
+          url.searchParams.set('destZip', state.destZip || '');
+          if (state.couponCode) url.searchParams.set('couponCode', state.couponCode);
+
+          try {
+            const res = await fetch(url, { method: 'GET', credentials: 'same-origin' });
+            const data = await res.json();
+            if (!data.ok) return showError(data.message || '載入失敗');
+            renderAll(data);
+          } catch {
+            showError('網路或伺服器錯誤，請稍後再試');
+          }
+        }
+
+        // ====== 更新數量 / 刪除 / 清空（POST）FormData 版 ======
+        async function postAndRefresh(path, body) {
+          if (state.busy) return;
+          setBusy(true);
+          try {
+            const form = new FormData();
+            form.append('__RequestVerificationToken', getAfToken());
+            form.append('shipMethodId', state.shipMethodId);
+            form.append('destZip', state.destZip || '');
+            if (state.couponCode) form.append('couponCode', state.couponCode);
+            Object.entries(body || {}).forEach(([k, v]) => form.append(k, v));
+
+            const res = await fetch('/OnlineStore/Cart/' + path, {
+              method: 'POST',
+              body: form,
+              credentials: 'same-origin'
+            });
+            const data = await res.json();
+            if (!data.ok) return showError(data.message || '操作失敗');
+            renderAll(data);
+          } catch {
+            showError('網路或伺服器錯誤，請稍後再試');
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        // ====== 渲染 ======
+        function renderAll(data) {
+          renderTable(data.items || []);
+          renderSummary(data.summary || {});
+
+          // Navbar 徽章
+          const qty = (data.summary?.totalQty ?? data.summary?.itemCountTotal ?? data.summary?.Item_Count_Total ?? 0);
+          syncNavBadge(qty);
+
+          // 優惠碼提示
+          const msg = document.getElementById('couponMsg');
+          msg.className = 'small mt-1';
+          if (data.summary?.couponMessage) {
+            msg.textContent = data.summary.couponMessage;
+            msg.classList.add('text-success');
+          } else {
+            msg.textContent = '';
+          }
+        }
+
+        function renderTable(items) {
+          const tbody = document.getElementById('cartTableBody');
+          tbody.innerHTML = '';
+          if (!items.length) {
+            document.getElementById('emptyView').classList.remove('d-none');
+            document.getElementById('summaryPanel').classList.add('d-none');
+            return;
+          }
+          document.getElementById('emptyView').classList.add('d-none');
+          document.getElementById('summaryPanel').classList.remove('d-none');
+
+          for (const it of items) {
+            const tr = document.createElement('tr');
+            tr.dataset.productId = it.productId;
+            tr.innerHTML = `
+              <td>${it.imageThumb ? `<img src="${it.imageThumb}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">` : ''}</td>
+              <td class="fw-semibold">${escapeHtml(it.productName || '')}</td>
+              <td class="text-end">$${money(it.unitPrice)}</td>
+              <td class="text-center">
+                <div class="input-group input-group-sm justify-content-center" style="max-width:160px;margin:auto;">
+                  <button class="btn btn-outline-secondary btn-minus" type="button" aria-label="decrease">−</button>
+                  <input class="form-control text-center qty-input" value="${it.quantity}" inputmode="numeric" pattern="[0-9]*">
+                  <button class="btn btn-outline-secondary btn-plus" type="button" aria-label="increase">+</button>
+                </div>
+                <div class="text-danger small d-none qty-error">數量需為 ${QTY_MIN}–${QTY_MAX} 的整數</div>
+              </td>
+              <td class="text-end">$${money(it.lineSubtotal)}</td>
+              <td><button class="btn btn-outline-danger btn-sm btn-remove" type="button">刪除</button></td>
+            `;
+            tbody.appendChild(tr);
+          }
+
+          // 綁事件
+          tbody.querySelectorAll('.btn-minus').forEach(btn => btn.addEventListener('click', onMinus));
+          tbody.querySelectorAll('.btn-plus').forEach(btn => btn.addEventListener('click', onPlus));
+          tbody.querySelectorAll('.qty-input').forEach(inp => {
+            inp.dataset.prev = clampQty(inp.value) ?? QTY_MIN;     // 記住上次合法值
+            inp.addEventListener('input', onQtyTyping);
+            inp.addEventListener('blur', onQtyCommit);
+            inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.target.blur(); } });
+          });
+          tbody.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', onRemove));
+        }
+
+        function renderSummary(s) {
+          document.getElementById('subtotal').textContent   = '$' + money(s.subtotal ?? 0);
+          const d = s.discount ?? 0;
+          document.getElementById('discount').textContent   = d ? ('-$' + money(Math.abs(d))) : '$0';
+          const ship = s.shipping ?? s.shippingFee ?? 0;
+          document.getElementById('shipping').textContent   = ship > 0 ? ('$' + money(ship)) : '免運';
+          document.getElementById('grandTotal').textContent = '$' + money(s.grandTotal ?? 0);
+        }
+
+        function syncNavBadge(totalQty) {
+          const badge = document.getElementById('navCartBadge');
+          if (!badge) return;
+          const textEl = badge.querySelector('.badge-count') ?? badge;
+          const n = Math.max(0, parseInt(totalQty ?? 0, 10) || 0);
+          textEl.textContent = n > 99 ? '99+' : String(n);
+          badge.classList.toggle('d-none', !SHOW_ZERO_BADGE && n <= 0);
+        }
+
+        // ====== 事件邏輯 ======
+        function getRowInfo(el) {
+          const tr = el.closest('tr');
+          const productId = parseInt(tr.dataset.productId, 10);
+          const qtyInput = tr.querySelector('.qty-input');
+          const err = tr.querySelector('.qty-error');
+          return { tr, productId, qtyInput, err };
+        }
+        function clampQty(v) {
+          const n = parseInt(v, 10);
+          if (Number.isNaN(n)) return null;
+          if (n < QTY_MIN || n > QTY_MAX) return null;
+          return n;
+        }
+
+        // 列鎖（避免同列連點）
+        function acquireRowLock(tr){ if(tr.dataset.lock==='1') return false; tr.dataset.lock='1'; return true; }
+        function releaseRowLock(tr){ tr.dataset.lock='0'; }
+
+        // −：1→刪除；其餘減 1
+        async function onMinus(e) {
+          const { tr, productId, qtyInput } = getRowInfo(e.currentTarget);
+          if (!acquireRowLock(tr) || state.busy) return;
+          try {
+            const cur = clampQty(qtyInput.value) ?? QTY_MIN;
+            if (cur <= QTY_MIN) return await postAndRefresh('Remove', { productId });
+            await postAndRefresh('UpdateQty', { productId, qty: cur - 1 });
+          } finally { releaseRowLock(tr); }
+        }
+
+        // ＋：加 1，上限 QTY_MAX
+        async function onPlus(e) {
+          const { tr, productId, qtyInput } = getRowInfo(e.currentTarget);
+          if (!acquireRowLock(tr) || state.busy) return;
+          try {
+            const cur = clampQty(qtyInput.value) ?? QTY_MIN;
+            await postAndRefresh('UpdateQty', { productId, qty: Math.min(QTY_MAX, cur + 1) });
+          } finally { releaseRowLock(tr); }
+        }
+
+        // 防抖：停手 INPUT_DEBOUNCE ms 後送；非法值只顯示錯誤不送
+        function onQtyTyping(e) {
+          const { productId, qtyInput, err } = getRowInfo(e.currentTarget);
+          clearTimeout(state.debounceTimer);
+          state.debounceTimer = setTimeout(() => {
+            const q = clampQty(qtyInput.value);
+            if (q === null) {
+              err.classList.remove('d-none');
+              return;
+            }
+            err.classList.add('d-none');
+            qtyInput.dataset.prev = q;
+            postAndRefresh('UpdateQty', { productId, qty: q });
+          }, INPUT_DEBOUNCE);
+        }
+
+        // 失焦保底送；若仍非法就還原到上一個合法值
+        function onQtyCommit(e) {
+          const { productId, qtyInput, err } = getRowInfo(e.currentTarget);
+          const q = clampQty(qtyInput.value);
+          if (q === null) {
+            err.classList.remove('d-none');
+            qtyInput.value = qtyInput.dataset.prev ?? QTY_MIN; // ← 還原
+            return;
+          }
+          err.classList.add('d-none');
+          qtyInput.dataset.prev = q;
+          postAndRefresh('UpdateQty', { productId, qty: q });
+        }
+
+        async function onRemove(e) {
+          const { productId } = getRowInfo(e.currentTarget);
+          await postAndRefresh('Remove', { productId });
+        }
+
+        // 清空
+        document.getElementById('btnClear').addEventListener('click', () => {
+          if (confirm('確定要清空購物車嗎？')) postAndRefresh('Clear', {});
+        });
+
+        // 配送 / 郵遞區號 / 優惠碼
+        document.getElementById('shipMethodSelect').addEventListener('change', (e) => {
+          state.shipMethodId = parseInt(e.target.value, 10) || 1;
+          loadFull();
+        });
+        document.getElementById('destZipInput').addEventListener('blur', (e) => {
+          state.destZip = (e.target.value || '').trim();
+          loadFull();
+        });
+        document.getElementById('applyCoupon').addEventListener('click', () => {
+          state.couponCode = (document.getElementById('couponInput').value || '').trim();
+          loadFull();
+        });
+        document.getElementById('clearCoupon').addEventListener('click', () => {
+          state.couponCode = '';
+          document.getElementById('couponInput').value = '';
+          loadFull();
+        });
+
+        // 安全轉義
+        function escapeHtml(str) {
+          return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+        }
+
+        // 初始化
+        (function init() {
+          document.getElementById('shipMethodSelect').value = String(state.shipMethodId);
+          document.getElementById('destZipInput').value = state.destZip || '';
+          document.getElementById('couponInput').value = state.couponCode || '';
+          loadFull();
+        })();
+
+        // DEV：插入測試品項
+        document.addEventListener('DOMContentLoaded', () => {
+          const devBtn = document.getElementById('devSeed');
+          if (!devBtn) return;
+          devBtn.addEventListener('click', async () => {
+            const url = new URL(location.origin + '/OnlineStore/Cart/DevAdd');
+            url.searchParams.set('productId', 101);
+            url.searchParams.set('qty', 2);
+            url.searchParams.set('shipMethodId', state.shipMethodId);
+            url.searchParams.set('destZip', state.destZip || '');
+            if (state.couponCode) url.searchParams.set('couponCode', state.couponCode);
+
+            try {
+              const res = await fetch(url, { credentials: 'same-origin' });
+              const ct = res.headers.get('content-type') || '';
+              const data = ct.includes('application/json') ? await res.json() : { ok:false, message: await res.text() };
+              if (!res.ok || !data.ok) return showError(data.message || '加入失敗');
+              renderAll(data);
+              showInfo('已加入測試品項');
+            } catch { showError('網路或伺服器錯誤'); }
+          });
+        });
+    </script>
+}
+

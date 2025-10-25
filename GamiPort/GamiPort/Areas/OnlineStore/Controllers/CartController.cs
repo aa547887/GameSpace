@@ -1,7 +1,11 @@
-﻿using GamiPort.Areas.OnlineStore.DTO;          // 你放 DTO 的命名空間
-using GamiPort.Areas.OnlineStore.Services;     // ICartService 介面
-using GamiPort.Areas.OnlineStore.Utils;        // AnonCookie
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using GamiPort.Areas.OnlineStore.Services;
+using GamiPort.Areas.OnlineStore.Utils;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -9,168 +13,152 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 	[Route("OnlineStore/[controller]/[action]")]
 	public class CartController : Controller
 	{
-		private readonly ICartService _svc;
-		public CartController(ICartService svc) => _svc = svc;
+		private readonly ICartService _cart;
 
-		//========================
-		// View（同步版）
-		//========================
+		public CartController(ICartService cart)
+		{
+			_cart = cart;
+		}
 
+		// 取得目前登入者的 userId（若你的 Claim 名稱不同，這裡改一下）
+		private int? GetUserIdOrNull()
+		{
+			if (User?.Identity?.IsAuthenticated == true)
+			{
+				// 常見幾種寫法：NameIdentifier / "UserId" / 自訂 Claim
+				var val = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("UserId");
+				if (int.TryParse(val, out var uid)) return uid;
+			}
+			return null;
+		}
+
+		// 內部共用：確保 cartId（若沒有匿名 cookie 就會寫入）
+		private async Task<Guid> EnsureCartAsync()
+		{
+			var userId = GetUserIdOrNull();
+			var anon = AnonCookie.GetOrSet(HttpContext);
+			return await _cart.EnsureCartIdAsync(userId, anon);
+		}
+
+		// GET: /OnlineStore/Cart/Index
+		// 只回 Razor 骨架；初始參數用 ViewData 給前端
 		[HttpGet]
-		public async Task<IActionResult> Index(int shipMethodId = 1, string destZip = "320", string? coupon = null)
+		public IActionResult Index(int shipMethodId = 1, string destZip = "320", string? couponCode = null)
 		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-
-			var vm = await _svc.GetFullAsync(cartId, shipMethodId, destZip, coupon);
-			return View(vm); // @model CartVm
+			ViewData["shipMethodId"] = shipMethodId;
+			ViewData["destZip"] = destZip;
+			ViewData["couponCode"] = couponCode ?? "";
+			return View();
 		}
 
-		[HttpPost, ValidateAntiForgeryToken]
-		public async Task<IActionResult> Add(int productId, int qty = 1)
-		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-
-			await _svc.AddAsync(cartId, productId, qty);
-			TempData["CartMessage"] = "已加入購物車";   // [ADDED] 給同步轉跳用的訊息
-			return RedirectToAction(nameof(Index));
-		}
-
-		[HttpPost, ValidateAntiForgeryToken]
-		public async Task<IActionResult> UpdateQty(int productId, int qty)
-		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-
-			await _svc.UpdateQtyAsync(cartId, productId, qty);
-			TempData["CartMessage"] = "已更新數量";     // [ADDED]
-			return RedirectToAction(nameof(Index));
-		}
-
-		[HttpPost, ValidateAntiForgeryToken]
-		public async Task<IActionResult> Remove(int productId)
-		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-
-			await _svc.RemoveAsync(cartId, productId);
-			TempData["CartMessage"] = "已刪除商品";     // [ADDED]
-			return RedirectToAction(nameof(Index));
-		}
-
-		[HttpPost, ValidateAntiForgeryToken]
-		public async Task<IActionResult> Clear()
-		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-
-			await _svc.ClearAsync(cartId);
-			TempData["CartMessage"] = "已清空購物車";   // [ADDED]
-			return RedirectToAction(nameof(Index));
-		}
-
-		//========================
-		// API（AJAX 友善版）
-		// 前端可用 fetch/$.post 呼叫，避免整頁重整
-		//========================
-
-		[HttpPost]
-		[ValidateAntiForgeryToken] // 建議前端 AJAX 一併送 __RequestVerificationToken
-		public async Task<IActionResult> AddApi(int productId, int qty = 1, int shipMethodId = 1, string destZip = "320", string? coupon = null)
-		{
-			try
-			{
-				var (cartId, anon) = await GetCartIdAsync();
-				await _svc.AddAsync(cartId, productId, qty);
-
-				var summary = await _svc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-				return Ok(new { ok = true, message = "已加入購物車", count = summary.TotalQty, summary });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { ok = false, message = ex.Message });
-			}
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> UpdateQtyApi(int productId, int qty, int shipMethodId = 1, string destZip = "320", string? coupon = null)
-		{
-			try
-			{
-				var (cartId, anon) = await GetCartIdAsync();
-				await _svc.UpdateQtyAsync(cartId, productId, qty);
-
-				var summary = await _svc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-				return Ok(new { ok = true, message = "已更新數量", count = summary.TotalQty, summary });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { ok = false, message = ex.Message });
-			}
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> RemoveApi(int productId, int shipMethodId = 1, string destZip = "320", string? coupon = null)
-		{
-			try
-			{
-				var (cartId, anon) = await GetCartIdAsync();
-				await _svc.RemoveAsync(cartId, productId);
-
-				var summary = await _svc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-				return Ok(new { ok = true, message = "已刪除商品", count = summary.TotalQty, summary });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { ok = false, message = ex.Message });
-			}
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> ClearApi(int shipMethodId = 1, string destZip = "320", string? coupon = null)
-		{
-			try
-			{
-				var (cartId, anon) = await GetCartIdAsync();
-				await _svc.ClearAsync(cartId);
-
-				var summary = await _svc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-				return Ok(new { ok = true, message = "已清空購物車", count = summary.TotalQty, summary });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { ok = false, message = ex.Message });
-			}
-		}
-
+		// GET: /OnlineStore/Cart/Full?shipMethodId=&destZip=&couponCode=
 		[HttpGet]
-		public async Task<IActionResult> SummaryApi(int shipMethodId = 1, string destZip = "320", string? coupon = null)
+		public async Task<IActionResult> Full(int shipMethodId, string destZip, string? couponCode)
 		{
-			// [ADDED] 讀取目前摘要（例如頁面載入時更新徽章）
+			var cartId = await EnsureCartAsync();
+			var vm = await _cart.GetFullAsync(cartId, shipMethodId, destZip ?? "", couponCode);
+
+			// 1) 明細：vm.Lines（不是 Items）
+			var items = vm.Lines.Select(x => new {
+				productId = x.Product_Id,
+				productName = x.Product_Name,
+				imageThumb = x.Image_Thumb,
+				unitPrice = x.Unit_Price,
+				quantity = x.Quantity,
+				lineSubtotal = x.Line_Subtotal
+			}).ToList();
+
+			// 2) 總計映射：把你的底線命名 → 前端慣用駝峰命名
+			var payload = new
+			{
+				ok = true,
+				items,
+				summary = new
+				{
+					totalQty = vm.Summary.Item_Count_Total, // ← 由你定義的總件數
+					subtotal = vm.Summary.Subtotal,
+					discount = vm.Summary.Discount,
+					shipping = vm.Summary.Shipping_Fee,
+					grandTotal = vm.Summary.Grand_Total,
+					shipMethodId = shipMethodId,
+					destZip = destZip,
+					couponCode = couponCode,
+					couponMessage = (string?)null // 目前你的 DTO 沒有此欄，先給 null；之後若有就改這裡
+				}
+			};
+			return Json(payload);
+		}
+
+
+		// POST: /OnlineStore/Cart/UpdateQty
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> UpdateQty(int productId, int qty, int shipMethodId, string destZip, string? couponCode)
+		{
 			try
 			{
-				var (cartId, anon) = await GetCartIdAsync();
-				var summary = await _svc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-				return Ok(new { ok = true, count = summary.TotalQty, summary });
+				var cartId = await EnsureCartAsync();
+				await _cart.UpdateQtyAsync(cartId, productId, qty);
+				return await Full(shipMethodId, destZip, couponCode);
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { ok = false, message = ex.Message });
+				// 這裡簡化示範；實務上請分辨錯誤碼（例如 INVALID_QTY、PRODUCT_NOT_FOUND…）
+				return Json(new { ok = false, code = "UPDATE_FAILED", message = ex.Message });
 			}
 		}
 
-		//========================
-		// Private Helper
-		//========================
-		private async Task<(Guid cartId, Guid anon)> GetCartIdAsync()
+		// POST: /OnlineStore/Cart/Remove
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Remove(int productId, int shipMethodId, string destZip, string? couponCode)
 		{
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _svc.EnsureCartIdAsync(null, anon);
-			return (cartId, anon);
+			try
+			{
+				var cartId = await EnsureCartAsync();
+				await _cart.RemoveAsync(cartId, productId);
+				return await Full(shipMethodId, destZip, couponCode);
+			}
+			catch (Exception ex)
+			{
+				return Json(new { ok = false, code = "REMOVE_FAILED", message = ex.Message });
+			}
 		}
+
+		// POST: /OnlineStore/Cart/Clear
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Clear(int shipMethodId, string destZip, string? couponCode)
+		{
+			try
+			{
+				var cartId = await EnsureCartAsync();
+				await _cart.ClearAsync(cartId);
+				return await Full(shipMethodId, destZip, couponCode);
+			}
+			catch (Exception ex)
+			{
+				return Json(new { ok = false, code = "CLEAR_FAILED", message = ex.Message });
+			}
+		}
+#if DEBUG
+		[HttpGet]
+		public async Task<IActionResult> DevAdd(int productId = 101, int qty = 2, int shipMethodId = 1, string destZip = "320", string? couponCode = null)
+		{
+			try
+			{
+				var cartId = await EnsureCartAsync();
+				await _cart.AddAsync(cartId, productId, qty);
+				return await Full(shipMethodId, destZip, couponCode);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { ok = false, code = "DEVADD_FAILED", message = ex.Message, detail = ex.InnerException?.Message });
+			}
+		}
+#endif
+
+
+
 	}
 }
