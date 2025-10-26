@@ -1,0 +1,73 @@
+﻿@* Views/Shared/_TopbarLevel2.cshtml *@
+@* 🔹 引入 Swiper 樣式（一定要在最前面，否則無法顯示樣式） *@
+<link rel="stylesheet" href="https://unpkg.com/swiper@9/swiper-bundle.min.css">
+<link rel="stylesheet" href="~/css/Forum/hero-swiper.css">
+@* 🔹 Swiper 主容器（整個輪播區域）    考慮有幾個頂至就出現幾個 *@
+<div class="swiper hero-swiper topbar-2">
+    <div class="swiper-wrapper">
+
+        <!-- 假資料：洞察 -->
+        <div class="swiper-slide">
+            <article class="news-card">
+                <div class="news-tags">
+                    <span class="tag tag-insight">洞察</span>
+                    <span class="tag tag-pin">置頂</span>
+                </div>
+                <h3 class="news-title">
+                    <a href="/news/insight-123">玩家留存為何下滑？三個關鍵</a>
+                </h3>
+                <p class="news-excerpt">我們把七日留存拆成三段漏斗，最大洞在 Day2…</p>
+                <div class="news-meta">2025/10/12 · Admin</div>
+            </article>
+        </div>
+
+        <!-- 假資料：管理員貼文 -->
+        <div class="swiper-slide">
+            <article class="news-card">
+                <div class="news-tags">
+                    <span class="tag tag-admin">管理員</span>
+                    <span class="tag tag-pin">置頂</span>
+                </div>
+                <h3 class="news-title">
+                    <a href="/news/mod-456">版規更新：洗版與廣告處置</a>
+                </h3>
+                <p class="news-excerpt">為了社群品質，新增三條規則與處置流程…</p>
+                <div class="news-meta">2025/10/10 · Moderator</div>
+            </article>
+        </div>
+
+        <!-- 你要幾張就複製幾個 swiper-slide -->
+    </div>
+
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+</div>
+
+
+@* 🔹 引入 Swiper 主程式 *@
+<script src="https://unpkg.com/swiper@9/swiper-bundle.min.js"></script>
+
+<script>
+    // 初始化 Swiper
+    new Swiper('.hero-swiper', {
+        loop: true, // 循環播放
+        autoplay: {
+            delay: 5000, // 每張停留 5 秒
+            disableOnInteraction: false // 滑鼠操作後仍繼續輪播
+        },
+        pagination: {
+            el: '.swiper-pagination', // 綁定分頁元素
+            clickable: true // 點小圓點可切換
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev'
+        },
+        effect: 'slide',   // ← 改成 slide，比內容卡片直覺
+        speed: 600 // 切換動畫速度（毫秒）
+    });
+</script>
+
+
+

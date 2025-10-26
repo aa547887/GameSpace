@@ -86,10 +86,16 @@ namespace GamiPort
 			// IChatNotifier：透過 IHubContext<ChatHub> 對用戶/群組廣播 → 可 Singleton（IHubContext 執行緒安全）
 			builder.Services.AddSingleton<IChatNotifier, SignalRChatNotifier>();
 
-			// ------------------------------------------------------------
-			// MVC / RazorPages / JSON 命名策略 & Anti-forgery
-			// ------------------------------------------------------------
-			builder.Services.AddControllersWithViews()
+            // (D) Forum 模組 Services
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Forums.IForumsService,
+                                       GamiPort.Areas.Forum.Services.Forums.ForumsService>();
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.IThreadsService,
+                                       GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
+            //                         GamiPort.Areas.Forum.Services.Threads
+            // ------------------------------------------------------------
+            // MVC / RazorPages / JSON 命名策略 & Anti-forgery
+            // ------------------------------------------------------------
+            builder.Services.AddControllersWithViews()
 				// JSON 保留原本的屬性大小寫（不轉 camelCase）
 				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
