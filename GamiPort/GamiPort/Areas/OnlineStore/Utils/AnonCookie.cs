@@ -9,7 +9,7 @@ namespace GamiPort.Areas.OnlineStore.Utils
 		public static Guid GetOrSet(HttpContext ctx)
 		{
 			// 1) 已有就讀出
-			if (ctx.Request.Cookies.TryGetValue(Key, out var v) && Guid.TryParse(v, out var g))
+			if (ctx.Request.Cookies.TryGetValue(Key, out var v) && Guid.TryParse(v, out var g) && g != Guid.Empty)
 				return g;
 
 			// 2) 沒有就產生並寫入
@@ -19,7 +19,9 @@ namespace GamiPort.Areas.OnlineStore.Utils
 				HttpOnly = true,
 				Secure = ctx.Request.IsHttps,   // 本機無 HTTPS 就會自動用非 Secure
 				SameSite = SameSiteMode.Lax,
-				Expires = DateTimeOffset.UtcNow.AddDays(30)
+				Path = "/",                     // ★ 全站可讀寫此匿名 cookie
+				Expires = DateTimeOffset.UtcNow.AddDays(30),
+				IsEssential = true              // ★ 避免未同意 cookie 政策時被瀏覽器/中介擋掉
 			});
 			return guid;
 		}

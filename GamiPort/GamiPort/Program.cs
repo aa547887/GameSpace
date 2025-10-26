@@ -148,8 +148,6 @@ namespace GamiPort
 			});
 
 			// 購物車使用
-			builder.Services.AddHttpContextAccessor();
-
 			// ★ 必要：Session 需要 IDistributedCache（用記憶體即可）
 			builder.Services.AddDistributedMemoryCache();              // [Cart][ADD]
 

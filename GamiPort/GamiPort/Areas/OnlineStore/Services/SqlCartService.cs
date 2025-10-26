@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;           // ★ 新增
 using Microsoft.Data.SqlClient;
 using GamiPort.Areas.OnlineStore.DTO;   // CartLineDto / CartSummaryDto / CartVm / Legacy*
 using GamiPort.Models;                  // GameSpacedatabaseContext
@@ -15,7 +16,25 @@ namespace GamiPort.Areas.OnlineStore.Services
 	public class SqlCartService : ICartService
 	{
 		private readonly GameSpacedatabaseContext _db;
-		public SqlCartService(GameSpacedatabaseContext db) => _db = db;
+		private readonly string _connString;        // ★ 新增
+		public SqlCartService(GameSpacedatabaseContext db, IConfiguration cfg) // ★ 加 IConfiguration
+		{
+			_db = db;
+
+			// 1) 先向 EF Core 要目前使用的連線字串
+			var fromEf = _db.Database.GetConnectionString();
+
+			// 2) 備援：appsettings.json
+			var fromConfig = cfg.GetConnectionString("GameSpace");
+
+			_connString = !string.IsNullOrWhiteSpace(fromEf)
+				? fromEf
+				: !string.IsNullOrWhiteSpace(fromConfig)
+					? fromConfig
+					: throw new InvalidOperationException(
+						"找不到資料庫連線字串。請確認已在 Program.cs 註冊 AddDbContext 或於 appsettings.json 設定 ConnectionStrings:GameSpace。");
+		}
+
 
 		// 取得或建立 cart_id
 		public async Task<Guid> EnsureCartIdAsync(int? userId, Guid? anonymousToken)
@@ -110,8 +129,8 @@ namespace GamiPort.Areas.OnlineStore.Services
 		// [CHANGED] 新版摘要（給 Navbar 徽章 / 即時總計）
 		public async Task<CartSummaryDto> GetSummaryAsync(Guid cartId, int shipMethodId, string destZip, string? couponCode = null)
 		{
-			await using var conn = _db.Database.GetDbConnection();
-			if (conn.State != ConnectionState.Open) await conn.OpenAsync();
+			await using var conn = new SqlConnection(_connString);  // ★ 改成保證有字串的連線
+			await conn.OpenAsync();
 
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText = "dbo.usp_Cart_GetSummary";
@@ -121,7 +140,7 @@ namespace GamiPort.Areas.OnlineStore.Services
 			cmd.Parameters.Add(new SqlParameter("@DestZip", SqlDbType.NVarChar, 10) { Value = (object?)destZip ?? DBNull.Value });
 			cmd.Parameters.Add(new SqlParameter("@CouponCode", SqlDbType.NVarChar, 50) { Value = (object?)couponCode ?? DBNull.Value });
 
-			var s = new CartSummaryDto(); // ← 先宣告容器，再去讀資料
+			var s = new CartSummaryDto();
 
 			await using var reader = await cmd.ExecuteReaderAsync();
 			if (await reader.ReadAsync())
@@ -153,10 +172,12 @@ namespace GamiPort.Areas.OnlineStore.Services
 				// ✅ 新增：優惠欄位（若 SQL 無此欄，fallback=0/null，不會拋例外）
 				s.CouponDiscount = GetDecimalOr(reader,
 					new[] { "coupon_discount", "coupondiscount", "CouponDiscount" }, 0m);
-
 				s.CouponMessage = GetStringOr(reader,
 					new[] { "coupon_message", "couponmessage", "CouponMessage" }, null);
 			}
+
+			// ★★★ 重要：若 SP 沒回運費/優惠或是 0，在這裡依「配送方式資料表」回填並重算；也把優惠碼統一在這裡套用
+			await PostProcessSummaryAsync(s, shipMethodId, destZip, couponCode);
 
 			return s;
 		}
@@ -164,8 +185,8 @@ namespace GamiPort.Areas.OnlineStore.Services
 		// 取回兩個結果集（Lines + Summary）
 		public async Task<CartVm> GetFullAsync(Guid cartId, int shipMethodId, string destZip, string? couponCode = null)
 		{
-			await using var conn = _db.Database.GetDbConnection();
-			if (conn.State != ConnectionState.Open) await conn.OpenAsync();
+			await using var conn = new SqlConnection(_connString);  // ★ 同樣改這裡
+			await conn.OpenAsync();
 
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText = "dbo.usp_Cart_GetFull";
@@ -228,10 +249,12 @@ namespace GamiPort.Areas.OnlineStore.Services
 				// ✅ 新增：優惠欄位（若 SQL 無此欄，fallback=0/null，不會拋例外）
 				summary.CouponDiscount = GetDecimalOr(reader,
 					new[] { "coupon_discount", "coupondiscount", "CouponDiscount" }, 0m);
-
 				summary.CouponMessage = GetStringOr(reader,
 					new[] { "coupon_message", "couponmessage", "CouponMessage" }, null);
 			}
+
+			// ★★★ 同步做回填與重算（運費/優惠 → 應付）
+			await PostProcessSummaryAsync(summary, shipMethodId, destZip, couponCode);
 
 			return new CartVm { Lines = lines, Summary = summary };
 		}
@@ -309,5 +332,110 @@ namespace GamiPort.Areas.OnlineStore.Services
 		private static decimal GetDecimalOrZero(IDataRecord r, string name)
 			=> GetDecimal(r, name);
 		#endregion
+		#region Shipping & Coupon post-processing（運費回填／優惠套用／總額重算）
+
+		// 讀取配送規則（只取會用到的欄位）
+		private sealed class ShipRule
+		{
+			public decimal BaseFee { get; init; }          // 基本運費（宅配 160 / 超商 60）
+			public decimal FreeThreshold { get; init; }    // 免運門檻（超過即 0）
+			public bool ForStorePickup { get; init; }      // 是否為超商取貨（目前僅記錄，不做特別處理）
+		}
+
+		// 依 shipMethodId 由資料庫載入配送規則
+		private async Task<ShipRule?> LoadShipRuleAsync(int shipMethodId)
+		{
+			// ★ 若你的 EF 實體屬性名稱不同（例如 Base_Fee / Free_Threshold），請把下面 Select 改成你的屬性。
+			var rule = await _db.SoShipMethods
+				.AsNoTracking()
+				.Where(x => x.ShipMethodId == shipMethodId /* && x.IsActive */) // 若沒有 IsActive，就移除此條件
+				.Select(x => new ShipRule
+				{
+					BaseFee = x.BaseFee,
+					FreeThreshold = x.FreeThreshold,
+
+					// ✅ 你的專案實體是 bool → 直接指定即可
+					ForStorePickup = x.ForStorePickup
+
+					// 如果你的實體是 int(0/1)，改成下面這行（把上面那行註解）：
+					// ForStorePickup = x.ForStorePickup == 1
+				})
+				.FirstOrDefaultAsync();
+			return rule;
+		}
+
+		// 可彈性調整的優惠規則（示範版）
+		// - "111"      ：折 100 元（負數表示折抵）
+		// - "FREESHIP" ：免運
+		private static void ApplyCoupon(CartSummaryDto s, string? couponCode, ShipRule? rule)
+		{
+			if (string.IsNullOrWhiteSpace(couponCode))
+			{
+				// 沒填券：沿用 SP 的結果（通常是 0 / null）
+				if (s.CouponDiscount == 0m) s.CouponDiscount = 0m;
+				return;
+			}
+
+			var code = couponCode.Trim();
+			if (code.Equals("111", StringComparison.OrdinalIgnoreCase))
+			{
+				s.CouponDiscount = -100m;
+				s.CouponMessage = "已套用優惠碼，折抵 100 元";
+			}
+			else if (code.Equals("FREESHIP", StringComparison.OrdinalIgnoreCase))
+			{
+				if (s.Shipping_Fee > 0m) s.Shipping_Fee = 0m;  // 免運
+				s.CouponDiscount = 0m;
+				s.CouponMessage = "已套用免運優惠碼";
+			}
+			else
+			{
+				s.CouponDiscount ??= 0m;
+				s.CouponMessage = "優惠碼無效，未套用折扣";
+			}
+		}
+
+		// 把「運費回填 + 優惠套用 + 應付重算」集中做掉
+		private async Task PostProcessSummaryAsync(CartSummaryDto s, int shipMethodId, string destZip, string? couponCode)
+		{
+			// A) 運費（若 SP 沒算或算 0，就用規則回填）
+			var rule = await LoadShipRuleAsync(shipMethodId);
+			if (rule != null)
+			{
+				// 只有實體商品才要計算運費
+				var needShip = s.Item_Count_Physical > 0;
+				if (!needShip)
+				{
+					s.Shipping_Fee = 0m;
+				}
+				else
+				{
+					// 免運門檻以「實體小計」判斷（你要改成 Subtotal 也可以）
+					var reachedFree = s.Subtotal_Physical >= rule.FreeThreshold;
+
+					// 只有在 SP 未回或回 0 的情況下才回填，避免覆蓋你之後在 SQL 已經算好的邏輯
+					if (s.Shipping_Fee <= 0m)
+						s.Shipping_Fee = reachedFree ? 0m : rule.BaseFee;
+				}
+			}
+			else
+			{
+				// 找不到規則：若沒有實體商品運費就 0
+				if (s.Item_Count_Physical == 0) s.Shipping_Fee = 0m;
+			}
+
+			// B) 優惠套用（先以彈性規則示範）
+			ApplyCoupon(s, couponCode, rule);
+
+			// C) 重新計算應付金額
+			//    Grand = 商品小計(全部) - 促銷折扣 + 運費 + 優惠折抵
+			//    注意：CouponDiscount 使用「負數」表示折抵
+			var coupon = s.CouponDiscount ?? 0m;
+			s.Grand_Total = s.Subtotal - s.Discount + s.Shipping_Fee + coupon;
+		}
+
+		#endregion
+
 	}
+
 }

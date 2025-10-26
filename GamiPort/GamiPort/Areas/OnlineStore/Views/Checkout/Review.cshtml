@@ -44,7 +44,11 @@
 </form>
 
 @section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.7.1.min.js"><\/script>')</script>
+
     <partial name="_ValidationScriptsPartial" />
+
     <script>
         (function () {
             const form = document.getElementById('place-order-form');
@@ -64,3 +68,4 @@
         })();
     </script>
 }
+

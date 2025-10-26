@@ -1,9 +1,11 @@
 ﻿using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;                  // ★ for Session GetString/SetString
 using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.OnlineStore.ViewModels;
 using GamiPort.Areas.OnlineStore.DTO;
+using GamiPort.Areas.OnlineStore.Utils;           // ★ 取用 AnonCookie
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -23,12 +25,26 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		}
 
 		// ===== Step1 (GET) =====
+		// 新增：把清單塞進 ViewBag 的共用方法
+		private async Task LoadShipMethodsAsync()
+		{
+			ViewBag.ShipMethods = await _lookup.GetShipMethodsAsync();
+		}
+
+		private async Task LoadPayMethodsAsync()
+		{
+			ViewBag.PayMethods = await _lookup.GetPayMethodsAsync();
+		}
+
+		// Step1(GET)
 		[HttpGet]
 		public async Task<IActionResult> Step1()
 		{
 			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
 			var summary = await _cartSvc.GetSummaryAsync(cartId, initShipId, initZip, null);
-			ViewBag.Full = new { Summary = summary }; // 右側摘要強型別 partial 的來源
+			ViewBag.Full = new { Summary = summary };
+
+			await LoadShipMethodsAsync();   // ★★★ 這一行很重要
 
 			return View(new CheckoutStep1Vm
 			{
@@ -37,46 +53,45 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			});
 		}
 
-		// ===== Step1 (POST) =====
+		// Step1(POST) 回畫面時也要補
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Step1(CheckoutStep1Vm vm)
 		{
-			// 1) DataAnnotations 先驗（避免打到 DB）
 			if (!ModelState.IsValid)
 			{
 				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.DestZip, null);
+				await LoadShipMethodsAsync();   // ★
 				return View(vm);
 			}
 
-			// 2) 伺端強制保護：配送方式存在？Zip 合法？
 			if (!await _lookup.ShipMethodExistsAsync(vm.ShipMethodId))
 				ModelState.AddModelError(nameof(vm.ShipMethodId), "配送方式不合法");
 
-			if (!ZipRegex.IsMatch(vm.DestZip ?? string.Empty))
-				ModelState.AddModelError(nameof(vm.DestZip), "郵遞區號格式不正確");
-
 			if (!ModelState.IsValid)
 			{
 				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.DestZip, null);
+				await LoadShipMethodsAsync();   // ★
 				return View(vm);
 			}
 
-			// 3) 通過 → 前往 Step2（用 TempData 帶值）
 			TempData["Step1"] = System.Text.Json.JsonSerializer.Serialize(vm);
 			return RedirectToAction(nameof(Step2));
 		}
 
-		// ===== Step2 (GET) =====
+		// Step2(GET)
 		[HttpGet]
 		public async Task<IActionResult> Step2()
 		{
 			var (shipMethodId, destZip) = GetStep1ValuesOrDefault();
 			await RefreshSummaryToViewBagAsync(shipMethodId, destZip, null);
+
+			await LoadPayMethodsAsync();    // ★★★ 也很重要
+
 			return View(new CheckoutStep2Vm());
 		}
 
-		// ===== Step2 (POST) =====
+		// Step2(POST) 回畫面時也要補
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Step2(CheckoutStep2Vm vm)
@@ -86,22 +101,24 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			if (!ModelState.IsValid)
 			{
 				await RefreshSummaryToViewBagAsync(shipMethodId, destZip, vm.CouponCode);
+				await LoadPayMethodsAsync(); // ★
 				return View(vm);
 			}
 
-			// 伺端保護：付款方式是否存在/啟用
 			if (!await _lookup.PayMethodExistsAsync(vm.PayMethodId))
 				ModelState.AddModelError(nameof(vm.PayMethodId), "付款方式不合法");
 
 			if (!ModelState.IsValid)
 			{
 				await RefreshSummaryToViewBagAsync(shipMethodId, destZip, vm.CouponCode);
+				await LoadPayMethodsAsync(); // ★
 				return View(vm);
 			}
 
 			TempData["Step2"] = System.Text.Json.JsonSerializer.Serialize(vm);
 			return RedirectToAction(nameof(Review));
 		}
+
 
 		// ===== Review (GET) =====
 		[HttpGet]
@@ -205,8 +222,19 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 
 		private async Task<(System.Guid cartId, int initShipId, string initZip)> GetDefaultsAsync()
 		{
-			// 依你現有流程取得 CartId；Ship/Zip 給預設
-			var cartId = await _cartSvc.EnsureCartIdAsync(null, null);
+			// ★★★ 關鍵：用「加入購物車」同一顆匿名 Token 來取得 cart_id
+			var anonToken = AnonCookie.GetOrSet(HttpContext);
+
+			const string CartKey = "CartId";
+
+			// 先嘗試用 Session 快取（同一瀏覽器流程更省查詢）
+			if (System.Guid.TryParse(HttpContext.Session.GetString(CartKey), out var cached) && cached != System.Guid.Empty)
+				return (cached, 1, "100");
+
+			// 未快取就用匿名 Token 向 DB 取回或建立購物車，再寫回 Session
+			var cartId = await _cartSvc.EnsureCartIdAsync(null, anonToken);
+			HttpContext.Session.SetString(CartKey, cartId.ToString());
+
 			return (cartId, 1, "100");
 		}
 	}

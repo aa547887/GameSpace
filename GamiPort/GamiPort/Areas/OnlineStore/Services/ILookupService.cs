@@ -1,16 +1,20 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using GamiPort.Areas.OnlineStore.DTO;
 
 namespace GamiPort.Areas.OnlineStore.Services
 {
 	/// <summary>
-	/// 查核用輕服務：只負責確認「配送方式 / 付款方式」是否存在且可用
+	/// 前台結帳用到的「查詢下拉清單／存在性檢查」統一入口
 	/// </summary>
 	public interface ILookupService
 	{
-		/// <summary>配送方式是否存在（true=合法）</summary>
+		// 配送方式
+		Task<IReadOnlyList<ShipMethodDto>> GetShipMethodsAsync();
 		Task<bool> ShipMethodExistsAsync(int shipMethodId);
 
-		/// <summary>付款方式是否存在（true=合法）</summary>
+		// 付款方式
+		Task<IReadOnlyList<PayMethodDto>> GetPayMethodsAsync();
 		Task<bool> PayMethodExistsAsync(int payMethodId);
 	}
 }
