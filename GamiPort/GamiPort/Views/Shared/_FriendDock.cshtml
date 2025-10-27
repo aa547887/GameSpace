@@ -1,21 +1,20 @@
 ﻿@* ===================================================================
    _FriendDock.cshtml － 好友清單（可拖移小視窗）
-   功能一覽：
-   1) 進場：呼叫 PeersLatest 一次性把「未讀 / 最後時間 / 預覽」畫上去
-   2) 即時：監聽 Hub 的 UnreadUpdate（兼容不同欄位命名），即時更新紅點
-   3) 同步：收到聊天窗廣播 'gp-chat-latest' 更新該列時間/預覽並置頂
-   4) 保險：收到 'gp-unread-zero' 事件 → 將該 peer 的所有徽章都清空（跨頁/多處 DOM 均成立）
-   DOM 規範（盡量寬容）：
-     - 未讀徽章： [data-chat-badge="<peerId>"]          ← 主選取器
-                   .fd-row[data-uid="<peerId>"] .fd-badge ← 備援
-     - 時間：     [data-chat-time-iso="<peerId>"] 或 .fd-row[data-uid] 內的 [data-time]
-     - 預覽：     [data-chat-preview="<peerId>"] 或 .fd-row[data-uid] 內的 [data-last]
-   時間顯示：一律 GPTime.hm(UTC ISO) → 台灣 HH:mm
+   強化點（穢語）：
+   1) 進好友清單時 → 呼叫 /social_hub/profanity/list?nocache=1 強制從伺服器重載規則
+   2) 將規則編譯到全域 window.__gpProfanity，提供 censor(text) API
+   3) 列表「預覽文字」一律顯示「遮蔽後」內容；原文保存在 data-raw，便於規則更新後重算
+   4) 規則更新時廣播 gp-profanity-updated → 清單即時重套遮蔽（無須重整）
+   其他維持原功能：
+   - 進場以 PeersLatest 帶入未讀/時間/預覽
+   - Hub 的 UnreadUpdate 即時紅點
+   - 接收聊天窗 gp-chat-latest 事件，更新該列時間/預覽並置頂
+   - 接收 gp-unread-zero 清紅點
    =================================================================== *@
 @{
     var friendsApi = Url.Action("Friends", "RelationsQuery", new { area = "social_hub", onlyAccepted = true, take = 200 });
     var peersApi = Url.Action("PeersLatest", "Chat", new { area = "social_hub" });
-    var historyApi = Url.Action("History", "Chat", new { area = "social_hub" });
+    var historyApi = Url.Action("History", "Chat", new { area = "social_hub" }); // 目前檔內未直接用，但保留
 }
 
 <style>
@@ -176,12 +175,14 @@
 
 <script>
     ;(async ()=>{
-      // ------------- 相依：時間/SignalR -------------
+      /* ---------------- 相依：時間 / SignalR（懶載入） ---------------- */
       if(!window.__gpEnsureTime){
         window.__gpEnsureTime=new Promise(res=>{
           if(window.GPTime) return res();
-          const s=document.createElement('script'); s.src='~/js/social_hub/gp-time.js'.replace('~',location.origin);
-          s.onload=()=>res(); s.onerror=()=>res(); document.head.appendChild(s);
+          const s=document.createElement('script');
+          s.src='~/js/social_hub/gp-time.js'.replace('~',location.origin);
+          s.onload=()=>res(); s.onerror=()=>res();
+          document.head.appendChild(s);
         });
       }
       if(!window.__gpEnsureSignalR){
@@ -189,31 +190,80 @@
           if(window.signalR||window.SignalR||window.signalr) return res();
           const s=document.createElement('script');
           s.src='https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js';
-          s.crossOrigin='anonymous'; s.onload=()=>res(); s.onerror=()=>rej(); document.head.appendChild(s);
+          s.crossOrigin='anonymous';
+          s.onload=()=>res(); s.onerror=()=>rej();
+          document.head.appendChild(s);
         });
       }
       await window.__gpEnsureTime;
 
-      // ------------- DOM & 基本互動 -------------
+      /* ---------------- 穢語：全域物件 + 編譯 + 進清單即刷新 ----------------
+         - 只在「好友清單顯示」時抓一次（nocache=1 強制伺服器 Reload）
+         - 編譯 pattern/flags → RegExp，產生 __gpProfanity.censor(text)
+         - 廣播 gp-profanity-updated，讓聊天窗/本清單即時重套遮蔽
+      -------------------------------------------------------------------- */
+      if(!window.__gpProfanity){
+        window.__gpProfanity = { version: 0, rules: [], censor: (t)=>t };
+      }
+      function compileProfanityRules(list){
+        const compiled=[];
+        for(const r of (list||[])){
+          if(!r || !r.pattern) continue;
+          try{
+            compiled.push({ re:new RegExp(r.pattern, r.flags||'gi'), replacement:(r.replacement ?? '**') });
+          }catch(_){}
+        }
+        window.__gpProfanity.rules = compiled;
+        window.__gpProfanity.censor = (txt)=>{
+          if(!txt) return txt;
+          let out = txt;
+          for(const rr of compiled) out = out.replace(rr.re, rr.replacement);
+          return out;
+        };
+      }
+      async function refreshProfanityFromServer(){
+        try{
+          const url = `/social_hub/profanity/list?nocache=1&ts=${Date.now()}`; // 強制重載 + 避 cache
+          const r = await fetch(url, { credentials:'same-origin', cache:'no-store' });
+          if(!r.ok) return;
+          const data = await r.json();
+          const ver = Number(data?.version || 0);
+          if(ver !== (window.__gpProfanity.version || 0)){
+            window.__gpProfanity.version = ver;
+            compileProfanityRules(data?.rules || []);
+            window.dispatchEvent(new CustomEvent('gp-profanity-updated',{ detail:{ version:ver, source:'friend-dock' }}));
+          }
+        }catch(_){}
+      }
+      const gpCensor = (s)=> (window.__gpProfanity?.censor?.(s) ?? s);
+
+      /* ---------------- DOM / 互動 ---------------- */
       const dock=document.getElementById('FriendDock');
       const head=document.getElementById('fdHead');
       const body=document.getElementById('fdBody');
       document.getElementById('fdClose').addEventListener('click', ()=>dock.classList.remove('open'));
 
-      // 拖移（避開按鈕）
+      // 拖移（避開頭部按鈕）
       (function drag(el,handle){
         let sx=0,sy=0,ox=0,oy=0,drag=false;
         const isBtn=t=>(t.closest?.('.fd-tools')||t.tagName==='BUTTON');
-        handle.addEventListener('pointerdown',e=>{ if(isBtn(e.target))return; drag=true; sx=e.clientX; sy=e.clientY;
-          const r=el.getBoundingClientRect(); ox=r.left; oy=r.top; handle.setPointerCapture(e.pointerId);});
-        handle.addEventListener('pointermove',e=>{ if(!drag)return;
+        handle.addEventListener('pointerdown',e=>{
+          if(isBtn(e.target))return;
+          drag=true; sx=e.clientX; sy=e.clientY;
+          const r=el.getBoundingClientRect(); ox=r.left; oy=r.top;
+          handle.setPointerCapture(e.pointerId);
+        });
+        handle.addEventListener('pointermove',e=>{
+          if(!drag)return;
           const nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
           el.style.left=Math.max(6,Math.min(window.innerWidth-el.offsetWidth-6,nx))+'px';
-          el.style.top =Math.max(6,Math.min(window.innerHeight-80,ny))+'px'; el.style.right='auto';});
+          el.style.top =Math.max(6,Math.min(window.innerHeight-80,ny))+'px';
+          el.style.right='auto';
+        });
         handle.addEventListener('pointerup',()=>drag=false);
       })(dock, head);
 
-      // ------------- DOM 工具（寬容選取） -------------
+      /* ---------------- DOM Helper（寬鬆選取） ---------------- */
       function findRow(pid){ return body.querySelector(`.fd-row[data-uid="${pid}"]`); }
       function findBadge(pid){
         return document.querySelector(`[data-chat-badge="${pid}"]`)
@@ -234,13 +284,28 @@
         b.style.display = unread>0 ? 'inline-block':'none';
       }
       function clearBadgeEverywhere(pid){
-        // 清所有可能的徽章（跨模組/多處 DOM）
-        document.querySelectorAll(`[data-chat-badge="${pid}"], .fd-row[data-uid="${pid}"] .fd-badge`).forEach(el=>{
-          el.textContent=''; el.style.display='none';
+        document.querySelectorAll(`[data-chat-badge="${pid}"], .fd-row[data-uid="${pid}"] .fd-badge`)
+          .forEach(el=>{ el.textContent=''; el.style.display='none'; });
+      }
+      // ★ 統一設定預覽：先存原文到 data-raw，再以目前規則遮蔽後顯示
+      function setPreview(pid, rawText){
+        const el = findPreviewEl(pid);
+        if(!el) return;
+        const raw = (rawText ?? '').toString();
+        el.dataset.raw = raw;
+        el.textContent = gpCensor(raw);
+      }
+      // ★ 規則更新時，重新套用所有列的預覽（以 data-raw 重新跑遮蔽）
+      function reapplyCensorForAll(){
+        body.querySelectorAll('[data-last]').forEach(el=>{
+          const raw = el.dataset?.raw ?? el.textContent ?? '';
+          el.dataset.raw = raw;
+          el.textContent = gpCensor(raw);
         });
       }
+      window.addEventListener('gp-profanity-updated', reapplyCensorForAll);
 
-      // ------------- 生成一列 -------------
+      /* ---------------- 生成一列 ---------------- */
       function makeRow(friend){
         const id   = String(friend.friendUserId ?? friend.userId ?? '').trim();
         const base = (friend.friendName || friend.fullName || friend.displayName || ('朋友 #'+id)).trim();
@@ -266,6 +331,7 @@
         return row;
       }
 
+      /* ---------------- 資料 API ---------------- */
       async function fetchFriends(){
         const r=await fetch('@friendsApi',{credentials:'same-origin'});
         return r.ok? await r.json():[];
@@ -278,7 +344,7 @@
         return r.ok? await r.json():[];
       }
 
-      // ------------- 初始化載入 -------------
+      /* ---------------- 初始化載入 ---------------- */
       async function loadFriends(){
         body.innerHTML='<div class="fd-empty">讀取中…</div>';
         const friends = await fetchFriends();
@@ -289,6 +355,7 @@
         const rows=[];
         for(const f of friends){ const row=makeRow(f); rows.push(row); body.appendChild(row); }
 
+        // 批次把每列的未讀/預覽/時間補齊
         const ids = rows.map(r=>r.dataset.uid);
         const peers = await fetchPeersLatest(ids);
         const map = new Map((peers||[]).map(x=> [String(x.PeerId??x.peerId), x]));
@@ -302,11 +369,11 @@
 
           setBadge(pid, unread);
           const tEl=findTimeEl(pid); if(tEl && iso) tEl.textContent = GPTime.hm(iso);
-          const pEl=findPreviewEl(pid); if(pEl && prev) pEl.textContent = prev;
+          setPreview(pid, prev); // ★ 預覽顯示遮蔽後
         }
       }
 
-      // ------------- Hub 綁定（即時未讀） -------------
+      /* ---------------- Hub 綁定（即時未讀） ---------------- */
       (async function bindHub(){
         try{
           await window.__gpEnsureSignalR;
@@ -314,45 +381,59 @@
           const conn=new SR.HubConnectionBuilder().withUrl("/social_hub/chatHub").withAutomaticReconnect().build();
           await conn.start().catch(()=>{});
 
-          // 未讀更新（事件欄位容錯）
+          // 未讀更新（欄位名容錯）
           conn.on("UnreadUpdate", data=>{
             const pid = String(data.peerId ?? data.PeerId ?? data.pid ?? '');
             if(!pid) return;
             const unread = Number(data.unread ?? data.Unread ?? data.count ?? 0);
+            setBadge(pid, unread);
 
-            setBadge(pid, unread); // 顯示/隱藏紅點
-
-            // 如事件帶時間/預覽就一併更新（非必填）
+            // 若事件帶時間/預覽就一併更新（預覽要遮蔽）
             const iso  = data.lastIso ?? data.LastIso ?? '';
             const prev = data.preview ?? data.Preview ?? '';
-            const tEl=findTimeEl(pid); if(tEl && iso)  tEl.textContent = GPTime.hm(iso);
-            const pEl=findPreviewEl(pid); if(pEl && prev) pEl.textContent = prev;
+            const tEl=findTimeEl(pid); if(tEl && iso) tEl.textContent = GPTime.hm(iso);
+            if(prev !== '') setPreview(pid, prev);
           });
         }catch(e){ console.warn('[FriendDock] Hub bind fail:', e); }
       })();
 
-      // ------------- 與聊天窗同步 -------------
-      // 由聊天窗廣播（新訊息到/或我送出）→ 更新該列預覽/時間並置頂
+      /* ---------------- 與聊天窗同步 ---------------- */
+      // 聊天窗廣播「最新一條」（我送出/對方來）→ 更新該列預覽與時間，並置頂
       window.addEventListener('gp-chat-latest', (ev)=>{
         const pid = String(ev.detail?.peerId ?? ''); if(!pid) return;
         const row = findRow(pid); if(!row) return;
-        const pEl=findPreviewEl(pid); if(pEl) pEl.textContent = ev.detail?.content ?? '';
-        const tEl=findTimeEl(pid);    if(tEl && ev.detail?.iso) tEl.textContent = GPTime.hm(ev.detail.iso);
+        setPreview(pid, ev.detail?.content ?? '');
+        const tEl=findTimeEl(pid); if(tEl && ev.detail?.iso) tEl.textContent = GPTime.hm(ev.detail.iso);
         if(row.previousElementSibling) body.insertBefore(row, body.firstChild);
       });
 
-      // 聊天窗通知「已讀清零」的保險事件（本地立即清紅點）
+      // 聊天窗通知「本地清紅點」的保險事件
       window.addEventListener('gp-unread-zero', (ev)=>{
         const pid=String(ev.detail?.peerId??''); if(!pid) return;
         clearBadgeEverywhere(pid);
       });
 
-      // ------------- 對外 API（給 _QuickFab 使用） -------------
+      /* ---------------- 對外 API（給 _QuickFab 或主頁呼叫） ----------------
+         show():
+           1) 顯示 Dock
+           2) ★ 先強制刷新穢語規則（nocache=1）
+           3) 載入好友清單（一次性拉 PeersLatest 補未讀/時間/預覽）
+      -------------------------------------------------------------------- */
       const api = {
-        show: ()=>{ dock.classList.add('open'); if(!dock.dataset.loaded){ loadFriends().then(()=>dock.dataset.loaded='1'); } },
+        show: async ()=>{
+          dock.classList.add('open');
+          await refreshProfanityFromServer();      // ★ 進清單即刷新規則
+          if(!dock.dataset.loaded){
+            await loadFriends();
+            dock.dataset.loaded='1';
+          }else{
+            // 已載入過 → 只重套遮蔽一次，避免版本升級未重算
+            reapplyCensorForAll();
+          }
+        },
         hide: ()=> dock.classList.remove('open'),
         toggle: ()=> (dock.classList.contains('open')? api.hide(): api.show()),
-        refresh: ()=>{ dock.dataset.loaded=''; api.show(); }
+        refresh: async ()=>{ dock.dataset.loaded=''; await api.show(); }
       };
       window.FriendDock = api;
       window.dispatchEvent(new Event('gp-friend-ready'));
