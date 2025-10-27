@@ -184,11 +184,16 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				Direction = System.Data.ParameterDirection.Output
 			};
 
+			// 取優惠折抵（負數 = 折抵）與訊息
+			var couponDiscount = summary.CouponDiscount ?? 0m;
+			var couponMsg = summary.CouponMessage ?? (string?)null;
+
 			var sql = @"
 EXEC dbo.usp_Order_CreateFromCart
     @CartId=@p0, @UserId=@p1, @ShipMethodId=@p2, @PayMethodId=@p3,
     @Recipient=@p4, @Phone=@p5, @DestZip=@p6, @Address1=@p7, @Address2=@p8,
-    @CouponCode=@p9, @OrderId=@OrderId OUTPUT;";
+    @CouponCode=@p9, @CouponDiscount=@p10, @CouponMessage=@p11,
+    @OrderId=@OrderId OUTPUT;";
 
 			await _db.Database.ExecuteSqlRawAsync(sql, new object[] {
 				new Microsoft.Data.SqlClient.SqlParameter("@p0", cartId),
@@ -201,6 +206,8 @@ EXEC dbo.usp_Order_CreateFromCart
 				new Microsoft.Data.SqlClient.SqlParameter("@p7", step1.Address1),
 				new Microsoft.Data.SqlClient.SqlParameter("@p8", (object?)step1.Address2 ?? System.DBNull.Value),
 				new Microsoft.Data.SqlClient.SqlParameter("@p9", (object?)step2.CouponCode ?? System.DBNull.Value),
+				new Microsoft.Data.SqlClient.SqlParameter("@p10", couponDiscount),
+				new Microsoft.Data.SqlClient.SqlParameter("@p11", (object?)couponMsg ?? System.DBNull.Value),
 				orderIdParam
 			});
 

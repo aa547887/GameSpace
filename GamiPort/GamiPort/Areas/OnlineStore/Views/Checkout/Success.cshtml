@@ -5,9 +5,44 @@
 }
 <h2 class="mb-3">訂單成立</h2>
 
+@if (TempData["Msg"] is string msg)
+{
+    <div class="alert alert-info">@msg</div>
+}
+
 <div class="alert alert-success">
     已成功建立訂單（ID：@Model.OrderId @((Model?.OrderCode != null) ? $" / 單號：{Model.OrderCode}" : "")）。感謝您的購買！
 </div>
+@{
+    bool isPaid = false;
+    var ps = (string)(Model?.PaymentStatus ?? "");
+    if (!string.IsNullOrWhiteSpace(ps))
+    {
+        var t = ps.Trim();
+        isPaid = t == "已付款" || t.Equals("PAID", StringComparison.OrdinalIgnoreCase) || t.Equals("SUCCESS", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+
+<!-- 付款動作（未付款才顯示） -->
+@if (!isPaid)
+{
+    <div class="card mb-3 border-warning">
+        <div class="card-header bg-warning-subtle">付款提醒</div>
+        <div class="card-body">
+            <div class="mb-2">此訂單尚未付款，請盡速完成付款。</div>
+            <a class="btn btn-primary"
+               asp-area="OnlineStore" asp-controller="Payment" asp-action="Start"
+               asp-route-id="@Model.OrderId">
+                前往付款（綠界模擬）
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">此訂單已完成付款（@Model.PaymentStatus）。</div>
+}
 
 <div class="card mb-3">
     <div class="card-header">訂單摘要</div>
