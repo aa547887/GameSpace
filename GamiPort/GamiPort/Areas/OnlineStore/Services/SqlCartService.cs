@@ -364,36 +364,36 @@ namespace GamiPort.Areas.OnlineStore.Services
 			return rule;
 		}
 
-		// 可彈性調整的優惠規則（示範版）
-		// - "111"      ：折 100 元（負數表示折抵）
-		// - "FREESHIP" ：免運
-		private static void ApplyCoupon(CartSummaryDto s, string? couponCode, ShipRule? rule)
-		{
-			if (string.IsNullOrWhiteSpace(couponCode))
-			{
-				// 沒填券：沿用 SP 的結果（通常是 0 / null）
-				if (s.CouponDiscount == 0m) s.CouponDiscount = 0m;
-				return;
-			}
+		//// 可彈性調整的優惠規則（示範版）
+		//// - "111"      ：折 100 元（負數表示折抵）
+		//// - "FREESHIP" ：免運
+		//private static void ApplyCoupon(CartSummaryDto s, string? couponCode, ShipRule? rule)
+		//{
+		//	if (string.IsNullOrWhiteSpace(couponCode))
+		//	{
+		//		// 沒填券：沿用 SP 的結果（通常是 0 / null）
+		//		if (s.CouponDiscount == 0m) s.CouponDiscount = 0m;
+		//		return;
+		//	}
 
-			var code = couponCode.Trim();
-			if (code.Equals("111", StringComparison.OrdinalIgnoreCase))
-			{
-				s.CouponDiscount = -100m;
-				s.CouponMessage = "已套用優惠碼，折抵 100 元";
-			}
-			else if (code.Equals("FREESHIP", StringComparison.OrdinalIgnoreCase))
-			{
-				if (s.Shipping_Fee > 0m) s.Shipping_Fee = 0m;  // 免運
-				s.CouponDiscount = 0m;
-				s.CouponMessage = "已套用免運優惠碼";
-			}
-			else
-			{
-				s.CouponDiscount ??= 0m;
-				s.CouponMessage = "優惠碼無效，未套用折扣";
-			}
-		}
+		//	var code = couponCode.Trim();
+		//	if (code.Equals("111", StringComparison.OrdinalIgnoreCase))
+		//	{
+		//		s.CouponDiscount = -100m;
+		//		s.CouponMessage = "已套用優惠碼，折抵 100 元";
+		//	}
+		//	else if (code.Equals("FREESHIP", StringComparison.OrdinalIgnoreCase))
+		//	{
+		//		if (s.Shipping_Fee > 0m) s.Shipping_Fee = 0m;  // 免運
+		//		s.CouponDiscount = 0m;
+		//		s.CouponMessage = "已套用免運優惠碼";
+		//	}
+		//	else
+		//	{
+		//		s.CouponDiscount ??= 0m;
+		//		s.CouponMessage = "優惠碼無效，未套用折扣";
+		//	}
+		//}
 
 		// 把「運費回填 + 優惠套用 + 應付重算」集中做掉
 		private async Task PostProcessSummaryAsync(CartSummaryDto s, int shipMethodId, string destZip, string? couponCode)
@@ -425,7 +425,7 @@ namespace GamiPort.Areas.OnlineStore.Services
 			}
 
 			// B) 優惠套用（先以彈性規則示範）
-			ApplyCoupon(s, couponCode, rule);
+			//ApplyCoupon(s, couponCode, rule);
 
 			// C) 重新計算應付金額
 			//    Grand = 商品小計(全部) - 促銷折扣 + 運費 + 優惠折抵
@@ -435,6 +435,16 @@ namespace GamiPort.Areas.OnlineStore.Services
 		}
 
 		#endregion
+
+		public async Task<int> GetItemCountAsync(Guid cartId)
+		{
+			// 直接用 EF 聚合；若你的 IsDeleted 欄位是 bit，可這樣過濾
+			var cnt = await _db.SoCartItems
+				.AsNoTracking()
+				.Where(x => x.CartId == cartId && (x.IsDeleted == null || x.IsDeleted == false))
+				.SumAsync(x => (int?)x.Qty) ?? 0;
+			return cnt;
+		}
 
 	}
 

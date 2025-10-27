@@ -16,6 +16,8 @@ namespace GamiPort.Areas.OnlineStore.Services
 
 		Task ClearAsync(Guid cartId);
 
+		Task<int> GetItemCountAsync(Guid cartId);
+
 		// 🆕 一次兩個結果集（Lines + Summary）
 		Task<CartVm> GetFullAsync(Guid cartId, int shipMethodId, string destZip, string? couponCode = null);
 

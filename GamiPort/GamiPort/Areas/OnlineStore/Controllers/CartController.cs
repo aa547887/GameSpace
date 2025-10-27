@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.OnlineStore.Utils;
+using Microsoft.AspNetCore.Http;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -37,7 +38,19 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		{
 			var userId = GetUserIdOrNull();
 			var anon = AnonCookie.GetOrSet(HttpContext);
-			return await _cart.EnsureCartIdAsync(userId, anon);
+			var cartId = await _cart.EnsureCartIdAsync(userId, anon);
+
+			// ★ 關鍵：回寫 Session，統一各頁能讀到同一個 cart
+			HttpContext.Session.SetString("CartId", cartId.ToString());
+			return cartId;
+		}
+		// GET: /OnlineStore/Cart/CountJson  → Navbar 會打這支來更新徽章
+		[HttpGet]
+		public async Task<IActionResult> CountJson()
+		{
+			var cartId = await EnsureCartAsync();
+			var count = await _cart.GetItemCountAsync(cartId);
+			return Json(new { count });
 		}
 
 		// GET: /OnlineStore/Cart/Index
