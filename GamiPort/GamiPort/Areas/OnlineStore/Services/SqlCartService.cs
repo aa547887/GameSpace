@@ -325,9 +325,27 @@ namespace GamiPort.Areas.OnlineStore.Services
 
 		private static decimal GetDecimalOr(IDataRecord r, string[] names, decimal fallback)
 		{
-			var i = GetOrdinalOr(r, names);
-			return (i >= 0) ? (r.IsDBNull(i) ? fallback : r.GetDecimal(i)) : fallback;
+			var i = GetOrdinalOr(r, names);           // ← 用你現有的找欄位方法（不是 FindOrdinal）
+			if (i < 0 || r.IsDBNull(i)) return fallback;
+
+			var t = r.GetFieldType(i);
+
+			// 依實際型別安全轉成 decimal（避免 Int32 → Decimal 直接 GetDecimal 造成 InvalidCast）
+			if (t == typeof(decimal)) return r.GetDecimal(i);
+			if (t == typeof(double)) return Convert.ToDecimal(r.GetDouble(i));
+			if (t == typeof(float)) return Convert.ToDecimal(r.GetFloat(i));
+			if (t == typeof(long)) return Convert.ToDecimal(r.GetInt64(i));
+			if (t == typeof(int)) return Convert.ToDecimal(r.GetInt32(i));
+			if (t == typeof(short)) return Convert.ToDecimal(r.GetInt16(i));
+			if (t == typeof(byte)) return Convert.ToDecimal(r.GetByte(i));
+
+			var val = r.GetValue(i);
+			if (val is string s && decimal.TryParse(s, out var d)) return d;
+
+			// 最後保險：交給 Convert
+			return Convert.ToDecimal(val);
 		}
+
 
 		private static decimal GetDecimalOrZero(IDataRecord r, string name)
 			=> GetDecimal(r, name);

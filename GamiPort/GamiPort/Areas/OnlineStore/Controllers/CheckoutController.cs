@@ -9,6 +9,8 @@ using GamiPort.Areas.OnlineStore.Utils;           // AnonCookie
 using Microsoft.EntityFrameworkCore;              // EF Core
 using GamiPort.Models;                            // GameSpacedatabaseContext
 using System.Linq;
+// ★ 新增：引用付款服務所在命名空間
+using GamiPort.Areas.OnlineStore.Payments;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -218,16 +220,64 @@ EXEC dbo.usp_Order_CreateFromCart
 				return RedirectToAction(nameof(Review));
 			}
 
-			// 4) 成功：清除暫存並導向成功頁
+			// 4) 成功：清除暫存並導向【啟動綠界】（這裡不直接進成功頁）
 			TempData.Remove("Step1");
 			TempData.Remove("Step2");
-			return RedirectToAction(nameof(Success), new { id = newOrderId });
+
+			// 導向本站 StartPayment（下一個 action 會自動 POST 到綠界）
+			return RedirectToAction(nameof(StartPayment), new { id = newOrderId });
+
+		}
+
+		// ===== 啟動綠界（GET）— 自動 POST 表單到綠界 =====
+				[HttpGet]
+		public async Task<IActionResult> StartPayment(int id)
+		{
+			var order = await _db.SoOrderInfoes
+				.Where(o => o.OrderId == id)
+				.Select(o => new
+				{
+					o.OrderId,
+					o.OrderCode,
+					o.GrandTotal
+				})
+				.FirstOrDefaultAsync();
+
+			if (order == null) return RedirectToAction(nameof(Step1));
+
+			var svc = HttpContext.RequestServices.GetRequiredService<EcpayPaymentService>();
+			var (action, fields) = svc.BuildCreditRequest(
+				orderCode: order.OrderCode,
+				amount: order.GrandTotal ?? 0m,
+				itemName: "GamiPort 商品",
+				returnPath: $"/Ecpay/Return?oid={id}",          // 前台回傳
+				orderResultPath: $"/Ecpay/OrderResult?oid={id}",      // ← 改這個
+				clientBackPath: "/OnlineStore/Checkout/Review"
+			);
+
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine($"<form id='f' method='post' action='{action}'>");
+			foreach (var kv in fields)
+				sb.AppendLine($"<input type='hidden' name='{kv.Key}' value='{System.Net.WebUtility.HtmlEncode(kv.Value)}'/>");
+			sb.AppendLine("</form><script>document.getElementById('f').submit();</script>");
+			return Content(sb.ToString(), "text/html; charset=utf-8");
 		}
 
 		// ===== Success (GET) — 顯示訂單摘要 + 收件資訊 =====
+		// ★ 新增：支援用 orderCode 導入（讓 Ecpay/Return 可帶單號字串回來）
 		[HttpGet]
-		public async Task<IActionResult> Success(int id)
+		public async Task<IActionResult> Success(int id, string? orderCode)
 		{
+			if (id <= 0 && !string.IsNullOrWhiteSpace(orderCode))
+			{
+				id = await _db.SoOrderInfoes
+					.Where(o => o.OrderCode == orderCode)
+					.Select(o => o.OrderId)
+					.FirstOrDefaultAsync();
+			}
+
+			if (id <= 0) return RedirectToAction(nameof(Step1));
+
 			var order = await _db.SoOrderInfoes
 				.Where(o => o.OrderId == id)
 				.Select(o => new {
@@ -253,12 +303,10 @@ EXEC dbo.usp_Order_CreateFromCart
 
 			if (order == null) return RedirectToAction(nameof(Step1));
 
-			// 明細總數
 			var itemCount = await _db.SoOrderItems
 				.Where(i => i.OrderId == id)
 				.SumAsync(i => (int?)i.Quantity) ?? 0;
 
-			// 付款方式名稱
 			string? payMethodName = null;
 			if (order.PayMethodId > 0)
 			{
