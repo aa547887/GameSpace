@@ -173,6 +173,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SoPayMethod> SoPayMethods { get; set; }
 
+    public virtual DbSet<SoPaymentAudit> SoPaymentAudits { get; set; }
+
     public virtual DbSet<SoPaymentTransaction> SoPaymentTransactions { get; set; }
 
     public virtual DbSet<SoRemoteZip> SoRemoteZips { get; set; }
@@ -222,6 +224,8 @@ public partial class GameSpacedatabaseContext : DbContext
     public virtual DbSet<VCsEligibleAgent> VCsEligibleAgents { get; set; }
 
     public virtual DbSet<VProductCode> VProductCodes { get; set; }
+
+    public virtual DbSet<VwPaymentOrderInconsistency> VwPaymentOrderInconsistencies { get; set; }
 
     public virtual DbSet<VwSoOrderAddressesFull> VwSoOrderAddressesFulls { get; set; }
 
@@ -2312,6 +2316,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasIndex(e => new { e.UserId, e.OrderDate }, "IX_SO_OrderInfoes_User_Date");
 
+            entity.HasIndex(e => new { e.UserId, e.OrderStatus, e.OrderDate }, "IX_SO_OrderInfoes_User_Status_Date");
+
             entity.HasIndex(e => e.OrderCode, "UQ_SO_OrderInfoes_OrderCode").IsUnique();
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
@@ -2489,6 +2495,42 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         });
 
+        modelBuilder.Entity<SoPaymentAudit>(entity =>
+        {
+            entity.HasKey(e => e.AuditId).HasName("PK__SO_Payme__5AF33E33F13CF37F");
+
+            entity.ToTable("SO_PaymentAudit");
+
+            entity.HasIndex(e => new { e.OrderId, e.HappenedAt }, "IX_SO_PaymentAudit_Order").IsDescending(false, true);
+
+            entity.HasIndex(e => new { e.PaymentCode, e.HappenedAt }, "IX_SO_PaymentAudit_Payment").IsDescending(false, true);
+
+            entity.Property(e => e.AuditId).HasColumnName("audit_id");
+            entity.Property(e => e.Action)
+                .HasMaxLength(30)
+                .HasColumnName("action");
+            entity.Property(e => e.HappenedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("happened_at");
+            entity.Property(e => e.Message)
+                .HasMaxLength(1000)
+                .HasColumnName("message");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.PaymentCode)
+                .HasMaxLength(50)
+                .HasColumnName("payment_code");
+            entity.Property(e => e.Phase)
+                .HasMaxLength(30)
+                .HasColumnName("phase");
+            entity.Property(e => e.ProviderTxn)
+                .HasMaxLength(100)
+                .HasColumnName("provider_txn");
+            entity.Property(e => e.Result)
+                .HasMaxLength(30)
+                .HasColumnName("result");
+        });
+
         modelBuilder.Entity<SoPaymentTransaction>(entity =>
         {
             entity.HasKey(e => e.PaymentId).HasName("PK__SO_Payme__ED1FC9EABB1568CA");
@@ -2499,9 +2541,17 @@ public partial class GameSpacedatabaseContext : DbContext
 
             entity.HasIndex(e => new { e.OrderId, e.Status }, "IX_SO_PaymentTransactions_Order_Status");
 
+            entity.HasIndex(e => new { e.Status, e.CreatedAt }, "IX_SO_PaymentTransactions_StatusCreatedAt");
+
             entity.HasIndex(e => e.PaymentCode, "UQ_SO_PaymentTransactions_Code").IsUnique();
 
             entity.HasIndex(e => new { e.Provider, e.ProviderTxn }, "UQ_SO_PaymentTransactions_ProviderTxn")
+                .IsUnique()
+                .HasFilter("([provider_txn] IS NOT NULL)");
+
+            entity.HasIndex(e => e.PaymentCode, "UX_SO_PayTx_PaymentCode").IsUnique();
+
+            entity.HasIndex(e => e.ProviderTxn, "UX_SO_PayTx_ProviderTxn")
                 .IsUnique()
                 .HasFilter("([provider_txn] IS NOT NULL)");
 
@@ -2529,6 +2579,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ProviderTxn)
                 .HasMaxLength(100)
                 .HasColumnName("provider_txn");
+            entity.Property(e => e.RawPayload).HasColumnName("raw_payload");
             entity.Property(e => e.Status)
                 .HasMaxLength(30)
                 .HasColumnName("status");
@@ -3164,6 +3215,38 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("product_code");
             entity.Property(e => e.ProductCodeSort).HasColumnName("product_code_sort");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
+        });
+
+        modelBuilder.Entity<VwPaymentOrderInconsistency>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_Payment_Order_Inconsistency");
+
+            entity.Property(e => e.Amount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("amount");
+            entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
+            entity.Property(e => e.CouponCode)
+                .HasMaxLength(50)
+                .HasColumnName("coupon_code");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.OrderStatus)
+                .HasMaxLength(30)
+                .HasColumnName("order_status");
+            entity.Property(e => e.PaymentCode)
+                .HasMaxLength(14)
+                .IsUnicode(false)
+                .HasColumnName("payment_code");
+            entity.Property(e => e.PaymentStatus)
+                .HasMaxLength(30)
+                .HasColumnName("payment_status");
+            entity.Property(e => e.ProviderTxn)
+                .HasMaxLength(100)
+                .HasColumnName("provider_txn");
+            entity.Property(e => e.TxnStatus)
+                .HasMaxLength(30)
+                .HasColumnName("txn_status");
         });
 
         modelBuilder.Entity<VwSoOrderAddressesFull>(entity =>

@@ -29,5 +29,7 @@ public partial class SoPaymentTransaction
 
     public string? Meta { get; set; }
 
+    public string? RawPayload { get; set; }
+
     public virtual SoOrderInfo Order { get; set; } = null!;
 }
