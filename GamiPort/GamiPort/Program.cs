@@ -5,18 +5,18 @@
 // =======================
 
 
-using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+using GamiPort.Areas.Forum.Services.Me;
+using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若尚未設定可換 NullEmailSender）
+using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（SignalR Hub）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using Microsoft.AspNetCore.Identity;       // 僅用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若尚未設定可換 NullEmailSender）
-
+using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
 // === 新增的 using（本檔新增了這些服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
-using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
-using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（SignalR Hub）
+using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;       // 僅用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
+using Microsoft.EntityFrameworkCore;
 
 namespace GamiPort
 {
@@ -89,8 +89,9 @@ namespace GamiPort
             // (D) Forum 模組 Services
             builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Forums.IForumsService,
                                        GamiPort.Areas.Forum.Services.Forums.ForumsService>();
-            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.IThreadsService,
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
                                        GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
+            builder.Services.AddScoped<IMeContentService, MeContentService>();
             //                         GamiPort.Areas.Forum.Services.Threads
             // ------------------------------------------------------------
             // MVC / RazorPages / JSON 命名策略 & Anti-forgery

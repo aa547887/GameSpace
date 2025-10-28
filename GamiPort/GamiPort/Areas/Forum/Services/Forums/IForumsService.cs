@@ -12,5 +12,20 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
         Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
             int forumId, string sort, int page, int size);
+
+
+        // 新版：7 + ct
+        Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
+            int forumId, string sort, int page, int size,
+            string? keyword, bool inContent, bool inGame,
+            CancellationToken ct = default);
+
+        // ✅ 新增：搜尋論壇（依中文+英文+看板名）
+        Task<IReadOnlyList<ForumListItemDto>> SearchForumsAsync(
+            string keyword, CancellationToken ct = default);
+
+        // ✅ 新增：依遊戲名找論壇（跳轉用）
+        Task<ForumDetailDto?> GetForumByGameNameAsync(
+            string gameName, CancellationToken ct = default);
     }
 }

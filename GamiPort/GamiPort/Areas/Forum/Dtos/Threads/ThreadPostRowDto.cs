@@ -1,11 +1,17 @@
 ﻿namespace GamiPort.Areas.Forum.Dtos.Threads
 {
-    public sealed record ThreadPostRowDto(
-    long Id,
-    long ThreadId,
-    int AuthorUserId,
-    string ContentMd,
-    DateTime CreatedAt,
-    long? ParentPostId
-);
+    public record ThreadPostRowDto(
+       long PostId,
+       long ThreadId,
+       long AuthorUserId,
+       string ContentMd,
+       DateTime CreatedAt,
+       long? ParentPostId,
+       int LikeCount
+   )
+    {
+       
+
+        
+    }
 }

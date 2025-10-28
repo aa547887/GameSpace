@@ -3,9 +3,30 @@ using GamiPort.Areas.Forum.Dtos.Threads;
 
 namespace GamiPort.Areas.Forum.Services.Threads
 {
-    public interface IThreadsService
+    using System.Threading.Tasks;
+
+    namespace GamiPort.Areas.Forum.Services.Threads
     {
-        Task<ThreadDetailDto?> GetThreadAsync(long threadId);
-        Task<PagedResult<ThreadPostRowDto>> GetThreadPostsAsync(long threadId, int page, int size);
+        public interface IThreadsService
+        {
+            Task<ThreadDetailDto?> GetThreadAsync(long threadId, long currentUserId);
+
+            // sort: "oldest" (default) | "newest" | "mostLiked"
+            Task<PagedResult<ThreadPostRowDto>> GetThreadPostsAsync(long threadId, string sort, int page, int size);
+
+            Task<long> CreateThreadAsync(long userId, int forumId, string title, string contentMd);
+
+            Task<long> CreatePostAsync(long userId, long threadId, string contentMd, long? parentPostId);
+
+            // true=現在是已按讚，false=現在是已取消
+            Task<bool> ToggleThreadLikeAsync(long userId, long threadId);
+
+            Task<LikeStatusDto> GetThreadLikeStatusAsync(long userId, long threadId);
+
+            Task<bool> TogglePostLikeAsync(long userId, long postId);
+
+            Task<(bool IsLiked, int LikeCount)> GetPostLikeStatusAsync(long userId, long postId);
+        }
     }
+
 }
