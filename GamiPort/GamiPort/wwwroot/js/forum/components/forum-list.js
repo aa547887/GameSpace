@@ -1,38 +1,30 @@
-﻿export const ForumList = {
-    data() {
-        return { items: [], loading: false, err: null };
-    },
-    async mounted() {
-        this.loading = true;
-        try {
-            const res = await fetch('/api/forums');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            this.items = await res.json();   // ForumListItemDto[]
-        } catch (e) {
-            this.err = e.message;
-        } finally {
-            this.loading = false;
-        }
-    },
+﻿// 顯示所有論壇；點擊導到 /Forum/Threads/Index?forumId=xxx
+export const ForumList = {
     template: `
-    <div class="forum-list">
-      <div v-if="loading" class="text-muted p-3">載入中...</div>
-      <div v-else-if="err" class="text-danger p-3">錯誤：{{ err }}</div>
-      <div v-else>
-        <div v-if="items.length === 0" class="text-muted p-3">目前沒有論壇資料</div>
-
-        <div v-for="f in items" :key="f.forumId" class="forum-row border-bottom py-2">
-          <h5 class="mb-1">
-            <a :href="'/Forum/Boards/Index/' + f.forumId" class="text-decoration-none">
-              {{ f.displayName || f.DisplayName || f.name || f.Name || '(未命名)' }}
-            </a>
-          </h5>
-          <small class="text-muted">
-            <span v-if="f.gameName">遊戲：{{ f.gameName }}</span>
-            <span v-if="f.threadCount" class="ms-2">主題數：{{ f.threadCount }}</span>
-          </small>
-        </div>
-      </div>
-    </div>
-  `
+    <section>
+      <ul v-if="!loading" class="list-group mb-3">
+        <li v-for="f in items" :key="f.ForumId" class="list-group-item d-flex justify-content-between">
+          <a :href="'/Forum/Threads/Index?forumId=' + f.ForumId" class="fw-semibold">
+            {{ f.Name }}
+          </a>
+          <small class="text-muted">{{ f.Description || '—' }}</small>
+        </li>
+        <li v-if="items.length===0" class="list-group-item text-muted">目前沒有論壇</li>
+      </ul>
+      <div v-else>載入中…</div>
+      <div v-if="error" class="alert alert-danger mt-2">{{ error }}</div>
+    </section>
+  `,
+    data() { return { items: [], loading: false, error: '' }; },
+    async mounted() {
+        this.loading = true; this.error = '';
+        try {
+            const res = await fetch('/api/forums', { headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error('API 失敗：/api/forums ' + res.status);
+            const data = await res.json();
+            this.items = Array.isArray(data) ? data : (data.items ?? []);
+            console.debug('[ForumList] items:', this.items.length);
+        } catch (e) { this.error = e.message ?? String(e); }
+        finally { this.loading = false; }
+    }
 };

@@ -1,72 +1,59 @@
-﻿// 超小 Vue 組件：打你的 /api/forums/{id}/threads，含排序 + 分頁
+﻿// 顯示某看板的主題列表；點擊導到 /Forum/Threads/Detail?threadId=xxx
 export const ThreadList = {
-    props: { forumId: { type: Number, required: true } },
-    data() {
-        return {
-            sort: 'lastReply', page: 1, size: 10,
-            total: 0, items: [], loading: false, err: null
-        };
-    },
-    computed: {
-        totalPages() { return Math.max(1, Math.ceil(this.total / this.size)); }
-    },
+    inject: ['forumId'],
+    template: `
+    <section>
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="m-0">主題列表</h3>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary" :class="{active: sort==='newest'}" @click="changeSort('newest')">最新</button>
+          <button class="btn btn-outline-secondary" :class="{active: sort==='oldest'}" @click="changeSort('oldest')">最舊</button>
+          <button class="btn btn-outline-secondary" :class="{active: sort==='mostLiked'}" @click="changeSort('mostLiked')">最讚</button>
+        </div>
+      </div>
+
+      <div v-if="error" class="alert alert-danger">{{ error }}</div>
+
+      <ul v-if="!loading" class="list-group mb-3">
+        <li v-for="t in items" :key="t.threadId || t.id"
+            class="list-group-item d-flex justify-content-between">
+          <a :href="'/Forum/Threads/Detail?threadId=' + (t.threadId ?? t.id)"
+             class="link-underline link-underline-opacity-0">
+            {{ t.title }}
+          </a>
+          <small class="text-muted">
+            回覆 {{ t.repliesCount ?? 0 }} · 讚 {{ t.likeCount ?? 0 }} · {{ t.lastReplyAt ?? t.createdAt }}
+          </small>
+        </li>
+        <li v-if="items.length===0" class="list-group-item text-muted">目前沒有主題</li>
+      </ul>
+
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary" @click="prev" :disabled="loading || page<=1">上一頁</button>
+        <span class="small text-muted">第 {{ page }} / {{ pages }} 頁（{{ total }} 筆）</span>
+        <button class="btn btn-outline-secondary" @click="next" :disabled="loading || page>=pages">下一頁</button>
+      </div>
+    </section>
+  `,
+    data() { return { sort: 'newest', page: 1, size: 20, total: 0, items: [], loading: false, error: '' }; },
+    computed: { pages() { return Math.max(1, Math.ceil(this.total / this.size)); } },
     methods: {
-        fmt(s) { return s ? new Date(s).toLocaleString('zh-TW', { hour12: false }) : '-'; },
-        async load() {
-            this.loading = true; this.err = null;
+        async fetchThreads() {
+            if (!this.forumId) { this.error = '缺少 forumId'; return; }
+            this.loading = true; this.error = '';
             try {
-                const url = `/api/forums/${this.forumId}/threads?sort=${this.sort}&page=${this.page}&size=${this.size}`;
+                const url = `/api/forums/${forumId}/threads?sort=${sort}&page=${page}&size=${size}`;
                 const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json(); // { items, page, size, total }
-                this.items = data.items ?? [];
-                this.page = data.page; this.size = data.size; this.total = data.total ?? 0;
-            } catch (e) { this.err = e.message; }
+                if (!res.ok) throw new Error('API 失敗：' + url + ' ' + res.status);
+                const data = await res.json();
+                this.items = data.items ?? data ?? [];
+                this.total = data.total ?? (Array.isArray(data) ? data.length : 0);
+            } catch (err) { this.error = err.message ?? String(err); }
             finally { this.loading = false; }
         },
-        changeSort(s) { if (this.sort !== s) { this.sort = s; this.page = 1; this.load(); } },
-        prev() { if (this.page > 1) { this.page--; this.load(); } },
-        next() { if (this.page < this.totalPages) { this.page++; this.load(); } }
+        changeSort(s) { this.sort = s; this.page = 1; this.fetchThreads(); },
+        next() { if (this.page < this.pages) { this.page++; this.fetchThreads(); } },
+        prev() { if (this.page > 1) { this.page--; this.fetchThreads(); } }
     },
-    mounted() { this.load(); },
-    template: `
-  <div class="thread-list">
-    <!-- 排序 Tab -->
-    <ul class="nav nav-pills sort-tabs mb-2">
-      <li class="nav-item"><a href="#" @click.prevent="changeSort('lastReply')" class="nav-link" :class="{active:sort==='lastReply'}">最新回覆</a></li>
-      <li class="nav-item"><a href="#" @click.prevent="changeSort('created')"   class="nav-link" :class="{active:sort==='created'}">發文時間</a></li>
-      <li class="nav-item"><a href="#" @click.prevent="changeSort('hot')"       class="nav-link" :class="{active:sort==='hot'}">熱門</a></li>
-    </ul>
-
-    <!-- 狀態 -->
-    <div v-if="loading" class="text-muted p-3">載入中…</div>
-    <div v-else-if="err" class="text-danger p-3">載入失敗：{{ err }}</div>
-    <div v-else>
-      <div v-if="items.length===0" class="text-muted p-3">沒有資料</div>
-
-      <!-- 列表 -->
-      <div v-for="t in items" :key="t.threadId" class="thread-row d-flex justify-content-between align-items-start py-2 border-bottom">
-        <div class="thread-main">
-          <h3 class="h6 mb-1">
-            <a :href="'/t/'+t.threadId">{{ t.title ?? '(無標題)' }}</a>
-          </h3>
-          <div class="thread-meta small text-muted">
-            <span>發文：{{ fmt(t.createdAt) }}</span>
-            <span class="ms-3">最後回覆：{{ fmt(t.updatedAt) }}</span>
-          </div>
-        </div>
-        <div class="thread-actions">
-          <span class="badge bg-secondary">回覆 {{ t.replies ?? 0 }}</span>
-        </div>
-      </div>
-
-      <!-- 分頁 -->
-      <div class="pager mt-2 d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm" @click="prev" :disabled="page<=1">上一頁</button>
-        <span class="text-muted">{{ page }} / {{ totalPages }}</span>
-        <button class="btn btn-outline-secondary btn-sm" @click="next" :disabled="page>=totalPages">下一頁</button>
-      </div>
-    </div>
-  </div>
-  `
+    mounted() { this.fetchThreads(); }
 };

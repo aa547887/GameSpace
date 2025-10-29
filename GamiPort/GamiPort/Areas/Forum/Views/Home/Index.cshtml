@@ -1,67 +1,42 @@
-﻿@{
-    ViewData["Title"] = "論壇 ";
+﻿@* Areas/Forum/Views/Home/Index.cshtml *@
+@{
+    ViewData["Title"] = "論壇 / 所有遊戲";
 }
 
 @section Styles {
+    <!-- 你的 forum.css 可留，但別動版面寬度到破版就好 -->
     <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
     <style>
-        /* 你原本的樣式保留即可 */
-        .hero-swiper,
-        .hero-swiper .swiper,
-        .hero-swiper .swiper-container,
-        .hero-swiper .swiper-wrapper {
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            overflow: hidden;
-        }
-
-            .hero-swiper .swiper-slide {
-                width: 100% !important;
-                max-width: 100% !important;
-                flex: 0 0 100% !important;
-                min-width: 0 !important;
-                box-sizing: border-box;
-            }
-
-            .hero-swiper img, .hero-swiper video, .hero-swiper canvas {
-                display: block;
-                width: 100%;
-                height: auto;
-                max-width: 100%;
-                object-fit: cover;
-            }
-
-        html.sidebar-collapsed .container,
-        html.sidebar-collapsed .container-fluid,
-        html.sidebar-collapsed .row,
-        html.sidebar-collapsed [class*="col-"] {
+        /* 安全的小樣式，避免拉寬整頁造成溢出 */
+        html, body, .container, .container-fluid {
             min-width: 0;
         }
 
-        .app-main {
-            min-width: 0;
+        .board-header h2 {
+            font-weight: 600;
         }
     </style>
 }
 
-<!-- 頁面標題 -->
-<div class="board-header d-flex align-items-center mb-2">
+<div class="board-header d-flex align-items-center mb-3">
     <h2 class="m-0">論壇 / 所有遊戲</h2>
 </div>
 
-<!-- ✅ Vue 掛載點：顯示所有論壇清單 -->
-<div id="forum-app">
+<!-- ✅ Vue 掛載點（ID 必須是 #forums-app，和 main.js 對得上） -->
+<div id="forums-app">
     <forum-list></forum-list>
 </div>
 
-<!-- 右欄 -->
-@section RightRail {
-    <div class="card shadow-sm p-3 mb-3">熱門論壇（假資料）</div>
-    <div class="card shadow-sm p-3">公告區</div>
-}
+@* @section RightRail {
+    <!-- 可有可無的右欄；沒有 RightRail 的版型可刪這整段 -->
+    <div class="card shadow-sm p-3 mb-3">熱門論壇（示意）</div>
+    <div class="card shadow-sm p-3">公告區（示意）</div>
+} *@
 
 @section Scripts {
-    <!-- Vue 主程式 -->
+    <!-- 只載入口檔，讓它自己 import Vue；不要再額外載 Vue CDN，避免重複 -->
     <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
+
+    <!-- 除錯用，可先留著，看 Console 是否出現這行 -->
+    <script>console.log('[Home/Index] Scripts section loaded ✅');</script>
 }

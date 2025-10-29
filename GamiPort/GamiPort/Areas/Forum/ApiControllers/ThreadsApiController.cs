@@ -2,6 +2,7 @@
 using GamiPort.Areas.Forum.Dtos.Threads;
 using GamiPort.Areas.Forum.Services.Threads;
 using GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads;
+using GamiPort.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,8 +15,13 @@ namespace GamiPort.Areas.Forum.ApiControllers
     public class ThreadsApiController : ControllerBase
     {
         private readonly IThreadsService _svc;
-        private long CurrentUserId => 10000001;
-        public ThreadsApiController(IThreadsService svc) => _svc = svc;
+        private readonly ICurrentUserService _id;
+        public ThreadsApiController(IThreadsService svc, ICurrentUserService id)
+        {
+            _svc = svc;
+            _id = id;
+        }
+        private long CurrentUserId => _id.UserId ?? 0;
 
         // TODO: 之後從 Claims 取
 
@@ -42,7 +48,7 @@ namespace GamiPort.Areas.Forum.ApiControllers
         }
 
         // 3) 新增主題（發文）
-        //[Authorize] // [AUXX]
+        [Authorize] // [AUXX]
         [HttpPost]
         public async Task<IActionResult> CreateThread([FromBody] CreateThreadRequest req)
         {
@@ -51,7 +57,7 @@ namespace GamiPort.Areas.Forum.ApiControllers
         }
 
         // 4) 新增回覆（回文）
-        //[Authorize] // [AUXX]
+        [Authorize] // [AUXX]
         [HttpPost("{threadId:long}/posts")]
         public async Task<IActionResult> CreatePost(long threadId, [FromBody] CreatePostRequest req)
         {
@@ -60,7 +66,7 @@ namespace GamiPort.Areas.Forum.ApiControllers
         }
 
         // 5) 對主題按讚 / 取消讚（toggle）
-        //[Authorize] // [AUXX]
+        [Authorize] // [AUXX]
         [HttpPost("{threadId:long}/like")]
         public async Task<IActionResult> ToggleLike(long threadId)
         {

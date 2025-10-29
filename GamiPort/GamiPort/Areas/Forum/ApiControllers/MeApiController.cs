@@ -17,17 +17,17 @@ namespace GamiPort.Areas.Forum.ApiControllers
         // 之後開啟：
         // private long CurrentUserId => long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-        // [Authorize] // 之後開
+        //[Authorize] // 之後開
         [HttpGet("threads")]
         public async Task<IActionResult> MyThreads([FromQuery] string sort = "latest", [FromQuery] int page = 1, [FromQuery] int size = 20)
             => Ok(await _svc.GetMyThreadsAsync(CurrentUserId, sort, page, size));
 
-        // [Authorize]
+        //[Authorize]
         [HttpGet("posts")]
         public async Task<IActionResult> MyPosts([FromQuery] string sort = "latest", [FromQuery] int page = 1, [FromQuery] int size = 20)
             => Ok(await _svc.GetMyPostsAsync(CurrentUserId, sort, page, size));
 
-        // [Authorize]
+        //[Authorize]
         [HttpGet("likes/threads")]
         public async Task<IActionResult> MyLikedThreads([FromQuery] string sort = "latestLiked", [FromQuery] int page = 1, [FromQuery] int size = 20)
             => Ok(await _svc.GetMyLikedThreadsAsync(CurrentUserId, sort, page, size));
