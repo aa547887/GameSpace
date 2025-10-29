@@ -1,9 +1,14 @@
+<<<<<<<< HEAD:GamiPort/GamiPort/Areas/Login/Views/Shared/_Layout.cshtml
 ﻿@* login/Views/Shared/_Layout.cshtml *@
 @using Microsoft.AspNetCore.Antiforgery
 @inject IAntiforgery Xsrf
 @{
     var af = Xsrf.GetAndStoreTokens(Context);
 }
+========
+﻿@* Views/Shared/_Layout.cshtml *@
+>>>>>>>> Online_store_Product:GamiPort/GamiPort/Areas/social_hub/Views/Shared/_Layout.cshtml
+
 
 <!DOCTYPE html>
 <html lang="zh-Hant">
@@ -11,6 +16,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"]</title>
+
 
     <meta name="request-verification-token" content="@af.RequestToken" />
 
@@ -36,6 +42,7 @@
         </aside>
 
         <main class="layout-main">
+            <!-- 頂部置中：水平置中 + 靠上，縮小上方間距 -->
             <div class="container d-flex justify-content-center align-items-start pt-3 pb-5"
                  style="min-height: calc(100vh - 64px);">
                 <div class="w-100" style="max-width: 520px;">
@@ -48,7 +55,8 @@
     <footer class="layout-footer border-top">
         @await Html.PartialAsync("_Footer")
     </footer>
-
+   
+<<<<<<<< HEAD:GamiPort/GamiPort/Areas/Login/Views/Shared/_Layout.cshtml
     @* 建議：只有登入後才載入聊天 UI *@
     @if (User.Identity?.IsAuthenticated == true)
     {
@@ -61,6 +69,12 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 
     <!-- Bootstrap（含 Popper） -->
+========
+    <!-- 快速操作按鈕 (對話用)-->
+    @await Html.PartialAsync("_QuickFab")
+    @await Html.PartialAsync("_FriendDock")
+    @await Html.PartialAsync("_FloatingDock")
+>>>>>>>> Online_store_Product:GamiPort/GamiPort/Areas/social_hub/Views/Shared/_Layout.cshtml
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- 全站共用腳本 -->

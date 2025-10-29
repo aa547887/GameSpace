@@ -2064,6 +2064,26 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnName("method_name");
         });
 
+        modelBuilder.Entity<ShipMethod>(entity =>
+        {
+            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
+
+            entity.Property(e => e.ShipMethodId)
+                .ValueGeneratedNever()
+                .HasColumnName("ship_method_id");
+            entity.Property(e => e.AllowRemoteSurcharge).HasColumnName("allow_remote_surcharge");
+            entity.Property(e => e.BaseFee)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("base_fee");
+            entity.Property(e => e.ForStorePickup).HasColumnName("for_store_pickup");
+            entity.Property(e => e.FreeThreshold)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("free_threshold");
+            entity.Property(e => e.MethodName)
+                .HasMaxLength(50)
+                .HasColumnName("method_name");
+        });
+
         modelBuilder.Entity<SignInRule>(entity =>
         {
             entity.ToTable("SignInRule");

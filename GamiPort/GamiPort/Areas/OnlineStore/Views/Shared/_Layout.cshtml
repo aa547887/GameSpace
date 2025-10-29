@@ -5,12 +5,19 @@
     // ✅ 與根版型一致：產生 Anti-Forgery Token（寫 cookie + 提供 RequestToken）
     var af = Xsrf.GetAndStoreTokens(Context);
 }
+@* ===============================
+   商城專用 Layout（Area/OnlineStore）
+   =============================== *@
+@{
+    Layout = null;
+    var areaName = (ViewContext.RouteData.Values["area"] as string) ?? "";
+}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"]</title>
+    <title>@ViewData["Title"] - GamiStore</title>
 
     <!-- ✅ Anti-Forgery：前端 fetch 可從這個 meta 讀 token，夾到 RequestVerificationToken header -->
     <meta name="request-verification-token" content="@af.RequestToken" />
@@ -29,28 +36,25 @@
     @RenderSection("Styles", required: false)
 </head>
 <body>
-    @* ❌ 原本：@await Html.PartialAsync("_TopbarLevel1")
-       ✅ 改成 ViewComponent，與根版型一致，避免不同呼叫路徑造成載入差異 *@
-    @await Component.InvokeAsync("TopbarLevel1")
+    <!-- 商城頂部 Default -->
+    @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml")
 
+    <!-- 主體 -->
     <div class="layout-wrap">
+        <!-- 側欄 -->
         <aside class="layout-sidebar d-none d-lg-block">
-            @await Html.PartialAsync("_Sidebar")
+            @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_Sidebar.cshtml")
         </aside>
 
         <main class="layout-main">
-            @await Html.PartialAsync("_TopbarLevel2")
+            <!-- 分類列 -->
+            @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_StoreBar.Cats.cshtml")
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
-                    <div class="col-12 col-xxl-9">
+                    <div class="col-12">
                         @RenderBody()
                     </div>
-                    <aside class="col-xl-3 d-none d-xl-block">
-                        <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
-                        </div>
-                    </aside>
                 </div>
             </div>
         </main>
@@ -76,5 +80,7 @@
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
+    @* 🔧 不報錯處理 HideCats section *@
+    @try { IgnoreSection("HideCats"); } catch { }
 </body>
 </html>
