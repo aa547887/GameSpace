@@ -1,0 +1,204 @@
+﻿@* 支援 FAB（圓形一顆，展開兩選一）
+   - 依賴：Bootstrap 5、Bootstrap Icons、_Layout 內的 Anti-Forgery meta
+   - 端點：/social_hub/Support/CreateTicket、/social_hub/Support/MyTickets
+*@
+<style>
+    :root {
+        /* 你主站右下角若已有其他 FAB，就把這個往上挪一點（px / rem 都可） */
+        --fab-support-bottom: 6.5rem; /* 右下角往上 6.5rem，避免和既有 FAB 疊在一起 */
+        --fab-support-right: 1.25rem;
+    }
+
+    .fab-support {
+        position: fixed;
+        right: var(--fab-support-right);
+        bottom: var(--fab-support-bottom);
+        z-index: 1040; /* 高過一般內容、低於 offcanvas/modal 背景 */
+    }
+
+        .fab-support .fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25);
+        }
+
+        .fab-support .fab-menu {
+            display: grid;
+            gap: .5rem;
+            position: absolute;
+            right: 0;
+            bottom: 64px; /* 主按鈕上方開始堆 */
+            transform-origin: bottom right;
+            transition: 160ms ease;
+        }
+        /* 關閉時收起（縮放＋透明） */
+        .fab-support:not(.is-open) .fab-menu {
+            transform: scale(.9);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .fab-support.is-open .fab-menu {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fab-support .fab-item {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: #fff;
+            border: 1px solid rgba(0,0,0,.08);
+            border-radius: 999px;
+            padding: .5rem .75rem;
+            box-shadow: 0 6px 16px rgba(0,0,0,.18);
+            white-space: nowrap;
+        }
+
+            .fab-support .fab-item .bi {
+                font-size: 1.1rem;
+            }
+</style>
+
+<div class="fab-support" id="fabSupport">
+    <!-- 子選單 -->
+    <div class="fab-menu">
+        <button type="button" class="fab-item js-support-open-compose" title="我要客訴">
+            <i class="bi bi-emoji-angry"></i><span>我要客訴</span>
+        </button>
+        <button type="button" class="fab-item js-support-open-mine" title="我的客訴">
+            <i class="bi bi-inbox"></i><span>我的客訴</span>
+        </button>
+    </div>
+
+    <!-- 主按鈕（圓形） -->
+    <button type="button" class="btn btn-primary fab-main js-fab-toggle" aria-expanded="false" aria-controls="fabSupport">
+        <i class="bi bi-life-preserver"></i>
+    </button>
+</div>
+
+<!-- 建立工單 Modal -->
+<div class="modal fade" id="supportComposeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">建立客訴工單</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+            <div class="modal-body">
+                <form id="support-compose-form" onsubmit="return false;">
+                    <div class="mb-3">
+                        <label class="form-label">主旨 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="support-subject" maxlength="100" placeholder="請簡要描述問題" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">內容（可選）</label>
+                        <textarea class="form-control" id="support-body" rows="4" maxlength="2000" placeholder="補充細節、時間點或訂單編號有助加速處理"></textarea>
+                    </div>
+                </form>
+                <div class="small text-muted mt-2">送出後會建立工單，客服可於後台「取單」處理。</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button id="btn-support-create" class="btn btn-primary">
+                    <i class="bi bi-send me-1"></i> 送出
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+          const root = document.getElementById('fabSupport');
+
+          function getAfToken(){
+            const m = document.querySelector('meta[name="request-verification-token"]');
+            return m ? m.getAttribute('content') : '';
+          }
+          function openTicket(id){
+            window.open(`/social_hub/Support/Ticket/${encodeURIComponent(id)}`, '_blank');
+          }
+          function toggle(open){
+            const willOpen = open ?? !root.classList.contains('is-open');
+            root.classList.toggle('is-open', willOpen);
+            const btn = root.querySelector('.js-fab-toggle');
+            if(btn) btn.setAttribute('aria-expanded', String(willOpen));
+          }
+
+          // 主按鈕：開關
+          document.addEventListener('click', (e)=>{
+            if(e.target.closest('#fabSupport .js-fab-toggle')){
+              toggle();
+            }
+          });
+
+          // 點外面自動關閉
+          document.addEventListener('click', (e)=>{
+            if(!root.contains(e.target)) toggle(false);
+          });
+          // ESC 關閉
+          document.addEventListener('keydown', (e)=>{
+            if(e.key === 'Escape') toggle(false);
+          });
+
+          // 我要客訴：開表單
+          document.addEventListener('click', (e)=>{
+            if(!e.target.closest('.js-support-open-compose')) return;
+            toggle(false);
+            const el = document.getElementById('supportComposeModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(el);
+            document.getElementById('support-subject').value = '';
+            document.getElementById('support-body').value = '';
+            modal.show();
+          });
+
+          // 我的客訴：開列表
+          document.addEventListener('click', (e)=>{
+            if(!e.target.closest('.js-support-open-mine')) return;
+            toggle(false);
+            window.open('/social_hub/Support/MyTickets', '_blank');
+          });
+
+          // 建立工單
+          document.addEventListener('click', async (e)=>{
+            if(!e.target.closest('#btn-support-create')) return;
+
+            const subject = (document.getElementById('support-subject').value || '').trim();
+            const body    = (document.getElementById('support-body').value || '').trim();
+            if(!subject){ alert('請輸入主旨'); return; }
+
+            const fd = new FormData();
+            fd.append('subject', subject);
+            fd.append('content', body);
+
+            try{
+              const res = await fetch('/social_hub/Support/CreateTicket', {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With':'XMLHttpRequest', 'RequestVerificationToken': getAfToken() }
+              });
+              if(!res.ok){
+                const msg = (await res.text()) || `${res.status} ${res.statusText}`;
+                alert('建立失敗：' + msg);
+                return;
+              }
+              const data = await res.json(); // { ok: true, ticketId: 123 }
+              if(!data?.ok || !data?.ticketId){
+                alert('建立失敗：回傳格式不正確'); return;
+              }
+              bootstrap.Modal.getOrCreateInstance(document.getElementById('supportComposeModal')).hide();
+              openTicket(data.ticketId);
+            }catch(err){
+              alert('建立失敗：網路或伺服器錯誤');
+            }
+          });
+        })();
+    </script>
+}

@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using GamiPort.Areas.social_hub.Services.Abstractions;  // ← 只保留這個介面
+﻿using GamiPort.Areas.social_hub.Services.Abstractions;  // ← 只保留這個介面
 using GamiPort.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;          // IServiceScopeFactory
+using System.Text.RegularExpressions;
 
 namespace GamiPort.Areas.social_hub.Services.Application
 {

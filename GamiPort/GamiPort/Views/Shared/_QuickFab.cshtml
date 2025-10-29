@@ -1,7 +1,9 @@
 ﻿@* ================================================================
    _QuickFab.cshtml － 右下角 +（Speed Dial）
-   只有一個動作：好友清單切換（呼叫 window.FriendDock.toggle()）
-   注意：不提供重新整理鍵（你說先不用）。
+   本版重點：
+   1) 統一兩顆次按鈕（好友/客訴）的樣式為 .gp-mini-fab（44x44）
+   2) 入場動畫、hover/active、ripple、交錯延遲完全一致
+   3) 客訴下拉改用「靜態定位」（不靠 Popper 重新定位），避免與 transform 打架
    ================================================================ *@
 <style>
     :root {
@@ -13,9 +15,10 @@
         position: fixed;
         right: var(--fab-right);
         bottom: var(--fab-bottom);
-        z-index: 1080
+        z-index: 1080;
     }
 
+        /* 主「＋」按鈕 */
         .gp-fab .fab-main {
             width: 56px;
             height: 56px;
@@ -23,11 +26,12 @@
             border: 0;
             background: #0d6efd;
             color: #fff;
-            box-shadow: 0 12px 32px rgba(13,110,253,.35);
-            cursor: pointer;
             font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 12px 32px rgba(13,110,253,.35);
         }
 
+        /* 展開容器（關閉時不可點） */
         .gp-fab .fab-actions {
             position: absolute;
             right: 10px;
@@ -42,30 +46,11 @@
             pointer-events: auto;
         }
 
-        .gp-fab .fab-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            border: 0;
-            background: #fff;
-            color: #111827;
-            box-shadow: 0 10px 24px rgba(0,0,0,.16);
-            cursor: pointer;
-            font-size: 18px;
-            opacity: 0;
-            transform: translateY(8px);
-            transition: opacity .18s, transform .18s;
-        }
-
-        .gp-fab.open .fab-btn {
-            opacity: 1;
-            transform: translateY(0)
-        }
-
         .gp-fab .fab-wrap {
-            position: relative
+            position: relative;
         }
 
+        /* 滑鼠提示（僅放文字，不要塞按鈕） */
         .gp-fab .fab-tip {
             position: absolute;
             right: 52px;
@@ -81,45 +66,174 @@
         }
 
         .gp-fab .fab-wrap:hover .fab-tip {
-            display: block
+            display: block;
         }
 
-    @@media(max-width:420px) {
+        /* ---------------------------------------------------------------
+             統一樣式：次級 FAB 按鈕（好友/客訴主按鈕都用這個）
+             - 44x44 圓形、陰影、ripple、動畫基準
+             --------------------------------------------------------------- */
+        .gp-fab .gp-mini-fab {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 0;
+            background: #fff;
+            color: #111827;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(0,0,0,.16);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            /* 動畫初始狀態 + ripple 需要 */
+            position: relative;
+            overflow: hidden;
+            transform: translateY(8px) scale(.92);
+            opacity: 0;
+            will-change: transform,opacity;
+            transition: opacity .18s, transform .18s;
+            font-size: 18px; /* 內部 emoji/圖示大小 */
+        }
+
+        /* 展開時：播放入場動畫（交錯延遲見下方 nth-child 設定） */
+        .gp-fab.open .gp-mini-fab {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: f-pop .22s cubic-bezier(.2,.8,.2,1) var(--delay) both;
+        }
+
+        /* Hover/Active 回饋 */
+        .gp-fab .gp-mini-fab:hover {
+            transform: translateY(0) scale(1.05);
+        }
+
+        .gp-fab .gp-mini-fab:active {
+            transform: translateY(0) scale(.96);
+            transition-duration: .06s;
+        }
+
+        /* Ripple 效果 */
+        .gp-fab .gp-mini-fab::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: rgba(13,110,253,.12);
+            transform: scale(0);
+            opacity: 0;
+            transition: transform .28s,opacity .28s;
+        }
+
+        .gp-fab .gp-mini-fab:active::after {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* 交錯延遲：第1顆→0ms；第2顆→35ms；第3顆→70ms（預留） */
+        .gp-fab .fab-actions .fab-wrap {
+            --delay: 0ms;
+        }
+
+            .gp-fab .fab-actions .fab-wrap:nth-child(1) {
+                --delay: 0ms;
+            }
+
+            .gp-fab .fab-actions .fab-wrap:nth-child(2) {
+                --delay: 35ms;
+            }
+
+            .gp-fab .fab-actions .fab-wrap:nth-child(3) {
+                --delay: 70ms;
+            }
+
+        /* 客訴下拉：用靜態定位（避免 transform/Popper 打架）
+             放在按鈕「上方靠右」 */
+        .gp-fab .quickfab-item .dropdown-menu {
+            position: absolute;
+            bottom: 52px;
+            right: 0;
+            transform: none !important;
+            margin: 0;
+            min-width: 180px;
+            z-index: 1090;
+        }
+
+    /* Razor in-Page CSS 需要逃脫 */
+    @@keyframes f-pop {
+        0% {
+            transform: translateY(8px) scale(.86);
+            opacity: 0;
+        }
+
+        60% {
+            transform: translateY(-1px) scale(1.02);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(0) scale(1.00);
+            opacity: 1;
+        }
+    }
+
+    @@media (max-width:420px) {
         .gp-fab {
             right: calc(env(safe-area-inset-right,0px) + 8px);
+        }
+    }
+
+    /* 偏好減少動態：關閉動畫 */
+    @@media (prefers-reduced-motion: reduce) {
+        .gp-fab .gp-mini-fab,
+        .gp-fab.open .gp-mini-fab {
+            animation: none !important;
+            transition: none !important;
+            transform: none !important;
         }
     }
 </style>
 
 <div class="gp-fab" id="QuickFab" aria-hidden="false">
+    <!-- 主「＋」 -->
     <button class="fab-main" id="fabMain" aria-expanded="false" title="快速動作">＋</button>
+
     <div class="fab-actions" aria-hidden="true">
+        <!-- 動作1：好友清單 -->
         <div class="fab-wrap">
-            <button class="fab-btn" id="fabFriends" title="好友清單">💬</button>
+            <button class="gp-mini-fab" id="fabFriends" aria-label="好友清單">💬</button>
             <div class="fab-tip">好友清單</div>
+        </div>
+
+        <!-- 動作2：客訴 Support（方案 A，下拉兩個選項） -->
+        <div class="fab-wrap">
+            @await Html.PartialAsync("_QuickFabSupport")
+            <div class="fab-tip">客訴</div>
         </div>
     </div>
 </div>
 
 <script>
     (() => {
-      const fab = document.getElementById('QuickFab');
-      const main= document.getElementById('fabMain');
-      const btnF= document.getElementById('fabFriends');
+      const fab  = document.getElementById('QuickFab');
+      const main = document.getElementById('fabMain');
+      const btnF = document.getElementById('fabFriends');
 
       function setOpen(open){
         fab.classList.toggle('open', open);
-        main.setAttribute('aria-expanded', open?'true':'false');
+        main.setAttribute('aria-expanded', open ? 'true' : 'false');
       }
+
+      // 主 +：展開/收合
       main.addEventListener('click', (e)=>{ e.stopPropagation(); setOpen(!fab.classList.contains('open')); });
+      // 點頁面其他處：收合
       document.addEventListener('click', ()=> setOpen(false));
 
-      // 好友清單按鈕
+      // 好友清單：切換 FriendDock（未就緒時等待事件）
       btnF.addEventListener('click', (e)=>{
         e.stopPropagation();
         if(window.FriendDock?.toggle){ window.FriendDock.toggle(); }
         else{
-          // 若 FriendDock 尚未就緒，等到它發出 gp-friend-ready 再觸發一次
           const once = ()=>{ window.removeEventListener('gp-friend-ready', once); window.FriendDock?.toggle?.(); };
           window.addEventListener('gp-friend-ready', once, { once:true });
         }

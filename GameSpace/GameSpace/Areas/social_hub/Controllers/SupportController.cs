@@ -17,19 +17,15 @@
 //     SupportTicketMessages(TicketId, SentAt), SupportTicketAssignment(TicketId, AssignedAt)
 // =============================================================
 
-using GameSpace.Areas.social_hub.Models.ViewModels;
 using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Areas.social_hub.Models.ViewModels;
 using GameSpace.Areas.social_hub.Permissions;
 using GameSpace.Infrastructure.Time;           // ★ IAppClock：統一時間（DB 存 UTC / 顯示轉台灣）
 using GameSpace.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Security.Claims; // for Claims
-
-// EF 實體別名
+							  // EF 實體別名
 using Db = GameSpace.Models;
 
 namespace GameSpace.Areas.social_hub.Controllers
@@ -121,19 +117,35 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 		#region List helpers
 		// ===================== [ Common query helpers / projection / paging ] =================
-		/// <summary>以關鍵字過濾：數字 → 以 TicketId/UserId 比對；文字 → Subject Contains。</summary>
-		private static IQueryable<Db.SupportTicket> ApplyKeyword(IQueryable<Db.SupportTicket> src, string? q)
+		/**
+		 * 以關鍵字過濾：
+		 * - 空白：不過濾
+		 * - 數字：比對 TicketId / UserId
+		 * - 文字：Subject LIKE %q%（用 EF.Functions.Like，可走索引；大小寫依 DB Collation）
+		 */
+		private static IQueryable<Db.SupportTicket> ApplyKeyword(
+			IQueryable<Db.SupportTicket> src, string? q, Microsoft.EntityFrameworkCore.DbContext? forLike = null)
 		{
 			if (string.IsNullOrWhiteSpace(q)) return src;
+
 			q = q.Trim();
-			if (int.TryParse(q, out var num)) return src.Where(t => t.TicketId == num || t.UserId == num);
-			return src.Where(t => t.Subject != null && t.Subject.Contains(q));
+			if (int.TryParse(q, out var num))
+			{
+				return src.Where(t => t.TicketId == num || t.UserId == num);
+			}
+
+			// 用 EF.Functions.Like；這裡不直接用 Contains，避免大小寫/效能不一致
+			// 備註：forLike 僅為了可從外層傳 DB 進來；若未傳也能使用 EF.Functions 靜態參考
+			return src.Where(t => EF.Functions.Like(t.Subject ?? string.Empty, $"%{q}%"));
 		}
 
 		/// <summary>
-		/// 投影成列表 VM：以 LastMessageAt/CreatedAt 作為顯示與排序依據；
-		/// UnreadForMe 以管理員視角計算（僅未讀且由使用者發出）。
-		/// ★ 注意：此處全部為 UTC 值；顯示時由 View 端轉台灣時間。
+		/// 投影成列表 VM：
+		/// - 顯示用 CreatedAt / LastMessageAt（UTC）
+		/// - UnreadForMe：只計算「目前指派給 t.AssignedManagerId」之後的未讀（由使用者發出、ReadByManagerAt==null）
+		///   * 若尚未指派：以工單建立時間 t.CreatedAt 作為分段起點
+		///   * 若曾多次轉回同一人：取最後一次指派給該人的時間（MAX）
+		////  注意：這裡用子查詢在 SQL 端完成，避免 N+1
 		/// </summary>
 		private static IQueryable<TicketListItemVM> ProjectTicketListVM(
 			IQueryable<Db.SupportTicket> query,
@@ -146,13 +158,34 @@ namespace GameSpace.Areas.social_hub.Controllers
 				Subject = t.Subject ?? string.Empty,
 				AssignedManagerId = t.AssignedManagerId,
 				IsClosed = t.IsClosed == true,
-				CreatedAt = t.CreatedAt,              // UTC
-				LastMessageAt = t.LastMessageAt,      // UTC
+				CreatedAt = t.CreatedAt,         // UTC
+				LastMessageAt = t.LastMessageAt, // UTC
+
+				// 取「目前指派給這個人」的最後一次 AssignedAt（若未指派則為 null）
+				// 注意：ToManagerId 必須等於「目前的 AssignedManagerId」
+				// EF 翻譯：用 CROSS APPLY / OUTER APPLY 或子查詢 TOP(1) + ORDER BY
 				UnreadForMe = db.SupportTicketMessages
-					.Where(m => m.TicketId == t.TicketId && m.SenderUserId != null && m.ReadByManagerAt == null)
+					.Where(m =>
+						m.TicketId == t.TicketId &&
+						m.SenderUserId != null &&          // 只算「使用者 → 客服」的未讀
+						m.ReadByManagerAt == null &&
+						m.SentAt >= (
+							// 分段起點：最後一次指派給目前負責人的時間；若沒有，退回到工單建立時間
+							db.SupportTicketAssignments
+								.Where(a => a.TicketId == t.TicketId
+											&& t.AssignedManagerId != null
+											&& a.ToManagerId == t.AssignedManagerId)
+								.OrderByDescending(a => a.AssignedAt)
+								.ThenByDescending(a => a.AssignmentId)
+								.Select(a => (DateTime?)a.AssignedAt)
+								.FirstOrDefault()
+							?? t.CreatedAt
+						)
+					)
 					.Count()
 			});
 		}
+
 
 		/// <summary>列表排序：最新對話/建立時間在前（UTC）。</summary>
 		private static IQueryable<TicketListItemVM> OrderForList(IQueryable<TicketListItemVM> q)
