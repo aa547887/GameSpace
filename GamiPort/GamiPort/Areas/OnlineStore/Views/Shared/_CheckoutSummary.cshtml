@@ -1,0 +1,54 @@
+﻿@using GamiPort.Areas.OnlineStore.DTO
+@model CartSummaryDto
+
+@{
+    // 是否要顯示「免運」
+    var isFreeShip = (Model?.Item_Count_Physical ?? 0) == 0 || (Model?.Shipping_Fee ?? 0m) <= 0m;
+    string ShipText() => isFreeShip ? "免運" : Model!.Shipping_Fee.ToString("N0");
+}
+
+<div id="summaryBox" class="card">
+    <div class="card-header">結帳摘要</div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between">
+            <span>商品小計</span>
+            <strong>@Model.Subtotal.ToString("N0")</strong>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <span>運費</span>
+            <strong>@ShipText()</strong>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <span>優惠折抵</span>
+            <strong class="text-danger">@((Model.CouponDiscount ?? 0m).ToString("N0"))</strong>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.CouponMessage))
+        {
+            <div class="text-muted small mt-1">@Model.CouponMessage</div>
+        }
+    </div>
+
+    <div class="card-footer d-flex justify-content-between">
+        <span>應付金額</span>
+        <strong class="fs-5">@Model.Grand_Total.ToString("N0")</strong>
+    </div>
+</div>
+
+<!-- 渲染摘要時，同步 Navbar 購物車徽章（避免結帳頁顯示 0） -->
+<script>
+    (function () {
+        try {
+            var qty = @Model.Item_Count_Total;
+            var badge = document.getElementById('navCartBadge');
+            if (!badge) return;
+            var el = badge.querySelector('.badge-count') || badge;
+            var n = Math.max(0, parseInt(qty, 10) || 0);
+            el.textContent = (n > 99) ? '99+' : String(n);
+            // 若你想讓 0 也顯示，就把下行的「> 0」改成「>= 0」
+            badge.classList.toggle('d-none', n <= 0);
+        } catch {}
+    })();
+</script>

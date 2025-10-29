@@ -16,6 +16,15 @@
         </a>
 
         <ul class="navbar-nav ms-auto align-items-lg-center">
+            <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index"
+               class="nav-link position-relative">
+                購物車
+                <span id="navCartBadge"
+                      class="position-absolute translate-middle badge rounded-pill bg-danger"
+                      style="top:0.2rem; right:-0.6rem; min-width:1.4rem;">
+                    <span class="badge-count">0</span>
+                </span>
+            </a>
             <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 A</a></li>
             <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 B</a></li>
 

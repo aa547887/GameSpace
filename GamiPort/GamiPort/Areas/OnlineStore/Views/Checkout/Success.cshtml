@@ -1,0 +1,82 @@
+﻿@* Views/OnlineStore/Checkout/Success.cshtml *@
+@model dynamic
+@{
+    ViewData["Title"] = "訂單成立";
+}
+<h2 class="mb-3">訂單成立</h2>
+
+@if (TempData["Msg"] is string msg)
+{
+    <div class="alert alert-info">@msg</div>
+}
+
+<div class="alert alert-success">
+    已成功建立訂單（ID：@Model.OrderId @((Model?.OrderCode != null) ? $" / 單號：{Model.OrderCode}" : "")）。感謝您的購買！
+</div>
+@{
+    bool isPaid = false;
+    var ps = (string)(Model?.PaymentStatus ?? "");
+    if (!string.IsNullOrWhiteSpace(ps))
+    {
+        var t = ps.Trim();
+        isPaid = t == "已付款" || t.Equals("PAID", StringComparison.OrdinalIgnoreCase) || t.Equals("SUCCESS", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+
+<!-- 付款動作（未付款才顯示） -->
+@if (!isPaid)
+{
+    <div class="card mb-3 border-warning">
+        <div class="card-header bg-warning-subtle">付款提醒</div>
+        <div class="card-body">
+            <div class="mb-2">此訂單尚未付款，請盡速完成付款。</div>
+            <a class="btn btn-primary"
+               asp-area="OnlineStore" asp-controller="Payment" asp-action="Start"
+               asp-route-id="@Model.OrderId">
+                前往付款（綠界模擬）
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">此訂單已完成付款（@Model.PaymentStatus）。</div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">訂單摘要</div>
+    <div class="card-body">
+        <ul class="list-unstyled mb-0">
+            <li>成立時間：@Model.OrderDate</li>
+            <li>訂單狀態：@Model.OrderStatus</li>
+            <li>付款狀態：@Model.PaymentStatus</li>
+            @if (!string.IsNullOrWhiteSpace((string?)ViewBag.PayMethodName))
+            {
+                <li>付款方式：@ViewBag.PayMethodName</li>
+            }
+            <li>商品小計：@String.Format("{0:N0}", Model.Subtotal)</li>
+            <li>運費：@String.Format("{0:N0}", Model.ShippingFee)</li>
+            <li>優惠折抵：@String.Format("{0:N0}", Model.DiscountTotal)</li>
+            <li><strong>應付金額：@String.Format("{0:N0}", Model.GrandTotal)</strong></li>
+            <li>品項總數：@ViewBag.ItemCount</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">收件資訊</div>
+    <div class="card-body">
+        <ul class="list-unstyled mb-0">
+            <li>收件人：@Model.Recipient</li>
+            <li>聯絡電話：@Model.Phone</li>
+            <li>寄送地址：@Model.DestZip @Model.Address1 @((Model?.Address2 != null) ? Model.Address2 : "")</li>
+        </ul>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">回購物車</a>
+    <a href="/Member/Orders" class="btn btn-primary">前往訂單</a>
+    <a href="/" class="btn btn-success">繼續逛逛</a>
+</div>

@@ -24,6 +24,12 @@ using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrent
 using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 
+// 購物車
+using GamiPort.Areas.OnlineStore.Services;
+
+// ★ 新增：ECPay 服務命名空間
+using GamiPort.Areas.OnlineStore.Payments;
+
 namespace GamiPort
 {
 	public class Program
@@ -32,10 +38,7 @@ namespace GamiPort
 		{
 			var builder = WebApplication.CreateBuilder(args);
 
-			// ------------------------------------------------------------
-			// 連線字串（兩個 DbContext 理論可共用；本版僅使用業務 DB）
-			// 會依序找 "GameSpace" -> "GameSpacedatabase"；都沒有就丟錯
-			// ------------------------------------------------------------
+			// 連線字串
 			var gameSpaceConn =
 				builder.Configuration.GetConnectionString("GameSpace")
 				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
@@ -47,8 +50,6 @@ namespace GamiPort
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
-				// 若多為查詢頁面可開 NoTracking 以省記憶體與變更追蹤成本
-				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 			});
 
 			// 1) CORS：允許後台的網域/連接埠跨站連線到本服務的 Hub（客訴採單一前台 Hub）
@@ -70,14 +71,11 @@ namespace GamiPort
 			// EF 開發者例外頁（顯示完整 EF 例外、/migrations 端點）
 			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			// ------------------------------------------------------------
-			// 驗證：使用 Cookie（完全不走 Identity）
-			// ------------------------------------------------------------
+			// 驗證：Cookie
 			builder.Services
 				.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
 				.AddCookie(opts =>
 				{
-					// 依你的登入頁面實際路由（Area=Login, Controller=Login, Action=Login）
 					opts.LoginPath = "/Login/Login/Login";
 					opts.LogoutPath = "/Login/Login/Logout";
 					opts.AccessDeniedPath = "/Login/Login/Denied";
@@ -87,7 +85,7 @@ namespace GamiPort
 					opts.Cookie.HttpOnly = true;
 					opts.Cookie.SameSite = SameSiteMode.Lax; // Step1 Hub 允許匿名連線，先用 Lax 即可
 					opts.ExpireTimeSpan = TimeSpan.FromDays(7);
-					opts.SlidingExpiration = true; // 活動期間自動順延有效期
+					opts.SlidingExpiration = true;
 				});
 
 			// 授權（有 [Authorize] / Policy 時會用到；本案先走預設）
@@ -165,6 +163,12 @@ namespace GamiPort
 				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
+			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+
+			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
+			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
+			builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
+																			   // =====================================================
 
 			// ------------------------------------------------------------
 			// 建立 App
