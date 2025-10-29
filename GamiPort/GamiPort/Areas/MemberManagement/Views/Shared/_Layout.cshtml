@@ -1,5 +1,4 @@
-﻿@* Views/Shared/_Layout.cshtml *@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
@@ -28,8 +27,6 @@
         </aside>
 
         <main class="layout-main">
-            @await Html.PartialAsync("_TopbarLevel2")
-
             <div class="container-fluid py-3">
                 <div class="row g-4">
                     <div class="col-12 col-xxl-9">
@@ -37,7 +34,14 @@
                     </div>
                     <aside class="col-xl-3 d-none d-xl-block">
                         <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
+                            @if (IsSectionDefined("RightRail"))
+                            {
+                                @RenderSection("RightRail")
+                            }
+                            else
+                            {
+                                @await Html.PartialAsync("_RightRailAds")
+                            }
                         </div>
                     </aside>
                 </div>

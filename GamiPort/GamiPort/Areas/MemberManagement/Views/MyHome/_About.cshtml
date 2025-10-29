@@ -1,0 +1,16 @@
+﻿@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
+
+<div class="mb-3">
+    <div class="fw-semibold mb-1">暱稱</div>
+    <div>@Model.UserNickName</div>
+</div>
+
+<div class="mb-3">
+    <div class="fw-semibold mb-1">性別</div>
+    <div>@Model.Gender</div>
+</div>
+
+<div class="mb-3">
+    <div class="fw-semibold mb-1">自我介紹</div>
+    <div>@(string.IsNullOrWhiteSpace(Model.IntroText) ? "（尚未填寫）" : Model.IntroText)</div>
+</div>
