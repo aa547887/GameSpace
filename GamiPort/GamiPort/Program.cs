@@ -163,13 +163,13 @@ namespace GamiPort
 				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
-			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+			
 
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
 			builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
-																			   // =====================================================
-
+			builder.Services.AddScoped<ILookupService, SqlLookupService>();                        // =====================================================
+			builder.Services.AddScoped<ICartService, SqlCartService>();
 			// ------------------------------------------------------------
 			// 建立 App
 			// ------------------------------------------------------------
