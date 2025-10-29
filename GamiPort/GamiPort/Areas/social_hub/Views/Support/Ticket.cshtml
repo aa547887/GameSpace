@@ -1,0 +1,104 @@
+﻿@model GamiPort.Areas.social_hub.Controllers.SupportController.TicketVM
+@{
+    Layout ??= "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = $"工單 #{Model.TicketId}";
+}
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10 col-xxl-8">
+
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h5 class="mb-0">工單 #@Model.TicketId</h5>
+                <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("Index", "Support", new { area = "social_hub" })">← 返回我的工單</a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header"><strong>對話紀錄</strong></div>
+
+                <div id="message-host" class="card-body" style="height: 62vh; overflow-y: auto; background:#fff;">
+                    <div class="text-muted">載入中…</div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="d-flex gap-2">
+                        <textarea id="msg-text" class="form-control" rows="2" placeholder="輸入訊息…（Enter 送出，Shift+Enter 換行）"></textarea>
+                        <button id="btn-send" class="btn btn-primary px-4">送出</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TICKET_ID = @Model.TicketId;
+
+        // Anti-forgery（從 _Layout 的 meta 拿）
+        function getAfToken(){
+          const meta = document.querySelector('meta[name="request-verification-token"]');
+          return meta ? meta.getAttribute('content') : '';
+        }
+
+        function scrollMessagesToBottom(){
+          const host = document.getElementById('message-host');
+          if(host) host.scrollTop = host.scrollHeight;
+        }
+
+        async function reloadMessages(page=1, keepTop=false){
+          const res = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}&page=${page}`, {
+            headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
+          });
+          const html = await res.text();
+          const host = document.getElementById('message-host');
+          host.innerHTML = html;
+          if(!keepTop) scrollMessagesToBottom();
+        }
+
+        async function sendMessage(){
+          const ta = document.getElementById('msg-text');
+          const text = (ta?.value || '').trim();
+          if(!text) return;
+          const fd = new FormData(); fd.append('text', text);
+          const res = await fetch(`/social_hub/Support/SendMessage?id=${TICKET_ID}`, {
+            method:'POST', body:fd, credentials:'same-origin',
+            headers:{ 'X-Requested-With':'XMLHttpRequest', 'RequestVerificationToken': getAfToken() }
+          });
+          if(!res.ok){ alert('送出失敗'); return; }
+          ta.value = '';
+          await reloadMessages(1);
+        }
+
+        document.addEventListener('click', e => {
+          if(e.target?.id === 'btn-send') sendMessage();
+        });
+        document.addEventListener('keydown', e => {
+          const ta = document.getElementById('msg-text');
+          if(e.target === ta && e.key === 'Enter' && !e.shiftKey){
+            e.preventDefault(); sendMessage();
+          }
+        });
+
+        // ===== 即時：加入群組＋監聽 "msg" =====
+        (async function(){
+          await reloadMessages(1);
+
+          if(!window.GP || !GP.support){
+            console.error('[support] 單例未載入'); return;
+          }
+          await GP.support.started;
+          await GP.support.joinTicket(TICKET_ID);
+          console.log('[support] joined ticket:', TICKET_ID);
+
+          const onMsg = async (payload) => {
+            if(payload && +payload.ticketId === +TICKET_ID){
+              await reloadMessages(1, false);
+            }
+          };
+          GP.support.on('msg', onMsg);
+          window.addEventListener('beforeunload', ()=> GP.support.off('msg', onMsg));
+        })();
+    </script>
+}

@@ -1,11 +1,59 @@
-﻿@model GameSpace.Areas.social_hub.Models.ViewModels.TicketDetailVM
+﻿@* ===========================================================
+   Areas/social_hub/Views/Support/Ticket.cshtml
+   功能：後台工單明細（資訊 / 指派 / 對話 / 即時同步）
+   本版調整：
+   - 只使用 _Layout 載入的 GP.support 單例進行連線
+   - 以「管理員簽章」加入群組：JoinAsManager(ticketId, managerId, expires, sig)
+   - 監聽 "msg" 事件即時刷新訊息
+   需求前提：
+   - 前台 GamiPort 的 SupportHub 已實作 JoinAsManager(...)
+   - 前台/後台 appsettings.*.json 都有同一組 Support:JoinSecret
+   =========================================================== *@
+
+@model GameSpace.Areas.social_hub.Models.ViewModels.TicketDetailVM
 @using Microsoft.AspNetCore.Antiforgery
 @inject IAntiforgery Antiforgery
 
+@* 用於產簽章（後台伺服端） *@
+@using System.Security.Claims
+@using System.Security.Cryptography
+@using System.Text
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+
+@functions {
+    /// <summary>
+    /// 解析目前登入的管理員 ID；依你的 Claims 實況調整 Key。
+    /// 抓不到就退回 AssignedManagerId（讓未建置 Claims 時仍可運作）
+    /// </summary>
+    int ResolveManagerId(ClaimsPrincipal user, int? fallbackAssigned)
+    {
+        var keys = new[] { "AppManagerId", "ManagerId", "gs_mid", "mid" };
+        foreach (var k in keys)
+        {
+            var v = user.FindFirstValue(k);
+            if (int.TryParse(v, out var id) && id > 0) return id;
+        }
+        return fallbackAssigned ?? 0;
+    }
+}
+
 @{
     ViewData["Title"] = "工單 #" + Model.TicketId;
-    // 產生一次性的 Anti-Forgery Token（全頁共用；AJAX 以 Header 帶上）
+
+    // --- Anti-Forgery Token（全頁 AJAX 共用） ---
     var tokens = Antiforgery.GetAndStoreTokens(Context);
+
+    // --- 管理員簽章參數（伺服端產生，避免把密鑰下放到前端） ---
+    var managerIdVal = ResolveManagerId(User, Model.AssignedManagerId);
+    var expiresVal = DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeSeconds(); // 2 分鐘有效
+    var secret = Config["Support:JoinSecret"] ?? "dev-secret-change-me";  // 正式請改用 UserSecrets / 環境變數 / KeyVault
+    var dataToSign = $"{Model.TicketId}|{managerIdVal}|{expiresVal}";
+    string sigHex;
+    using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret)))
+    {
+        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToSign));
+        sigHex = BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+    }
 }
 
 @section Styles {
@@ -44,7 +92,7 @@
     </style>
 }
 
-<!-- 全域 Anti-Forgery Token（JS 以 Header: RequestVerificationToken 帶出） -->
+<!-- 全域 Anti-Forgery Token（JS 以 Header: RequestVerificationToken 帶上） -->
 <input type="hidden" id="af-token" value="@tokens.RequestToken" />
 
 <a href="@Url.Action("Index")" class="btn btn-link mb-2">← 返回工作台</a>
@@ -70,11 +118,13 @@
                         @if (Model.IsClosed)
                         {
                             <span class="badge bg-secondary">已結單</span>
+                            ;
                         }
                         else
                         {
 
                             <span class="badge bg-success">處理中</span>
+                            ;
                         }
                     </dd>
 
@@ -99,12 +149,11 @@
                 </dl>
                 <hr />
                 <div class="d-flex gap-2 flex-wrap">
-                    @* 自接未指派 *@
                     @if (Model.CanAssignToMe)
                     {
                         <button class="btn btn-sm btn-outline-primary js-assign-me">指派給我</button>
                     }
-                    @* 轉單：沿用共用 .js-modal-open（你的站上已有對應 JS 處理 data-url） *@
+
                     @if (Model.CanReassign)
                     {
                         <button class="btn btn-sm btn-outline-warning js-modal-open"
@@ -114,7 +163,7 @@
                             轉單
                         </button>
                     }
-                    @* 結單：沿用共用 .js-modal-open *@
+
                     @if (Model.CanClose)
                     {
                         <button class="btn btn-sm btn-outline-danger js-modal-open"
@@ -133,9 +182,7 @@
                 <strong>詳細資料</strong>
                 <div class="d-flex gap-2">
                     <a class="btn btn-sm btn-outline-secondary"
-                       href="@Url.Action("AssignmentHistoryPage", "Support", new { area = "social_hub", id = Model.TicketId })">
-                        完整歷史
-                    </a>
+                       href="@Url.Action("AssignmentHistoryPage", "Support", new { area = "social_hub", id = Model.TicketId })">完整歷史</a>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-assign">重新整理</button>
                 </div>
             </div>
@@ -150,14 +197,14 @@
         <div class="card shadow-sm chat-card">
             <div class="card-header"><strong>對話紀錄</strong></div>
             <div class="card-body" id="message-host">
-                @* 注意：_MessageList 內請改成使用 @Html.AppTime(m.SentAt, "yyyy/MM/dd HH:mm") 顯示 *@
+                @* 提醒：_MessageList 內請使用 @Html.AppTime(m.SentAt, "yyyy/MM/dd HH:mm") 顯示時間 *@
                 @await Html.PartialAsync("_MessageList", Model.Messages)
             </div>
 
             @if (!Model.IsClosed && Model.AssignedManagerId == Model.MeManagerId)
             {
                 <div class="card-footer">
-                    @* _Composer 內請包含 @Html.AntiForgeryToken()，並建議同步提供一個 hidden 的 #af-token（可省略，因為本頁已提供全域 #af-token） *@
+                    @* _Composer 內請包含 @Html.AntiForgeryToken()（本頁亦提供 #af-token，可覆用） *@
                     @await Html.PartialAsync("_Composer", Model.TicketId)
                 </div>
             }
@@ -192,107 +239,163 @@
 
 @section Scripts {
     <script>
+        // --------- 共用常數 ---------
         const TICKET_ID = @Model.TicketId;
-        let assignPage = 1;
 
-        function getAfToken(){
-          // 優先取全域 #af-token；若沒有，再找 form 裡的 __RequestVerificationToken
-          const g = document.getElementById('af-token')?.value;
-          if(g) return g;
-          const f = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-          return f || '';
+        // 由伺服端產出的簽章參數（管理員加入 Hub 用）
+        const MANAGER_ID = @managerIdVal;
+        const EXPIRES    = @expiresVal;
+        const SIG        = "@sigHex";
+
+        // ---------- Anti-Forgery ----------
+        function getAfToken() {
+            const g = document.getElementById('af-token')?.value;
+            if (g) return g;
+            const f = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            return f || '';
         }
 
-        function scrollMessagesToBottom(){
-          const host = document.getElementById('message-host');
-          if(host) host.scrollTop = host.scrollHeight;
+        // ---------- UI 工具 ----------
+        function scrollMessagesToBottom() {
+            const host = document.getElementById('message-host');
+            if (host) host.scrollTop = host.scrollHeight;
         }
 
-        async function reloadMessages(page=1, keepTop=false){
-          const res = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}&page=${page}`, {
-            headers: {'X-Requested-With':'XMLHttpRequest'},
-            credentials:'same-origin'
-          });
-          const html = await res.text();
-          const host = document.getElementById('message-host');
-          host.innerHTML = html;
-          if(!keepTop) scrollMessagesToBottom();
-        }
-
-        async function loadAssignHistory(page=1){
-          const host = document.getElementById('assign-history');
-          try{
-            const res = await fetch(`/social_hub/Support/AssignmentHistory?id=${TICKET_ID}&page=${page}`, {
-              headers:{'X-Requested-With':'XMLHttpRequest'},
-              credentials:'same-origin'
+        // 重載對話訊息（右欄）
+        async function reloadMessages(page = 1, keepTop = false) {
+            const res = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}&page=${page}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
             });
-            host.innerHTML = await res.text();
-            assignPage = page;
-          }catch{
-            host.innerHTML = `<div class="alert alert-danger mb-0">載入失敗，請重試。</div>`;
-          }
+            const html = await res.text();
+            const host = document.getElementById('message-host');
+            host.innerHTML = html;
+            if (!keepTop) scrollMessagesToBottom();
         }
 
-        // 左側歷史分頁
-        document.addEventListener('click', async (e)=>{
-          const a = e.target.closest('#assign-history a.page-link');
-          if(!a) return;
-          e.preventDefault();
-          const page = parseInt(new URL(a.href).searchParams.get('page')||'1',10);
-          await loadAssignHistory(page);
+        // 載入指派歷史（左欄）
+        let assignPage = 1;
+        async function loadAssignHistory(page = 1) {
+            const host = document.getElementById('assign-history');
+            try {
+                const res = await fetch(`/social_hub/Support/AssignmentHistory?id=${TICKET_ID}&page=${page}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                });
+                host.innerHTML = await res.text();
+                assignPage = page;
+            } catch {
+                host.innerHTML = `<div class="alert alert-danger mb-0">載入失敗，請重試。</div>`;
+            }
+        }
+
+        // 左側歷史分頁（委派）
+        document.addEventListener('click', async (e) => {
+            const a = e.target.closest('#assign-history a.page-link');
+            if (!a) return;
+            e.preventDefault();
+            const page = parseInt(new URL(a.href).searchParams.get('page') || '1', 10);
+            await loadAssignHistory(page);
         });
 
         // 送出訊息（帶 Anti-Forgery Header）
         document.addEventListener('click', async (e) => {
-          if (e.target?.id !== 'btn-send') return;
+            if (e.target?.id !== 'btn-send') return;
 
-          const ta = document.getElementById('msg-text');
-          const token = getAfToken();
-          const text = (ta?.value || '').trim();
-          if (!text) return;
+            const ta = document.getElementById('msg-text');
+            const token = getAfToken();
+            const text = (ta?.value || '').trim();
+            if (!text) return;
 
-          const fd = new FormData();
-          fd.append('text', text);
+            const fd = new FormData();
+            fd.append('text', text);
 
-          try {
-            const res = await fetch(`/social_hub/Support/SendMessage?id=${TICKET_ID}`, {
-              method: 'POST',
-              body: fd,
-              credentials: 'same-origin',
-              headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }
-            });
+            try {
+                const res = await fetch(`/social_hub/Support/SendMessage?id=${TICKET_ID}`, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }
+                });
 
-            if (!res.ok) {
-              const msg = (await res.text()) || `${res.status} ${res.statusText}`;
-              alert('送出失敗：' + msg);
-              return;
+                if (!res.ok) {
+                    const msg = (await res.text()) || `${res.status} ${res.statusText}`;
+                    alert('送出失敗：' + msg);
+                    return;
+                }
+
+                // 成功：清空輸入，重載訊息並捲到底
+                if (ta) ta.value = '';
+                await reloadMessages(1);
+            } catch (err) {
+                alert('送出失敗：網路或伺服器錯誤');
             }
-
-            // 成功：清空輸入，重載訊息並捲到底
-            if (ta) ta.value = '';
-            await reloadMessages(1);
-          } catch (err) {
-            alert('送出失敗：網路或伺服器錯誤');
-          }
         });
 
-        // 指派給我（帶 Anti-Forgery Header；允許同頁多個 .js-assign-me）
-        document.addEventListener('click', async (e)=>{
-          const btn = e.target.closest('.js-assign-me');
-          if(!btn) return;
-          const token = getAfToken();
-          const res = await fetch(`/social_hub/Support/AssignToMe?id=${TICKET_ID}`, {
-            method:'POST',
-            credentials:'same-origin',
-            headers: { 'RequestVerificationToken': token, 'X-Requested-With': 'XMLHttpRequest' }
-          });
-          if(res.ok) location.reload(); else alert(await res.text());
+        // 指派給我（帶 Anti-Forgery Header）
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.js-assign-me');
+            if (!btn) return;
+            const token = getAfToken();
+            const res = await fetch(`/social_hub/Support/AssignToMe?id=${TICKET_ID}`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'RequestVerificationToken': token, 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (res.ok) location.reload(); else alert(await res.text());
         });
 
         // 初始載入
-        document.addEventListener('DOMContentLoaded', ()=>{
-          scrollMessagesToBottom();
-          loadAssignHistory(1);
+        document.addEventListener('DOMContentLoaded', () => {
+            scrollMessagesToBottom();
+            loadAssignHistory(1);
         });
+    </script>
+
+    <!-- ========================= -->
+    <!--  使用 _Layout 的單例連線  -->
+    <!--  以簽章加入群組 + 綁事件 -->
+    <!-- ========================= -->
+    <script>
+        (async function () {
+            // 保險：確認 _Layout 有載入 GP.support
+            if (!window.GP || !GP.support) {
+                console.error("[support] GP.support 未載入。請確認 _Layout 有先載入 SignalR 與 supportHub.js。");
+                return;
+            }
+
+            try {
+                // 1) 等單例連線就緒
+                await GP.support.started;
+
+                // 2) 以管理員簽章加入這張工單（supportHub.js 會記住，斷線自動 re-join）
+                await GP.support.joinTicketAsManager(TICKET_ID, MANAGER_ID, EXPIRES, SIG);
+                // console.log("[support] joined ticket as manager:", TICKET_ID);
+
+                // 3) 監聽「msg」事件（前台 Notifier 的事件名）
+                const onMsg = async (payload) => {
+                    if (payload && +payload.ticketId === +TICKET_ID) {
+                        await reloadMessages(1, false);
+                    }
+                };
+                GP.support.on("msg", onMsg);
+
+                // （可選）看到伺服端回報的 joined 訊息
+                const onJoined = (ticketId, meta) => {
+                    if (+ticketId === +TICKET_ID) {
+                        console.log("[support] joined event:", ticketId, meta);
+                    }
+                };
+                GP.support.on("joined", onJoined);
+
+                // 4) 離頁清理事件綁定
+                window.addEventListener("beforeunload", function () {
+                    GP.support.off("msg", onMsg);
+                    GP.support.off("joined", onJoined);
+                });
+            } catch (err) {
+                console.error("[support] join as manager failed:", err);
+            }
+        })();
     </script>
 }

@@ -58,13 +58,17 @@
         <i class="fas fa-angle-up"></i>
     </a>
 
+    <!-- 一定要在 supportHub.js 之前載入 -->
+    <script src='@("https://cdn.jsdelivr.net/npm/@microsoft/signalr@8/dist/browser/signalr.min.js")'></script>
 
-    @* @Html.Partial("_Chat")
+    <!-- 2) 指定要連的前台 Hub（跨站） -->
+    <script>
+        // ★ 指向「前台」:7160 的 SupportHub
+        window.GP_SUPPORT_HUB_URL = "https://localhost:7160/hubs/support";
+    </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.7/signalr.min.js"></script>
-    <script src="~/lib/social_hub/js/chat.js"></script>
-    <link href="~/lib/social_hub/css/chat.css" rel="stylesheet" /> *@
-
+    <!-- 3) 載入前端單例：supportHub.js（建議也從前台拿，避免版本不一致） -->
+    <script src="https://localhost:7160/js/social_hub/supportHub.js"></script>
 
     <!-- Bootstrap 5 JS -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

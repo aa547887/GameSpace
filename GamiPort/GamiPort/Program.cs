@@ -2,21 +2,27 @@
 // Program.cs（純 Cookie 版；不使用 Identity，不會建立 AspNetUsers）
 // 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
 // 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
+//
+// 【本次關鍵說明】
+// 1) 穢語遮蔽服務 IProfanityFilter 為 Singleton，但「不直接吃 DbContext（Scoped）」：
+//    → 改在服務內使用 IServiceScopeFactory.CreateScope() 取得短命 DbContext（GameSpacedatabaseContext）。
+//    → 因此本檔「不需要」註冊 AddDbContextFactory / AddPooledDbContextFactory。
+// 2) 客訴採「單一前台 Hub」：映射 SupportHub 為 /hubs/support，後台頁也連線到這個端點；並正確啟用 CORS。
+// 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
-
 
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using Microsoft.AspNetCore.Identity;       // 僅用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
+using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若尚未設定可換 NullEmailSender）
+using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
 
-// === 新增的 using（本檔新增了這些服務/端點） ===
+// === 新增/確認的 using（本檔有用到的服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
-using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（SignalR Hub）
+using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 
 namespace GamiPort
 {
@@ -36,13 +42,29 @@ namespace GamiPort
 				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
 
 			// ------------------------------------------------------------
-			// DbContext（只註冊業務 DB；不註冊 Identity 的 ApplicationDbContext）
+			// DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
 			// ------------------------------------------------------------
 			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
 			{
 				options.UseSqlServer(gameSpaceConn);
 				// 若多為查詢頁面可開 NoTracking 以省記憶體與變更追蹤成本
 				// options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+			});
+
+			// 1) CORS：允許後台的網域/連接埠跨站連線到本服務的 Hub（客訴採單一前台 Hub）
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("SupportCors", policy =>
+				{
+					policy
+						.WithOrigins(
+							"https://localhost:7042", // GameSpace 後台 HTTPS
+							"http://localhost:5211"   // GameSpace 後台 HTTP
+						)
+						.AllowAnyHeader()
+						.AllowAnyMethod()
+						.AllowCredentials(); // Hub 連線需要
+				});
 			});
 
 			// EF 開發者例外頁（顯示完整 EF 例外、/migrations 端點）
@@ -61,9 +83,9 @@ namespace GamiPort
 					opts.AccessDeniedPath = "/Login/Login/Denied";
 
 					// Cookie 屬性
-					opts.Cookie.Name = "GamiPort.User"; // 與後台 Cookie 保持不同名，避免互相覆蓋
+					opts.Cookie.Name = "GamiPort.User";   // 與後台 Cookie 不同名，避免互蓋
 					opts.Cookie.HttpOnly = true;
-					opts.Cookie.SameSite = SameSiteMode.Lax; // 防 CSRF；若需跨站再調整
+					opts.Cookie.SameSite = SameSiteMode.Lax; // Step1 Hub 允許匿名連線，先用 Lax 即可
 					opts.ExpireTimeSpan = TimeSpan.FromDays(7);
 					opts.SlidingExpiration = true; // 活動期間自動順延有效期
 				});
@@ -78,13 +100,21 @@ namespace GamiPort
 			builder.Services.AddScoped<INotificationStore, NotificationStore>();
 			builder.Services.AddScoped<IRelationService, RelationService>();
 
+			// === Chat / 廣播服務（DM 與訊號通知） ===
+			// IChatService：與資料庫互動（寫訊息、計算未讀…）→ 建議 Scoped
+			builder.Services.AddScoped<IChatService, ChatService>();
 
-			// === Chat 服務註冊（缺這兩個會讓 ChatHub 無法被建立） ===
-			// IChatService：與資料庫互動（寫訊息、計算未讀…）→ 需用 DbContext，建議 Scoped
-			builder.Services.AddScoped<IChatService,ChatService>();
+			// === 客訴服務 ===
+			builder.Services.AddScoped<ISupportService, SupportService>();
+			builder.Services.AddSingleton<ISupportNotifier, SignalRSupportNotifier>();
 
 			// IChatNotifier：透過 IHubContext<ChatHub> 對用戶/群組廣播 → 可 Singleton（IHubContext 執行緒安全）
 			builder.Services.AddSingleton<IChatNotifier, SignalRChatNotifier>();
+
+			// ===== 穢語遮蔽 =====
+			// ProfanityFilter 為 Singleton，但不直接吃 DbContext（Scoped）：
+			// → 服務內部以 IServiceScopeFactory.CreateScope() 取得「短命」DbContext，避免 DI 生命週期衝突。
+			builder.Services.AddSingleton<IProfanityFilter, ProfanityFilter>();
 
 			// ------------------------------------------------------------
 			// MVC / RazorPages / JSON 命名策略 & Anti-forgery
@@ -103,7 +133,7 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			builder.Services.AddHttpContextAccessor();
 
-			// 保留他原本的服務（不要動）：他自己的 ICurrentUserService
+			// 保留原本的服務（不要動）：它自己的 ICurrentUserService
 			// 我們不覆蓋它，以免影響原先依賴；我們另走自己的 IAppCurrentUser。
 			builder.Services.AddScoped<GamiPort.Services.ICurrentUserService, GamiPort.Services.CurrentUserService>();
 
@@ -127,22 +157,14 @@ namespace GamiPort
 			builder.Services.AddScoped<ILoginIdentity, ClaimFirstLoginIdentity>();
 
 			// ------------------------------------------------------------
-			// ★ SignalR（聊天室必備）
-			//   1) Services：AddSignalR()
-			//   2) Endpoints：MapHub<ChatHub>("/social_hub/chathub")
-			//   這樣前端呼叫 /social_hub/chathub/negotiate 才不會 404。
+			// SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
 			// ------------------------------------------------------------
-			builder.Services.AddSignalR();
-
-
-			// ★ SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
 			builder.Services.AddSignalR(options =>
 			{
-				options.EnableDetailedErrors = true;                 // 讓前端拿到更清楚的錯誤
-				options.KeepAliveInterval = TimeSpan.FromSeconds(15);// 伺服器送 keep-alive 的頻率
+				options.EnableDetailedErrors = true;                      // 讓前端拿到更清楚的錯誤
+				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
-
 
 			// ------------------------------------------------------------
 			// 建立 App
@@ -168,9 +190,22 @@ namespace GamiPort
 				app.UseHsts();
 			}
 
+			// ------------------------------------------------------------
+			// 啟動時先載入一次穢語規則（建議保留）
+			// 讓 IProfanityFilter 有最新規則可用；之後前端每次進聊天會再帶 nocache=1 強制刷新。
+			// ------------------------------------------------------------
+			using (var scope = app.Services.CreateScope())
+			{
+				var filter = scope.ServiceProvider.GetRequiredService<IProfanityFilter>();
+				filter.ReloadAsync().GetAwaiter().GetResult();
+			}
+
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
 			app.UseRouting();
+
+			// ✅ CORS 要在 Routing 後、Auth 前
+			app.UseCors("SupportCors");
 
 			// 驗證一定在授權之前
 			app.UseAuthentication();
@@ -191,10 +226,11 @@ namespace GamiPort
 			// Razor Pages（若你有使用）
 			app.MapRazorPages();
 
-			// ★ SignalR Hub 端點（路徑要與前端完全一致）
-			// 前端若以 withUrl("/social_hub/chathub") 連線，就要映射同一路徑；
-			// 注意：Hub 路徑不受 Areas 影響，是全域端點。
+			// ★ DM 的 ChatHub（保留，與客訴無衝突）
 			app.MapHub<ChatHub>("/social_hub/chathub");
+
+			// 客訴 Hub（建議加 RequireCors 指定同一政策）
+			app.MapHub<SupportHub>("/hubs/support").RequireCors("SupportCors");
 
 			app.Run();
 		}
