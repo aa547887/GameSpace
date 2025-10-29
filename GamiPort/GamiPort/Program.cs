@@ -144,10 +144,14 @@ namespace GamiPort
 			});
 
 
-			// ------------------------------------------------------------
-			// 建立 App
-			// ------------------------------------------------------------
-			var app = builder.Build();
+			builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBB"));
+            builder.Services.AddHttpClient<ImgBbService>();
+
+            // ★ ImgBB（商城商品）—圖片API
+            // ------------------------------------------------------------
+            // 建立 App
+            // ------------------------------------------------------------
+            var app = builder.Build();
 
 			// ------------------------------------------------------------
 			// HTTP Pipeline

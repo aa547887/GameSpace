@@ -1,1 +1,369 @@
-﻿商城
+﻿@{
+    ViewData["Title"] = "GamiStore 首頁";
+}
+
+@section Styles {
+    <style>
+        /* ====== 卡片與排行榜視覺（Bahamut 風） ====== */
+        .rank-wrap {
+            background: #fff;
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+        }
+
+        /* 標籤列 */
+        .rank-tabs {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .rank-tab {
+            border: 0;
+            background: #eef3ff;
+            color: #1f3b8f;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+        }
+
+            .rank-tab:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 18px rgba(31,59,143,.18);
+            }
+
+            .rank-tab.active {
+                background: #3b82f6;
+                color: #fff;
+                box-shadow: 0 10px 24px rgba(59,130,246,.35);
+            }
+
+        .rank-updated {
+            margin-left: auto;
+            color: #7c8591;
+            font-size: .92rem
+        }
+
+        /* 排列：左(Top1~3 卡片) + 右(4~10 list) */
+        .rank-grid {
+            display: grid;
+            grid-template-columns: minmax(520px,1fr) 360px;
+            gap: 16px;
+        }
+        @@media (max-width: 1200px) {
+            .rank-grid
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        }
+
+        /* Top 卡片區 */
+        .top3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0,1fr));
+            gap: 12px;
+        }
+
+        .top-card {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #f7f7f9;
+            box-shadow: 0 6px 18px rgba(0,0,0,.08);
+            transition: transform .15s ease, box-shadow .15s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .top-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 28px rgba(0,0,0,.12);
+            }
+
+            .top-card .cover {
+                aspect-ratio: 16/10;
+                background: #ddd;
+                background-position: center;
+                background-size: cover;
+            }
+
+            .top-card .body {
+                padding: 10px 12px;
+            }
+
+            .top-card .title {
+                font-weight: 700;
+                line-height: 1.2;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .top-card .price {
+                color: #2563eb;
+                font-weight: 800;
+            }
+
+        .badge-rank {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            z-index: 2;
+            background: linear-gradient(135deg,#ffd54f,#ffb300);
+            color: #5b4100;
+            font-weight: 800;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: .85rem;
+        }
+
+        /* 右側 4~10 列表 */
+        .side-list {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,.06);
+        }
+
+        .side-item {
+            display: grid;
+            grid-template-columns: 36px 1fr auto;
+            gap: 10px;
+            padding: 10px 12px;
+            align-items: center;
+            border-bottom: 1px dashed rgba(0,0,0,.06);
+        }
+
+            .side-item:last-child {
+                border-bottom: 0;
+            }
+
+        .side-rank {
+            width: 36px;
+            height: 28px;
+            border-radius: 8px;
+            background: #eef3ff;
+            color: #1f3b8f;
+            font-weight: 800;
+            display: grid;
+            place-items: center;
+        }
+
+        .side-title {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .side-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: #8893a1;
+            font-size: .9rem;
+        }
+
+            .side-meta .tag {
+                border: 1px solid rgba(0,0,0,.12);
+                border-radius: 999px;
+                padding: 2px 8px;
+                font-weight: 700;
+            }
+
+        /* 無資料 */
+        .empty {
+            display: grid;
+            place-items: center;
+            height: 220px;
+            color: #96A0AE
+        }
+
+        /* 搜尋條（果凍感）示意，若你已有就忽略 */
+        .hero {
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+
+            .hero img {
+                width: 100%;
+                height: auto;
+                opacity: .85;
+            }
+
+            .hero .search-bar {
+                position: absolute;
+                left: 8%;
+                right: 8%;
+                bottom: 16%;
+                background: rgba(255,255,255,.6);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(0,0,0,.08);
+                border-radius: 16px;
+                display: flex;
+                gap: 10px;
+                padding: 10px 12px;
+            }
+
+            .hero input {
+                border: 0;
+                background: transparent;
+                outline: none;
+                width: 100%;
+            }
+    </style>
+}
+
+<div class="container-xxl">
+
+    <!-- ====== Hero（如已有輪播，這段可移除） ====== -->
+    <section class="mb-4">
+        <div class="hero">
+            <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop" alt="">
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input placeholder="搜尋想要的商品或遊戲…">
+                <button class="btn btn-primary btn-sm">搜尋</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== 商城排行榜 ====== -->
+    <section class="rank-wrap">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="mb-0 fw-bold">商城排行榜</h5>
+        </div>
+
+        <!-- 標籤列 -->
+        <div class="rank-tabs mb-3">
+            <button class="rank-tab active" data-type="sales">每日熱銷</button>
+            <button class="rank-tab" data-type="views">熱門點擊</button>
+            <button class="rank-tab" data-type="fav">收藏飆升</button>
+            <div class="rank-updated" id="rankUpdated">更新於：--</div>
+        </div>
+
+        <!-- 內容 -->
+        <div class="rank-grid" id="rankBoard">
+            <div class="top3" id="rankTop3">
+                <!-- Top1~3 放這裡 -->
+            </div>
+            <div class="side-list" id="rankSide">
+                <!-- 4~10 放這裡 -->
+            </div>
+        </div>
+
+        <div class="empty d-none" id="rankEmpty">尚無資料</div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // ========= 前端設定 =========
+        const API_BASE = '/api/store';
+        const Endpoints = {
+          sales: `${API_BASE}/rankings?type=sales`,
+          views: `${API_BASE}/rankings?type=views`,     // 後端補上後會自動生效
+          fav:   `${API_BASE}/rankings?type=fav`        // 後端補上後會自動生效
+        };
+
+        // ========= UI 元件 =========
+        const $tabs = document.querySelectorAll('.rank-tab');
+        const $updated = document.getElementById('rankUpdated');
+        const $top3 = document.getElementById('rankTop3');
+        const $side = document.getElementById('rankSide');
+        const $empty = document.getElementById('rankEmpty');
+
+        $tabs.forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            $tabs.forEach(x=>x.classList.remove('active'));
+            btn.classList.add('active');
+            loadRanking(btn.dataset.type);
+          });
+        });
+
+        // 初次載入
+        loadRanking('sales');
+
+        async function loadRanking(type){
+          $top3.innerHTML = ''; $side.innerHTML = '';
+          $empty.classList.add('d-none');
+
+          const url = Endpoints[type] || Endpoints.sales;
+          try{
+            const res = await fetch(url, {headers:{'Accept':'application/json'}});
+            if(!res.ok) throw new Error(res.statusText);
+            const data = await res.json();
+            const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+            if(!items || items.length===0){
+              $empty.classList.remove('d-none');
+              $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+              return;
+            }
+
+            // 左側 Top1~3
+            const top3 = items.slice(0,3);
+            $top3.innerHTML = top3.map((p,i)=>topCard(p, i+1)).join('');
+
+            // 右側 4~10
+            const rest = items.slice(3,10);
+            $side.innerHTML = rest.map((p,idx)=>sideItem(p, idx+4)).join('');
+
+            $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+          }catch(err){
+            console.error(err);
+            $empty.classList.remove('d-none');
+            $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+          }
+        }
+
+        // 模板：Top 卡片
+        function topCard(p, rank){
+          const cover = p.coverUrl || 'https://placehold.co/640x360?text=No+Image';
+          const price = priceText(p.price, p.currencyCode);
+          const plat  = p.platformName ? `<span class="badge text-bg-primary fw-bold">${escapeHtml(p.platformName)}</span>` : '';
+          return `
+            <a class="top-card text-decoration-none text-dark" href="/OnlineStore/store/details/${p.productId}" title="${escapeHtml(p.productName)}">
+              <span class="badge-rank">第 ${rank} 名</span>
+              <div class="cover" style="background-image:url('${cover.replace(/'/g,"%27")}')"></div>
+              <div class="body">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  ${plat}
+                  <div class="price">${price}</div>
+                </div>
+                <div class="title">${escapeHtml(p.productName)}</div>
+              </div>
+            </a>
+          `;
+        }
+
+        // 模板：右側列
+        function sideItem(p, rank){
+          const plat = p.platformName ? `<span class="tag">${escapeHtml(p.platformName)}</span>` : '';
+          const price = priceText(p.price, p.currencyCode);
+          return `
+            <a class="side-item text-decoration-none text-dark" href="/OnlineStore/store/details/${p.productId}" title="${escapeHtml(p.productName)}">
+              <div class="side-rank">${rank}</div>
+              <div class="side-title">${escapeHtml(p.productName)}</div>
+              <div class="side-meta">
+                ${plat}
+                <span>${price}</span>
+              </div>
+            </a>
+          `;
+        }
+
+        function priceText(n, cur){
+          if(n==null) return '';
+          const v = Number(n).toLocaleString('zh-TW',{minimumFractionDigits:0, maximumFractionDigits:0});
+          return (cur||'TWD')==='TWD' ? `NT$ ${v}` : `${cur||''} ${v}`;
+        }
+        function escapeHtml(str){ return (str??'').replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+    </script>
+}
