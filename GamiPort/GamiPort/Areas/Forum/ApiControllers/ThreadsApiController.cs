@@ -41,9 +41,9 @@ namespace GamiPort.Areas.Forum.ApiControllers
         // 2) 取得樓層列表（分頁 + 排序）
         [HttpGet("{threadId:long}/posts")]
         public async Task<IActionResult> GetPosts(long threadId, [FromQuery] string sort = "oldest",
-            [FromQuery] int page = 1, [FromQuery] int size = 20)
+            [FromQuery] int page = 1, [FromQuery] int size = 20, CancellationToken ct = default)
         {
-            var result = await _svc.GetThreadPostsAsync(threadId, sort, page, size);
+            var result = await _svc.GetThreadPostsAsync(threadId, sort, page, size, CurrentUserId, ct);
             return Ok(result);
         }
 
@@ -84,13 +84,14 @@ namespace GamiPort.Areas.Forum.ApiControllers
 
 
         //7)
+        [Authorize]
         [HttpPost("/api/forum/posts/{postId:long}/like")]
         public async Task<IActionResult> TogglePostLike(long postId)
         {
             var liked = await _svc.TogglePostLikeAsync(CurrentUserId, postId);
             return Ok(new { liked });
         }
-
+        [Authorize]
         [HttpGet("/api/forum/posts/{postId:long}/like/status")]
         public async Task<IActionResult> PostLikeStatus(long postId)
         {
@@ -119,6 +120,30 @@ namespace GamiPort.Areas.Forum.ApiControllers
                 isAuth = User?.Identity?.IsAuthenticated ?? false,
                 claims = User?.Claims.Select(c => new { c.Type, c.Value })
             });
+        }
+
+        [Authorize]
+        [HttpDelete("{threadId:long}")]
+        public async Task<IActionResult> DeleteThread(long threadId, CancellationToken ct)
+        {
+            var ok = await _svc.DeleteThreadAsync(CurrentUserId, threadId, ct);
+
+            if (!ok)
+                return Forbid(); // or return NotFound()
+
+            return NoContent();
+        }
+
+        [Authorize]
+        [HttpDelete("/api/forum/posts/{postId:long}")]
+        public async Task<IActionResult> DeletePost(long postId, CancellationToken ct)
+        {
+            var ok = await _svc.DeletePostAsync(CurrentUserId, postId, ct);
+
+            if (!ok)
+                return Forbid();
+
+            return NoContent();
         }
 
 

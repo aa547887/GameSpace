@@ -27,5 +27,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
         // ✅ 新增：依遊戲名找論壇（跳轉用）
         Task<ForumDetailDto?> GetForumByGameNameAsync(
             string gameName, CancellationToken ct = default);
+
+
     }
 }

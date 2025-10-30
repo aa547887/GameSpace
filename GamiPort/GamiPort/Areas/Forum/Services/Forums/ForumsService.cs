@@ -59,33 +59,29 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
         // ★ ② 新版：簽名一定要包含 CancellationToken（最後一個參數）
         public async Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
-     int forumId, string sort, int page, int size,
-     string? keyword = null,
-     bool inContent = false,
-     bool inGame = false,
-     CancellationToken ct = default)
+    int forumId, string sort, int page, int size,
+    string? keyword = null, bool inContent = false, bool inGame = false,
+    CancellationToken ct = default)
         {
             page = Math.Max(1, page);
             size = Math.Clamp(size, 1, 100);
 
-            // 基底：該論壇底下的主題
             var baseQ = _db.Threads.AsNoTracking()
                 .Where(t => t.ForumId == forumId);
 
-            // ------- 關鍵字搜尋：標題 +（可選）內文 -------
+            // 關鍵字（標題 + 可選內容）
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var k = keyword.Trim();
 
-                IQueryable<Thread> pred = _db.Threads.AsNoTracking()
+                var pred = _db.Threads.AsNoTracking()
                     .Where(t => t.ForumId == forumId && EF.Functions.Like(t.Title, $"%{k}%"));
 
                 if (inContent)
                 {
                     var contentHit =
                         from t in _db.Threads.AsNoTracking()
-                        join p in _db.ThreadPosts.AsNoTracking()
-                            on t.ThreadId equals p.ThreadId
+                        join p in _db.ThreadPosts.AsNoTracking() on t.ThreadId equals p.ThreadId
                         where t.ForumId == forumId
                               && p.ContentMd != null
                               && EF.Functions.Like(p.ContentMd, $"%{k}%")
@@ -99,59 +95,72 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
             var now = DateTime.UtcNow;
 
-            // 先 enrich：回覆數 + 最後活動時間（固定成 ThreadEnriched 型別，Score 先 null）
-            IQueryable<ThreadEnriched> qEnriched = baseQ
-                .Select(t => new ThreadEnriched(
-                    t, // T
-                    _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId), // ReplyCount（保險用子查詢）
-                    (t.UpdatedAt ?? t.CreatedAt) ?? now,                  // LastActivity
-                    null                                                  // Score
-                ));
+            // 先用匿名型別在 DB 端把要排序/分頁的欄位統統算好
+            var q = baseQ
+                .Select(t => new
+                {
+                    t.ThreadId,
+                    t.Title,
+                    t.Status,
+                    CreatedAt = t.CreatedAt,                   // 可為 null
+                    UpdatedAt = t.UpdatedAt,                   // 可為 null
+                    ReplyCount = _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId),
+                    LastActivity = (t.UpdatedAt ?? t.CreatedAt ?? now)
+                });
 
-            // ------- 排序（全部分支都維持 ThreadEnriched 型別）-------
             var sortKey = (sort ?? "lastReply").ToLowerInvariant();
 
-            switch (sortKey)
+            // 排序：只用匿名型別欄位
+            q = sortKey switch
             {
-                case "created":
-                    qEnriched = qEnriched.OrderByDescending(x => x.T.CreatedAt);
-                    break;
+                "created" => q.OrderByDescending(x => x.CreatedAt ?? x.LastActivity),
+                "hot" => q.Select(x => new
+                {
+                    x.ThreadId,
+                    x.Title,
+                    x.Status,
+                    x.CreatedAt,
+                    x.UpdatedAt,
+                    x.ReplyCount,
+                    x.LastActivity,
+                    Score = (double)x.ReplyCount * 1.6
+                                            - (double)EF.Functions.DateDiffHour(x.LastActivity, now) * 0.08
+                })
+                              .OrderByDescending(x => x.Score)
+                              .ThenByDescending(x => x.LastActivity)
+                              .Select(x => new
+                              {
+                                  x.ThreadId,
+                                  x.Title,
+                                  x.Status,
+                                  x.CreatedAt,
+                                  x.UpdatedAt,
+                                  x.ReplyCount,
+                                  x.LastActivity
+                              }),
+                _ => q.OrderByDescending(x => x.LastActivity) // lastReply
+            };
 
-                case "hot":
-                    qEnriched = qEnriched
-                        .Select(x => new ThreadEnriched(
-                            x.T,
-                            x.ReplyCount,
-                            x.LastActivity,
-                            (double)x.ReplyCount * 1.6
-                            - (double)EF.Functions.DateDiffHour(x.LastActivity, now) * 0.08 // Score
-                        ))
-                        .OrderByDescending(x => x.Score)
-                        .ThenByDescending(x => x.LastActivity);
-                    break;
+            var total = await q.CountAsync(ct);
 
-                default: // lastReply
-                    qEnriched = qEnriched.OrderByDescending(x => x.LastActivity);
-                    break;
-            }
-
-            var total = await qEnriched.CountAsync(ct);
-
-            var items = await qEnriched
+            var rows = await q
                 .Skip((page - 1) * size)
                 .Take(size)
-                .Select(x => new ThreadListItemDto(
-                    x.T.ThreadId,
-                    x.T.Title,
-                    x.T.Status,
-                    x.T.CreatedAt ?? x.LastActivity, // 給 DTO 的非 null CreatedAt
-                    x.T.UpdatedAt,
-                    x.ReplyCount
-                ))
                 .ToListAsync(ct);
+
+            // 這裡才 map 成 DTO
+            var items = rows.Select(x => new ThreadListItemDto(
+                x.ThreadId,
+                x.Title,
+                x.Status,
+                x.CreatedAt ?? x.LastActivity,   // 補非 null
+                x.UpdatedAt,
+                x.ReplyCount
+            )).ToList();
 
             return new PagedResult<ThreadListItemDto>(items, page, size, total);
         }
+
 
 
         public async Task<IReadOnlyList<ForumListItemDto>> SearchForumsAsync(

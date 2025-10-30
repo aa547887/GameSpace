@@ -52,59 +52,78 @@ namespace GamiPort.Areas.Forum.Services.Threads
                 likeCount,
                 isLiked
             );
-        }   
+        }
 
-        public async Task<PagedResult<ThreadPostRowDto>> GetThreadPostsAsync(long threadId, string sort, int page, int size)
+        public async Task<PagedResult<ThreadPostItemDto>> GetThreadPostsAsync(
+    long threadId, string sort, int page, int size,
+    long currentUserId, CancellationToken ct = default)
         {
             page = Math.Max(page, 1);
             size = Math.Clamp(size, 1, 100);
 
-            // 基底查詢（僅 normal；自己決定是否顯示 hidden）
-            var q = _db.ThreadPosts
-                .AsNoTracking()
+            // 基底：該主題下、狀態正常的回覆
+            var baseQ = _db.ThreadPosts.AsNoTracking()
                 .Where(p => p.ThreadId == threadId && p.Status == "normal");
 
-            // likeCount 子查詢
-            var likeQ = _db.Reactions
-                .AsNoTracking()
+            // 只挑出「貼文按讚」的反應
+            var likeQ = _db.Reactions.AsNoTracking()
                 .Where(r => r.TargetType == TARGET_THREAD_POST && r.Kind == LIKE);
 
-            // 排序
-            IOrderedQueryable<ThreadPost> ordered;
-            switch (sort?.ToLowerInvariant())
+            // 先投影成匿名型別，把排序/分頁會用到的欄位都算好（可被 EF 翻譯）
+            var q = from p in baseQ
+                        // 作者暱稱
+                    join u in _db.Users.AsNoTracking() on p.AuthorUserId equals u.UserId
+                    // 我是否按過讚（左外連）
+                    join myLike in likeQ.Where(x => x.UserId == currentUserId)
+                        on p.Id equals myLike.TargetId into gj
+                    from liked in gj.DefaultIfEmpty()
+                    select new
+                    {
+                        p.Id,
+                        p.ThreadId,
+                        p.AuthorUserId,
+                        AuthorName =   u.UserName ?? ("user_" + u.UserId),
+                        CreatedAt = p.CreatedAt ?? DateTime.UtcNow,
+                        p.ContentMd,
+                        ContentHtml = (string?)null,
+                        p.ParentPostId,
+                        LikeCount = likeQ.Count(r => r.TargetId == p.Id),
+                        IsLikedByMe = liked != null,
+                        CanDelete = (p.AuthorUserId ?? 0) == currentUserId // 管理員再加條件
+                    };
+
+            // 排序（注意用匿名型別欄位，不要塞子查詢到 OrderBy 裡）
+            var key = (sort ?? "oldest").ToLowerInvariant();
+            q = key switch
             {
-                case "newest":
-                    ordered = q.OrderByDescending(p => p.CreatedAt);
-                    break;
-                case "mostliked":
-                    // 依讚數排序，其次按時間
-                    ordered = q
-                        .OrderByDescending(p => likeQ.Count(r => r.TargetId == p.Id))
-                        .ThenBy(p => p.CreatedAt);
-                    break;
-                default:
-                    ordered = q.OrderBy(p => p.CreatedAt); // oldest
-                    break;
-            }
+                "newest" => q.OrderByDescending(x => x.CreatedAt),
+                "mostliked" => q.OrderByDescending(x => x.LikeCount).ThenBy(x => x.CreatedAt),
+                _ => q.OrderBy(x => x.CreatedAt) // oldest
+            };
 
-            var total = await q.CountAsync();
+            var total = await baseQ.CountAsync(ct);
 
-            var items = await ordered
+            var rows = await q
                 .Skip((page - 1) * size)
                 .Take(size)
-                .Select(p => new ThreadPostRowDto(
-                    p.Id,
-                    p.ThreadId ?? 0,
-                    p.AuthorUserId ?? 0,
-                    p.ContentMd,
-                    p.CreatedAt ?? DateTime.UtcNow,
-                    p.ParentPostId,
-                    likeQ.Count(r => r.TargetId == p.Id)
-                ))
-                .ToListAsync();
+                .ToListAsync(ct);
 
-            return new PagedResult<ThreadPostRowDto>(items, page, size, total);
+            var items = rows.Select(x => new ThreadPostItemDto(
+                x.Id,
+                x.AuthorUserId ?? 0,
+                x.AuthorName,
+                x.CreatedAt,
+                x.ContentMd,
+                x.ContentHtml,
+                x.ParentPostId,
+                x.LikeCount,
+                x.IsLikedByMe,
+                x.CanDelete
+            )).ToList();
+
+            return new PagedResult<ThreadPostItemDto>(items, page, size, total);
         }
+
 
         public async Task<long> CreateThreadAsync(long userId, int forumId, string title, string contentMd)
         {
@@ -271,6 +290,53 @@ namespace GamiPort.Areas.Forum.Services.Threads
             return (isLiked, likeCount);
         }
 
+        public async Task<bool> DeleteThreadAsync(long userId, long threadId, CancellationToken ct = default)
+        {
+            // 1. 抓 thread
+            var thread = await _db.Threads
+                .Include(t => t.ThreadId) // ⚠️ cascade 手動刪 post
+                .FirstOrDefaultAsync(t => t.ThreadId == threadId, ct);
+
+            if (thread == null)
+                return false;
+
+            // 2. 權限檢查：只能刪自己
+            if (thread.AuthorUserId != userId)
+                return false; // 之後可改成 throw Forbidden
+
+            // 3. 先刪底下所有 post（硬刪）
+            if (thread.ThreadPosts != null && thread.ThreadPosts.Any())
+            {
+                _db.ThreadPosts.RemoveRange(thread.ThreadPosts);
+            }
+
+            // 再刪 thread
+            _db.Threads.Remove(thread);
+            await _db.SaveChangesAsync(ct);
+
+            return true;
+        }
+
+        public async Task<bool> DeletePostAsync(long userId, long postId, CancellationToken ct = default)
+        {
+            // 1. 抓 post
+            var post = await _db.ThreadPosts
+                .FirstOrDefaultAsync(p => p.Id == postId, ct);
+
+            if (post == null)
+                return false;
+
+            // 2. 權限檢查：只能刪自己
+            if (post.AuthorUserId != userId)
+
+                return false;
+
+            // 3. 刪
+            _db.ThreadPosts.Remove(post);
+            await _db.SaveChangesAsync(ct);
+
+            return true;
+        }
 
 
 

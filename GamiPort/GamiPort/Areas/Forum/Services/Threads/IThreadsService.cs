@@ -12,7 +12,9 @@ namespace GamiPort.Areas.Forum.Services.Threads
             Task<ThreadDetailDto?> GetThreadAsync(long threadId, long currentUserId);
 
             // sort: "oldest" (default) | "newest" | "mostLiked"
-            Task<PagedResult<ThreadPostRowDto>> GetThreadPostsAsync(long threadId, string sort, int page, int size);
+            Task<PagedResult<ThreadPostItemDto>> GetThreadPostsAsync(
+    long threadId, string sort, int page, int size,
+    long currentUserId, CancellationToken ct = default);
 
             Task<long> CreateThreadAsync(long userId, int forumId, string title, string contentMd);
 
@@ -26,6 +28,9 @@ namespace GamiPort.Areas.Forum.Services.Threads
             Task<bool> TogglePostLikeAsync(long userId, long postId);
 
             Task<(bool IsLiked, int LikeCount)> GetPostLikeStatusAsync(long userId, long postId);
+
+            Task<bool> DeleteThreadAsync(long userId, long threadId, CancellationToken ct = default);
+            Task<bool> DeletePostAsync(long userId, long postId, CancellationToken ct = default);
         }
     }
 

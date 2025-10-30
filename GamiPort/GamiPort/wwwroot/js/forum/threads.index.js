@@ -1,12 +1,20 @@
-﻿import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js';
-import { ThreadList } from './components/forum-list.js';
+﻿// 必須：import 要在最上面（ESM 規則）
+import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js'
+import { ThreadList } from './components/thread-list.js'
 
-// 從 Razor 取 forumId（存在容器的 data-* 裡）
-const root = document.getElementById('thread-app');
-const forumId = Number(root?.dataset?.forumId ?? 0);
+// 1) 先抓 DOM 與 forumId
+const root = document.getElementById('thread-app')
+const forumId = Number(root?.dataset?.forumId ?? 0)
 
-// 掛上「主題清單」
+// 2) 再 debug，這時候 forumId 已經初始化了
+console.debug('[threads.index] loaded, forumId =', forumId)
+
+// 3) 最後再 createApp；provide 用「函式」回傳，避免建立物件當下就取值
 createApp({
     components: { ThreadList },
-    provide: { forumId } // 用 provide/inject 傳給子元件
-}).mount('#thread-app');
+    provide() {
+        return { forumId }   // 這裡此刻 forumId 已經有值
+    },
+    template: `<ThreadList />`
+}).mount('#thread-app')
+
