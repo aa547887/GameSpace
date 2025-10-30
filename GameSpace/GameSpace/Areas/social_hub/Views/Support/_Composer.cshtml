@@ -1,107 +1,72 @@
 ﻿@* =======================================================================
-   _Composer.cshtml
-   功能：工單對話輸入區（前/後台通用）
-   重點：
-   - ★ 與後端一致：maxlength=255，前端再保護避免貼上超長
-   - 顯示字數計數（0/255），接近上限會變色
-   - Enter 送出、Shift+Enter 換行；IME 組字中不觸發送出
-   - 保留 #msg-text / #btn-send / #af-token，與既有父頁 JS 完全相容
-   - 額外派發自訂事件 "gp-support-send"（可選用），不影響現有 click 監聽
+   _Composer.cshtml — 工單對話輸入區（前/後台通用）
+
+   ★ 本版維持：
+     - 送出按鈕 type="button"（避免表單原生 submit）
+     - Enter 送出 / Shift+Enter 換行（IME 組字中不送）
+     - 不主動 AJAX；由父頁監聽 #btn-send click 處理送出
    ======================================================================= *@
 
 @model int
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 <div class="d-flex gap-2 align-items-start" id="gp-support-composer">
-    <textarea id="msg-text"
-              class="form-control"
-              rows="2"
-              maxlength="255"
-              placeholder="輸入訊息…"
-              aria-label="訊息內容（最多 255 字）"></textarea>
+    <textarea id="msg-text" class="form-control" rows="2" maxlength="255"
+              placeholder="輸入訊息…" aria-label="訊息內容（最多 255 字）"></textarea>
 
     <div class="d-flex flex-column align-items-end" style="min-width: 110px;">
         <button id="btn-send" type="button" class="btn btn-primary" data-ticket-id="@Model">送出</button>
-        <small class="text-muted mt-1">
-            <span id="msg-count">0</span>/255
-        </small>
+        <small class="text-muted mt-1"><span id="msg-count">0</span>/255</small>
     </div>
 </div>
 
-<!-- Anti-forgery：父頁 JS 可優先讀取這裡；若無則讀 <meta> -->
-<input type="hidden"
-       id="af-token"
+<!-- Anti-forgery：父頁可直接讀取 -->
+<input type="hidden" id="af-token"
        value="@Antiforgery.GetAndStoreTokens(ViewContext.HttpContext).RequestToken" />
 
 <script>
     (() => {
-      const root    = document.getElementById('gp-support-composer');
-      const ta      = root.querySelector('#msg-text');
-      const sendBtn = root.querySelector('#btn-send');
-      const cnt     = root.querySelector('#msg-count');
-      const MAX     = 255;
-      let isComposing = false; // IME 組字中避免誤送
+      const root = document.getElementById('gp-support-composer');
+      const ta   = root.querySelector('#msg-text');
+      const btn  = root.querySelector('#btn-send');
+      const cnt  = root.querySelector('#msg-count');
+      const MAX  = 255;
 
-      // --- 字數/顏色 更新 ---
-      const updateCount = () => {
+      let composing = false;
+
+      function update(){
         let v = ta.value || '';
-        if (v.length > MAX) {
-          // 以防萬一（某些瀏覽器/貼上）仍突破 maxlength
-          ta.value = v.slice(0, MAX);
-          v = ta.value;
-        }
+        if (v.length > MAX) { ta.value = v.slice(0, MAX); v = ta.value; }
         cnt.textContent = v.length;
-
-        // 接近上限時給點視覺提示
         const near = v.length >= MAX - 10;
         cnt.parentElement.classList.toggle('text-danger', near);
         cnt.parentElement.classList.toggle('text-muted', !near);
+        btn.disabled = v.trim().length === 0;
+      }
 
-        // 無內容時可選擇關閉按鈕
-        sendBtn.disabled = v.trim().length === 0;
-      };
-
-      // --- 事件：輸入/貼上/組字 ---
-      ta.addEventListener('input', updateCount);
-      ta.addEventListener('paste', () => setTimeout(updateCount, 0));
-      ta.addEventListener('compositionstart', () => { isComposing = true; });
-      ta.addEventListener('compositionend',   () => { isComposing = false; });
-
-      // --- Enter 送出（Shift+Enter 換行；IME 中不送）---
-      ta.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+      ta.addEventListener('input', update);
+      ta.addEventListener('paste', ()=> setTimeout(update, 0));
+      ta.addEventListener('compositionstart', ()=> composing = true);
+      ta.addEventListener('compositionend',  ()=> composing = false);
+      ta.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter' && !e.shiftKey && !composing){
           e.preventDefault();
-          sendBtn.click();
+          btn.click(); // 交由父頁 click 監聽送出
         }
       });
 
-      // --- 點送出：不主動發 AJAX（交由父頁既有邏輯處理）
-      //     但同時派發可選用的自訂事件，讓需要的頁面可攔截自行送出
-      sendBtn.addEventListener('click', () => {
+      // 不在此處 AJAX；交由父頁處理
+      btn.addEventListener('click', ()=> {
+        // 可選：派發事件讓父頁攔截使用
         const text = (ta.value || '').trim();
-        if (!text || text.length > MAX) {
-          updateCount();
-          return;
-        }
-
-        // 可選：派發事件（父頁可監聽 window 或 root 捕捉）
-        const ev = new CustomEvent('gp-support-send', {
+        if(!text || text.length > MAX) { update(); return; }
+        root.dispatchEvent(new CustomEvent('gp-support-send', {
           bubbles: true,
-          detail: {
-            ticketId: +(sendBtn.getAttribute('data-ticket-id') || 0),
-            text,
-            // 若父頁打算直接用這裡的 Token，也提供一份
-            token: document.getElementById('af-token')?.value || ''
-          }
-        });
-        root.dispatchEvent(ev);
-
-        // 保留舊行為：父頁若監聽 #btn-send 的 click 會在這裡送出 AJAX
-        // 送出後由父頁清空輸入框；若父頁沒清，這裡也提供最小清空範例：
-        // ta.value = ''; updateCount();
+          detail: { ticketId: +(btn.dataset.ticketId||0), text,
+            token: document.getElementById('af-token')?.value || '' }
+        }));
       });
 
-      // 初始化
-      updateCount();
+      update();
     })();
 </script>

@@ -1,16 +1,8 @@
 ﻿@* ======================================================================
-   Views/Support/Ticket.cshtml（前台）
-   功能：顯示單一工單的對話紀錄，並提供輸入框送出訊息。
-   這版做了什麼？
-   1) ★ 文字輸入框 maxlength=255（與後端檢核一致，避免 400 被打回）
-   2) 送出訊息時一定夾帶 Anti-Forgery Token（從 <meta> 讀）
-   3) 成功寫入後「立即」Reload 訊息（後端會廣播 msg，另端也會自動更新）
-   4) SignalR 連 /hubs/support，前台走 Join(ticketId) 路線；監聽 "msg"/"ticket.message"
-   5) UI 細節：滾動到底、送出中防連點、錯誤提示、連線提示
-   需求前提：
-   - _Layout 有：<meta name="request-verification-token" content="@af.RequestToken" />
-   - Program.cs 已 MapHub<SupportHub>("/hubs/support")
-   - 後端 Service 在寫入訊息成功後有廣播 _notifier.TicketMessageAsync(ticketId, ...)
+   Views/Support/Ticket.cshtml（前台 — 穩定貼底 & 泡泡）
+   - 僅內容區(#msg-host)捲動；外層不再出頁面滾輪
+   - 透過 ResizeObserver / MutationObserver / 多次回補計算，解決右欄晚載入擠高
+   - 使用者(我)=右藍；客服=左灰；抽純文字避免「卡片包卡片」
    ====================================================================== *@
 
 @model GamiPort.Areas.social_hub.Controllers.SupportController.TicketVM
@@ -19,210 +11,351 @@
     ViewData["Title"] = $"工單 #{Model.TicketId}";
 }
 
-<style>
-    :root {
-        --chat-h: 68vh;
-    }
-
-    @@media (max-width: 992px) {
-        :root {
-            --chat-h: 62vh;
+@section Styles {
+    <style>
+        /* ===== 只對本頁生效 ===== */
+        #support-ticket,
+        #support-ticket .st-main-col,
+        #support-ticket .st-card-wrap {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
-    }
 
-    .ticket-card {
-        height: var(--chat-h);
-        display: flex;
-        flex-direction: column;
-    }
+            #support-ticket .ticket-card {
+                display: flex;
+                flex-direction: column;
+                border-radius: 14px;
+                min-height: 0
+            }
 
-    #msg-host {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: auto;
-        padding: 16px 18px;
-        background: #fff;
-    }
+                #support-ticket .ticket-card .card-header {
+                    flex: 0 0 auto;
+                    padding: .6rem .9rem
+                }
 
-    /* 可依你站上配色微調 */
-    .conn-ok {
-        color: #16a34a;
-    }
-    /* 綠 */
-    .conn-warn {
-        color: #ca8a04;
-    }
-    /* 黃 */
-    .conn-bad {
-        color: #dc2626;
-    }
-    /* 紅 */
-</style>
+                #support-ticket .ticket-card .card-footer {
+                    flex: 0 0 auto;
+                    padding: .5rem .75rem .6rem;
+                    background: #fafafa;
+                    border-top: 1px solid #eee
+                }
 
-<div class="container py-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">工單 #@Model.TicketId</h5>
-        <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("MyTickets", "Support", new { area = "social_hub" })">我的客訴</a>
-    </div>
+            /* 只讓內容區滾動，高度由 JS 算到貼底 */
+            #support-ticket #msg-host {
+                overflow: auto;
+                padding: 14px 16px;
+                background: #fff;
+                min-height: 0
+            }
 
-    <div class="card shadow-sm ticket-card">
-        <div class="card-header py-2"><strong>對話紀錄</strong></div>
-        <div class="card-body p-0">
-            <div id="msg-host"><div class="text-muted p-3">載入中…</div></div>
-        </div>
+            /* 泡泡：使用者(我)=右藍；客服=左灰 */
+            #support-ticket .gp-chat-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px
+            }
 
-        <div class="card-footer">
-            <div class="input-group">
-                @* ★ 與後端一致（255）——避免被後端 400 打回而「看似不即時」 *@
-                <input id="msg-text" class="form-control" maxlength="255" placeholder="輸入訊息…" />
-                <button id="btn-send" class="btn btn-primary">送出</button>
+            #support-ticket .gp-msg {
+                display: flex;
+                width: 100%
+            }
+
+                #support-ticket .gp-msg.mine {
+                    justify-content: flex-end
+                }
+
+                #support-ticket .gp-msg.other {
+                    justify-content: flex-start
+                }
+
+            #support-ticket .gp-bubble {
+                max-width: min(78%,640px);
+                border-radius: 14px;
+                padding: 10px 12px;
+                line-height: 1.48;
+                font-size: .96rem;
+                word-break: break-word;
+                box-shadow: 0 1px 1px rgba(0,0,0,.03);
+                white-space: pre-wrap
+            }
+
+            #support-ticket .gp-msg.mine .gp-bubble {
+                background: #2563eb;
+                color: #fff;
+                border-bottom-right-radius: 8px
+            }
+
+            #support-ticket .gp-msg.other .gp-bubble {
+                background: #f4f6f8;
+                color: #111827;
+                border-bottom-left-radius: 8px
+            }
+
+            #support-ticket .composer-row .form-control {
+                min-height: 44px
+            }
+
+            #support-ticket .composer-row .btn {
+                min-height: 44px;
+                padding: 0 16px
+            }
+
+            #support-ticket .conn-ok {
+                color: #16a34a
+            }
+
+            #support-ticket .conn-warn {
+                color: #ca8a04
+            }
+
+            #support-ticket .conn-bad {
+                color: #dc2626
+            }
+    </style>
+}
+
+<div id="support-ticket" class="container py-3">
+    <div class="st-main-col">
+        <div class="st-card-wrap">
+            <div class="card shadow-sm ticket-card">
+                <div class="card-header"><strong>工單 #@Model.TicketId</strong></div>
+
+                <div class="card-body p-0">
+                    <div id="msg-host"><div class="text-muted p-3">載入中…</div></div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="input-group composer-row">
+                        <input id="msg-text" class="form-control" maxlength="255" placeholder="輸入訊息…" />
+                        <button id="btn-send" class="btn btn-primary" type="button">送出</button>
+                    </div>
+                    <div id="conn-tip" class="small text-muted mt-1">即時連線：連線中…</div>
+                </div>
             </div>
-            <div id="conn-tip" class="small text-muted mt-1">即時連線：連線中…</div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        (() => {
-          // ===== 常數 / 小工具 =====
+        (()=> {
           const TICKET_ID = @Model.TicketId;
-          const host = document.getElementById('msg-host');
-          const tip  = document.getElementById('conn-tip');
-          const btn  = document.getElementById('btn-send');
-          const input= document.getElementById('msg-text');
-
-          // 從 _Layout 的 <meta> 取得 Anti-Forgery Token（Program.cs 有設定 HeaderName）
+          const scope = document.getElementById('support-ticket');
+          const card  = scope.querySelector('.ticket-card');
+          const host  = scope.querySelector('#msg-host');
+          const tip   = scope.querySelector('#conn-tip');
+          const btn   = scope.querySelector('#btn-send');
+          const input = scope.querySelector('#msg-text');
+          const rightRail = document.querySelector('.right-rail'); // 右側欄
           const getAf = () => document.querySelector('meta[name="request-verification-token"]')?.content || '';
+
+          /* ================= 貼底高度：只讓 #msg-host 捲動 ================= */
+          function fitChatHeight(extra=0) {
+            if (!card || !host) return;
+
+            const header = card.querySelector('.card-header');
+            const footer = card.querySelector('.card-footer');
+            const rect   = card.getBoundingClientRect();
+            const cardCS = getComputedStyle(card);
+            const hostCS = getComputedStyle(host);
+
+            const viewportH = window.innerHeight;
+            const headerH   = header?.offsetHeight || 0;
+            const footerH   = footer?.offsetHeight || 0;
+            const mb        = parseInt(cardCS.marginBottom || '0', 10);
+            const padTB     = parseInt(hostCS.paddingTop || '0', 10) + parseInt(hostCS.paddingBottom || '0', 10);
+
+            // 安全緩衝 + 可選的外部額外值
+            const SAFE = 10 + (extra||0);
+
+            let h = viewportH - rect.top - headerH - footerH - mb - SAFE;
+            h = Math.max(240, Math.floor(h - padTB));
+
+            host.style.height    = h + 'px';
+            host.style.maxHeight = h + 'px';
+          }
 
           const isNearBottom = () => (host.scrollTop + host.clientHeight) >= (host.scrollHeight - 40);
           const scrollBottom = () => { host.scrollTop = host.scrollHeight; };
 
-          // ===== 載入訊息（保留使用者滾動位置；靠後端 Partial _MessageList.cshtml） =====
-          async function reloadMessages() {
-            const keepDown = isNearBottom();
+          // 訊息內容變動時再算一次（reload/Hub push）
+          const mo = new MutationObserver(()=> requestAnimationFrame(()=>fitChatHeight(8)));
+          mo.observe(host, {childList:true, subtree:true});
+
+          // 右邊欄位尺寸變化（廣告/卡片晚載）時再算一次
+          if (window.ResizeObserver && rightRail) {
+            const ro = new ResizeObserver(()=> requestAnimationFrame(()=>fitChatHeight(12)));
+            ro.observe(rightRail);
+          }
+
+          window.addEventListener('resize', ()=>fitChatHeight(8));
+          window.addEventListener('orientationchange', ()=>fitChatHeight(8));
+          window.addEventListener('load', ()=>fitChatHeight(12));
+
+          /* ============ 把載入的 HTML 標準化成左右泡泡（抽「純文字」）============ */
+          function normalizeBubbles(container){
+            if (container.firstElementChild?.classList.contains('gp-chat-list')) return;
+
+            const list = document.createElement('div');
+            list.className = 'gp-chat-list';
+
+            Array.from(container.children).forEach(node=>{
+              if(!(node instanceof HTMLElement)) return;
+
+              let isMine = false;
+              const mineAttr   = node.getAttribute?.('data-mine');
+              const senderAttr = node.getAttribute?.('data-sender');
+              if (mineAttr === 'true'  || senderAttr === 'user')    isMine = true;
+              if (mineAttr === 'false' || senderAttr === 'manager') isMine = false;
+              if (mineAttr == null && senderAttr == null) {
+                const raw = (node.innerText || '').trim();
+                if (/^\s*使用者/.test(raw)) isMine = true;
+                else if (/^\s*客服/.test(raw)) isMine = false;
+              }
+
+              // 只抽純文字，避免把 .card 樣式嵌入氣泡
+              const contentNode = node.querySelector('.msg-text, .message-text, .card-body, .bubble-text') || node;
+              const text = (contentNode.textContent || '').replace(/\s+\n/g, '\n').trim();
+              if (!text) return;
+
+              const wrap   = document.createElement('div');
+              wrap.className = 'gp-msg ' + (isMine ? 'mine' : 'other');
+
+              const bubble = document.createElement('div');
+              bubble.className = 'gp-bubble';
+              bubble.textContent = text;
+
+              wrap.appendChild(bubble);
+              list.appendChild(wrap);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(list);
+          }
+
+          // 分頁（事件委派）
+          host.addEventListener('click', async (e)=>{
+            const a = e.target.closest('a.page-link');
+            if (!a) return;
+            e.preventDefault();
+            const url  = new URL(a.href, location.origin);
+            const page = parseInt(url.searchParams.get('page') || '1', 10);
+            await loadMessages(page, {keepPosition:false});
+            scrollBottom();
+          });
+
+          async function loadMessages(page=1, {keepPosition=true}={}){
+            const stick = keepPosition ? isNearBottom() : false;
             try{
-              const res = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}`, {
-                headers:{'X-Requested-With':'XMLHttpRequest'},
-                credentials:'same-origin'
+              const res  = await fetch(`/social_hub/Support/MessageList?id=${TICKET_ID}&page=${page}`, {
+                headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
               });
               const html = await res.text();
               host.innerHTML = html;
-              if (keepDown) scrollBottom();
+
+              normalizeBubbles(host);
+              // 連續回補：處理旁欄或圖片/字體晚載造成的 reflow
+              fitChatHeight(12);
+              requestAnimationFrame(()=>fitChatHeight(12));
+              setTimeout(()=>fitChatHeight(14), 60);
+              setTimeout(()=>fitChatHeight(16), 180);
+
+              if (stick) scrollBottom();
             }catch{
               host.innerHTML = `<div class="text-danger p-3">載入失敗，請稍後再試。</div>`;
+              fitChatHeight(12);
             }
           }
 
-          // ===== 送出訊息（帶 Anti-forgery；與後端上限 255 同步） =====
+          /* ===================== 送出 ===================== */
           let sending = false;
           async function sendMessage(){
             if (sending) return;
-            const text = (input.value || '').trim();
+            const text = (input.value||'').trim();
             if (!text) return;
+            if (text.length > 255){ alert('內容過長，最多 255 字。'); return; }
 
-            // 雙重保護（前後端一致 255）
-            if (text.length > 255) {
-              alert('內容過長，最多 255 字。');
-              return;
-            }
-
-            sending = true;
-            const oldText = btn.textContent;
+            sending = true; const old = btn.textContent;
             btn.disabled = true; btn.textContent = '送出中…';
 
             try{
-              const fd = new FormData();
-              fd.append('text', text);
+              const fd = new FormData(); fd.append('text', text);
               const res = await fetch(`/social_hub/Support/SendMessage?id=${TICKET_ID}`, {
-                method:'POST',
-                body: fd,
-                credentials:'same-origin',
-                headers:{
-                  'X-Requested-With':'XMLHttpRequest',
-                  'RequestVerificationToken': getAf() // ★ 關鍵：帶 Token 才不會被 400 擋下
-                }
+                method:'POST', body:fd, credentials:'same-origin',
+                headers:{'X-Requested-With':'XMLHttpRequest','RequestVerificationToken':getAf()}
               });
-
-              if (!res.ok) {
+              if (!res.ok){
                 const msg = (await res.text()) || `${res.status} ${res.statusText}`;
-                alert('送出失敗：' + msg);
-                return;
+                alert('送出失敗：' + msg); return;
               }
-
               input.value = '';
-              await reloadMessages();
+              await loadMessages(1, {keepPosition:false});
               scrollBottom();
-              // 此端自己 reload 後，另一端會因為後端有 _notifier.TicketMessageAsync(...) 而自動收到 "msg" 事件 → 也會更新
             }catch{
               alert('送出失敗：網路或伺服器錯誤');
             }finally{
-              btn.disabled = false; btn.textContent = oldText; sending = false;
+              btn.disabled = false; btn.textContent = old; sending = false;
             }
           }
 
           btn.addEventListener('click', sendMessage);
-
-          // Enter 直接送出（Shift+Enter 可改成換行，若你將 input 改為 textarea 再調整）
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
+          input.addEventListener('keydown', e=>{
+            if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
           });
 
-          // ===== SignalR：加入工單群組（前台用 Join） =====
-          let connection = null;
-
+          /* ===================== SignalR ===================== */
+          let connection=null;
           async function startHub(){
-            if (!window.signalR) {
-              tip.textContent = '即時連線：未載入 signalR（仍可用手動重新整理）';
-              tip.className = 'small conn-warn';
-              return;
+            if (!window.signalR){
+              tip.textContent='即時連線：未載入 signalR（仍可使用）';
+              tip.className='small conn-warn'; return;
             }
             try{
               connection = new signalR.HubConnectionBuilder()
-                .withUrl("/hubs/support", { withCredentials: true })
-                .withAutomaticReconnect()
-                .build();
+                .withUrl("/hubs/support",{withCredentials:true})
+                .withAutomaticReconnect().build();
 
-              // 除錯訊息（可搭配 Hub 的 Clients.Caller.SendAsync("debug", "...")）
-              connection.on("debug", m => console.debug("[support]", m));
-
-              // 相容兩種事件名稱：msg（主事件）/ ticket.message（舊名）
-              const onAnyMessage = async (p) => {
+              const onAny = async p=>{
                 const tid = +((p && (p.ticketId ?? p.TicketId)) || 0);
-                if (tid === +TICKET_ID) await reloadMessages();
+                if (tid === +TICKET_ID){
+                  const stick = isNearBottom();
+                  await loadMessages(1,{keepPosition:stick});
+                  if (stick) scrollBottom();
+                }
               };
-              connection.on("msg", onAnyMessage);
-              connection.on("ticket.message", onAnyMessage);
+              connection.on("msg", onAny);
+              connection.on("ticket.message", onAny);
 
-              connection.onreconnecting(() => { tip.textContent = '即時連線：重新連線中…'; tip.className = 'small conn-warn'; });
-              connection.onreconnected(() => { tip.textContent = '即時連線：已恢復';     tip.className = 'small conn-ok';   });
-              connection.onclose(() =>       { tip.textContent = '即時連線：已關閉';     tip.className = 'small conn-bad';  });
+              connection.onreconnecting(()=>{ tip.textContent='即時連線：重新連線中…'; tip.className='small conn-warn'; });
+              connection.onreconnected(()=>{ tip.textContent='即時連線：已恢復';     tip.className='small conn-ok';   });
+              connection.onclose(()=>      { tip.textContent='即時連線：已關閉';     tip.className='small conn-bad';  });
 
               await connection.start();
-              await connection.invoke("Join", TICKET_ID); // 前台＝使用者路線
-              tip.textContent = '即時連線：已連線';
-              tip.className = 'small conn-ok';
+              await connection.invoke("Join", TICKET_ID);
+              tip.textContent='即時連線：已連線'; tip.className='small conn-ok';
 
-              // 離頁清理
-              window.addEventListener('beforeunload', async () => {
-                try { await connection.invoke("Leave", TICKET_ID); } catch {}
-                try { await connection.stop(); } catch {}
+              window.addEventListener('beforeunload', async()=>{
+                try{ await connection.invoke("Leave", TICKET_ID);}catch{}
+                try{ await connection.stop(); }catch{}
               });
             }catch(err){
               console.warn('[support] hub start failed:', err);
-              tip.textContent = '即時連線：失敗（仍可使用）';
-              tip.className = 'small conn-warn';
+              tip.textContent='即時連線：失敗（仍可使用）'; tip.className='small conn-warn';
             }
           }
 
-          // ===== 初始化 =====
-          document.addEventListener('DOMContentLoaded', async () => {
-            await reloadMessages();
+          /* ===================== 初始化 ===================== */
+          document.addEventListener('DOMContentLoaded', async ()=>{
+            fitChatHeight(12);                    // 先算一次
+            await loadMessages(1,{keepPosition:false});
             scrollBottom();
             await startHub();
+
+            // 再補幾次，cover 圖片/字體/右欄晚載
+            requestAnimationFrame(()=>fitChatHeight(12));
+            setTimeout(()=>fitChatHeight(14), 80);
+            setTimeout(()=>fitChatHeight(16), 200);
           });
         })();
     </script>

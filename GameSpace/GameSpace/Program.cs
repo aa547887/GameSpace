@@ -6,6 +6,8 @@ using GameSpace.Areas.MiniGame.config;
 using GameSpace.Areas.social_hub.Auth;          // ★ IUserContextReader, AuthConstants
 using GameSpace.Areas.social_hub.Hubs;
 using GameSpace.Areas.social_hub.Permissions;
+using GameSpace.Areas.social_hub.Services.Abstractions;
+using GameSpace.Areas.social_hub.Services.Application;
 using GameSpace.Data;
 using GameSpace.Infrastructure.Login;
 using GameSpace.Infrastructure.Time;
@@ -90,6 +92,8 @@ namespace GameSpace
 			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
 			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
 
+			// 後台 SignalR 支援通知（Singleton）
+			builder.Services.AddSingleton<ISupportNotifier, BackendSignalRSupportNotifier>();
 			// ★ 必須：HttpContext
 			builder.Services.AddHttpContextAccessor();
 
@@ -171,7 +175,7 @@ namespace GameSpace
 				};
 			});
 
-		
+
 
 			// ========== 12) 授權政策（需要就用） ==========
 			builder.Services.AddAuthorization(options =>

@@ -1,0 +1,120 @@
+﻿@* ======================================================================
+   Views/Support/_ChatPanel.cshtml
+   角色：前台單一工單的「對話面板」Partial（純結構 + 局部樣式，無邏輯）
+   使用方式：@await Html.PartialAsync("_ChatPanel", ticketId)
+   Model：int（TicketId）
+   ======================================================================
+@model int
+
+<div class="card shadow-sm ticket-card" data-ticket-id="@Model">
+    <div class="card-header">
+        <strong>工單 #@Model</strong>
+    </div>
+
+    <div class="card-body p-0">
+        <!-- 只讓這裡滾動；高度交由 JS 在外層 Ticket.cshtml 計算 -->
+        <div id="msg-host">
+            <div class="text-muted p-3">載入中…</div>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        <div class="input-group composer-row">
+            <input id="msg-text" class="form-control" maxlength="255" placeholder="輸入訊息…" />
+            <button id="btn-send" class="btn btn-primary" type="button">送出</button>
+        </div>
+        <div id="conn-tip" class="small text-muted mt-1">即時連線：連線中…</div>
+    </div>
+</div>
+
+<style>
+    /* ----- 結構與輸入列外觀（小範圍樣式，避免污染全站） ----- */
+    .ticket-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-radius: 14px;
+    }
+
+        .ticket-card .card-header {
+            flex: 0 0 auto;
+            padding: .6rem .9rem;
+        }
+
+        .ticket-card .card-footer {
+            flex: 0 0 auto;
+            padding: .5rem .75rem .6rem;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+        }
+
+    #msg-host {
+        overflow: auto;
+        padding: 14px 16px;
+        background: #fff;
+    }
+
+    .composer-row .form-control {
+        min-height: 44px;
+    }
+
+    .composer-row .btn {
+        min-height: 44px;
+        padding: 0 16px;
+    }
+
+    /* ----- 對話泡泡（使用者=右藍、客服=左灰） ----- */
+    .gp-chat-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .gp-msg {
+        display: flex;
+        width: 100%;
+    }
+
+        .gp-msg.mine {
+            justify-content: flex-end;
+        }
+        /* 我（使用者）右側 */
+        .gp-msg.other {
+            justify-content: flex-start;
+        }
+    /* 客服左側 */
+    .gp-bubble {
+        max-width: min(78%, 640px);
+        border-radius: 14px;
+        padding: 10px 12px;
+        line-height: 1.48;
+        font-size: .96rem;
+        word-break: break-word;
+        box-shadow: 0 1px 1px rgba(0,0,0,.03);
+    }
+
+    .gp-msg.mine .gp-bubble {
+        background: #2563eb;
+        color: #fff;
+        border-bottom-right-radius: 8px;
+    }
+
+    .gp-msg.other .gp-bubble {
+        background: #f4f6f8;
+        color: #111827;
+        border-bottom-left-radius: 8px;
+    }
+
+    /* ----- 連線提示色 ----- */
+    .conn-ok {
+        color: #16a34a
+    }
+
+    .conn-warn {
+        color: #ca8a04
+    }
+
+    .conn-bad {
+        color: #dc2626
+    }
+</style> *@
