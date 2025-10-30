@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "寵物冒險";
+}
+
+@* Nick鐘新增：模仿 _Layout.cshtml 的邏輯，只有登入後才載入寵物冒險功能 UI *@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <img src="~/images/paw.svg" alt="" width="40" height="40" class="me-3">
+        <div>
+            <h2 class="mb-0">寵物冒險</h2>
+            <p class="text-muted mb-0">與您的寵物互動，一起出發冒險吧！</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle fs-5 me-2"></i>
+        <div>此功能開發中，敬請期待...</div>
+    </div>
+
+    <!-- 寵物資訊 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-heart-fill"></i> 我的寵物
+                </div>
+                <div class="card-body text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-egg fs-1 text-muted"></i>
+                    </div>
+                    <h4>寵物名字：--</h4>
+                    <p class="text-muted">等級：-- | 經驗：-- / --</p>
+
+                    <!-- 寵物五大狀態 -->
+                    <div class="row g-3 mt-3">
+                        <div class="col">
+                            <small class="text-muted">飢餓度</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: 0%">--</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">心情</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 0%">--</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">體力</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 0%">--</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">清潔</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 0%">--</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">健康</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 0%">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 寵物互動按鈕 -->
+                    <div class="mt-4">
+                        <button class="btn btn-outline-danger me-2" disabled>
+                            <i class="bi bi-cup-straw"></i> 餵食
+                        </button>
+                        <button class="btn btn-outline-info me-2" disabled>
+                            <i class="bi bi-droplet"></i> 洗澡
+                        </button>
+                        <button class="btn btn-outline-success me-2" disabled>
+                            <i class="bi bi-dice-5"></i> 玩耍
+                        </button>
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-moon-stars"></i> 哄睡
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- 出發冒險 -->
+            <div class="card border-warning mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <i class="bi bi-rocket-takeoff"></i> 小遊戲：出發冒險
+                </div>
+                <div class="card-body text-center">
+                    <p>帶著寵物一起冒險，獲得點數和經驗！</p>
+                    <button class="btn btn-warning btn-lg w-100" disabled>
+                        <i class="bi bi-play-fill"></i> 出發冒險
+                    </button>
+                    <small class="text-muted d-block mt-2">今日剩餘次數：-- / 3</small>
+                </div>
+            </div>
+
+            <!-- 寵物名字修改 -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <i class="bi bi-pencil"></i> 修改寵物名字
+                </div>
+                <div class="card-body">
+                    <input type="text" class="form-control mb-2" placeholder="輸入新名字" disabled>
+                    <button class="btn btn-primary w-100" disabled>確認修改</button>
+                </div>
+            </div>
+
+            <!-- 外觀設定 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-palette"></i> 外觀設定
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-outline-primary w-100 mb-2" disabled>
+                        <i class="bi bi-palette-fill"></i> 更換膚色
+                    </button>
+                    <button class="btn btn-outline-secondary w-100" disabled>
+                        <i class="bi bi-image"></i> 更換背景
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲紀錄 -->
+    <div class="row g-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-trophy"></i> 冒險紀錄
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>開始時間</th>
+                                    <th>結束時間</th>
+                                    <th>結果</th>
+                                    <th>獲得點數</th>
+                                    <th>寵物經驗</th>
+                                    <th>優惠券</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">暫無冒險記錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TODO 清單 -->
+    <div class="mt-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-list-check"></i> 待開發功能清單
+            </div>
+            <div class="card-body">
+                <h6>寵物系統：</h6>
+                <ul>
+                    <li>寵物名字修改</li>
+                    <li>寵物互動（餵食/洗澡/玩耍/哄睡）</li>
+                    <li>寵物換膚色（扣會員點數）</li>
+                    <li>寵物換背景（可免費或需點數）</li>
+                    <li>寵物五大狀態即時更新（飢餓/心情/體力/清潔/健康）</li>
+                </ul>
+                <h6>小遊戲系統：</h6>
+                <ul class="mb-0">
+                    <li>出發冒險：啟動遊戲流程，回傳 sessionId、startTime、預估結束時間、當日剩餘可玩次數</li>
+                    <li>查看遊戲紀錄：每場 startTime/endTime/result(win|lose|abort)/獎勵（點數/寵物經驗/商城優惠券）</li>
+                    <li>每日遊戲次數限制（預設 3 次/日）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    </div>
+}

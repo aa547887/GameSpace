@@ -1,0 +1,111 @@
+@{
+    ViewData["Title"] = "我的錢包";
+}
+
+@* Nick鐘新增：模仿 _Layout.cshtml 的邏輯，只有登入後才載入錢包功能 UI *@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="bi bi-wallet fs-2 me-3 text-primary"></i>
+        <div>
+            <h2 class="mb-0">我的錢包</h2>
+            <p class="text-muted mb-0">管理您的點數、優惠券與電子禮券</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle fs-5 me-2"></i>
+        <div>此功能開發中，敬請期待...</div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- 點數餘額 -->
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0"><i class="bi bi-coin"></i> 點數餘額</h5>
+                    </div>
+                    <p class="display-6 text-primary mb-0">-- 點</p>
+                    <small class="text-muted">上次更新：--</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商城優惠券 -->
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0"><i class="bi bi-ticket-perforated"></i> 商城優惠券</h5>
+                    </div>
+                    <p class="display-6 text-success mb-0">-- 張</p>
+                    <small class="text-muted">可用優惠券</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 電子禮券 -->
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0"><i class="bi bi-gift"></i> 電子禮券</h5>
+                    </div>
+                    <p class="display-6 text-warning mb-0">-- 張</p>
+                    <small class="text-muted">可用禮券</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能區塊 -->
+    <div class="row g-4">
+        <!-- 兌換優惠券 -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-shop"></i> 兌換優惠券
+                </div>
+                <div class="card-body">
+                    <p>使用會員點數兌換商城優惠券或電子禮券</p>
+                    <button class="btn btn-primary" disabled>前往兌換</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收支明細 -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-list-ul"></i> 收支明細
+                </div>
+                <div class="card-body">
+                    <p>查看點數、優惠券、禮券的收支記錄</p>
+                    <button class="btn btn-info" disabled>查看明細</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TODO 清單 -->
+    <div class="mt-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-list-check"></i> 待開發功能清單
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>查看當前會員點數餘額</li>
+                    <li>使用會員點數兌換商城優惠券及電子優惠券</li>
+                    <li>查看目前擁有商城優惠券</li>
+                    <li>查看目前擁有電子優惠券</li>
+                    <li>使用電子優惠券（以 QRCode/Barcode 顯示予店員核銷）</li>
+                    <li>查看收支明細（點數得到/花費、商城優惠券得到/使用、電子優惠券得到/使用）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    </div>
+}
