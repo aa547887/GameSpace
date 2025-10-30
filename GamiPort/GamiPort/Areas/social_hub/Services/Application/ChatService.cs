@@ -177,6 +177,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 			else
 				q = q.OrderByDescending(m => m.EditedAt).Take(pageSize).OrderBy(m => m.EditedAt);
 
+			// ★ 關鍵：取出基礎欄位後在記憶體端指定為 UTC，再輸出 ISO
 			var raw = await q.Select(m => new
 			{
 				m.MessageId,
@@ -188,6 +189,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 			// ✅ 輸出前遮蔽
 			return raw.Select(m =>
 			{
+				// 某些舊資料 Kind 可能是 Unspecified；指定為 UTC 以利前端正確轉台灣時區
 				var utc = DateTime.SpecifyKind(m.EditedAt, DateTimeKind.Utc);
 				return new DirectMessagePayload
 				{

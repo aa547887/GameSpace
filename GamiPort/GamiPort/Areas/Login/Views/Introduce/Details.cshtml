@@ -33,13 +33,9 @@
                             imgSrc = $"data:image/*;base64,{b64}";
                         }
                     }
-
-                    <img src="@(imgSrc ?? defaultAvatar)"
-                         alt="頭像"
-                         class="rounded-circle mb-2"
-                         style="width:150px;height:150px;object-fit:cover;"
-                         onerror="this.onerror=null;this.src='@defaultAvatar';" />
-
+                    <img src="@(imgSrc ?? "https://via.placeholder.com/260x260?text=No+Image")"
+                         alt="頭像" class="rounded-circle mb-2"
+                         style="width: 260px; height: 260px; object-fit: cover;" />
                     <div class="text-muted">頭像</div>
                 </div>
 

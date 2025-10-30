@@ -1,0 +1,27 @@
+﻿
+
+@{
+    ViewData["Title"] = "看板主題列表";
+    var forumId = (int)ViewData["ForumId"];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0">看板主題</h2>
+</div>
+
+<div id="thread-app"
+     data-forum-id="@forumId">
+        
+</div>
+
+@section Scripts {
+    <!-- 只載你的入口檔就好；Vue 會在入口檔用 import 拉進來 -->
+    <script type="module" src="~/js/forum/threads.index.js" asp-append-version="true"></script>
+}
+
+<pre class="text-muted small">
+area=@Context.GetRouteData().Values["area"]
+controller=@Context.GetRouteData().Values["controller"]
+action=@Context.GetRouteData().Values["action"]
+forumId=@forumId
+</pre>

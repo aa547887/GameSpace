@@ -1,1 +1,42 @@
-﻿論壇
+﻿@* Areas/Forum/Views/Home/Index.cshtml *@
+@{
+    ViewData["Title"] = "論壇 / 所有遊戲";
+}
+
+@section Styles {
+    <!-- 你的 forum.css 可留，但別動版面寬度到破版就好 -->
+    <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
+    <style>
+        /* 安全的小樣式，避免拉寬整頁造成溢出 */
+        html, body, .container, .container-fluid {
+            min-width: 0;
+        }
+
+        .board-header h2 {
+            font-weight: 600;
+        }
+    </style>
+}
+
+<div class="board-header d-flex align-items-center mb-3">
+    <h2 class="m-0">論壇 / 所有遊戲</h2>
+</div>
+
+<!-- ✅ Vue 掛載點（ID 必須是 #forums-app，和 main.js 對得上） -->
+<div id="forums-app">
+    <forum-list></forum-list>
+</div>
+
+@* @section RightRail {
+    <!-- 可有可無的右欄；沒有 RightRail 的版型可刪這整段 -->
+    <div class="card shadow-sm p-3 mb-3">熱門論壇（示意）</div>
+    <div class="card shadow-sm p-3">公告區（示意）</div>
+} *@
+
+@section Scripts {
+    <!-- 只載入口檔，讓它自己 import Vue；不要再額外載 Vue CDN，避免重複 -->
+    <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
+
+    <!-- 除錯用，可先留著，看 Console 是否出現這行 -->
+    <script>console.log('[Home/Index] Scripts section loaded ✅');</script>
+}
