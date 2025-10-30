@@ -1,0 +1,68 @@
+﻿@using GamiPort.Areas.MemberManagement.ViewModels
+@{
+    var home = ViewData.Model as HomePageVM; // ← 如果不是小屋頁，會是 null
+}
+
+@if (home is null)
+{
+    <!-- 不是小屋頁：這裡放你原本的廣告/預設右欄，或保持空白 -->
+    <div class="card mb-3">
+        <div class="card-body text-muted small">右側欄（非小屋頁）</div>
+    </div>
+}
+else
+{
+    <!-- 小屋頁右側欄：沿用之前的 _RightRailHome 內容 -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form asp-area="MemberManagement" asp-controller="MyHome" asp-action="Search" method="get" class="d-flex gap-2">
+                <input type="text" name="q" class="form-control" placeholder="輸入暱稱 / HomeCode / UserId">
+                <button class="btn btn-outline-primary">送出</button>
+            </form>
+            @if (TempData["SearchError"] is string err)
+            {
+                <div class="text-danger small mt-2">@err</div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">我的資訊</div>
+        <div class="card-body">
+            <div>暱稱：@home.UserNickName</div>
+            <div>性別：@home.Gender</div>
+            <div class="mt-2">
+                <div class="fw-semibold mb-1">自我介紹：</div>
+                <div class="small text-muted">@((string.IsNullOrWhiteSpace(home.IntroText) ? "尚未填寫" : home.IntroText))</div>
+            </div>
+
+            @if (home.IsOwner)
+            {
+                <div class="mt-3 d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Edit">自我介紹編輯</a>
+                    <a class="btn btn-sm btn-outline-secondary" asp-area="MemberManagement" asp-controller="HomeSetting" asp-action="Edit">小屋編輯</a>
+                </div>
+            }
+
+            <div class="mt-3">
+                <div class="fw-semibold">小屋邀請碼：</div>
+                <div class="input-group input-group-sm">
+                    <input class="form-control" value="@home.HomeCode" readonly id="homeCodeInput">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="navigator.clipboard.writeText(document.getElementById('homeCodeInput').value)">
+                        複製
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">好友列表</div>
+        <div class="card-body">
+            <div>已成為好友：<strong>@home.FriendAcceptedCount</strong> 人</div>
+            <div>待回應（PENDING）：<strong>@home.FriendPendingCount</strong> 人</div>
+            <div class="text-muted small mt-2">（列表頁可另行開發。）</div>
+        </div>
+    </div>
+}
