@@ -1,0 +1,41 @@
+﻿@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
+@{
+    var rows = Model.Posts;
+}
+@if (rows.Count == 0)
+{
+    <div class="text-muted">尚未發布任何文章。</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 72px;">排序</th>
+                    <th>Title (threads)</th>
+                    <th style="width: 120px;">心情數量</th>
+                    <th style="width: 120px;">留言數量</th>
+                    <th style="width: 120px;">收藏數量</th>
+                    <th style="width: 160px;">文章發布時間</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var i = 1;
+                    foreach (var r in rows)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td>@r.Title</td>
+                            <td>@r.ReactionsCount</td>
+                            <td>@r.CommentsCount</td>
+                            <td>@r.BookmarksCount</td>
+                            <td>@(r.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}

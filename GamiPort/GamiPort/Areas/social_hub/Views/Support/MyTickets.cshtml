@@ -3,6 +3,7 @@
     Layout ??= "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "我的客訴";
 }
+
 <div class="container py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">我的客訴</h5>
@@ -17,9 +18,9 @@
     {
         <div class="table-responsive">
             <table class="table align-middle">
-                <thead>
+                <thead class="table-light">
                     <tr>
-                        <th style="width:100px;">#</th>
+                        <th style="width:90px;">工單#</th>
                         <th>主旨</th>
                         <th style="width:160px;">最後更新</th>
                         <th style="width:120px;">狀態</th>
@@ -29,11 +30,11 @@
                 <tbody>
                     @foreach (var t in Model)
                     {
-                        var last = t.LastMessageAt ?? t.CreatedAt;
+                        var last = (t.LastMessageAt ?? t.CreatedAt).ToLocalTime();
                         <tr>
                             <td>@t.TicketId</td>
-                            <td class="text-truncate" style="max-width:460px;">@t.Subject</td>
-                            <td>@last.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                            <td class="text-truncate" style="max-width:560px;">@t.Subject</td>
+                            <td>@last.ToString("yyyy/MM/dd HH:mm")</td>
                             <td>
                                 @if (t.IsClosed)
                                 {
@@ -47,7 +48,9 @@
                             </td>
                             <td class="text-end">
                                 <a class="btn btn-sm btn-primary"
-                                   href="@Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId })">打開</a>
+                                   href="@Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId })">
+                                    打開
+                                </a>
                             </td>
                         </tr>
                     }
