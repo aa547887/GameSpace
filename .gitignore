@@ -8,3 +8,14 @@
 # .NET build outputs
 **/bin/
 **/obj/
+
+# Ignore local nul windows system file
+**/nul
+
+# Ignore local folders
+/schema/
+/前台風格_brainstorming/
+
+# Ignore specific local markdown files
+/CLAUDE.md
+/AGENTS.md
