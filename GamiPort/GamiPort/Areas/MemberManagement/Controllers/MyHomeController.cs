@@ -78,7 +78,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.Select(s => s.StatusId)
 				.FirstOrDefaultAsync();
 
-			// 與 owner 相關的好友關係（小的在前，大的在後）
+			// 與 owner 相關的好友關係
 			var friendAcceptedCount = await _db.Relations
 				.CountAsync(r =>
 					(r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId) &&
@@ -116,7 +116,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			if (!_current.IsAuthenticated)
 				return RedirectToAction("Login", "Login", new { area = "Login" });
 
-			int userId = _current.UserId.GetValueOrDefault(); // ← 修正：int? -> int
+			int userId = _current.UserId.GetValueOrDefault(); // int? -> int
 			var vm = await BuildHomeVmAsync(userId, isSelf: true);
 			if (vm == null) return NotFound();
 
@@ -124,27 +124,46 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 		}
 
 		// --- 以 UserId 造訪他人小屋 ---
-		// 移除多餘的 [HttpPost]
 		[HttpGet("{id:int}")]
-		[ActionName("User")]                      // ← 對外路由仍是 /User/{id}
-		public async Task<IActionResult> VisitById(int id) // ← 修正方法名稱，避免遮蔽 ControllerBase.User
+		[ActionName("User")] // 路由仍是 /MemberManagement/MyHome/User/{id}
+		public async Task<IActionResult> VisitById(int id)
 		{
 			var isSelf = _current.IsAuthenticated && _current.UserId == id;
+
+			// 先查小屋公開狀態以決定是否可看
+			var homeRow = await _db.UserHomes.AsNoTracking().FirstOrDefaultAsync(h => h.UserId == id);
+			if (homeRow == null)
+			{
+				// 沒建立小屋資料，直接 404
+				return NotFound();
+			}
+
+			// ★ 非屋主且未公開 → 阻擋
+			if (!isSelf && !homeRow.IsPublic)
+			{
+				return View("PrivateBlocked");
+			}
+
 			var vm = await BuildHomeVmAsync(id, isSelf);
 			if (vm == null) return NotFound();
 
-			// 非屋主被造訪時，計數 +1
+			// 計數：只有「非本人且可見」時才 +1
 			if (!isSelf)
 			{
-				var home = await _db.UserHomes.FirstOrDefaultAsync(h => h.UserId == id);
-				if (home != null)
+				try
 				{
-					home.VisitCount += 1;
-					home.UpdatedAt = DateTime.UtcNow;
+					var forCount = await _db.UserHomes.FirstAsync(h => h.UserId == id);
+					forCount.VisitCount += 1;
+					forCount.UpdatedAt = DateTime.Now;
 					await _db.SaveChangesAsync();
-					vm.VisitCount = home.VisitCount;
+					vm.VisitCount = forCount.VisitCount;
+				}
+				catch
+				{
+					// 計數失敗不影響瀏覽，略過即可或寫入 log
 				}
 			}
+
 			return View("Index", vm);
 		}
 
@@ -160,7 +179,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			if (int.TryParse(q, out var uid))
 			{
 				var exists = await _db.UserIntroduces.AnyAsync(u => u.UserId == uid);
-				if (exists) return RedirectToAction("User", new { id = uid }); // ← 繼續用 ActionName("User")
+				if (exists) return RedirectToAction("User", new { id = uid });
 			}
 
 			var byCode = await _db.UserHomes
@@ -178,6 +197,5 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			TempData["SearchError"] = "找不到符合的小屋。";
 			return RedirectToAction(nameof(Index));
 		}
-
 	}
 }
