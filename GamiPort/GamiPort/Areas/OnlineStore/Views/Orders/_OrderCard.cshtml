@@ -1,0 +1,125 @@
+﻿@model GamiPort.Areas.OnlineStore.ViewModels.OrdersListItemVm
+@{
+    string domId = $"ord-{Model.OrderCode}";
+    string stepId = $"{domId}-step";
+}
+<style>
+  /* 取消交錯條紋，所有表頭都淺粉色 */
+  .orders-card thead tr { background:#ffeef4; }
+  .orders-card tbody tr:nth-of-type(odd),
+  .orders-card .card:nth-child(odd) { background-color: #fff !important; }
+  .orders-card .card { border-color:#ffd7e5; }
+  .orders-card .card-header { background:#ffeef4; }
+
+
+</style>
+
+<div class="order-card">
+    <!-- 第一列：欄位名（淺粉） -->
+    <div class="order-headbar order-grid d-none d-md-grid">
+        <div>訂單編號</div>
+        <div>訂單日期</div>
+        <div>付款狀態</div>
+        <div>金額</div>
+        <div>付款方式</div>
+        <div class="text-end">操作</div>
+    </div>
+
+    <!-- 第二列：值 -->
+    <div class="p-3 order-grid">
+        <div class="fw-semibold">
+            <a asp-area="OnlineStore" asp-controller="Orders" asp-action="Detail" asp-route-orderCode="@Model.OrderCode">
+                @Model.OrderCode
+            </a>
+            <div id="@stepId" class="stepper">
+                <!-- 4節點：下單 / 已付款 / 已出貨 / 完成 -->
+                <div class="dot" data-step="1"></div><div class="bar"></div>
+                <div class="dot" data-step="2"></div><div class="bar"></div>
+                <div class="dot" data-step="3"></div><div class="bar"></div>
+                <div class="dot" data-step="4"></div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <div class="label">下單</div>
+                <div class="label">已付款</div>
+                <div class="label">已出貨</div>
+                <div class="label">完成</div>
+            </div>
+        </div>
+        <div>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</div>
+        <div>@(string.IsNullOrEmpty(Model.PayStatus) ? "—" : Model.PayStatus)</div>
+        <div class="fw-bold">NT$ @Model.GrandTotal.ToString("N0")</div>
+        <div>@(string.IsNullOrEmpty(Model.PayMethod) ? "—" : Model.PayMethod)</div>
+        <div class="text-end">
+            <button class="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#@domId"
+                    aria-expanded="false"
+                    aria-controls="@domId"
+                    data-load-items="@Model.OrderCode">
+                商品明細 +
+            </button>
+            <a class="btn btn-primary btn-sm"
+               asp-area="OnlineStore" asp-controller="Orders" asp-action="Detail"
+               asp-route-orderCode="@Model.OrderCode">查看</a>
+        </div>
+    </div>
+
+    <!-- 展開：明細 + 物流/發票…（先放明細表；你之後可再塞付款/物流紀錄） -->
+    <div id="@domId" class="collapse">
+        <div class="px-3 pb-3">
+            <div class="border rounded p-3" id="@domId-items">
+                <div class="text-muted">載入中…</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始化進度軸
+    (function(){
+      const host = document.getElementById("@stepId");
+      if(!host) return;
+
+      // statusKey -> stepIndex
+      const map = { unpaid:1, paid:2, shipped:3, completed:4, canceled:1 };
+      const initKey = "@(Model.StatusKey ?? "unpaid")";
+      applyStep(map[initKey] || 1);
+
+      // 輪詢狀態（15s）— 真的同步到最新資料庫狀態
+      const code = "@Model.OrderCode";
+      let timer = setInterval(async ()=>{
+        try{
+          const r = await fetch(`/OnlineStore/Orders/status/${code}`);
+          const j = await r.json();
+          applyStep(map[j.statusKey] || 1);
+        }catch{}
+      }, 15000);
+
+      function applyStep(step){
+        const dots = host.querySelectorAll('.dot');
+        const bars = host.querySelectorAll('.bar');
+        dots.forEach((d,i)=> d.classList.toggle('active', i < step));
+        bars.forEach((b,i)=> b.classList.toggle('active', i < step-1));
+      }
+    })();
+
+    // 懶載明細（第一次展開才打 /Orders/items）
+    (function(){
+      const btn = document.querySelector('[data-load-items="@Model.OrderCode"]');
+      if(!btn) return;
+      const targetId = "@domId-items";
+      let loaded = false;
+      btn.addEventListener('click', async ()=>{
+        if(loaded) return;
+        loaded = true;
+        const box = document.getElementById(targetId);
+        try{
+          const resp = await fetch(`/OnlineStore/Orders/items?orderCode=@Model.OrderCode`, { headers: { "X-Requested-With":"XMLHttpRequest" }});
+          box.innerHTML = await resp.text();
+        }catch{
+          box.innerHTML = `<div class="text-danger small">明細載入失敗</div>`;
+        }
+      }, { once:true });
+    })();
+</script>

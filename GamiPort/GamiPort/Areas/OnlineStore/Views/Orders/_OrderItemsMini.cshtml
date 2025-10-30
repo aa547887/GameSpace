@@ -1,0 +1,62 @@
+﻿@model IReadOnlyList<GamiPort.Areas.OnlineStore.ViewModels.OrderItemVm>
+
+<!-- 四段進度條（訂單通知／理貨／出貨／已送達） -->
+<div class="stepper4" data-order="@Context.Request.Query["orderCode"]">
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div>
+</div>
+<div class="labels d-flex justify-content-between mb-2">
+    <div>訂單通知</div><div>理貨</div><div>出貨</div><div>已送達</div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="text-muted">（無明細）</div>
+}
+else
+{
+    var idx = 1;
+    foreach (var x in Model)
+    {
+        <div class="item-row">
+            <div>
+                <div class="item-title">@x.ProductName</div>
+                <div class="item-meta">
+                    商品編號：@x.ProductId
+                    ．出貨編號：<span class="text-muted">（待出貨產生）</span>
+                </div>
+            </div>
+            <div class="item-amount">
+                <div>數量：@x.Quantity</div>
+                <div>小計：NT$ @x.LineTotal.ToString("N0")</div>
+            </div>
+        </div>
+        idx++;
+    }
+}
+
+@section Scripts {
+    <script>
+        (async function(){
+          // 取得狀態鍵並套用到四段進度條（1..4）
+          const wrap = document.currentScript.closest('.order-detail-panel');
+          const step = wrap?.querySelector('.stepper4');
+          if(!step) return;
+          const orderCode = new URLSearchParams(location.search).get('orderCode');
+          if(!orderCode) return;
+          try{
+            const res = await fetch(`/OnlineStore/Orders/status/${orderCode}`);
+            const { statusKey } = await res.json();
+            const map = { unpaid:1, paid:2, shipped:3, completed:4, canceled:1 };
+            const s = map[statusKey] || 1;
+
+            const dots = step.querySelectorAll('.dot');
+            const bars = step.querySelectorAll('.bar');
+            dots.forEach((d,i)=> d.classList.toggle('active', i < s));
+            bars.forEach((b,i)=> b.classList.toggle('active', i < s-1));
+          }catch{}
+        })();
+    </script>
+}

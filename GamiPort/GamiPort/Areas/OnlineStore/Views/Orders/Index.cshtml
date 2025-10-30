@@ -1,0 +1,167 @@
+@model GamiPort.Areas.OnlineStore.ViewModels.OrdersListVm
+@{
+    ViewData["Title"] = "我的訂單";
+    string Active(string k) => (Model.Status?.Equals(k, StringComparison.OrdinalIgnoreCase) ?? false) ? "active" : "";
+}
+<link rel="stylesheet" href="~/css/OnlineStore/orders.css" />
+
+<style>
+    /* ===== 版面強化 ===== */
+
+    /* 卡片外觀 */
+    .orders-card .card {
+        border-color: #ffd7e5;
+    }
+
+    .orders-card .card-header {
+        background: #ffeef4;
+    }
+    /* ★★★ 淺粉表頭 */
+    .orders-card .card-body {
+        background: #fff;
+        position: relative;
+    }
+
+    /* 表頭欄位（不含操作欄，並畫黑色分隔線但只在表頭） */
+    .order-head-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr; /* 訂單編號/日期/付款狀態/金額/付款方式 */
+        gap: 0;
+    }
+
+        .order-head-row > div {
+            padding: .25rem .5rem;
+            border-right: 1px solid #000;
+            font-weight: 600;
+        }
+
+            .order-head-row > div:last-child {
+                border-right: none;
+            }
+
+    /* 資料列（不畫格線，避免延伸到第二行） */
+    .order-data-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+        gap: 0;
+    }
+
+        .order-data-row > div {
+            padding: .25rem .5rem;
+        }
+
+    /* ★★★ 右上角的「商品明細 +」按鈕（不佔欄位） */
+    .order-more-btn {
+        position: absolute;
+        top: .5rem;
+        right: .5rem;
+    }
+
+    /* ★★★ 展開的明細面板：淡灰底 + 2px 外框 */
+    .order-detail-panel {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: .5rem;
+        padding: 1rem;
+    }
+
+    /* 明細表格裡的標題顯示方式：品名大字，下面淡字顯示產品編號/出貨單號 */
+    .item-title {
+        font-weight: 600;
+    }
+
+    .item-meta {
+        color: #6c757d;
+        font-size: .9rem;
+    }
+</style>
+
+<h2 class="mb-3">我的訂單</h2>
+
+<div class="d-flex gap-2 mb-3">
+    <a class="btn btn-outline-secondary @Active(null)" asp-action="Index" asp-route-status="">全部 (@Model.TotalCount)</a>
+    <a class="btn btn-outline-warning @Active("unpaid")" asp-action="Index" asp-route-status="unpaid">未付款 (@Model.UnpaidCount)</a>
+    <a class="btn btn-outline-primary @Active("paid")" asp-action="Index" asp-route-status="paid">已付款 (@Model.PaidCount)</a>
+    <a class="btn btn-outline-info @Active("shipped")" asp-action="Index" asp-route-status="shipped">已出貨 (@Model.ShippedCount)</a>
+    <a class="btn btn-outline-success @Active("completed")" asp-action="Index" asp-route-status="completed">已完成 (@Model.CompletedCount)</a>
+    <a class="btn btn-outline-secondary @Active("canceled")" asp-action="Index" asp-route-status="canceled">已取消 (@Model.CanceledCount)</a>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <input type="hidden" name="status" value="@Model.Status" />
+    <div class="col-md-4"><input class="form-control" name="keyword" placeholder="單號 / 品名" value="@Model.Keyword" /></div>
+    <div class="col-md-3"><input class="form-control" type="date" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" /></div>
+    <div class="col-md-3"><input class="form-control" type="date" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" /></div>
+    <div class="col-md-2"><button class="btn btn-dark w-100">查詢</button></div>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="text-muted">沒有符合條件的訂單。</div>
+}
+else
+{
+    <div class="d-grid gap-3 orders-card">
+        @foreach (var o in Model.Items)
+        {
+            var collapseId = $"items-{o.OrderCode}";
+            <div class="card shadow-sm border-0">
+                <!-- 表頭（5 欄） -->
+                <div class="card-header py-2">
+                    <div class="order-head-row">
+                        <div>訂單編號</div>
+                        <div>日期</div>
+                        <div>付款狀態</div>
+                        <div class="text-end">金額</div>
+                        <div>付款方式</div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- 右上角「商品明細 +」按鈕 -->
+                    <button class="btn btn-sm btn-outline-secondary order-more-btn"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            data-order="@o.OrderCode">
+                        商品明細 +
+                    </button>
+
+                    <div class="order-data-row align-items-start">
+                        <div class="fw-semibold">
+                            <a asp-action="Detail" asp-route-orderCode="@o.OrderCode">@o.OrderCode</a>
+                        </div>
+                        <div class="small text-muted">@o.CreatedAt:yyyy/MM/dd HH:mm</div>
+                        <div><span class="badge rounded-pill bg-light text-dark">@o.PayStatus</span></div>
+                        <div class="fs-6 text-end">NT$ @o.GrandTotal.ToString("N0")</div>
+                        <div>@o.PayMethod</div>
+                    </div>
+
+                    <!-- 展開：加淡灰底＋2px 外框 -->
+                    <div id="@collapseId" class="collapse mt-3 order-detail-panel" data-items-loaded="0">
+                        <div class="text-muted small">載入中...</div>
+                    </div>
+
+                    <a class="btn btn-sm btn-outline-primary mt-2"
+                       asp-action="Detail" asp-route-orderCode="@o.OrderCode">查看</a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <nav class="mt-3"></nav>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('shown.bs.collapse', async (ev) => {
+          const el = ev.target;
+          if (el.getAttribute('data-items-loaded') === '1') return;
+          const orderCode = ev.relatedTarget?.getAttribute('data-order') || el.id.replace('items-','');
+          const res = await fetch(`@Url.Action("Items", "Orders", new { area = "OnlineStore" })?orderCode=${orderCode}`,
+                       { headers:{ "X-Requested-With":"XMLHttpRequest" }});
+          el.innerHTML = await res.text();
+          el.setAttribute('data-items-loaded','1');
+        });
+    </script>
+}

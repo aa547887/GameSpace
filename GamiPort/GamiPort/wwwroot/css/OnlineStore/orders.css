@@ -1,0 +1,114 @@
+﻿/* 卡片 */
+.orders-card .card {
+    border-color: #ffd7e5;
+    position: relative;
+}
+
+.orders-card .card-header {
+    background: #ffeef4;
+}
+
+/* 表頭欄位之間黑色分隔線（僅限表頭，不延至第二行） */
+.order-head-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1.2fr;
+}
+
+    .order-head-row > div {
+        padding: .25rem .5rem;
+        border-right: 1px solid #000;
+    }
+
+        .order-head-row > div:last-child {
+            border-right: none;
+        }
+
+/* 內文資料列（不畫直線） */
+.order-data-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1.2fr;
+    gap: 0;
+}
+
+    .order-data-row > div {
+        padding: .25rem .5rem;
+    }
+
+/* 右上角「商品明細 +」按鈕（不占欄位） */
+.order-more-btn {
+    position: absolute;
+    top: .5rem;
+    right: .75rem;
+}
+
+/* 展開區塊：淡灰底 + 2px 邊框 */
+.order-detail-panel {
+    background: #f8f9fa;
+    border: 2px solid #eaeaea;
+    border-radius: .5rem;
+    padding: 1rem;
+}
+
+/* 四段進度條（與卡片外的 stepper 共用概念） */
+.stepper4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: .75rem;
+}
+
+    .stepper4 .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #d9d9d9;
+    }
+
+    .stepper4 .bar {
+        height: 4px;
+        flex: 1;
+        background: #d9d9d9;
+    }
+
+    .stepper4 .dot.active {
+        background: #ff6b9c;
+    }
+
+    .stepper4 .bar.active {
+        background: #ffb6cc;
+    }
+
+    .stepper4 .labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: .85rem;
+        color: #666;
+    }
+
+/* 明細列（非表格版，像 momo） */
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: .5rem 0;
+    border-bottom: 1px dashed #e3e3e3;
+}
+
+    .item-row:last-child {
+        border-bottom: none;
+    }
+
+.item-title {
+    font-weight: 600;
+}
+
+.item-meta {
+    color: #6c757d;
+    font-size: .9rem;
+    margin-top: .25rem;
+}
+
+.item-amount {
+    text-align: right;
+    min-width: 160px;
+}

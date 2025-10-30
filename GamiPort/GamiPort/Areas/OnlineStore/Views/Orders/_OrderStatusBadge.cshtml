@@ -1,0 +1,15 @@
+@* Areas/OnlineStore/Views/Orders/_OrderStatusBadge.cshtml *@
+@model string
+@{
+    var text = Model ?? "";
+    var cls = text switch {
+        "Unpaid"    => "badge bg-warning text-dark",
+        "Paid"      => "badge bg-primary",
+        "Shipped"   => "badge bg-info text-dark",
+        "Completed" => "badge bg-success",
+        "Canceled"  => "badge bg-secondary",
+        _           => "badge bg-light text-dark"
+    };
+
+}
+<span class="@cls">@text</span>
