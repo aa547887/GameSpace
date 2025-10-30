@@ -1,9 +1,11 @@
 ﻿@* ================================================================
-   _QuickFab.cshtml － 右下角 +（Speed Dial）
-   本版重點：
-   1) 統一兩顆次按鈕（好友/客訴）的樣式為 .gp-mini-fab（44x44）
-   2) 入場動畫、hover/active、ripple、交錯延遲完全一致
-   3) 客訴下拉改用「靜態定位」（不靠 Popper 重新定位），避免與 transform 打架
+   _QuickFab.cshtml — 右下角 +（Speed Dial）
+   重點：
+   1) 次級 FAB 統一 .gp-mini-fab（44x44）
+   2) 入場動畫 / ripple / 交錯延遲
+   3) 客訴下拉卡採「靜態定位」
+   4) 提供 gp-quickfab-close 事件讓子元件可關閉 Speed Dial
+   5) ★ 修正：.fab-tip 不吃滑鼠事件，避免擋住下拉卡的兩顆圓鈕
    ================================================================ *@
 <style>
     :root {
@@ -18,7 +20,7 @@
         z-index: 1080;
     }
 
-        /* 主「＋」按鈕 */
+        /* 主 + 按鈕 */
         .gp-fab .fab-main {
             width: 56px;
             height: 56px;
@@ -31,7 +33,7 @@
             box-shadow: 0 12px 32px rgba(13,110,253,.35);
         }
 
-        /* 展開容器（關閉時不可點） */
+        /* 展開容器 */
         .gp-fab .fab-actions {
             position: absolute;
             right: 10px;
@@ -50,7 +52,7 @@
             position: relative;
         }
 
-        /* 滑鼠提示（僅放文字，不要塞按鈕） */
+        /* 提示小黑條 — 只顯示，不吃滑鼠事件（關鍵）*/
         .gp-fab .fab-tip {
             position: absolute;
             right: 52px;
@@ -63,16 +65,19 @@
             border-radius: 6px;
             white-space: nowrap;
             display: none;
+            pointer-events: none;
         }
 
         .gp-fab .fab-wrap:hover .fab-tip {
             display: block;
         }
 
-        /* ---------------------------------------------------------------
-             統一樣式：次級 FAB 按鈕（好友/客訴主按鈕都用這個）
-             - 44x44 圓形、陰影、ripple、動畫基準
-             --------------------------------------------------------------- */
+        .gp-fab .fab-wrap.menu-open .fab-tip {
+            display: none !important;
+        }
+        /* 展開客訴卡時隱藏提示 */
+
+        /* 次級 FAB 統一樣式 */
         .gp-fab .gp-mini-fab {
             width: 44px;
             height: 44px;
@@ -86,24 +91,21 @@
             align-items: center;
             justify-content: center;
             padding: 0;
-            /* 動畫初始狀態 + ripple 需要 */
             position: relative;
             overflow: hidden;
             transform: translateY(8px) scale(.92);
             opacity: 0;
             will-change: transform,opacity;
             transition: opacity .18s, transform .18s;
-            font-size: 18px; /* 內部 emoji/圖示大小 */
+            font-size: 18px;
         }
 
-        /* 展開時：播放入場動畫（交錯延遲見下方 nth-child 設定） */
         .gp-fab.open .gp-mini-fab {
             opacity: 1;
             transform: translateY(0) scale(1);
             animation: f-pop .22s cubic-bezier(.2,.8,.2,1) var(--delay) both;
         }
 
-        /* Hover/Active 回饋 */
         .gp-fab .gp-mini-fab:hover {
             transform: translateY(0) scale(1.05);
         }
@@ -113,7 +115,6 @@
             transition-duration: .06s;
         }
 
-        /* Ripple 效果 */
         .gp-fab .gp-mini-fab::after {
             content: "";
             position: absolute;
@@ -130,7 +131,7 @@
             opacity: 1;
         }
 
-        /* 交錯延遲：第1顆→0ms；第2顆→35ms；第3顆→70ms（預留） */
+        /* 入場交錯延遲 */
         .gp-fab .fab-actions .fab-wrap {
             --delay: 0ms;
         }
@@ -147,8 +148,7 @@
                 --delay: 70ms;
             }
 
-        /* 客訴下拉：用靜態定位（避免 transform/Popper 打架）
-             放在按鈕「上方靠右」 */
+        /* 客訴下拉卡：靜態定位（避免跟 transform 打架）*/
         .gp-fab .quickfab-item .dropdown-menu {
             position: absolute;
             bottom: 52px;
@@ -159,7 +159,7 @@
             z-index: 1090;
         }
 
-    /* Razor in-Page CSS 需要逃脫 */
+    /* Razor in-page CSS 需 @@ */
     @@keyframes f-pop {
         0% {
             transform: translateY(8px) scale(.86);
@@ -172,7 +172,7 @@
         }
 
         100% {
-            transform: translateY(0) scale(1.00);
+            transform: translateY(0) scale(1);
             opacity: 1;
         }
     }
@@ -183,10 +183,8 @@
         }
     }
 
-    /* 偏好減少動態：關閉動畫 */
     @@media (prefers-reduced-motion: reduce) {
-        .gp-fab .gp-mini-fab,
-        .gp-fab.open .gp-mini-fab {
+        .gp-fab .gp-mini-fab, .gp-fab.open .gp-mini-fab {
             animation: none !important;
             transition: none !important;
             transform: none !important;
@@ -205,8 +203,8 @@
             <div class="fab-tip">好友清單</div>
         </div>
 
-        <!-- 動作2：客訴 Support（方案 A，下拉兩個選項） -->
-        <div class="fab-wrap">
+        <!-- 動作2：客訴（子 partial 會畫主鈕與下拉卡） -->
+        <div class="fab-wrap" id="fabSupportWrap">
             @await Html.PartialAsync("_QuickFabSupport")
             <div class="fab-tip">客訴</div>
         </div>
@@ -226,8 +224,12 @@
 
       // 主 +：展開/收合
       main.addEventListener('click', (e)=>{ e.stopPropagation(); setOpen(!fab.classList.contains('open')); });
+
       // 點頁面其他處：收合
       document.addEventListener('click', ()=> setOpen(false));
+
+      // 讓子元件可要求關閉（例如選了「投訴/我的紀錄」）
+      window.addEventListener('gp-quickfab-close', ()=> setOpen(false));
 
       // 好友清單：切換 FriendDock（未就緒時等待事件）
       btnF.addEventListener('click', (e)=>{
