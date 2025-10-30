@@ -1,12 +1,70 @@
-﻿@* Views/Shared/_RightRailAds.cshtml *@
-@* <div class="right-rail-ads">
-    <!-- 上：滑過才掃光 + 呼吸 -->
-    <div class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4"></div>
-
-    <div class="ad-box ad-300x600 ad-shine"></div>
-</div> *@
-
+﻿@* 右側欄廣告：上方 hover 才掃光 + 呼吸；下方持續高光 *@
 <div class="right-rail-ads">
-    <img src="https://picsum.photos/300/250?ad1" alt="ad" class="mb-3" />
-    <img src="https://picsum.photos/300/600?ad2" alt="ad" />
+    <a class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4" href="#" title="廣告 1"></a>
+    <a class="ad-box ad-300x600 ad-shine" href="#" title="廣告 2"></a>
 </div>
+
+<style>
+    .right-rail-ads .ad-box {
+        display: block;
+        width: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        background: linear-gradient(135deg,#eceff7,#dfe6ff);
+        box-shadow: 0 12px 30px rgba(0,0,0,.12);
+        position: relative;
+    }
+    /* 尺寸 */
+    .ad-300x250 {
+        aspect-ratio: 300/250;
+    }
+
+    .ad-300x600 {
+        aspect-ratio: 300/600;
+    }
+
+    /* 掃光（滑過才出現） */
+    .ad-hover-sheen::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%);
+        transform: skewX(-20deg);
+        transition: left .6s ease;
+        pointer-events: none;
+    }
+
+    .ad-hover-sheen:hover::after {
+        left: 130%;
+    }
+
+    /* 呼吸 */
+    .ad-breathe {
+        animation: ad-b 3s ease-in-out infinite;
+    }
+    @@keyframes ad-b {
+        0%,100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.01);
+    }
+
+    }
+
+    /* 持續高光（不需 hover） */
+    .ad-shine::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(120% 80% at 10% 10%, rgba(255,255,255,.35), transparent 60%), linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,0));
+        mix-blend-mode: screen;
+        pointer-events: none;
+    }
+</style>
