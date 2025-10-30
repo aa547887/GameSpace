@@ -4,9 +4,10 @@
    本版調整：
    - 只使用 _Layout 載入的 GP.support 單例進行連線
    - 以「管理員簽章」加入群組：JoinAsManager(ticketId, managerId, expires, sig)
-   - 監聽 "msg" 事件即時刷新訊息
+   - 監聽 "msg" 與 "ticket.message" 事件即時刷新訊息
+   - 送出訊息成功後，呼叫 NudgeAsManager 立即廣播，解決「後台→前台不即時」的情況
    需求前提：
-   - 前台 GamiPort 的 SupportHub 已實作 JoinAsManager(...)
+   - 前台 GamiPort 的 SupportHub 已實作 JoinAsManager(...) / NudgeAsManager(...)
    - 前台/後台 appsettings.*.json 都有同一組 Support:JoinSecret
    =========================================================== *@
 
@@ -106,43 +107,32 @@
                 <dl class="row mb-0">
                     <dt class="col-4">工單ID</dt>
                     <dd class="col-8">@Model.TicketId</dd>
-
                     <dt class="col-4">使用者ID</dt>
                     <dd class="col-8">@Model.UserId</dd>
-
                     <dt class="col-4">主旨</dt>
                     <dd class="col-8">@Model.Subject</dd>
-
                     <dt class="col-4">狀態</dt>
                     <dd class="col-8">
                         @if (Model.IsClosed)
                         {
                             <span class="badge bg-secondary">已結單</span>
-                            ;
                         }
                         else
                         {
 
                             <span class="badge bg-success">處理中</span>
-                            ;
                         }
                     </dd>
-
                     <dt class="col-4">指派客服</dt>
                     <dd class="col-8">@(@Model.AssignedManagerId?.ToString() ?? "未指派")</dd>
-
-                    <!-- ★ 時間顯示：使用 App 時區（台灣） -->
                     <dt class="col-4">建立時間</dt>
                     <dd class="col-8">@Html.AppTime(Model.CreatedAt, "yyyy/MM/dd HH:mm")</dd>
-
                     <dt class="col-4">最後訊息</dt>
                     <dd class="col-8">@Html.AppTime(Model.LastMessageAt ?? Model.CreatedAt, "yyyy/MM/dd HH:mm")</dd>
-
                     @if (Model.IsClosed)
                     {
                         <dt class="col-4">結單時間</dt>
                         <dd class="col-8">@Html.AppTime(Model.ClosedAt, "yyyy/MM/dd HH:mm")</dd>
-
                         <dt class="col-4">結單備註</dt>
                         <dd class="col-8">@Model.CloseNote</dd>
                     }
@@ -153,22 +143,18 @@
                     {
                         <button class="btn btn-sm btn-outline-primary js-assign-me">指派給我</button>
                     }
-
                     @if (Model.CanReassign)
                     {
                         <button class="btn btn-sm btn-outline-warning js-modal-open"
                                 data-url="@Url.Action("Reassign", "Support", new { area = "social_hub", id = Model.TicketId, modal = true, returnUrl = Url.Action("Ticket", "Support", new { area = "social_hub", id = Model.TicketId }) })"
-                                data-title="指派他人 / 轉單"
-                                data-size="lg">
+                                data-title="指派他人 / 轉單" data-size="lg">
                             轉單
                         </button>
                     }
-
                     @if (Model.CanClose)
                     {
                         <button class="btn btn-sm btn-outline-danger js-modal-open"
-                                data-title="結單確認"
-                                data-size="md"
+                                data-title="結單確認" data-size="md"
                                 data-url="@Url.Action("Close", "Support", new { area = "social_hub", id = Model.TicketId, modal = true })">
                             結單
                         </button>
@@ -242,7 +228,7 @@
         // --------- 共用常數 ---------
         const TICKET_ID = @Model.TicketId;
 
-        // 由伺服端產出的簽章參數（管理員加入 Hub 用）
+        // 由伺服端產出的簽章參數（管理員加入/廣播 用）
         const MANAGER_ID = @managerIdVal;
         const EXPIRES    = @expiresVal;
         const SIG        = "@sigHex";
@@ -327,6 +313,17 @@
                 // 成功：清空輸入，重載訊息並捲到底
                 if (ta) ta.value = '';
                 await reloadMessages(1);
+
+                // ★ 關鍵：立刻 nudging 群組，讓「前台」也即時收到（避免只靠 Notifier 有延遲）
+                try {
+                    if (window.GP?.support?.nudgeTicketAsManager) {
+                        await GP.support.nudgeTicketAsManager(TICKET_ID, MANAGER_ID, EXPIRES, SIG);
+                    } else if (window.GP?.support?.invoke) {
+                        await GP.support.invoke("NudgeAsManager", TICKET_ID, MANAGER_ID, EXPIRES, SIG);
+                    }
+                } catch (nudErr) {
+                    console.warn("[support] nudge failed:", nudErr);
+                }
             } catch (err) {
                 alert('送出失敗：網路或伺服器錯誤');
             }
@@ -370,27 +367,27 @@
 
                 // 2) 以管理員簽章加入這張工單（supportHub.js 會記住，斷線自動 re-join）
                 await GP.support.joinTicketAsManager(TICKET_ID, MANAGER_ID, EXPIRES, SIG);
-                // console.log("[support] joined ticket as manager:", TICKET_ID);
 
-                // 3) 監聽「msg」事件（前台 Notifier 的事件名）
-                const onMsg = async (payload) => {
-                    if (payload && +payload.ticketId === +TICKET_ID) {
-                        await reloadMessages(1, false);
-                    }
+                // 3) 監聽「msg / ticket.message」事件（前台 Notifier 常用 "msg"，另保留 ticket.message 兼容）
+                const onAnyMsg = async (payload) => {
+                    const tid = +((payload && (payload.ticketId ?? payload.TicketId)) || 0);
+                    if (tid === +TICKET_ID) await reloadMessages(1, false);
                 };
-                GP.support.on("msg", onMsg);
+                GP.support.on("msg", onAnyMsg);
+                GP.support.on("ticket.message", onAnyMsg);
 
-                // （可選）看到伺服端回報的 joined 訊息
+                // （可選）伺服端回報 joined
                 const onJoined = (ticketId, meta) => {
                     if (+ticketId === +TICKET_ID) {
-                        console.log("[support] joined event:", ticketId, meta);
+                        console.log("[support] joined:", ticketId, meta);
                     }
                 };
                 GP.support.on("joined", onJoined);
 
-                // 4) 離頁清理事件綁定
+                // 4) 離頁清理
                 window.addEventListener("beforeunload", function () {
-                    GP.support.off("msg", onMsg);
+                    GP.support.off("msg", onAnyMsg);
+                    GP.support.off("ticket.message", onAnyMsg);
                     GP.support.off("joined", onJoined);
                 });
             } catch (err) {
