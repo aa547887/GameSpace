@@ -1,0 +1,54 @@
+﻿@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
+@{
+    ViewData["Title"] = $"{Model.UserNickName} 的小屋";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // 依你的專案調整
+}
+
+
+<div class="container py-3" style="max-width: 980px;">
+    <div class="mb-2 d-flex align-items-center justify-content-between">
+        <div class="fs-5 fw-semibold">
+            <span class="me-2">@Model.UserNickName 的小屋</span>
+            <small class="text-muted">被造訪次數：@Model.VisitCount</small>
+        </div>
+    </div>
+
+    <!-- 上半部：頭像 + 背景 -->
+    <div class="position-relative border rounded overflow-hidden mb-3">
+        <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 220px; object-fit: cover;" />
+        <div class="position-absolute" style="left: 16px; bottom: -32px;">
+            <img src="@Model.UserPictureSrc" alt="UserPicture"
+                 class="rounded-circle border bg-white"
+                 style="width: 96px; height: 96px; object-fit: cover;" />
+        </div>
+    </div>
+
+    <div class="mt-4 mb-3">
+        <h4 class="text-center">@Model.Title</h4>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="homeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="about-tab" data-bs-toggle="tab" data-bs-target="#about"
+                    type="button" role="tab">
+                關於我
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts"
+                    type="button" role="tab">
+                我的貼文
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border-start border-end border-bottom p-3">
+        <div class="tab-pane fade show active" id="about" role="tabpanel">
+            @await Html.PartialAsync("_About", Model)
+        </div>
+        <div class="tab-pane fade" id="posts" role="tabpanel">
+            @await Html.PartialAsync("_PostsTable", Model)
+        </div>
+    </div>
+</div>

@@ -39,10 +39,15 @@ namespace GamiPort.Areas.social_hub.Hubs
 		/// <summary>取得目前使用者 Id；優先讀取 Claims，再必要時做備援解析。</summary>
 		private async Task<int> GetMeAsync()
 		{
+			// 快速路徑：_me.UserId 已經把 "AppUserId" Claim 轉成 int（沒有就回 0）
 			var id = _me.UserId;
 			return id > 0 ? id : await _me.GetUserIdAsync();
 		}
 
+		/// <summary>
+		/// 連線建立時：把目前使用者加入「個人群組」，用於點對點推播。
+		/// ⚠️ 用 try/catch 包住，避免生命週期未攔截例外直接讓伺服器關閉 WebSocket。
+		/// </summary>
 		public override async Task OnConnectedAsync()
 		{
 			try
@@ -55,11 +60,13 @@ namespace GamiPort.Areas.social_hub.Hubs
 				}
 				else
 				{
+					// 未登入或 Cookie 舊（沒有 AppUserId），不要丟例外，以免中止連線；記錄即可。
 					_logger.LogWarning("ChatHub connected without valid user id. conn={ConnId}", Context.ConnectionId);
 				}
 			}
 			catch (Exception ex)
 			{
+				// ★ 關鍵：不把例外往外拋，避免「Server returned an error on close」
 				_logger.LogError(ex, "OnConnectedAsync failed. conn={ConnId}", Context.ConnectionId);
 			}
 			finally
@@ -68,6 +75,10 @@ namespace GamiPort.Areas.social_hub.Hubs
 			}
 		}
 
+		/// <summary>
+		/// 連線中斷時：從個人群組移除。
+		/// 同樣包 try/catch，確保這裡的例外不會再影響整體連線狀態回報。
+		/// </summary>
 		public override async Task OnDisconnectedAsync(Exception? ex)
 		{
 			try

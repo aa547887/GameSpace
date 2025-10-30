@@ -8,6 +8,9 @@ using GamiPort.Infrastructure.Security;                 // IAppCurrentUser（吃
 using GamiPort.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+// ✅ 改：改用我們自己的統一介面來「吃登入」；不再依賴 ILoginIdentity
+using GamiPort.Infrastructure.Security; // IAppCurrentUser
 
 namespace GamiPort.Areas.social_hub.Controllers
 {
@@ -30,21 +33,34 @@ namespace GamiPort.Areas.social_hub.Controllers
 			_profanity = profanity;
 		}
 
+		// ==========================================================
+		// 共用：目前使用者（只吃正式登入 Cookie）
+		// 讀取順序：
+		//   1) _me.UserId：直接讀 Claims("AppUserId")（最快、無 DB）
+		//   2) _me.GetUserIdAsync()：備援解析 NameIdentifier 或呼叫 ILoginIdentity 做一次 DB 對應
+		// ==========================================================
 		private async Task<int> GetMeAsync()
 		{
+			// 快速路徑：_me.UserId 會把 "AppUserId" Claim 轉成 int（沒有就 0）
 			var uid = _me.UserId;
 			return uid > 0 ? uid : await _me.GetUserIdAsync();
 		}
 
+		/// <summary>確認 Users 中是否存在（你的主鍵屬性是 UserId）</summary>
 		private Task<bool> ExistsAsync(int userId) =>
 			_db.Users.AsNoTracking().AnyAsync(u => u.UserId == userId);
 
+		/// <summary>統一把時間輸出成 UTC ISO8601（防守性再 ToUniversalTime 一次）</summary>
 		private static string UtcIso(DateTime dt)
 		{
+			// 若 DB 取回來是 Unspecified（datetime2 常見），把它「指定為 UTC」
 			if (dt.Kind == DateTimeKind.Unspecified)
 				dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+
+			// Local 就轉成 UTC；UTC 直接用
 			if (dt.Kind == DateTimeKind.Local)
 				dt = dt.ToUniversalTime();
+
 			return dt.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture);
 		}
 
@@ -68,6 +84,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 			if (me <= 0) return Unauthorized();
 			if (otherId <= 0 || otherId == me) return BadRequest();
 
+			// 僅允許查詢「存在的我 / 對方」
 			if (!await ExistsAsync(me) || !await ExistsAsync(otherId)) return NotFound();
 
 			// 解析時間
@@ -156,6 +173,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 
 		// ==========================================================
 		// 2) 好友們的「最新」 + 未讀
+		//    用途：好友清單一次拿到多人的預覽/未讀（可選用）
 		//    GET /social_hub/Chat/PeersLatest?peerIds=1001,1002
 		//    ★ LastContent 也做遮蔽（DB 仍是原文）
 		// ==========================================================
@@ -194,6 +212,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 
 			var list = new List<PeerLatestDto>(capacity: convs.Count);
 
+			// 逐一計算（通常朋友數量不大；要極致效能可以用 GroupBy / CROSS APPLY 寫成單查詢）
 			foreach (var c in convs)
 			{
 				// 最新一則（★ 遮蔽在輸出）

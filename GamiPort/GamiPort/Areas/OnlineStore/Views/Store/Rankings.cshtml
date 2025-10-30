@@ -1,0 +1,43 @@
+﻿@{
+    ViewData["Title"] = "商品";
+    var code = (string?)ViewBag.ProductCode ?? "";
+}
+
+<div class="container-xxl py-3">
+    <div id="productHost" class="row g-4"></div>
+</div>
+
+@section Scripts {
+    <script>
+        const apiBase="/api/store";
+        const code = "@code";
+        async function load(){
+          const res = await fetch(`${apiBase}/products/${encodeURIComponent(code)}`);
+          if(!res.ok){ document.getElementById("productHost").innerHTML='<div class="col-12 alert alert-warning">找不到商品</div>'; return; }
+          const p = await res.json();
+
+          const imgs = (p.images||[]).map(u=>`<div class="col-4 col-md-3"><img src="${u}" class="img-fluid rounded border"></div>`).join("");
+          const related = (p.related||[]).map(r=>`
+            <div class="col-6 col-md-3">
+              <a class="text-decoration-none" href="/OnlineStore/store/product/${r.productCode}">
+                <div class="card h-100"><img src="${r.coverUrl||''}" class="card-img-top" onerror="this.src='https://via.placeholder.com/600x400?text=No+Image'">
+                  <div class="card-body small"><div class="text-truncate">${r.productName}</div><div class="text-muted">${new Intl.NumberFormat('zh-TW',{style:'currency',currency:r.currencyCode||'TWD'}).format(r.price||0)}</div></div>
+                </div>
+              </a>
+            </div>`).join("");
+
+          document.getElementById("productHost").innerHTML = `
+            <div class="col-12 col-lg-6"><div class="row g-2">${imgs}</div></div>
+            <div class="col-12 col-lg-6">
+              <h2 class="h4">${p.productName||''}</h2>
+              <div class="mb-1">${p.platformName?`<span class="badge bg-secondary">${p.platformName}</span>`:''} ${p.isPreorder?'<span class="badge bg-danger">預購</span>':''}</div>
+              <div class="fs-4 fw-bold mb-3">${new Intl.NumberFormat('zh-TW',{style:'currency',currency:p.currencyCode||'TWD'}).format(p.price||0)}</div>
+              <button class="btn btn-primary">加入購物車</button>
+              <button class="btn btn-outline-danger ms-2"><i class="bi bi-heart"></i> 收藏</button>
+            </div>
+            <div class="col-12"><hr><h3 class="h6">你可能也會喜歡</h3><div class="row g-3">${related}</div></div>
+          `;
+        }
+        document.addEventListener("DOMContentLoaded",load);
+    </script>
+}
