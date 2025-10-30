@@ -30,7 +30,8 @@ else
         <div class="card-header fw-semibold">我的資訊</div>
         <div class="card-body">
             <div>暱稱：@home.UserNickName</div>
-            <div>性別：@home.Gender</div>
+            <div>性別：@(home.Gender == "M" ?"男性":"女性")</div>
+
             <div class="mt-2">
                 <div class="fw-semibold mb-1">自我介紹：</div>
                 <div class="small text-muted">@((string.IsNullOrWhiteSpace(home.IntroText) ? "尚未填寫" : home.IntroText))</div>
