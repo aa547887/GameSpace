@@ -211,7 +211,7 @@ namespace GamiPort.Areas.OnlineStore.Services
 					Product_Name = GetString(reader, "product_name") ?? "",
 					Image_Thumb = GetString(reader, "image_thumb"),
 					Unit_Price = GetDecimal(reader, "unit_price"),
-					Quantity = GetInt32(reader, "quantity"),
+					Quantity = GetInt32Or(reader, new[] { "quantity", "qty" }, 0),
 					Line_Subtotal = GetDecimal(reader, "line_subtotal"),
 					Is_Physical = GetBool(reader, "is_physical"),
 					Weight_G = GetDecimalOrZero(reader, "weight_g"),

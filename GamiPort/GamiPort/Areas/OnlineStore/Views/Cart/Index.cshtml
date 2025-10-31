@@ -12,12 +12,18 @@
 <div class="container py-4">
 
     <h2 class="mb-3">@ViewData["Title"]</h2>
-    <environment include="Development">
+    @* <environment include="Development">
         <div class="mb-3">
             <button id="devSeed" class="btn btn-outline-secondary btn-sm">插入測試品項</button>
         </div>
+    </environment> *@
+    <environment include="Development">
+        <div class="mb-3">
+            <button id="devSeed" type="button" class="btn btn-outline-secondary btn-sm">
+                插入測試品項
+            </button>
+        </div>
     </environment>
-
 
     <!-- 上方：配送/郵遞區號/優惠碼 -->
     <div class="row g-3 align-items-end mb-3">
@@ -363,9 +369,14 @@
         }
 
         // 清空
-        document.getElementById('btnClear').addEventListener('click', () => {
-          if (confirm('確定要清空購物車嗎？')) postAndRefresh('Clear', {});
-        });
+                {
+          const btnClear = document.getElementById('btnClear');
+          if (btnClear) {
+            btnClear.addEventListener('click', () => {
+              if (confirm('確定要清空購物車嗎？')) postAndRefresh('Clear', {});
+            });
+          }
+        }
 
         // 配送 / 郵遞區號 / 優惠碼
         document.getElementById('shipMethodSelect').addEventListener('change', (e) => {
@@ -399,39 +410,49 @@
           loadFull();
         })();
 
-               // ---- DEV：插入測試品項（穩定綁定版本） ----
-        function bindDevSeed() {
-          const devBtn = document.getElementById('devSeed');
-          if (!devBtn) return;
-          devBtn.addEventListener('click', async (e) => {
-            e.preventDefault(); // 防止誤觸提交
-            const url = new URL(location.origin + '/OnlineStore/Cart/DevAdd');
-            url.searchParams.set('productId', 101);
-            url.searchParams.set('qty', 2);
-            url.searchParams.set('shipMethodId', state.shipMethodId);
-            url.searchParams.set('destZip', state.destZip || '');
-            if (state.couponCode) url.searchParams.set('couponCode', state.couponCode);
+              
+
+
+
+        (function() {
+          const btn = document.getElementById('devSeed');
+          if (!btn) return;
+
+          btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            console.log('[dev] click devSeed');
+
+            // 直接打 DevSeed10（一次加入 121–130 各 1 件）
+            const url = new URL(location.origin + '/OnlineStore/Cart/DevSeed10');
+            // 如果你的頁面有 state，可以照舊帶：這裡先保留最少參數
+            url.searchParams.set('shipMethodId', 1);
+            url.searchParams.set('destZip', '320');
 
             try {
-              const res = await fetch(url, { credentials: 'same-origin' });
-              const ct = res.headers.get('content-type') || '';
-              const data = ct.includes('application/json') ? await res.json()
-                                                           : { ok:false, message: await res.text() };
-              if (!res.ok || !data.ok) return showError(data.message || '加入失敗');
-              renderAll(data);
-              showInfo('已加入測試品項');
-            } catch {
-              showError('網路或伺服器錯誤');
+              const res = await fetch(url, { method: 'GET' });
+              if (!res.ok) {
+                const text = await res.text();
+                console.error('DevSeed10 error:', res.status, text);
+                window.alert('插入失敗：' + res.status + '\n' + text.substring(0, 200));
+                return;
+              }
+              const data = await res.json();   // 你的 Full() 原本回傳 JSON
+              console.log('[dev] DevSeed10 ok', data);
+
+              // 這裡呼叫你既有的重繪方法（如果有）
+              if (window.renderCartFromJson) {
+                window.renderCartFromJson(data);
+              } else {
+                // 臨時 fallback：直接重新整理（保證你看得到結果）
+                location.reload();
+              }
+            } catch (err) {
+              console.error(err);
+              window.alert('插入異常：' + (err?.message || err));
             }
           });
-        }
+        })();
 
-        // DOM 若已載入就立刻綁；尚未載入則等事件
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', bindDevSeed);
-        } else {
-          bindDevSeed();
-        }
     </script>
 }
 
