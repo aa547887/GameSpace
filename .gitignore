@@ -19,3 +19,4 @@
 # Ignore specific local markdown files
 /CLAUDE.md
 /AGENTS.md
+/GamiPort/GamiPort/obj/project.nuget.cache
