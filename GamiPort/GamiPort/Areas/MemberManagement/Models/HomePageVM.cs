@@ -34,5 +34,14 @@ namespace GamiPort.Areas.MemberManagement.ViewModels
 		// Friends summary
 		public int FriendAcceptedCount { get; set; }
 		public int FriendPendingCount { get; set; }
+
+		// Friends detail list
+		public List<FriendInfoVM> FriendAcceptedList { get; set; } = new();
+		public List<FriendInfoVM> FriendPendingList { get; set; } = new();
+	}
+	public class FriendInfoVM
+	{
+		public int UserId { get; set; }
+		public string NickName { get; set; } = "";
 	}
 }

@@ -8,6 +8,7 @@ using GamiPort.Models;
 using GamiPort.Areas.MemberManagement.ViewModels;
 using GamiPort.Services; // ICurrentUserService
 
+
 namespace GamiPort.Areas.MemberManagement.Controllers
 {
 	[Area("MemberManagement")]
@@ -89,6 +90,29 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 					(r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId) &&
 					r.StatusId == statusPendingId);
 
+			var friendAcceptedList = await _db.Relations
+			.Where(r => (r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId)
+			 && r.StatusId == statusAcceptedId)
+			.Select(r => r.UserIdSmall == ownerUserId ? r.UserIdLarge : r.UserIdSmall)
+			.Distinct()
+			.Join(_db.UserIntroduces,
+				id => id,
+				u => u.UserId,
+				(id, u) => new FriendInfoVM { UserId = u.UserId, NickName = u.UserNickName })
+			.ToListAsync();
+
+			var friendPendingList = await _db.Relations
+				.Where(r => (r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId)
+						 && r.StatusId == statusPendingId)
+				.Select(r => r.UserIdSmall == ownerUserId ? r.UserIdLarge : r.UserIdSmall)
+				.Distinct()
+				.Join(_db.UserIntroduces,
+					id => id,
+					u => u.UserId,
+					(id, u) => new FriendInfoVM { UserId = u.UserId, NickName = u.UserNickName })
+				.ToListAsync();
+
+
 			var vm = new HomePageVM
 			{
 				OwnerUserId = ownerUserId,
@@ -103,7 +127,9 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				HomeCode = home?.HomeCode,
 				Posts = posts,
 				FriendAcceptedCount = friendAcceptedCount,
-				FriendPendingCount = friendPendingCount
+				FriendPendingCount = friendPendingCount,
+				FriendAcceptedList = friendAcceptedList,
+				FriendPendingList = friendPendingList
 			};
 
 			return vm;
@@ -198,4 +224,5 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 	}
+
 }
