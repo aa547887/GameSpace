@@ -9,9 +9,9 @@ namespace GamiPort.Areas.OnlineStore.Payments
 		private readonly IHttpContextAccessor _http;
 
 		// 用你自己的 Sandbox 參數
-		private const string MerchantID = "2000132";
-		private const string HashKey = "5294y06JbISpM5x9";
-		private const string HashIV = "v77hoKGq4kWxNNIS";
+		private const string MerchantID = "3002607";
+		private const string HashKey = "pwFHCqoQZGmho4w6";
+		private const string HashIV = "EkRm7iFT261dpevs";
 		private const string GatewayUrl = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 
 		public EcpayPaymentService(IHttpContextAccessor http) => _http = http;

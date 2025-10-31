@@ -34,10 +34,16 @@
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
+
 </head>
 <body>
     <!-- 商城頂部 Default -->
-    @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml")
+    @await Html.PartialAsync(
+    "/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml",
+    new GamiPort.Models.ViewModels.TopbarVM {
+        IsAuthenticated = User?.Identity?.IsAuthenticated ?? false,
+        NickName = User?.Identity?.Name ?? "訪客"
+    })
 
     <!-- 主體 -->
     <div class="layout-wrap">

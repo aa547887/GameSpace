@@ -1,0 +1,137 @@
+@model dynamic
+@{
+    ViewData["Title"] = "我的訂單";
+
+    string qVal = Context.Request?.Query["q"];
+    string dfVal = Context.Request?.Query["dateFrom"];
+    string dtVal = Context.Request?.Query["dateTo"];
+    string statusNow = Context.Request?.Query["status"];
+
+    int totalCount = (int?)Model?.TotalCount ?? 0;
+    int unpaidCount = (int?)Model?.UnpaidCount ?? 0;
+    int paidCount = (int?)Model?.PaidCount ?? 0;
+    int shippedCount = (int?)Model?.ShippedCount ?? 0;
+    int completedCount = (int?)Model?.CompletedCount ?? 0;
+    int canceledCount = (int?)Model?.CanceledCount ?? 0;
+
+    string Active(string k)
+        => string.Equals(statusNow ?? "", k ?? "", StringComparison.OrdinalIgnoreCase) ? "active" : "";
+
+    var list = (IEnumerable<dynamic>)(Model?.Items ?? Model?.Orders ?? Model?.Rows ?? Enumerable.Empty<dynamic>());
+}
+
+<link rel="stylesheet" href="~/css/OnlineStore/orders.css" />
+
+<h2 class="mb-3">我的訂單</h2>
+
+<div class="d-flex gap-2 mb-3" id="status-bar">
+    <button class="btn btn-outline-secondary @Active("")" data-status="">全部 (@totalCount)</button>
+    <button class="btn btn-outline-warning  @Active("Unpaid")" data-status="Unpaid">未付款 (@unpaidCount)</button>
+    <button class="btn btn-outline-primary  @Active("Paid")" data-status="Paid">已付款 (@paidCount)</button>
+    <button class="btn btn-outline-info     @Active("Shipped")" data-status="Shipped">已出貨 (@shippedCount)</button>
+    <button class="btn btn-outline-success  @Active("Completed")" data-status="Completed">已完成 (@completedCount)</button>
+    <button class="btn btn-outline-secondary @Active("Canceled")" data-status="Canceled">已取消 (@canceledCount)</button>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-5"><input id="q" class="form-control" placeholder="單號 / 品名" value="@qVal" /></div>
+    <div class="col-md-3"><input id="dateFrom" type="date" class="form-control" value="@dfVal" /></div>
+    <div class="col-md-3"><input id="dateTo" type="date" class="form-control" value="@dtVal" /></div>
+    <div class="col-md-1 d-grid"><button id="btnSearch" class="btn btn-dark">查詢</button></div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-6">
+        <div class="orders-card">
+            @foreach (var o in list)
+            {
+                string oc = (string)(o?.OrderCode ?? "");
+                DateTime created = (DateTime)(o?.CreatedAt ?? DateTime.UtcNow);
+                string payStatus = (string)(o?.PaymentStatus ?? o?.PayStatus ?? "");
+                decimal grand = (decimal)(o?.GrandTotal ?? 0m);
+                string payMethod = (string)(o?.PayMethod ?? "");
+
+                <div class="order-block mb-3" data-oc="@oc">
+                    <!-- 單一 Grid：2 列 × 5 欄 -->
+                    <div class="order-grid">
+                        <!-- 列 1：表頭 -->
+                        <div class="cell head">訂單編號</div>
+                        <div class="cell head">日期</div>
+                        <div class="cell head">付款狀態</div>
+                        <div class="cell head">金額</div>
+                        <div class="cell head">付款方式</div>
+
+                        <!-- 列 2：值 -->
+                        <div class="cell val">
+                            <button class="btn btn-sm btn-outline-dark btn-toggle me-2"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#items-@oc"
+                                    aria-expanded="false"
+                                    aria-controls="items-@oc">
+                                ＋
+                            </button>
+                            <span class="fw-semibold text-monospace valtext">@oc</span>
+                        </div>
+                        <div class="cell val"><span class="valtext">@created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
+                        <div class="cell val"><span class="valtext">@payStatus</span></div>
+                        <div class="cell val text-end">
+                            <span class="valtext">@grand.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</span>
+                        </div>
+                        <div class="cell val"><span class="valtext">@payMethod</span></div>
+                    </div>
+
+                    <!-- 伸縮內容（照舊） -->
+                    <div id="items-@oc" class="collapse row-body">
+                        <div class="p-3"><div class="loading small text-muted">讀取中...</div></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+          document.querySelectorAll('.order-block .btn-toggle').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const block = e.currentTarget.closest('.order-block');
+              const oc = block.getAttribute('data-oc');
+              const body = block.querySelector('#items-' + oc);
+              const iconNow = e.currentTarget;
+
+              setTimeout(()=>{ iconNow.textContent = body.classList.contains('show') ? '＋' : '−'; }, 200);
+
+              if (!body.dataset.loaded) {
+                try {
+                  const res = await fetch(`@Url.Action("Items", "Orders", new { area = "OnlineStore" })?orderCode=${encodeURIComponent(oc)}`,
+                    { headers:{'X-Requested-With':'XMLHttpRequest'} });
+                  body.innerHTML = await res.text();
+                  body.dataset.loaded = "1";
+                } catch { body.innerHTML = `<div class="p-3 text-danger">讀取失敗，請稍後再試。</div>`; }
+              }
+            });
+          });
+
+          document.getElementById('btnSearch')?.addEventListener('click', () => {
+            const qs = new URLSearchParams({
+              q: document.getElementById('q').value || '',
+              dateFrom: document.getElementById('dateFrom').value || '',
+              dateTo: document.getElementById('dateTo').value || '',
+              status: document.querySelector('#status-bar .active')?.dataset.status || ''
+            });
+            location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
+          });
+
+          document.querySelectorAll('#status-bar button').forEach(b=>{
+            b.addEventListener('click', ()=>{
+              const s = b.dataset.status || '';
+              const qs = new URLSearchParams(window.location.search);
+              qs.set('status', s);
+              location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
+            });
+          });
+        })();
+    </script>
+}

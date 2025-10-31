@@ -1,0 +1,130 @@
+@using GamiPort.Areas.OnlineStore.ViewModels
+@model OrderDetailVm
+@{
+    ViewData["Title"] = "訂單明細";
+}
+<h2 class="mb-3">訂單明細</h2>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <div class="fw-bold">單號：@Model.Head.OrderCode</div>
+        <div class="text-muted">
+            成立時間：
+            @Model.Head.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+        </div>
+        <div>狀態：@await Html.PartialAsync("_OrderStatusBadge", Model.Head.StatusText)</div>
+    </div>
+    <div class="d-flex gap-2">
+        @* 你的 VM StatusText 目前是中文；原本寫 "Unpaid" 會判不到 *@
+        @if (Model.Head.StatusText == "未付款")
+        {
+            <a class="btn btn-sm btn-primary" asp-action="RetryPay" asp-route-orderCode="@Model.Head.OrderCode">重新付款</a>
+            <form method="post" asp-action="Cancel" asp-route-orderCode="@Model.Head.OrderCode" onsubmit="return confirm('確定要取消？僅未付款可取消');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-danger">取消訂單</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">商品明細</div>
+            <div class="card-body p-0">
+                <table class="table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>品名</th>
+                            <th class="text-end">單價</th>
+                            <th class="text-end">數量</th>
+                            <th class="text-end">小計</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var it in Model.Items)
+                        {
+                            <tr>
+                                <td>@it.LineNo</td>
+                                <td>@it.ProductName</td>
+                                <td class="text-end">@it.UnitPrice.ToString("N0")</td>
+                                <td class="text-end">@it.Quantity</td>
+                                <td class="text-end">@it.LineTotal.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-end">
+                <strong>應付金額：</strong> @Model.Head.GrandTotal.ToString("N0")
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">付款紀錄</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>金流</th>
+                            <th>交易序號</th>
+                            <th class="text-end">金額</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr>
+                                <td>
+                                    @(p.CreatedAt.HasValue
+                                                                    ? p.CreatedAt.Value.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+                                                                    : "")
+                            </td>
+                            <td>@p.Provider</td>
+                            <td>@p.ProviderTxn</td>
+                            <td class="text-end">
+                                @(p.Amount.HasValue? p.Amount.Value.ToString("N0") : "")
+                            </td>
+                            <td>@p.StatusText</td>
+                        </tr>
+                                                }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">物流紀錄</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>時間</th><th>物流</th><th>單號</th><th>訊息</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Shipments)
+                        {
+                            <tr>
+                                <td>@(s.TrackTime?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</td>
+                                <td>@s.Provider</td>
+                                <td>@s.TrackingNo</td>
+                                <td>@s.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">收件資訊</div>
+            <div class="card-body">
+                <div>收件人：@Model.Head.Recipient</div>
+                <div>電話：@Model.Head.Phone</div>
+                <div>地址：@Model.Head.Address</div>
+            </div>
+        </div>
+    </div>
+</div>
