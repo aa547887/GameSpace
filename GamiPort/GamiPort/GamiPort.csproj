@@ -55,4 +55,8 @@
     <Folder Include="Areas\social_hub\Models\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Areas\OnlineStore\Views\Orders\_OrderItems.cshtml" />
+  </ItemGroup>
+
 </Project>

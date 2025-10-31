@@ -1,167 +1,137 @@
-@model GamiPort.Areas.OnlineStore.ViewModels.OrdersListVm
+@model dynamic
 @{
     ViewData["Title"] = "我的訂單";
-    string Active(string k) => (Model.Status?.Equals(k, StringComparison.OrdinalIgnoreCase) ?? false) ? "active" : "";
+
+    string qVal = Context.Request?.Query["q"];
+    string dfVal = Context.Request?.Query["dateFrom"];
+    string dtVal = Context.Request?.Query["dateTo"];
+    string statusNow = Context.Request?.Query["status"];
+
+    int totalCount = (int?)Model?.TotalCount ?? 0;
+    int unpaidCount = (int?)Model?.UnpaidCount ?? 0;
+    int paidCount = (int?)Model?.PaidCount ?? 0;
+    int shippedCount = (int?)Model?.ShippedCount ?? 0;
+    int completedCount = (int?)Model?.CompletedCount ?? 0;
+    int canceledCount = (int?)Model?.CanceledCount ?? 0;
+
+    string Active(string k)
+        => string.Equals(statusNow ?? "", k ?? "", StringComparison.OrdinalIgnoreCase) ? "active" : "";
+
+    var list = (IEnumerable<dynamic>)(Model?.Items ?? Model?.Orders ?? Model?.Rows ?? Enumerable.Empty<dynamic>());
 }
+
 <link rel="stylesheet" href="~/css/OnlineStore/orders.css" />
-
-<style>
-    /* ===== 版面強化 ===== */
-
-    /* 卡片外觀 */
-    .orders-card .card {
-        border-color: #ffd7e5;
-    }
-
-    .orders-card .card-header {
-        background: #ffeef4;
-    }
-    /* ★★★ 淺粉表頭 */
-    .orders-card .card-body {
-        background: #fff;
-        position: relative;
-    }
-
-    /* 表頭欄位（不含操作欄，並畫黑色分隔線但只在表頭） */
-    .order-head-row {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr; /* 訂單編號/日期/付款狀態/金額/付款方式 */
-        gap: 0;
-    }
-
-        .order-head-row > div {
-            padding: .25rem .5rem;
-            border-right: 1px solid #000;
-            font-weight: 600;
-        }
-
-            .order-head-row > div:last-child {
-                border-right: none;
-            }
-
-    /* 資料列（不畫格線，避免延伸到第二行） */
-    .order-data-row {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
-        gap: 0;
-    }
-
-        .order-data-row > div {
-            padding: .25rem .5rem;
-        }
-
-    /* ★★★ 右上角的「商品明細 +」按鈕（不佔欄位） */
-    .order-more-btn {
-        position: absolute;
-        top: .5rem;
-        right: .5rem;
-    }
-
-    /* ★★★ 展開的明細面板：淡灰底 + 2px 外框 */
-    .order-detail-panel {
-        background: #f8f9fa;
-        border: 2px solid #e9ecef;
-        border-radius: .5rem;
-        padding: 1rem;
-    }
-
-    /* 明細表格裡的標題顯示方式：品名大字，下面淡字顯示產品編號/出貨單號 */
-    .item-title {
-        font-weight: 600;
-    }
-
-    .item-meta {
-        color: #6c757d;
-        font-size: .9rem;
-    }
-</style>
 
 <h2 class="mb-3">我的訂單</h2>
 
-<div class="d-flex gap-2 mb-3">
-    <a class="btn btn-outline-secondary @Active(null)" asp-action="Index" asp-route-status="">全部 (@Model.TotalCount)</a>
-    <a class="btn btn-outline-warning @Active("unpaid")" asp-action="Index" asp-route-status="unpaid">未付款 (@Model.UnpaidCount)</a>
-    <a class="btn btn-outline-primary @Active("paid")" asp-action="Index" asp-route-status="paid">已付款 (@Model.PaidCount)</a>
-    <a class="btn btn-outline-info @Active("shipped")" asp-action="Index" asp-route-status="shipped">已出貨 (@Model.ShippedCount)</a>
-    <a class="btn btn-outline-success @Active("completed")" asp-action="Index" asp-route-status="completed">已完成 (@Model.CompletedCount)</a>
-    <a class="btn btn-outline-secondary @Active("canceled")" asp-action="Index" asp-route-status="canceled">已取消 (@Model.CanceledCount)</a>
+<div class="d-flex gap-2 mb-3" id="status-bar">
+    <button class="btn btn-outline-secondary @Active("")" data-status="">全部 (@totalCount)</button>
+    <button class="btn btn-outline-warning  @Active("Unpaid")" data-status="Unpaid">未付款 (@unpaidCount)</button>
+    <button class="btn btn-outline-primary  @Active("Paid")" data-status="Paid">已付款 (@paidCount)</button>
+    <button class="btn btn-outline-info     @Active("Shipped")" data-status="Shipped">已出貨 (@shippedCount)</button>
+    <button class="btn btn-outline-success  @Active("Completed")" data-status="Completed">已完成 (@completedCount)</button>
+    <button class="btn btn-outline-secondary @Active("Canceled")" data-status="Canceled">已取消 (@canceledCount)</button>
 </div>
 
-<form class="row g-2 mb-3" method="get">
-    <input type="hidden" name="status" value="@Model.Status" />
-    <div class="col-md-4"><input class="form-control" name="keyword" placeholder="單號 / 品名" value="@Model.Keyword" /></div>
-    <div class="col-md-3"><input class="form-control" type="date" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" /></div>
-    <div class="col-md-3"><input class="form-control" type="date" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" /></div>
-    <div class="col-md-2"><button class="btn btn-dark w-100">查詢</button></div>
-</form>
+<div class="row g-2 mb-3">
+    <div class="col-md-5"><input id="q" class="form-control" placeholder="單號 / 品名" value="@qVal" /></div>
+    <div class="col-md-3"><input id="dateFrom" type="date" class="form-control" value="@dfVal" /></div>
+    <div class="col-md-3"><input id="dateTo" type="date" class="form-control" value="@dtVal" /></div>
+    <div class="col-md-1 d-grid"><button id="btnSearch" class="btn btn-dark">查詢</button></div>
+</div>
 
-@if (Model.Items.Count == 0)
-{
-    <div class="text-muted">沒有符合條件的訂單。</div>
-}
-else
-{
-    <div class="d-grid gap-3 orders-card">
-        @foreach (var o in Model.Items)
-        {
-            var collapseId = $"items-{o.OrderCode}";
-            <div class="card shadow-sm border-0">
-                <!-- 表頭（5 欄） -->
-                <div class="card-header py-2">
-                    <div class="order-head-row">
-                        <div>訂單編號</div>
-                        <div>日期</div>
-                        <div>付款狀態</div>
-                        <div class="text-end">金額</div>
-                        <div>付款方式</div>
-                    </div>
-                </div>
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-6">
+        <div class="orders-card">
+            @foreach (var o in list)
+            {
+                string oc = (string)(o?.OrderCode ?? "");
+                DateTime created = (DateTime)(o?.CreatedAt ?? DateTime.UtcNow);
+                string payStatus = (string)(o?.PaymentStatus ?? o?.PayStatus ?? "");
+                decimal grand = (decimal)(o?.GrandTotal ?? 0m);
+                string payMethod = (string)(o?.PayMethod ?? "");
 
-                <div class="card-body">
-                    <!-- 右上角「商品明細 +」按鈕 -->
-                    <button class="btn btn-sm btn-outline-secondary order-more-btn"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#@collapseId"
-                            data-order="@o.OrderCode">
-                        商品明細 +
-                    </button>
+                <div class="order-block mb-3" data-oc="@oc">
+                    <!-- 單一 Grid：2 列 × 5 欄 -->
+                    <div class="order-grid">
+                        <!-- 列 1：表頭 -->
+                        <div class="cell head">訂單編號</div>
+                        <div class="cell head">日期</div>
+                        <div class="cell head">付款狀態</div>
+                        <div class="cell head">金額</div>
+                        <div class="cell head">付款方式</div>
 
-                    <div class="order-data-row align-items-start">
-                        <div class="fw-semibold">
-                            <a asp-action="Detail" asp-route-orderCode="@o.OrderCode">@o.OrderCode</a>
+                        <!-- 列 2：值 -->
+                        <div class="cell val">
+                            <button class="btn btn-sm btn-outline-dark btn-toggle me-2"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#items-@oc"
+                                    aria-expanded="false"
+                                    aria-controls="items-@oc">
+                                ＋
+                            </button>
+                            <span class="fw-semibold text-monospace valtext">@oc</span>
                         </div>
-                        <div class="small text-muted">@o.CreatedAt:yyyy/MM/dd HH:mm</div>
-                        <div><span class="badge rounded-pill bg-light text-dark">@o.PayStatus</span></div>
-                        <div class="fs-6 text-end">NT$ @o.GrandTotal.ToString("N0")</div>
-                        <div>@o.PayMethod</div>
+                        <div class="cell val"><span class="valtext">@created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
+                        <div class="cell val"><span class="valtext">@payStatus</span></div>
+                        <div class="cell val text-end">
+                            <span class="valtext">@grand.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</span>
+                        </div>
+                        <div class="cell val"><span class="valtext">@payMethod</span></div>
                     </div>
 
-                    <!-- 展開：加淡灰底＋2px 外框 -->
-                    <div id="@collapseId" class="collapse mt-3 order-detail-panel" data-items-loaded="0">
-                        <div class="text-muted small">載入中...</div>
+                    <!-- 伸縮內容（照舊） -->
+                    <div id="items-@oc" class="collapse row-body">
+                        <div class="p-3"><div class="loading small text-muted">讀取中...</div></div>
                     </div>
-
-                    <a class="btn btn-sm btn-outline-primary mt-2"
-                       asp-action="Detail" asp-route-orderCode="@o.OrderCode">查看</a>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
-
-    <nav class="mt-3"></nav>
-}
+</div>
 
 @section Scripts {
     <script>
-        document.addEventListener('shown.bs.collapse', async (ev) => {
-          const el = ev.target;
-          if (el.getAttribute('data-items-loaded') === '1') return;
-          const orderCode = ev.relatedTarget?.getAttribute('data-order') || el.id.replace('items-','');
-          const res = await fetch(`@Url.Action("Items", "Orders", new { area = "OnlineStore" })?orderCode=${orderCode}`,
-                       { headers:{ "X-Requested-With":"XMLHttpRequest" }});
-          el.innerHTML = await res.text();
-          el.setAttribute('data-items-loaded','1');
-        });
+        (() => {
+          document.querySelectorAll('.order-block .btn-toggle').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const block = e.currentTarget.closest('.order-block');
+              const oc = block.getAttribute('data-oc');
+              const body = block.querySelector('#items-' + oc);
+              const iconNow = e.currentTarget;
+
+              setTimeout(()=>{ iconNow.textContent = body.classList.contains('show') ? '＋' : '−'; }, 200);
+
+              if (!body.dataset.loaded) {
+                try {
+                  const res = await fetch(`@Url.Action("Items", "Orders", new { area = "OnlineStore" })?orderCode=${encodeURIComponent(oc)}`,
+                    { headers:{'X-Requested-With':'XMLHttpRequest'} });
+                  body.innerHTML = await res.text();
+                  body.dataset.loaded = "1";
+                } catch { body.innerHTML = `<div class="p-3 text-danger">讀取失敗，請稍後再試。</div>`; }
+              }
+            });
+          });
+
+          document.getElementById('btnSearch')?.addEventListener('click', () => {
+            const qs = new URLSearchParams({
+              q: document.getElementById('q').value || '',
+              dateFrom: document.getElementById('dateFrom').value || '',
+              dateTo: document.getElementById('dateTo').value || '',
+              status: document.querySelector('#status-bar .active')?.dataset.status || ''
+            });
+            location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
+          });
+
+          document.querySelectorAll('#status-bar button').forEach(b=>{
+            b.addEventListener('click', ()=>{
+              const s = b.dataset.status || '';
+              const qs = new URLSearchParams(window.location.search);
+              qs.set('status', s);
+              location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
+            });
+          });
+        })();
     </script>
 }

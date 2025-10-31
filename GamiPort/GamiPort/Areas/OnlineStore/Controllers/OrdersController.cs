@@ -1,15 +1,15 @@
 // Areas/OnlineStore/Controllers/OrdersController.cs
+using GamiPort.Areas.OnlineStore.ViewModels;
+using GamiPort.Infrastructure.Security;
+using GamiPort.Models;                              // GameSpacedatabaseContext
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;                 // Database.GetDbConnection
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;                 // Database.GetConnectionString()
-using Microsoft.Extensions.Configuration;           // IConfiguration
-using GamiPort.Models;                              // GameSpacedatabaseContext
-using GamiPort.Infrastructure.Security;             // IAppCurrentUser
-using GamiPort.Areas.OnlineStore.ViewModels;        // OrdersListVm / OrderDetailVm
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -18,338 +18,257 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 	public sealed class OrdersController : Controller
 	{
 		private readonly GameSpacedatabaseContext _db;
-		private readonly IAppCurrentUser _me;
 		private readonly IConfiguration _cfg;
-		private readonly string _connString;
-
-		public OrdersController(GameSpacedatabaseContext db, IAppCurrentUser me, IConfiguration cfg)
+		private readonly IAppCurrentUser _me; // ★ 新增
+		public OrdersController(GameSpacedatabaseContext db, IConfiguration cfg, IAppCurrentUser me)
 		{
 			_db = db;
-			_me = me;
 			_cfg = cfg;
-
-			_connString = _db.Database.GetConnectionString()
-				?? _cfg.GetConnectionString("GameSpace")
-				?? throw new InvalidOperationException("找不到資料庫連線字串，請確認 Program.cs 或 appsettings.json 已設定。");
+			_me = me;
 		}
 
-		// GET /OnlineStore/Orders
+		// GET + POST（AJAX 分頁/查詢會用 POST 並加 X-Requested-With）
 		[HttpGet("")]
-		public async Task<IActionResult> Index(string? status, string? keyword, DateTime? dateFrom, DateTime? dateTo, int page = 1, int pageSize = 10)
+		[HttpPost("")]
+		public async Task<IActionResult> Index(
+			string? status,
+			string? keyword,
+			DateTime? dateFrom,
+			DateTime? dateTo,
+			int page = 1,
+			int pageSize = 10)
 		{
-			var userId = _me.UserId;
-			if (userId <= 0) userId = _cfg.GetValue<int?>("Demo:UserId") ?? 0;
-			if (userId <= 0)
-			{
-				TempData["Toast"] = "Demo 模式未設定 Demo:UserId。";
-				return RedirectToAction("Index", "Home", new { area = "OnlineStore" });
-			}
+			if (page <= 0) page = 1;
+			if (pageSize <= 0) pageSize = 10;
 
 			var vm = new OrdersListVm
 			{
-				Status = status,
-				Keyword = keyword,
-				PageIndex = page,
+				Status = status ?? "",
+				Keyword = keyword ?? "",
+				DateFrom = dateFrom,
+				DateTo = dateTo,
+				Page = page,
 				PageSize = pageSize
 			};
 
-			await using var conn = new SqlConnection(_connString);
-			await conn.OpenAsync();
+			// ── 安全模式 SQL：不依賴 DB 中可能不存在的欄位
+			var sql = @"
+IF OBJECT_ID('tempdb..#filtered') IS NOT NULL DROP TABLE #filtered;
 
-			// ② 列表（分頁）
-			await using (var cmd = conn.CreateCommand())
-			{
-				cmd.CommandText = "dbo.usp_MyOrders_ListByUser";
-				cmd.CommandType = CommandType.StoredProcedure;
-				cmd.Parameters.AddWithValue("@UserId", userId);
-				cmd.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
-				cmd.Parameters.AddWithValue("@Keyword", (object?)keyword ?? DBNull.Value);
-				cmd.Parameters.AddWithValue("@DateFrom", (object?)dateFrom ?? DBNull.Value);
-				cmd.Parameters.AddWithValue("@DateTo", (object?)dateTo ?? DBNull.Value);
-				cmd.Parameters.AddWithValue("@PageIndex", page);
-				cmd.Parameters.AddWithValue("@PageSize", pageSize);
+-- 只投影一定存在的欄位，避免 Invalid column name
+SELECT
+    oi.order_id,
+    oi.order_code,
+    oi.user_id,
+    oi.order_status,
+    oi.payment_status,
+    oi.grand_total
+INTO #filtered
+FROM dbo.SO_OrderInfoes AS oi
+WHERE
+	oi.user_id = @userId AND                                      -- ★ 關鍵守門：只能看自己的
+    (@status  IS NULL OR @status = N'' OR oi.order_status = @status) AND
+    (
+        @keyword IS NULL OR @keyword = N'' OR
+        oi.order_code LIKE N'%' + @keyword + N'%' OR
+        CAST(oi.order_id AS nvarchar(20)) = @keyword
+    );
+    -- 暫不做 created_at 的日期篩選（你的 DB 目前沒有該欄位）
 
-				await using var rd = await cmd.ExecuteReaderAsync();
-				while (await rd.ReadAsync())
-				{
-					vm.Items.Add(new OrdersListItemVm
-					{
-						OrderId = rd.GetInt32(rd.GetOrdinal("order_id")),
-						OrderCode = rd.GetString(rd.GetOrdinal("order_code")),
-						CreatedAt = rd.GetDateTime(rd.GetOrdinal("created_at")),
-						GrandTotal = rd.GetDecimal(rd.GetOrdinal("grand_total")),
-						// ★ 重點：你的 SP 輸出的是 status_text / status_key
-						StatusText = TryGet<string>(rd, "status_text") ?? "",
-						StatusKey = TryGet<string>(rd, "status_key") ?? "",
-						PayMethod = TryGet<string>(rd, "pay_method") ?? "",
-						PayStatus = TryGet<string>(rd, "pay_status") ?? ""
-					});
-				}
-				if (await rd.NextResultAsync() && await rd.ReadAsync())
-				{
-					vm.TotalCount = rd.GetInt32(rd.GetOrdinal("total_count"));
-				}
-			}
+-- 結果集 #1：分頁清單（把缺欄位以 NULL 別名補上，前端/Reader 能正常取欄位）
+SELECT
+    f.order_id,
+    f.order_code,
+    CAST(NULL AS datetime)      AS created_at,        -- 你的 DB 暫無此欄位
+    f.order_status,
+    f.payment_status,
+    CAST(NULL AS nvarchar(50))  AS shipment_status,   -- 暫無：已出貨狀態欄
+    f.grand_total,
+    CAST(NULL AS nvarchar(100)) AS pay_method_name    -- 暫無：付款方式名稱
+FROM #filtered AS f
+ORDER BY f.order_id DESC
+OFFSET (@page - 1) * @pageSize ROWS FETCH NEXT @pageSize ROWS ONLY;
 
-			// ③ Dashboard（各狀態數量）
-			await using (var cmd = conn.CreateCommand())
-			{
-				cmd.CommandText = "dbo.usp_MyOrders_Dashboard";
-				cmd.CommandType = CommandType.StoredProcedure;
-				cmd.Parameters.AddWithValue("@UserId", userId);
+-- 結果集 #2：總筆數
+SELECT COUNT(*) AS total_count FROM #filtered;
 
-				await using var rd = await cmd.ExecuteReaderAsync();
-				if (await rd.ReadAsync())
-				{
-					vm.UnpaidCount = TryGet<int>(rd, "UnpaidCount");
-					vm.PaidCount = TryGet<int>(rd, "PaidCount");
-					vm.ShippedCount = TryGet<int>(rd, "ShippedCount");
-					vm.CompletedCount = TryGet<int>(rd, "CompletedCount");
-					vm.CanceledCount = TryGet<int>(rd, "CanceledCount");
-				}
-			}
+-- 結果集 #3：五種狀態數量（出貨數先為 0，其餘用現有欄位）
+SELECT
+    SUM(CASE WHEN f.order_status   = N'未付款' THEN 1 ELSE 0 END) AS cnt_unpaid,
+    SUM(CASE WHEN f.payment_status = N'已付款' THEN 1 ELSE 0 END) AS cnt_paid,
+    CAST(0 AS int) AS cnt_shipped,
+    SUM(CASE WHEN f.order_status   = N'已完成' THEN 1 ELSE 0 END) AS cnt_completed,
+    SUM(CASE WHEN f.order_status   = N'已取消' THEN 1 ELSE 0 END) AS cnt_canceled
+FROM #filtered AS f;
+";
 
-			return View(vm);
-		}
-
-		// GET /OnlineStore/Orders/{orderCode}
-		[HttpGet("{orderCode}")]
-		public async Task<IActionResult> Detail(string orderCode)
-		{
-			var userId = _me.UserId;
-			if (userId <= 0) userId = _cfg.GetValue<int?>("Demo:UserId") ?? 0;
-			if (userId <= 0)
-			{
-				TempData["Toast"] = "Demo 模式未設定 Demo:UserId。";
-				return RedirectToAction("Index", "Home", new { area = "OnlineStore" });
-			}
-
-			var vm = new OrderDetailVm();
-
-			await using var conn = new SqlConnection(_connString);
-			await conn.OpenAsync();
+			await using var conn = _db.Database.GetDbConnection();
+			if (conn.State != ConnectionState.Open)
+				await conn.OpenAsync();
 
 			await using var cmd = conn.CreateCommand();
-			cmd.CommandText = "dbo.usp_MyOrders_GetDetail";
-			cmd.CommandType = CommandType.StoredProcedure;
-			cmd.Parameters.AddWithValue("@UserId", userId);
-			cmd.Parameters.AddWithValue("@OrderCode", orderCode);
+			cmd.CommandText = sql;
 
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0) return Challenge();
+			cmd.Parameters.AddRange(new[]
+			{
+				new SqlParameter("@userId",   System.Data.SqlDbType.Int) { Value = userId }, // ★ 新增
+				new SqlParameter("@status",   (object?)status   ?? DBNull.Value),
+				new SqlParameter("@keyword",  (object?)keyword  ?? DBNull.Value),
+				new SqlParameter("@dateFrom", (object?)dateFrom ?? DBNull.Value),
+				new SqlParameter("@dateTo",   (object?)dateTo   ?? DBNull.Value),
+				new SqlParameter("@page",     page),
+				new SqlParameter("@pageSize", pageSize),
+			});
+
+			var items = new List<OrdersListItemVm>();
 			await using var rd = await cmd.ExecuteReaderAsync();
 
-			// A) Head
-			if (await rd.ReadAsync())
-			{
-				vm.Head = new OrderHeadVm
-				{
-					OrderId = TryGet<int>(rd, "order_id"),
-					OrderCode = TryGet<string>(rd, "order_code") ?? "",
-					StatusText = TryGet<string>(rd, "status")
-								 ?? TryGet<string>(rd, "order_status") ?? "",
-					CreatedAt = TryGet<DateTime?>(rd, "created_at")
-								 ?? TryGet<DateTime?>(rd, "order_date")
-								 ?? DateTime.MinValue,
-					GrandTotal = TryGet<decimal?>(rd, "grand_total") ?? 0m,
-					Recipient = TryGet<string>(rd, "recipient"),
-					Phone = TryGet<string>(rd, "phone"),
-					Address = BuildAddress(rd)
-				};
-			}
-			else
-			{
-				return NotFound();
-			}
-
-			// B) Items
-			if (await rd.NextResultAsync())
-			{
-				while (await rd.ReadAsync())
-				{
-					vm.Items.Add(new OrderItemVm
-					{
-						LineNo = TryGet<int>(rd, "line_no"),
-						ProductName = TryGet<string>(rd, "product_name") ?? "",
-						UnitPrice = TryGet<decimal?>(rd, "unit_price") ?? 0m,
-						Quantity = TryGet<int>(rd, "quantity"),
-						LineTotal = TryGet<decimal?>(rd, "line_total")
-									   ?? TryGet<decimal?>(rd, "subtotal") ?? 0m,
-						ProductId = TryGet<int?>(rd, "product_id") ?? 0
-					});
-				}
-			}
-
-			// C) Payments
-			if (await rd.NextResultAsync())
-			{
-				while (await rd.ReadAsync())
-				{
-					vm.Payments.Add(new PaymentVm
-					{
-						Provider = TryGet<string>(rd, "provider"),
-						ProviderTxn = TryGet<string>(rd, "provider_txn"),
-						Amount = TryGet<decimal?>(rd, "amount") ?? 0m,
-						CreatedAt = TryGet<DateTime?>(rd, "created_at") ?? DateTime.MinValue,
-						StatusText = TryGet<string>(rd, "status")
-					});
-				}
-			}
-
-			// D) Shipments
-			if (await rd.NextResultAsync())
-			{
-				while (await rd.ReadAsync())
-				{
-					vm.Shipments.Add(new ShipmentVm
-					{
-						ShipmentCode = TryGet<string>(rd, "shipment_code"),
-						Provider = TryGet<string>(rd, "provider"),
-						TrackingNo = TryGet<string>(rd, "tracking_no"),
-						TrackTime = TryGet<DateTime?>(rd, "track_time"),
-						Message = TryGet<string>(rd, "message")
-					});
-				}
-			}
-
-			return View(vm);
-		}
-
-		// POST /OnlineStore/Orders/{orderCode}/cancel
-		[HttpPost("{orderCode}/cancel")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Cancel(string orderCode, string? reason)
-		{
-			var userId = _me.UserId;
-			if (userId <= 0) userId = _cfg.GetValue<int?>("Demo:UserId") ?? 0;
-
-			await using var conn = new SqlConnection(_connString);
-			await conn.OpenAsync();
-
-			await using var cmd = conn.CreateCommand();
-			cmd.CommandText = "dbo.usp_Order_CancelIfUnpaid";
-			cmd.CommandType = CommandType.StoredProcedure;
-			cmd.Parameters.AddWithValue("@UserId", userId);
-			cmd.Parameters.AddWithValue("@OrderCode", orderCode);
-			cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
-
-			var affected = await cmd.ExecuteNonQueryAsync();
-
-			TempData["Toast"] = (affected >= 0) ? "已送出取消（僅未付款有效）。" : "取消失敗或狀態不允許。";
-			return RedirectToAction(nameof(Detail), new { orderCode });
-		}
-
-		// GET /OnlineStore/Orders/{orderCode}/retry-pay
-		[HttpGet("{orderCode}/retry-pay")]
-		public IActionResult RetryPay(string orderCode)
-			=> RedirectToAction("OrderResult", "Ecpay", new { area = "OnlineStore", orderCode });
-
-		// 回傳狀態鍵（前端輪詢，驅動進度軸）
-		[HttpGet("status/{orderCode}")]
-		public async Task<IActionResult> Status(string orderCode)
-		{
-			var userId = _me.UserId;
-			if (userId <= 0) userId = _cfg.GetValue<int?>("Demo:UserId") ?? 0;
-
-			await using var conn = new SqlConnection(_connString);
-			await conn.OpenAsync();
-
-			await using var cmd = conn.CreateCommand();
-			cmd.CommandText =
-				"SELECT TOP 1 CASE " +
-				"WHEN oi.order_status IN (N'已取消',N'Canceled') THEN N'canceled' " +
-				"WHEN oi.order_status IN (N'已完成',N'Completed') THEN N'completed' " +
-				"WHEN oi.order_status IN (N'已出貨',N'Shipped')   THEN N'shipped' " +
-				"WHEN oi.payment_status IN (N'已付款',N'Paid')     THEN N'paid' " +
-				"ELSE N'unpaid' END AS status_key " +
-				"FROM dbo.SO_OrderInfoes oi WHERE oi.user_id=@uid AND oi.order_code=@code";
-			cmd.Parameters.AddWithValue("@uid", userId);
-			cmd.Parameters.AddWithValue("@code", orderCode);
-
-			var result = (string?)await cmd.ExecuteScalarAsync() ?? "unpaid";
-			return Json(new { statusKey = result });
-		}
-
-		// 取得明細（Partial）
-		[HttpGet("items")]
-		public async Task<IActionResult> Items(string orderCode)
-		{
-			var userId = _me.UserId;
-			if (userId <= 0) userId = _cfg.GetValue<int?>("Demo:UserId") ?? 0;
-
-			var list = new List<OrderItemVm>();
-
-			await using var conn = new SqlConnection(_connString);
-			await conn.OpenAsync();
-			await using var cmd = conn.CreateCommand();
-			cmd.CommandText = "dbo.usp_MyOrders_GetDetail";
-			cmd.CommandType = CommandType.StoredProcedure;
-			cmd.Parameters.AddWithValue("@UserId", userId);
-			cmd.Parameters.AddWithValue("@OrderCode", orderCode);
-
-			await using var rd = await cmd.ExecuteReaderAsync();
-
-			// 跳過 Head
-			if (!await rd.ReadAsync())
-				return Content("<div class='text-danger small'>訂單不存在</div>", "text/html");
-
-			// B: Items
-			await rd.NextResultAsync();
+			// #1 清單
 			while (await rd.ReadAsync())
 			{
-				list.Add(new OrderItemVm
+				items.Add(new OrdersListItemVm
 				{
-					LineNo = TryGet<int>(rd, "line_no"),
-					ProductName = TryGet<string>(rd, "product_name") ?? "",
-					UnitPrice = TryGet<decimal?>(rd, "unit_price") ?? 0m,
-					Quantity = TryGet<int>(rd, "quantity"),
-					LineTotal = TryGet<decimal?>(rd, "line_total") ?? 0m,
-					ProductId = TryGet<int?>(rd, "product_id") ?? 0
+					OrderId = rd.GetInt32(rd.GetOrdinal("order_id")),
+					OrderCode = rd.GetString(rd.GetOrdinal("order_code")),
+					CreatedAt = rd.IsDBNull(rd.GetOrdinal("created_at")) ? (DateTime?)null : rd.GetDateTime(rd.GetOrdinal("created_at")),
+					OrderStatus = rd.IsDBNull(rd.GetOrdinal("order_status")) ? null : rd.GetString(rd.GetOrdinal("order_status")),
+					PaymentStatus = rd.IsDBNull(rd.GetOrdinal("payment_status")) ? null : rd.GetString(rd.GetOrdinal("payment_status")),
+					ShipmentStatus = rd.IsDBNull(rd.GetOrdinal("shipment_status")) ? null : rd.GetString(rd.GetOrdinal("shipment_status")),
+					PayStatus = rd.IsDBNull(rd.GetOrdinal("payment_status")) ? null : rd.GetString(rd.GetOrdinal("payment_status")), // 舊命名相容
+					PayMethod = rd.IsDBNull(rd.GetOrdinal("pay_method_name")) ? null : rd.GetString(rd.GetOrdinal("pay_method_name")),
+					GrandTotal = rd.IsDBNull(rd.GetOrdinal("grand_total")) ? 0m : rd.GetDecimal(rd.GetOrdinal("grand_total"))
 				});
 			}
 
-			return PartialView("~/Areas/OnlineStore/Views/Orders/_OrderItemsMini.cshtml", list);
+			// #2 總筆數
+			await rd.NextResultAsync();
+			if (await rd.ReadAsync())
+				vm.TotalCount = rd.GetInt32(0);
+
+			// #3 狀態數
+			await rd.NextResultAsync();
+			if (await rd.ReadAsync())
+			{
+				// 依照結構：unpaid / paid / shipped(固定0) / completed / canceled
+				vm.CntUnpaid = rd.IsDBNull(0) ? 0 : rd.GetInt32(0);
+				vm.CntPaid = rd.IsDBNull(1) ? 0 : rd.GetInt32(1);
+				vm.CntShipped = rd.IsDBNull(2) ? 0 : rd.GetInt32(2);
+				vm.CntCompleted = rd.IsDBNull(3) ? 0 : rd.GetInt32(3);
+				vm.CntCanceled = rd.IsDBNull(4) ? 0 : rd.GetInt32(4);
+
+				// 若你的 Index.cshtml 用的是 UnpaidCount/PaidCount... 也一併對應
+				vm.UnpaidCount = vm.CntUnpaid;
+				vm.PaidCount = vm.CntPaid;
+				vm.ShippedCount = vm.CntShipped;
+				vm.CompletedCount = vm.CntCompleted;
+				vm.CanceledCount = vm.CntCanceled;
+			}
+
+			vm.Items.AddRange(items);
+
+			// AJAX：只回列表部分
+			if (string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+			{
+				return PartialView("_OrdersListPartial", vm);
+			}
+
+			return View("Index", vm);
 		}
 
-		// ===== Helpers =====
-
-		// 安全取值（欄位不存在或為 DBNull 時回傳 default）
-		// 安全版：支援 Nullable<T>、DBNull、缺欄位
-		private static T? TryGet<T>(IDataRecord r, string name, T? fallback = default)
+		// 給前端 stepper 查狀態（移除 shipment_status 依賴）
+		[HttpGet("status/{orderCode}")]
+		public async Task<IActionResult> Status(string orderCode)
 		{
-			var ordinal = -1;
-			try { ordinal = r.GetOrdinal(name); }
-			catch { return fallback; }
+			const string sql = @"
+SELECT TOP(1)
+    order_status,
+    payment_status
+FROM dbo.SO_OrderInfoes
+WHERE order_code = @orderCode AND user_id = @userId  -- ★ 只允許看自己的單
+ORDER BY order_id DESC;";
 
-			if (ordinal < 0) return fallback;
-			if (r.IsDBNull(ordinal)) return fallback;
+			await using var conn = _db.Database.GetDbConnection();
+			if (conn.State != ConnectionState.Open)
+				await conn.OpenAsync();
 
-			object value = r.GetValue(ordinal);
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = sql;
 
-			// 若 T 是 Nullable<>, 取其 underlying type
-			var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0) return Unauthorized();
+			cmd.Parameters.Add(new SqlParameter("@orderCode", orderCode));
+			cmd.Parameters.Add(new SqlParameter("@userId", userId)); // ★ 新增
 
-			try
+			await using var rd = await cmd.ExecuteReaderAsync();
+			if (await rd.ReadAsync())
 			{
-				if (value.GetType() == targetType || targetType.IsAssignableFrom(value.GetType()))
-					return (T)value;
+				var orderStatus = rd.IsDBNull(0) ? null : rd.GetString(0);
+				var paymentStatus = rd.IsDBNull(1) ? null : rd.GetString(1);
 
-				var converted = Convert.ChangeType(value, targetType, System.Globalization.CultureInfo.InvariantCulture);
-				return (T)converted!;
+				// 無 shipment_status；以 order/payment 推斷
+				string key = "unpaid";
+				if (string.Equals(orderStatus, "已取消")) key = "canceled";
+				else if (string.Equals(orderStatus, "已完成")) key = "completed";
+				else if (string.Equals(paymentStatus, "已付款")) key = "paid";
+				// 沒有已出貨判斷 → 不會回 shipped
+
+				return Json(new { statusKey = key });
 			}
-			catch
-			{
-				return fallback;
-			}
+
+			return Json(new { statusKey = "unpaid" });
 		}
-
-
-		private static string? BuildAddress(IDataRecord r)
+		// 伸縮框：載入指定訂單的商品明細
+		[HttpGet("Items")]
+		public async Task<IActionResult> Items(string orderCode)
 		{
-			var a1 = TryGet<string>(r, "address1");
-			var a2 = TryGet<string>(r, "address2");
-			var zip = TryGet<string>(r, "dest_zip");
-			var parts = new List<string?>(3) { zip, a1, a2 };
-			parts.RemoveAll(s => string.IsNullOrWhiteSpace(s));
-			return parts.Count == 0 ? null : string.Join(" ", parts);
+			// === 0) 參數檢查 ===
+			if (string.IsNullOrWhiteSpace(orderCode))
+				return BadRequest("orderCode is required.");
+
+			// === 1) 取得目前登入者 ===
+			// 說明：
+			// - 假設本 Controller 已經注入 IAppCurrentUser _me（你前面動作已完成）
+			// - 若尚未注入，可改為自行從 Claims 解析（略）
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0) return Unauthorized(); // 未登入
+
+			// === 2) 先確認這張訂單屬於目前使用者，並取得 orderId ===
+			var ownedOrder = await _db.SoOrderInfoes
+				.AsNoTracking()
+				.Where(o => o.OrderCode == orderCode && o.UserId == userId) // ★ 關鍵：只能看自己的訂單
+				.Select(o => new { o.OrderId })
+				.FirstOrDefaultAsync();
+
+			if (ownedOrder is null)
+			{
+				// 找不到該單或不是自己的單
+				return NotFound("Order not found or access denied.");
+			}
+
+			var orderId = ownedOrder.OrderId;
+
+			// === 3) 查詢明細（僅針對這張屬於自己的訂單） ===
+			// oi → it → p → (left join) pc 取 product_code
+			var q =
+				from it in _db.SoOrderItems.AsNoTracking()
+				where it.OrderId == orderId
+				join p in _db.SProductInfos.AsNoTracking() on it.ProductId equals p.ProductId
+				join pc0 in _db.SProductCodes.AsNoTracking() on p.ProductId equals pc0.ProductId into pcJoin
+				from pc in pcJoin.DefaultIfEmpty() // left join，避免沒有代碼時擋住
+				orderby it.LineNo
+				select new GamiPort.Areas.OnlineStore.ViewModels.OrderItemRowVm
+				{
+					ProductCode = pc != null ? pc.ProductCode : null, // 若沒代碼可改成 $"PID-{p.ProductId}"
+					ProductName = p.ProductName,
+					UnitPrice = it.UnitPrice,
+					Quantity = it.Quantity,
+					Subtotal = it.UnitPrice * it.Quantity
+				};
+
+			var list = await q.ToListAsync();
+			return PartialView("_OrderItems", list);
 		}
 	}
 }

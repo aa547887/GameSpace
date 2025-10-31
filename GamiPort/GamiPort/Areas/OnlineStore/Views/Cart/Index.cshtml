@@ -8,6 +8,7 @@
 @* 反 CSRF：給 AJAX 用 *@
 <form id="af-token-form">@Html.AntiForgeryToken()</form>
 
+
 <div class="container py-4">
 
     <h2 class="mb-3">@ViewData["Title"]</h2>
@@ -84,13 +85,14 @@
             </div>
         </div>
         <div class="card-footer d-flex justify-content-between">
-            <button id="btnClear" class="btn btn-outline-danger">清空購物車</button>
-            <a class="btn btn-success"
-               asp-area="OnlineStore"
-               asp-controller="Checkout"
-               asp-action="Step1">
-                前往結帳
-            </a>
+            @if (TempData["Toast"] is string tip)
+            {
+                <div class="alert alert-warning">@tip</div>
+            }
+            <form asp-area="OnlineStore" asp-controller="Cart" asp-action="GoCheckout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary">前往結帳</button>
+            </form>
         </div>
     </div>
 
@@ -397,11 +399,12 @@
           loadFull();
         })();
 
-        // DEV：插入測試品項
-        document.addEventListener('DOMContentLoaded', () => {
+               // ---- DEV：插入測試品項（穩定綁定版本） ----
+        function bindDevSeed() {
           const devBtn = document.getElementById('devSeed');
           if (!devBtn) return;
-          devBtn.addEventListener('click', async () => {
+          devBtn.addEventListener('click', async (e) => {
+            e.preventDefault(); // 防止誤觸提交
             const url = new URL(location.origin + '/OnlineStore/Cart/DevAdd');
             url.searchParams.set('productId', 101);
             url.searchParams.set('qty', 2);
@@ -412,13 +415,23 @@
             try {
               const res = await fetch(url, { credentials: 'same-origin' });
               const ct = res.headers.get('content-type') || '';
-              const data = ct.includes('application/json') ? await res.json() : { ok:false, message: await res.text() };
+              const data = ct.includes('application/json') ? await res.json()
+                                                           : { ok:false, message: await res.text() };
               if (!res.ok || !data.ok) return showError(data.message || '加入失敗');
               renderAll(data);
               showInfo('已加入測試品項');
-            } catch { showError('網路或伺服器錯誤'); }
+            } catch {
+              showError('網路或伺服器錯誤');
+            }
           });
-        });
+        }
+
+        // DOM 若已載入就立刻綁；尚未載入則等事件
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bindDevSeed);
+        } else {
+          bindDevSeed();
+        }
     </script>
 }
 

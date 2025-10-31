@@ -45,7 +45,7 @@
                 <div class="label">完成</div>
             </div>
         </div>
-        <div>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</div>
+        <div>@(Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</div>
         <div>@(string.IsNullOrEmpty(Model.PayStatus) ? "—" : Model.PayStatus)</div>
         <div class="fw-bold">NT$ @Model.GrandTotal.ToString("N0")</div>
         <div>@(string.IsNullOrEmpty(Model.PayMethod) ? "—" : Model.PayMethod)</div>

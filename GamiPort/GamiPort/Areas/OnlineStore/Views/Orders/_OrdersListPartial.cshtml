@@ -1,0 +1,70 @@
+﻿@model GamiPort.Areas.OnlineStore.ViewModels.OrdersListVm
+
+@if (Model.Items.Count == 0)
+{
+    <div class="text-muted">沒有符合條件的訂單。</div>
+}
+else
+{
+    <div class="d-grid gap-3 orders-card">
+        @foreach (var o in Model.Items)
+        {
+            var collapseId = $"items-{o.OrderCode}";
+            <div class="card shadow-sm border-0" style="border-color:#ffd7e5;">
+                <div class="card-header py-2" style="background:#ffeef4;border-color:#ffd7e5;position:relative;">
+                    <div class="order-head-row" style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;">
+                        <div class="fw-semibold">@o.OrderCode</div>
+                        <div class="small text-muted">@(o.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</div>
+                        <div><span class="badge rounded-pill bg-light text-dark">@o.PayStatus</span></div>
+                        <div class="fs-6 text-end">NT$ @o.GrandTotal.ToString("N0")</div>
+                        <div>@(string.IsNullOrEmpty(o.PayMethod) ? "—" : o.PayMethod)</div>
+                    </div>
+
+                    <!-- 商品明細按鈕（右上角） -->
+                    <button class="btn btn-sm btn-outline-secondary order-more-btn"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            data-order="@o.OrderCode"
+                            style="position:absolute;top:.5rem;right:.5rem;">
+                        <i class="bi bi-plus-lg me-1"></i> 商品明細
+                    </button>
+                </div>
+
+                <div id="@collapseId" class="collapse" data-bs-parent="#orders-list">
+                    <div class="card-body">
+                        <div class="placeholder-glow small text-muted">讀取中…</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+    <!-- 分頁列（無刷新：a 上掛 data-page，外層 Index 的 JS 會攔截） -->
+    <nav class="mt-3" aria-label="Orders pagination">
+        <ul class="pagination justify-content-center mb-0">
+            @{
+                int p = Model.Page, tp = Math.Max(Model.TotalPages, 1);
+                int prev = Math.Max(1, p - 1);
+                int next = Math.Min(tp, p + 1);
+            }
+            <li class="page-item @(p == 1 ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="@prev">上一頁</a>
+            </li>
+
+            @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="#" data-page="@i">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(p == tp ? "disabled" : "")">
+                <a class="page-link" href="#" data-page="@next">下一頁</a>
+            </li>
+        </ul>
+    </nav>
+
+

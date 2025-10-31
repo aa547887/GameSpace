@@ -24,8 +24,24 @@
             <li class="nav-item"><a class="nav-link nav-elevate" href="@siteHomeUrl"><i class="bi bi-house-door me-1"></i> 網站首頁</a></li>
             <li class="nav-item"><a class="nav-link nav-elevate" href="@storeHomeUrl"><i class="bi bi-shop me-1"></i> 商城首頁</a></li>
             <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/store/favorites"><i class="bi bi-heart me-1"></i> 我的收藏</a></li>
-            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/cart"><i class="bi bi-cart me-1"></i> 購物車</a></li>  <!-- 新增購物車 -->
-            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/orders"><i class="bi bi-receipt me-1"></i> 我的訂單</a></li>
+            <li class="nav-item">
+                <a asp-area="OnlineStore"
+                   asp-controller="Cart"
+                   asp-action="Index"
+                   class="nav-link nav-elevate">
+                    <i class="bi bi-cart me-1"></i> 購物車
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a asp-area="OnlineStore"
+                   asp-controller="Orders"
+                   asp-action="Index"
+                   class="nav-link nav-elevate">
+                    <i class="bi bi-receipt me-1"></i> 我的訂單
+                </a>
+            </li>
+
             <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/notice"><i class="bi bi-megaphone me-1"></i> 商城公告</a></li>
 
             @if (CurrentUser.IsAuthenticated)

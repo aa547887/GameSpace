@@ -1,0 +1,35 @@
+﻿@using GamiPort.Areas.OnlineStore.ViewModels
+@model IEnumerable<OrderItemVm>
+
+<table class="table table-sm align-middle mb-0">
+    <thead>
+        <tr>
+            <th style="width:45%">品名</th>
+            <th>商品編號</th>
+            <th class="text-end">單價</th>
+            <th class="text-end">數量</th>
+            <th class="text-end">小計</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            if (!Model.Any())
+            {
+                <tr><td colspan="5" class="text-muted">（本筆訂單沒有明細）</td></tr>
+            }
+            else
+            {
+                foreach (var it in Model)
+                {
+                    <tr>
+                        <td><div class="item-title">@it.ProductName</div></td>
+                        <td class="item-meta">@(!string.IsNullOrEmpty(it.ProductCode) ? it.ProductCode : it.ProductId.ToString())</td>
+                        <td class="text-end">NT$ @it.UnitPrice.ToString("N0")</td>
+                        <td class="text-end">@it.Quantity</td>
+                        <td class="text-end fw-semibold">NT$ @it.LineTotal.ToString("N0")</td>
+                    </tr>
+                }
+            }
+        }
+    </tbody>
+</table>

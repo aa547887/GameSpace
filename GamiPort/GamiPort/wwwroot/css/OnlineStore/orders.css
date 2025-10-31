@@ -1,114 +1,163 @@
-﻿/* 卡片 */
-.orders-card .card {
-    border-color: #ffd7e5;
-    position: relative;
+﻿/* ===== 顏色變數 ===== */
+:root {
+    --orders-border: #d9d9d9; /* 淺灰格線 */
+    --orders-pink: #ffeef4; /* 淺粉紅 */
 }
 
-.orders-card .card-header {
-    background: #ffeef4;
+/* ===== 卡片外觀（外層不畫，邊框交給 grid 容器） ===== */
+.orders-card .order-block {
+    border: none;
 }
 
-/* 表頭欄位之間黑色分隔線（僅限表頭，不延至第二行） */
-.order-head-row {
+/* ===== 主版：桌機 5 欄、2 列（表頭 + 值） ===== */
+.orders-card .order-grid {
     display: grid;
-    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1.2fr;
+    /* 每欄用 minmax 保底，避免被擠爆；比例與你原本一致 */
+    grid-template-columns: minmax(10rem, 1.7fr) /* 訂單編號 */
+    minmax(9rem, 1.2fr) /* 日期 */
+    minmax(8rem, 1.1fr) /* 付款狀態 */
+    minmax(7rem, 1.0fr) /* 金額 */
+    minmax(8rem, 1.2fr); /* 付款方式 */
+    grid-auto-rows: auto;
+    border: 4px solid var(--orders-border);
+    border-radius: .5rem;
+    overflow: hidden;
+    background: #fff;
+    box-sizing: border-box;
 }
 
-    .order-head-row > div {
-        padding: .25rem .5rem;
-        border-right: 1px solid #000;
+    /* 共用 cell：1px 淺灰格線 + 防撐破 */
+    .orders-card .order-grid .cell {
+        padding: .75rem 1rem;
+        border-right: 1px solid var(--orders-border);
+        border-bottom: 1px solid var(--orders-border);
+        min-width: 0; /* 關鍵：允許內容收縮 */
+        box-sizing: border-box;
     }
 
-        .order-head-row > div:last-child {
+        .orders-card .order-grid .cell:nth-child(5n) {
             border-right: none;
         }
+        /* 每列最後一格不畫右線 */
 
-/* 內文資料列（不畫直線） */
-.order-data-row {
-    display: grid;
-    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1.2fr;
-    gap: 0;
+        /* 表頭（列1） */
+        .orders-card .order-grid .cell.head {
+            background: var(--orders-pink);
+            font-weight: 600;
+            line-height: 1.25;
+            white-space: nowrap; /* 表頭不換行較穩 */
+        }
+
+        /* 值（列2，最後一列不畫底線，由外框收尾） */
+        .orders-card .order-grid .cell.val:nth-last-child(-n+5) {
+            border-bottom: none;
+        }
+
+        /* 值的文字防爆框：可斷行、可省略 */
+        .orders-card .order-grid .cell.val .valtext,
+        .orders-card .order-grid .cell.val > span,
+        .orders-card .order-grid .cell.val > div {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            overflow-wrap: anywhere; /* 任意點斷行 */
+            word-break: break-word;
+            text-overflow: ellipsis; /* 超出顯示省略號（配合 overflow:hidden） */
+        }
+
+        /* 金額右對齊且盡量單行 */
+        .orders-card .order-grid .cell.val.text-end .valtext {
+            white-space: nowrap;
+        }
+
+/* 展開按鈕 */
+.order-block .btn-toggle {
+    min-width: 2rem;
 }
 
-    .order-data-row > div {
-        padding: .25rem .5rem;
-    }
-
-/* 右上角「商品明細 +」按鈕（不占欄位） */
-.order-more-btn {
-    position: absolute;
-    top: .5rem;
-    right: .75rem;
+/* 伸縮內容（保持原設定） */
+.orders-card .row-body {
+    background: #fff;
 }
 
-/* 展開區塊：淡灰底 + 2px 邊框 */
-.order-detail-panel {
-    background: #f8f9fa;
-    border: 2px solid #eaeaea;
-    border-radius: .5rem;
-    padding: 1rem;
+    .orders-card .row-body .loading {
+        padding-left: 2.25rem;
+    }
+
+.order-items-table thead th {
+    border-top: none;
 }
 
-/* 四段進度條（與卡片外的 stepper 共用概念） */
-.stepper4 {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: .75rem;
+.order-items-table thead th, .order-items-table tbody td {
+    vertical-align: middle;
 }
 
-    .stepper4 .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #d9d9d9;
+/* ===== RWD：<= 768px 變 5 行 × 2 欄（左：表頭、右：值） ===== */
+@media (max-width: 768px) {
+    .orders-card .order-grid {
+        grid-template-columns: 1fr 1.5fr; /* 左窄右寬 */
     }
 
-    .stepper4 .bar {
-        height: 4px;
-        flex: 1;
-        background: #d9d9d9;
-    }
+        /* 重新定位：前 5 個 head 到左欄第 1~5 行 */
+        .orders-card .order-grid .cell.head:nth-child(1) {
+            grid-column: 1;
+            grid-row: 1;
+        }
 
-    .stepper4 .dot.active {
-        background: #ff6b9c;
-    }
+        .orders-card .order-grid .cell.head:nth-child(2) {
+            grid-column: 1;
+            grid-row: 2;
+        }
 
-    .stepper4 .bar.active {
-        background: #ffb6cc;
-    }
+        .orders-card .order-grid .cell.head:nth-child(3) {
+            grid-column: 1;
+            grid-row: 3;
+        }
 
-    .stepper4 .labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: .85rem;
-        color: #666;
-    }
+        .orders-card .order-grid .cell.head:nth-child(4) {
+            grid-column: 1;
+            grid-row: 4;
+        }
 
-/* 明細列（非表格版，像 momo） */
-.item-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: .5rem 0;
-    border-bottom: 1px dashed #e3e3e3;
-}
+        .orders-card .order-grid .cell.head:nth-child(5) {
+            grid-column: 1;
+            grid-row: 5;
+        }
 
-    .item-row:last-child {
-        border-bottom: none;
-    }
+        /* 後 5 個 val 到右欄第 1~5 行（原始順序第 6~10 個） */
+        .orders-card .order-grid .cell.val:nth-child(6) {
+            grid-column: 2;
+            grid-row: 1;
+        }
 
-.item-title {
-    font-weight: 600;
-}
+        .orders-card .order-grid .cell.val:nth-child(7) {
+            grid-column: 2;
+            grid-row: 2;
+        }
 
-.item-meta {
-    color: #6c757d;
-    font-size: .9rem;
-    margin-top: .25rem;
-}
+        .orders-card .order-grid .cell.val:nth-child(8) {
+            grid-column: 2;
+            grid-row: 3;
+        }
 
-.item-amount {
-    text-align: right;
-    min-width: 160px;
+        .orders-card .order-grid .cell.val:nth-child(9) {
+            grid-column: 2;
+            grid-row: 4;
+        }
+
+        .orders-card .order-grid .cell.val:nth-child(10) {
+            grid-column: 2;
+            grid-row: 5;
+        }
+
+        /* 手機上邊距略小一點，避免太擠 */
+        .orders-card .order-grid .cell {
+            padding: .6rem .75rem;
+        }
+
+            /* 手機上金額也允許斷行，避免超窄時溢出 */
+            .orders-card .order-grid .cell.val.text-end .valtext {
+                white-space: normal;
+                text-align: right;
+            }
 }
