@@ -145,11 +145,15 @@
 
             .gp-fab .fab-actions .fab-wrap:nth-child(2) {
                 --delay: 35ms;
-        }
+            }
 
             .gp-fab .fab-actions .fab-wrap:nth-child(3) {
                 --delay: 70ms;
-        }
+            }
+
+            .gp-fab .fab-actions .fab-wrap:nth-child(4) {
+                --delay: 105ms;
+            }
 
         /* 客訴下拉卡：靜態定位（避免跟 transform 打架）*/
         .gp-fab .quickfab-item .dropdown-menu {
@@ -206,6 +210,12 @@
             <div class="fab-tip">好友清單</div>
         </div>
 
+        <!-- 動作3：通知 -->
+        <div class="fab-wrap">
+            <button class="gp-mini-fab" id="fabNotifications" aria-label="通知">🔔</button>
+            <div class="fab-tip">通知</div>
+        </div>
+
         <!-- 動作2：客訴（子 partial 會畫主鈕與下拉卡） -->
         <div class="fab-wrap" id="fabSupportWrap">
             @await Html.PartialAsync("_QuickFabSupport")
@@ -219,6 +229,7 @@
       const fab  = document.getElementById('QuickFab');
       const main = document.getElementById('fabMain');
       const btnF = document.getElementById('fabFriends');
+      const btnN = document.getElementById('fabNotifications'); // 新增通知按鈕
 
       function setOpen(open){
         fab.classList.toggle('open', open);
@@ -243,6 +254,13 @@
           const once = ()=>{ window.removeEventListener('gp-friend-ready', once); window.FriendDock?.toggle?.(); };
           window.addEventListener('gp-friend-ready', once, { once:true });
         }
+        setOpen(false);
+      }, { passive:true });
+
+      // 通知按鈕：導向通知頁面
+      btnN.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        window.location.href = '/social_hub/Notification'; // 導向通知頁面
         setOpen(false);
       }, { passive:true });
     })();

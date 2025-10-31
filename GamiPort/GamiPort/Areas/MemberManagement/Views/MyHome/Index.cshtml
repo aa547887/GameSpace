@@ -1,30 +1,27 @@
 ﻿@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
 @{
     ViewData["Title"] = $"{Model.UserNickName} 的小屋";
-    Layout = "~/Views/Shared/_Layout.cshtml"; // 依你的專案調整
+    Layout = "~/Areas/MemberManagement/Views/Shared/_Layout.cshtml";
 }
 
 
-<div class="container py-3" style="max-width: 980px;">
-    <div class="mb-2 d-flex align-items-center justify-content-between">
+<div class="container py-3" style="max-width: 1000px;">
+    <div class="mb-2 d-flex align-items-center justify-content-center text-center">
         <div class="fs-5 fw-semibold">
-            <span class="me-2">@Model.UserNickName 的小屋</span>
+            <span class="me-2 fw-semibold">@Model.UserNickName 的小屋</span>
             <small class="text-muted">被造訪次數：@Model.VisitCount</small>
         </div>
     </div>
 
+
     <!-- 上半部：頭像 + 背景 -->
     <div class="position-relative border rounded overflow-hidden mb-3">
-        <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 220px; object-fit: cover;" />
+        <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 200px; object-fit: cover;" />
         <div class="position-absolute" style="left: 16px; bottom: -32px;">
             <img src="@Model.UserPictureSrc" alt="UserPicture"
                  class="rounded-circle border bg-white"
                  style="width: 96px; height: 96px; object-fit: cover;" />
         </div>
-    </div>
-
-    <div class="mt-4 mb-3">
-        <h4 class="text-center">@Model.Title</h4>
     </div>
 
     <!-- Tabs -->

@@ -59,6 +59,14 @@
             <div class="meta-value text-truncate">@Model.Subject</div>
         </div>
 
+        @if (!string.IsNullOrEmpty(ViewBag.InitialContent as string))
+        {
+            <div class="meta-card note-card" style="grid-column:1 / -1;">
+                <div class="meta-label">內容</div>
+                <div class="meta-value">@ViewBag.InitialContent</div>
+            </div>
+        }
+
         <div class="meta-card">
             <div class="meta-label">指派客服</div>
             <div class="meta-value">@(@Model.AssignedManagerId?.ToString() ?? "未指派")</div>

@@ -2,7 +2,7 @@
 @using GamiPort.Services
 @inject ICurrentUserService CurrentUser
 
-<header class="topbar1 navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
+<header class="topbar1 navbar navbar-expand navbar-light bg-light border-bottom sticky-top flex-nowrap">
     <div class="container-fluid">
         <button class="navbar-toggler d-lg-none me-2" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas"
@@ -15,30 +15,12 @@
             GamiPort
         </a>
 
-        <ul class="navbar-nav ms-auto align-items-lg-center">
-            @* Nick鐘更新購物車（加上cart icon） *@
-            <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index"
-               class="nav-link position-relative">
-                <i class="bi bi-cart-plus"></i> 購物車
-                <span id="navCartBadge"
-                      class="position-absolute translate-middle badge rounded-pill bg-danger"
-                      style="top:0.2rem; right:-0.6rem; min-width:1.4rem;">
-                    <span class="badge-count">0</span>
-                </span>
-            </a>
-            @* Nick鐘刪除舊的我的錢包（無icon）
-            <li class="nav-item d-none d-md-block"><a class="nav-link" a asp-area="" asp-controller="" asp-action="">我的錢包</a></li>
-            *@
-            @* Nick鐘新增我的錢包（加上wallet icon） *@
+        <ul class="navbar-nav ms-auto align-items-lg-center">        
             <li class="nav-item d-none d-md-block">
                 <a class="nav-link" asp-area="MiniGame" asp-controller="Wallet" asp-action="Index">
                     <i class="bi bi-wallet"></i> 我的錢包
                 </a>
             </li>
-            @* Nick鐘刪除舊的我的小屋（無icon）
-            <li class="nav-item d-none d-md-block"><a class="nav-link" a asp-area="MemberManagement" asp-controller="MyHome" asp-action="Index">我的小屋</a></li>
-            *@
-            @* Nick鐘新增我的小屋（加上house-heart icon） *@
             <li class="nav-item d-none d-md-block">
                 <a class="nav-link" asp-area="MemberManagement" asp-controller="MyHome" asp-action="Index">
                     <i class="bi bi-house-heart"></i> 我的小屋

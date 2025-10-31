@@ -20,7 +20,7 @@ using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
+
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
@@ -150,15 +150,12 @@ namespace GamiPort
             // ------------------------------------------------------------
             // ★ 我方統一介面：IAppCurrentUser（集中讀取當前登入者資訊）
             //   讀取順序：AppUserId Claim -> NameIdentifier（純數字或 "U:<id>" 可解析）
-            //            -> 備援呼叫 ILoginIdentity（必要時查一次 DB 對應）
+            //            -> 備援直接查詢資料庫
             //   並使用 HttpContext.Items 做「同一請求快取」避免多次查詢。
             // ------------------------------------------------------------
             builder.Services.AddScoped<IAppCurrentUser, AppCurrentUser>();
 
-            // 備援服務：ILoginIdentity -> ClaimFirstLoginIdentity
-            // 說明：當 Claims 不完整（沒有 AppUserId、或 NameIdentifier 不能直接解析）時，
-            //       AppCurrentUser 會呼叫它做一次較穩健的對應（必要時查 DB）。
-            builder.Services.AddScoped<ILoginIdentity, ClaimFirstLoginIdentity>();
+
 
             // ------------------------------------------------------------
             // SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
