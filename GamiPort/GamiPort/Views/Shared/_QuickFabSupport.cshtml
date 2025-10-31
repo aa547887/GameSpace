@@ -152,7 +152,8 @@
           if (hideModal && window.bootstrap?.Modal){
             window.bootstrap.Modal.getOrCreateInstance(document.getElementById('supportComposeModal')).hide();
           }
-          openTicket(data.ticketId);
+          alert('客訴已成功送出！');
+          openMyTickets();
         }catch{
           alert('建立失敗：網路或伺服器錯誤');
         }

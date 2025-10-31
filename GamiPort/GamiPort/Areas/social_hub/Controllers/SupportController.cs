@@ -35,9 +35,29 @@ namespace GamiPort.Areas.social_hub.Controllers
 			_hub = hub;
 		}
 
-		[HttpGet]
-		public IActionResult Ticket(int id) => View(new TicketVM { TicketId = id });
-
+		        [HttpGet]
+		        public async Task<IActionResult> Ticket(int id, CancellationToken ct)
+		        {
+		            var userId = await _me.GetUserIdAsync();
+		            if (userId <= 0) return Unauthorized();
+		
+		            var ticket = await _db.SupportTickets.AsNoTracking()
+		                .FirstOrDefaultAsync(t => t.TicketId == id, ct);
+		
+		            if (ticket == null) return NotFound();
+		
+		            // 只能看自己的票
+		            if (ticket.UserId != userId) return Forbid();
+		
+		            // [Gemini] 新增：管理員未接單前，導回列表頁並顯示提示
+		            if (ticket.AssignedManagerId == null && !ticket.IsClosed)
+		            {
+		                TempData["InfoMessage"] = "此工單正在等待客服人員處理，尚無法對話。";
+		                return RedirectToAction(nameof(MyTickets));
+		            }
+		
+		            return View(new TicketVM { TicketId = id });
+		        }
 		/// <summary>
 		/// 送出訊息（前台使用者）
 		/// 修正點：寫入成功後，**立即推播到 ticket 群組**；避免對方沒發話就看不到。
@@ -107,19 +127,20 @@ namespace GamiPort.Areas.social_hub.Controllers
 
 		/// <summary>
 		/// 建立新票券；若同時有 content，就直接寫入第一則訊息。
-		/// ★ 修正點：建立完成後，推播 "ticket.created" 與第一則訊息（若有）。
+		/// ★ Gemini 修正：將 Ticket 與 Message 的建立合併到一次資料庫存取 (Single SaveChanges)，確保資料一致性與交易完整性。
 		/// </summary>
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CreateTicket([FromForm] string subject, [FromForm] string? content, CancellationToken ct)
 		{
+			// [Gemini] 1. 驗證使用者與輸入
 			var userId = await _me.GetUserIdAsync();
 			if (userId <= 0) return Unauthorized("未登入");
 
 			subject = (subject ?? "").Trim();
-			content = (content ?? "").Trim();
 			if (string.IsNullOrWhiteSpace(subject)) return BadRequest("主旨不得為空白");
 
+			// [Gemini] 2. 準備 Ticket 與第一則 Message 物件
 			var now = DateTime.UtcNow;
 			var ticket = new SupportTicket
 			{
@@ -130,23 +151,26 @@ namespace GamiPort.Areas.social_hub.Controllers
 				AssignedManagerId = null,
 				IsClosed = false
 			};
-			_db.SupportTickets.Add(ticket);
-			await _db.SaveChangesAsync(ct);
 
+			content = (content ?? "").Trim();
 			SupportTicketMessage? firstMsg = null;
 			if (!string.IsNullOrEmpty(content))
 			{
 				firstMsg = new SupportTicketMessage
 				{
-					TicketId = ticket.TicketId,
+					// TicketId 不用手動給，EF Core 會自動關聯
 					SenderUserId = userId,
 					MessageText = content,
 					SentAt = now
 				};
-				_db.SupportTicketMessages.Add(firstMsg);
-				await _db.SaveChangesAsync(ct);
+				ticket.SupportTicketMessages.Add(firstMsg); // 將 message 加到 ticket 的導覽屬性中
 			}
 
+			// [Gemini] 3. 一次性存入資料庫 (確保交易成功)
+			_db.SupportTickets.Add(ticket);
+			await _db.SaveChangesAsync(ct);
+
+			// [Gemini] 4. 廣播通知 (SignalR)
 			// ★ 建立後廣播（通知清單刷新）
 			var group = $"ticket:{ticket.TicketId}";
 			await _hub.Clients.Group(group).SendAsync("ticket.created", new
@@ -170,6 +194,7 @@ namespace GamiPort.Areas.social_hub.Controllers
 				}, ct);
 			}
 
+			// [Gemini] 5. 回傳成功結果
 			return Json(new { ok = true, ticketId = ticket.TicketId });
 		}
 
