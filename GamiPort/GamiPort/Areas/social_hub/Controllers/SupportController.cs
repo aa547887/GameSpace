@@ -56,6 +56,16 @@ namespace GamiPort.Areas.social_hub.Controllers
 		                return RedirectToAction(nameof(MyTickets));
 		            }
 		
+		            // 嚴謹取本工單的「第一筆使用者訊息」作為詳情：
+		            // - 僅限當前工單：m.TicketId == id，避免混入同用戶其它工單
+		            // - 僅限使用者訊息：m.SenderUserId != null（A 方案）
+		            // - 穩定排序：先依 SentAt，再以 MessageId 當平手序，確保最早一筆
+		            var firstMessage = await _db.SupportTicketMessages.AsNoTracking()
+		                .Where(m => m.TicketId == id && m.SenderUserId != null)
+		                .OrderBy(m => m.SentAt).ThenBy(m => m.MessageId)
+		                .FirstOrDefaultAsync(ct);
+		            ViewBag.InitialContent = firstMessage?.MessageText; // 僅作詳情顯示，非對話串
+
 		            return View(new TicketVM { TicketId = id });
 		        }
 		/// <summary>
@@ -102,15 +112,54 @@ namespace GamiPort.Areas.social_hub.Controllers
 			// 取最新的 N 筆（簡單版）
 			var q = _db.SupportTicketMessages
 				.AsNoTracking()
-				.Where(m => m.TicketId == id)
-				.OrderBy(m => m.SentAt);
+				.Where(m => m.TicketId == id);
+
+			// 建立工單時的第一筆使用者訊息僅作為詳情，不顯示在對話串
+			var firstUserMsgId = await _db.SupportTicketMessages.AsNoTracking()
+				.Where(m => m.TicketId == id && m.SenderUserId != null)
+				.OrderBy(m => m.SentAt).ThenBy(m => m.MessageId)
+				.Select(m => (int?)m.MessageId)
+				.FirstOrDefaultAsync(ct);
+			if (firstUserMsgId.HasValue)
+				q = q.Where(m => m.MessageId != firstUserMsgId.Value);
+
+			q = q.OrderBy(m => m.SentAt);
 
 			var msgs = await q.ToListAsync(ct);
+
+			// 取得轉單紀錄，供插入分隔提示
+			var assigns = await _db.SupportTicketAssignments.AsNoTracking()
+				.Where(a => a.TicketId == id)
+				.OrderBy(a => a.AssignedAt)
+				.ToListAsync(ct);
+			int ai = 0; // assignment index
 
 			// 直接在這裡產出最簡 HTML（之後要美化可再抽 Partial View）
 			var sb = new System.Text.StringBuilder();
 			foreach (var m in msgs)
 			{
+				// 在此訊息時間點前（含）插入所有尚未輸出的轉單分隔
+				while (ai < assigns.Count && assigns[ai].AssignedAt <= m.SentAt)
+				{
+					var a = assigns[ai++];
+					var at = a.AssignedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+					var to = $"客服人員 #{a.ToManagerId}";
+					string transferText;
+					if (a.FromManagerId.HasValue)
+					{
+						var from = $"客服人員 #{a.FromManagerId.Value}";
+						transferText = $"問題已轉單：由 {from} 轉交給 {to}";
+					}
+					else
+					{
+						transferText = $"問題已由 {to} 接單";
+					}
+
+					sb.Append($@"
+<div class=""text-center my-2"">
+    <span class=""badge bg-light text-dark border"">{transferText} ・ {at}</span>
+</div>");
+				}
 				var isUser = m.SenderManagerId == null;
 				var name = isUser ? $"使用者 {m.SenderUserId}" : $"客服 {m.SenderManagerId}";
 				var time = m.SentAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm");

@@ -77,7 +77,8 @@
               </div>
               <div class="mb-0">
                 <label class="form-label">內容（可選）</label>
-                <textarea class="form-control" id="support-body" rows="3" maxlength="2000"></textarea>
+                <!-- 內容欄位：與 DB 欄位長度一致（255）。若未填，送出時會帶入預設內容。 -->
+                <textarea class="form-control" id="support-body" rows="3" maxlength="255" placeholder="可不填，未填將自動帶入預設內容"></textarea>
               </div>
             </form>
             <div class="small text-muted mt-2">送出後將建立工單並開啟對話頁。</div>
@@ -138,9 +139,12 @@
       });
 
       async function createTicket(subject, body, hideModal=false){
+        // 若使用者未填內容，帶入預設對話，確保建立第一筆訊息可作為詳情
+        const defaultMsg = '使用者建立工單時未填寫內容';
+        const finalBody = (body && body.trim()) ? body.trim() : defaultMsg;
         const fd = new FormData();
         fd.append('subject', subject);
-        fd.append('content', body||'');
+        fd.append('content', finalBody);
         try{
           const res = await fetch('/social_hub/Support/CreateTicket', {
             method:'POST', body:fd, credentials:'same-origin',

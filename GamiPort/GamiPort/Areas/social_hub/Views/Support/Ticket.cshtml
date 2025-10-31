@@ -12,6 +12,8 @@
 }
 
 @section Styles {
+    <!-- 掛載與後台一致的通用泡泡樣式（含小角標） -->
+    <link rel="stylesheet" href="~/css/social_hub/support-bubbles.css" asp-append-version="true" />
     <style>
         /* ===== 只對本頁生效 ===== */
         #support-ticket,
@@ -21,6 +23,7 @@
             flex-direction: column;
             min-height: 0;
         }
+
 
             #support-ticket .ticket-card {
                 display: flex;
@@ -112,6 +115,57 @@
             #support-ticket .conn-bad {
                 color: #dc2626
             }
+        /* ===== 僅此頁：用 flex 取代 JS 計算高度，讓中段吃滿可視高度 ===== */
+        #support-ticket {
+            /* 以視窗高度扣掉上層 Topbar 的高度與間距，令此頁主體至少貼滿畫面 */
+            height: calc(100vh - var(--topbar-h, 56px) - var(--topbar-gap, 8px));
+            /* 僅此頁：避免由內部內容撐出整頁滾動，改由訊息容器自身滾動 */
+            overflow: hidden;
+        }
+
+        /* 讓包裹卡片的兩層容器可伸展，並避免子元素被 min-content 撐爆 */
+        #support-ticket .st-main-col,
+        #support-ticket .st-card-wrap,
+        #support-ticket .ticket-card {
+            flex: 1 1 auto;
+            min-height: 0;
+            /* 防止內層內容外溢造成最外層滾動 */
+            overflow: hidden;
+        }
+
+        /* 讓訊息容器成為唯一捲動區（header/footer 固定高度） */
+        #support-ticket #msg-host {
+            flex: 1 1 auto;
+        }
+        /* ===== 僅此頁：將對話容器固定為「10 則單行對話」的可視高度 =====
+           - 以共用樣式（support-bubbles.css）的字級與行高為基準
+           - 粗估每則訊息的高度 = 泡泡單行高度 + 上方 meta 行高度 + 每列間距
+           - 若日後字級或行距有調整，可在此微調變數即可
+        */
+        #support-ticket {
+            --rows: 10;                /* 顯示幾則單行對話的高度（可自行調整） */
+            --bubble-fs: .95rem;       /* 與 .support-chat .msg-bubble 同步 */
+            --bubble-lh: 1.45;         /* 與 .support-chat .msg-bubble 同步 */
+            --meta-h: 1.0rem;          /* 上方 meta 行（徽章+時間）約略高度 */
+            --row-gap: 10px;           /* 每列上下間距的平均估值 */
+            --row-h: calc(var(--bubble-fs) * var(--bubble-lh) + var(--meta-h) + var(--row-gap));
+        }
+
+        /* 以固定高度取代彈性撐滿，讓僅訊息容器自行滾動 */
+        #support-ticket #msg-host {
+            flex: 1 1 auto;
+            height: auto;
+            max-height: none;
+            overflow-y: auto;
+            overflow: auto; /* 僅此容器滾動，維持外層不滾動 */
+        }
+
+        /* 讓 card-body 撐開並提供給 #msg-host 可滾動的空間 */
+        #support-ticket .ticket-card .card-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+        }
     </style>
 }
 
@@ -178,20 +232,18 @@
 
           const isNearBottom = () => (host.scrollTop + host.clientHeight) >= (host.scrollHeight - 40);
           const scrollBottom = () => { host.scrollTop = host.scrollHeight; };
-
-          // 訊息內容變動時再算一次（reload/Hub push）
-          const mo = new MutationObserver(()=> requestAnimationFrame(()=>fitChatHeight(8)));
-          mo.observe(host, {childList:true, subtree:true});
-
-          // 右邊欄位尺寸變化（廣告/卡片晚載）時再算一次
-          if (window.ResizeObserver && rightRail) {
-            const ro = new ResizeObserver(()=> requestAnimationFrame(()=>fitChatHeight(12)));
-            ro.observe(rightRail);
-          }
-
-          window.addEventListener('resize', ()=>fitChatHeight(8));
-          window.addEventListener('orientationchange', ()=>fitChatHeight(8));
-          window.addEventListener('load', ()=>fitChatHeight(12));
+          // 多次排程貼底：避免高度在 reflow 後造成視覺落差（force=true 時無論目前是否貼底皆貼）
+          function scheduleStickyScroll(force=false){
+  const shouldStick = force || isNearBottom();
+  if (!shouldStick) return;
+  if (scheduleStickyScroll._busy) return;
+  scheduleStickyScroll._busy = true;
+  const doScroll = () => { host.scrollTop = host.scrollHeight; };
+  doScroll();
+  requestAnimationFrame(doScroll);
+  setTimeout(doScroll, 80);
+  setTimeout(()=>{ doScroll(); scheduleStickyScroll._busy = false; }, 200);
+}
 
           /* ============ 把載入的 HTML 標準化成左右泡泡（抽「純文字」）============ */
           function normalizeBubbles(container){
@@ -234,6 +286,64 @@
             container.appendChild(list);
           }
 
+          // 追加：將載入的 HTML 轉為「與後台一致」的 support-chat 結構（含小角標）
+          function normalizeToSupportChat(container){
+            const first = container.firstElementChild;
+            if (first && first.classList.contains('support-chat')) return; // 已轉換過
+
+            const root = document.createElement('div');
+            root.className = 'support-chat';
+            const col  = document.createElement('div');
+            col.className = 'd-flex flex-column';
+            root.appendChild(col);
+
+            Array.from(container.children).forEach(row=>{
+              if(!(row instanceof HTMLElement)) return;
+              if(!row.classList.contains('d-flex')) { col.appendChild(row.cloneNode(true)); return; }
+
+              // 原始：有無 justify-content-end 代表靠右（客服），反轉為 mine=使用者靠右
+              const isManager = row.classList.contains('justify-content-end');
+              const isMine = !isManager; // 使用者=自己（右側）
+
+              const inner = row.querySelector('div');
+              if(!inner) return;
+              const metaDiv = inner.querySelector('.small.opacity-75');
+              const msgDiv  = inner.querySelector('div:last-child');
+              const text = (msgDiv?.textContent || '').replace(/\s+\n/g,'\n').trim();
+              if (!text) return;
+
+              const metaText = (metaDiv?.textContent || '').trim();
+              const timeGuess = /\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/.exec(metaText)?.[0] || metaText;
+
+              const wrap = document.createElement('div');
+              wrap.className = 'msg-row ' + (isMine ? 'mine' : 'other');
+
+              const msgCol = document.createElement('div');
+              msgCol.className = 'msg-col';
+
+              const meta = document.createElement('div');
+              meta.className = 'msg-meta';
+              const badge = document.createElement('span');
+              badge.className = isMine ? 'badge bg-secondary' : 'badge bg-warning text-dark';
+              badge.textContent = isMine ? '使用者' : '客服';
+              const timeSpan = document.createElement('span');
+              timeSpan.textContent = timeGuess;
+              meta.appendChild(badge); meta.appendChild(timeSpan);
+
+              const bubble = document.createElement('div');
+              bubble.className = 'msg-bubble';
+              bubble.textContent = text;
+
+              msgCol.appendChild(meta);
+              msgCol.appendChild(bubble);
+              wrap.appendChild(msgCol);
+              col.appendChild(wrap);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(root);
+          }
+
           // 分頁（事件委派）
           host.addEventListener('click', async (e)=>{
             const a = e.target.closest('a.page-link');
@@ -242,7 +352,7 @@
             const url  = new URL(a.href, location.origin);
             const page = parseInt(url.searchParams.get('page') || '1', 10);
             await loadMessages(page, {keepPosition:false});
-            scrollBottom();
+            scheduleStickyScroll(true);
           });
 
           async function loadMessages(page=1, {keepPosition=true}={}){
@@ -253,18 +363,20 @@
               });
               const html = await res.text();
               host.innerHTML = html;
-
-              normalizeBubbles(host);
+              // 前台改用與後台一致的 support-chat 標記與樣式，不再進行 gp-* 結構的重新包裝
+              // 保持簡單：直接使用伺服器輸出的結構，支援在對話框內滾動檢視
+              // normalizeBubbles(host);
+              normalizeToSupportChat(host);
               // 連續回補：處理旁欄或圖片/字體晚載造成的 reflow
-              fitChatHeight(12);
-              requestAnimationFrame(()=>fitChatHeight(12));
-              setTimeout(()=>fitChatHeight(14), 60);
-              setTimeout(()=>fitChatHeight(16), 180);
+              /*fitChatHeight(12);*/
+              requestAnimationFrame(()=>{/*fitChatHeight(12);*/});
+              setTimeout(()=>{/*fitChatHeight(14);*/}, 60);
+              setTimeout(()=>{/*fitChatHeight(16);*/}, 180);
 
-              if (stick) scrollBottom();
+              scheduleStickyScroll(!keepPosition);
             }catch{
               host.innerHTML = `<div class="text-danger p-3">載入失敗，請稍後再試。</div>`;
-              fitChatHeight(12);
+              /*fitChatHeight(12);*/
             }
           }
 
@@ -291,7 +403,7 @@
               }
               input.value = '';
               await loadMessages(1, {keepPosition:false});
-              scrollBottom();
+              scheduleStickyScroll(true);
             }catch{
               alert('送出失敗：網路或伺服器錯誤');
             }finally{
@@ -321,7 +433,8 @@
                 if (tid === +TICKET_ID){
                   const stick = isNearBottom();
                   await loadMessages(1,{keepPosition:stick});
-                  if (stick) scrollBottom();
+                  // 即時推播：一律貼底，確保最新訊息可見
+                  scheduleStickyScroll(true);
                 }
               };
               connection.on("msg", onAny);
@@ -347,16 +460,21 @@
 
           /* ===================== 初始化 ===================== */
           document.addEventListener('DOMContentLoaded', async ()=>{
-            fitChatHeight(12);                    // 先算一次
+            /*fitChatHeight(12);*/                    // 先算一次
             await loadMessages(1,{keepPosition:false});
-            scrollBottom();
+            scheduleStickyScroll(true);
             await startHub();
 
             // 再補幾次，cover 圖片/字體/右欄晚載
-            requestAnimationFrame(()=>fitChatHeight(12));
-            setTimeout(()=>fitChatHeight(14), 80);
-            setTimeout(()=>fitChatHeight(16), 200);
+            requestAnimationFrame(()=>{ /*fitChatHeight(12);*/ scrollBottom(); });
+            setTimeout(()=>{ /*fitChatHeight(14);*/ scrollBottom(); }, 80);
+            setTimeout(()=>{ /*fitChatHeight(16);*/ scrollBottom(); }, 200);
           });
         })();
     </script>
 }
+
+
+
+
+
