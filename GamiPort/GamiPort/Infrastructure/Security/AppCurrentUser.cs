@@ -1,27 +1,24 @@
-﻿using GamiPort.Infrastructure.Login; // ILoginIdentity
-using Microsoft.AspNetCore.Http;
-using System;
+﻿using GamiPort.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace GamiPort.Infrastructure.Security
 {
 	/// <summary>
-	/// IAppCurrentUser 的預設實作（只改你這邊的程式碼）。
-	/// 讀取順序：AppUserId -> NameIdentifier(int) -> NameIdentifier("U:<id>") -> ILoginIdentity（DB備援）
+	/// IAppCurrentUser 的預設實作。
+	/// 讀取順序：AppUserId -> NameIdentifier(int) -> NameIdentifier("U:<id>") -> DB備援
 	/// </summary>
 	public sealed class AppCurrentUser : IAppCurrentUser
 	{
 		private const string CacheKeyUserId = "app.uid";
 
 		private readonly IHttpContextAccessor _http;
-		private readonly ILoginIdentity _loginIdentity;
+		private readonly GameSpacedatabaseContext _db;
 
-		public AppCurrentUser(IHttpContextAccessor http, ILoginIdentity loginIdentity)
+		public AppCurrentUser(IHttpContextAccessor http, GameSpacedatabaseContext db)
 		{
 			_http = http;
-			_loginIdentity = loginIdentity;
+			_db = db;
 		}
 
 		public ClaimsPrincipal Principal => _http.HttpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
@@ -90,12 +87,25 @@ namespace GamiPort.Infrastructure.Security
 				return id;
 			}
 
-			// 最後才以 ILoginIdentity 備援（內部可能會去 DB 映射）
-			var login = await _loginIdentity.GetAsync(ct);
-			if (login.IsAuthenticated && login.UserId is > 0)
+			// 最後才備援查 DB
+			var user = http?.User;
+			if (user?.Identity?.IsAuthenticated == true)
 			{
-				if (http != null) http.Items[CacheKeyUserId] = login.UserId.Value;
-				return login.UserId.Value;
+				// 以 UserName 對應 Users 表
+				var name = user.Identity?.Name;
+				if (!string.IsNullOrWhiteSpace(name))
+				{
+					var map = await _db.Users.AsNoTracking()
+						.Where(u => u.UserAccount == name || u.UserName == name)
+						.Select(u => (int?)u.UserId)
+						.FirstOrDefaultAsync(ct);
+
+					if (map is > 0)
+					{
+						if (http != null) http.Items[CacheKeyUserId] = map.Value;
+						return map.Value;
+					}
+				}
 			}
 
 			return 0;

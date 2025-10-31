@@ -5,6 +5,11 @@
 }
 
 <div class="container py-3">
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["InfoMessage"]</div>
+    }
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">我的客訴</h5>
         <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary btn-sm">← 返回首頁</a>
@@ -40,17 +45,31 @@
                                 {
                                     <span class="badge bg-secondary">已結單</span>
                                 }
+                                else if (t.AssignedManagerId == null)
+                                {
+                                    <span class="badge bg-warning text-dark">等待指派</span>
+                                }
                                 else
                                 {
-
                                     <span class="badge bg-success">處理中</span>
                                 }
                             </td>
                             <td class="text-end">
-                                <a class="btn btn-sm btn-primary"
-                                   href="@Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId })">
-                                    打開
-                                </a>
+                                @if (t.IsClosed)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>已結單</button>
+                                }
+                                else if (t.AssignedManagerId == null)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" disabled>等待處理</button>
+                                }
+                                else
+                                {
+                                    <a class="btn btn-sm btn-primary"
+                                       href="@Url.Action("Ticket", "Support", new { area = "social_hub", id = t.TicketId })">
+                                        打開
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }
