@@ -106,6 +106,11 @@
                     <dd class="col-8">@Model.UserId</dd>
                     <dt class="col-4">主旨</dt>
                     <dd class="col-8">@Model.Subject</dd>
+                    @if (!string.IsNullOrEmpty(ViewBag.InitialContent as string))
+                    {
+                        <dt class="col-4">內容</dt>
+                        <dd class="col-8" style="white-space: pre-wrap;">@ViewBag.InitialContent</dd>
+                    }
                     <dt class="col-4">狀態</dt>
                     <dd class="col-8">
                         @if (Model.IsClosed)

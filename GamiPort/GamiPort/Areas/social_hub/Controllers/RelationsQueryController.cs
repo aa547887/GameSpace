@@ -7,7 +7,7 @@
 // }
 // =============================================================
 using System.Globalization;
-using GamiPort.Infrastructure.Login;
+using GamiPort.Infrastructure.Security;
 using GamiPort.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,13 +21,13 @@ namespace GamiPort.Areas.social_hub.Controllers
 	public sealed class RelationsQueryController : ControllerBase
 	{
 		private readonly GameSpacedatabaseContext _db;
-		private readonly ILoginIdentity _login;
+		private readonly IAppCurrentUser _appCurrentUser;
 		private readonly IConfiguration _cfg;
 
-		public RelationsQueryController(GameSpacedatabaseContext db, ILoginIdentity login, IConfiguration cfg)
+		public RelationsQueryController(GameSpacedatabaseContext db, IAppCurrentUser appCurrentUser, IConfiguration cfg)
 		{
 			_db = db;
-			_login = login;
+			_appCurrentUser = appCurrentUser;
 			_cfg = cfg;
 		}
 
@@ -37,11 +37,9 @@ namespace GamiPort.Areas.social_hub.Controllers
 												 [FromQuery] int take = 12,
 												 CancellationToken ct = default)
 		{
-			var me = await _login.GetAsync(ct);
-			if (!me.IsAuthenticated || me.UserId is null || me.UserId <= 0)
+			var meId = await _appCurrentUser.GetUserIdAsync();
+			if (meId <= 0)
 				return Unauthorized(new { reason = "need_user", message = "請用 ?asUser=10000001 或設定 DevLogin:UserId" });
-
-			var meId = me.UserId.Value;
 
 			// 讀設定：哪些狀態算「好友」
 			var acceptedCodes = _cfg.GetSection("Relations:AcceptedStatusCodes").Get<string[]>() ??
@@ -94,11 +92,9 @@ namespace GamiPort.Areas.social_hub.Controllers
 		[HttpGet("friends/debug")]
 		public async Task<IActionResult> FriendsDebug(CancellationToken ct = default)
 		{
-			var me = await _login.GetAsync(ct);
-			if (!me.IsAuthenticated || me.UserId is null || me.UserId <= 0)
+			var meId = await _appCurrentUser.GetUserIdAsync();
+			if (meId <= 0)
 				return Unauthorized(new { reason = "need_user" });
-
-			var meId = me.UserId.Value;
 
 			var list = await _db.Relations
 				.AsNoTracking()
