@@ -35,17 +35,19 @@ namespace GamiPort
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+			string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-            // 連線字串
-            var gameSpaceConn =
-                builder.Configuration.GetConnectionString("GameSpace")
-                ?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-                ?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+			// 連線字串
+			var gameSpaceConn =
+	            Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+	            Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+	            Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+	            throw new InvalidOperationException("No valid DB connection string found.");
 
-            // ------------------------------------------------------------
-            // DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
-            // ------------------------------------------------------------
-            builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
+			// ------------------------------------------------------------
+			// DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
+			// ------------------------------------------------------------
+			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
             {
                 options.UseSqlServer(gameSpaceConn);
             });

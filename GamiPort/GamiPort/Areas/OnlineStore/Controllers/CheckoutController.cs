@@ -22,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.SqlClient;                   // for usp_Order_CreateFromCart
 using System.Data;
 using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService（真實金流用）
+using GamiPort.Infrastructure.Security;           // ★ NEW: IAppCurrentUser
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -31,14 +32,20 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		private readonly ICartService _cartSvc;
 		private readonly ILookupService _lookup;
 		private readonly GameSpacedatabaseContext _db;
+		private readonly IAppCurrentUser _me;
 
 		private static readonly Regex ZipRegex = new(@"^\d{3}(\d{2})?$", RegexOptions.Compiled);
 
-		public CheckoutController(ICartService cartSvc, ILookupService lookup, GameSpacedatabaseContext db)
+		public CheckoutController(
+			ICartService cartSvc,
+			ILookupService lookup,
+			GameSpacedatabaseContext db,
+			IAppCurrentUser me)                   // ★ NEW
 		{
 			_cartSvc = cartSvc;
 			_lookup = lookup;
 			_db = db;
+			_me = me;                             // ★ NEW
 		}
 
 		private async Task LoadShipMethodsAsync() => ViewBag.ShipMethods = await _lookup.GetShipMethodsAsync();
@@ -47,12 +54,74 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Step1()
 		{
-			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
-			var summary = await _cartSvc.GetSummaryAsync(cartId, initShipId, initZip, null);
+
+			// 未登入 → 轉登入
+			if (!(User?.Identity?.IsAuthenticated ?? false))
+			{
+				var returnUrl = Url.Action("Step1", "Checkout", new { area = "OnlineStore" }) ?? "/";
+				var loginUrl = Url.Action("Login", "Login", new { area = "Login", returnUrl });
+				return Redirect(loginUrl ?? "/Login/Login/Login");
+			}
+			// 1) 先把匿名車合併到會員車（你原本就有）
+			await AttachAnonymousCartToUserAsync();
+
+			// 2) 重新「確保」並取得目前應該使用的 cart_id（以會員身分為主）
+			var userId = await _me.GetUserIdAsync();
+			var anon = AnonCookie.GetOrSet(HttpContext);
+			var cartId = await _cartSvc.EnsureCartIdAsync(userId, anon);
+
+			// ★ 關鍵：回寫 Session，之後所有 Summary / PlaceOrder 都會用到同一個 cart_id
+			HttpContext.Session.SetString("CartId", cartId.ToString());
+
+			// 3) 原有流程
+			var (cid, initShipId, initZip) = await GetDefaultsAsync();
+			var summary = await _cartSvc.GetSummaryAsync(cid, initShipId, initZip, null);
 			ViewBag.Full = new { Summary = summary };
 
 			await LoadShipMethodsAsync();
 			return View(new CheckoutStep1Vm { ShipMethodId = initShipId, DestZip = initZip });
+		}
+		// ★ NEW: 把匿名車掛到會員車（用你已存在的 dbo.usp_Cart_AttachToUser）
+		private async Task AttachAnonymousCartToUserAsync()
+		{
+			try
+			{
+				// 2-1 匿名 token（cookie：gp_anonymous）
+				var anonToken = AnonCookie.GetOrSet(HttpContext);
+
+				// 2-2 確保（或取得）目前 cart_id（以匿名 token 為依據）
+				var cartId = await _cartSvc.EnsureCartIdAsync(null, anonToken);
+				if (cartId == Guid.Empty) return;
+
+				// 2-3 取得目前登入者 userId（用你們的 IAppCurrentUser）
+				var userId = await _me.GetUserIdAsync();
+				
+
+				// 2-4 呼叫你已在 CartController.Index 使用的 SP：dbo.usp_Cart_AttachToUser
+				await using var conn = _db.Database.GetDbConnection();
+				if (conn.State != ConnectionState.Open) await conn.OpenAsync();
+				await using var cmd = conn.CreateCommand();
+				cmd.CommandText = "dbo.usp_Cart_AttachToUser";
+				cmd.CommandType = CommandType.StoredProcedure;
+				cmd.Parameters.Add(new SqlParameter("@CartId", cartId));
+				cmd.Parameters.Add(new SqlParameter("@UserId", userId));
+				await cmd.ExecuteNonQueryAsync();
+				// 合併後再抓會員車 id 回寫 Session（確定是最新那台）
+				var userCartId = await _db.SoCarts
+					.Where(c => c.UserId == userId && !c.IsLocked)
+					.OrderByDescending(c => c.UpdatedAt)
+					.Select(c => c.CartId)
+					.FirstOrDefaultAsync();
+
+				if (userCartId != Guid.Empty)
+					HttpContext.Session.SetString("CartId", userCartId.ToString());
+
+			}
+			catch
+			{
+				// 失敗不阻擋流程（可加 log）
+			}
+
 		}
 
 		[HttpPost]
@@ -382,15 +451,21 @@ EXEC dbo.usp_Order_CreateFromCart
 
 		private async Task<(Guid cartId, int initShipId, string initZip)> GetDefaultsAsync()
 		{
-			var anonToken = AnonCookie.GetOrSet(HttpContext);
 			const string CartKey = "CartId";
 
+			// 1) 有快取就用（不要在這裡打 DB，避免 ConnectionString 未初始化）
 			if (Guid.TryParse(HttpContext.Session.GetString(CartKey), out var cached) && cached != Guid.Empty)
 				return (cached, 1, "100");
 
-			var cartId = await _cartSvc.EnsureCartIdAsync(null, anonToken);
+			// 2) 重新以「會員優先」取得 cart_id
+			var anon = AnonCookie.GetOrSet(HttpContext);
+			var userId = await _me.GetUserIdAsync();  // >0 表示已登入
+			var cartId = await _cartSvc.EnsureCartIdAsync(userId > 0 ? userId : (int?)null, anon);
+
+			// 3) 回寫 Session
 			HttpContext.Session.SetString(CartKey, cartId.ToString());
 			return (cartId, 1, "100");
 		}
+
 	}
 }

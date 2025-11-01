@@ -97,7 +97,10 @@
             }
             <form asp-area="OnlineStore" asp-controller="Cart" asp-action="GoCheckout" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-primary">前往結帳</button>
+                <a class="btn btn-primary w-100"
+                   asp-area="OnlineStore" asp-controller="Checkout" asp-action="Step1">
+                    前往結帳
+                </a>
             </form>
         </div>
     </div>
