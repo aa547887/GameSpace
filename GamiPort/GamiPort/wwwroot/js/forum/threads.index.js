@@ -1,6 +1,6 @@
 ﻿// 必須：import 要在最上面（ESM 規則）
 import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js'
-import { ThreadList } from './components/thread-list.js'
+import { ThreadList } from './thread-list.js/index.js'
 
 // 1) 先抓 DOM 與 forumId
 const root = document.getElementById('thread-app')

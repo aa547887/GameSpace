@@ -19,7 +19,14 @@
 }
 
 <div class="board-header d-flex align-items-center mb-3">
-    <h2 class="m-0">論壇 / 所有遊戲</h2>
+    <h2 class="m-0">論壇 / 所有遊戲YAYAYA</h2>
+</div>
+
+<!-- ✅ 搜尋結果 / 論壇列表的掛載容器 -->
+<div id="home-content">
+    <div id="forums-app">
+        <forum-list></forum-list>
+    </div>
 </div>
 
 <!-- ✅ Vue 掛載點（ID 必須是 #forums-app，和 main.js 對得上） -->
@@ -36,7 +43,8 @@
 @section Scripts {
     <!-- 只載入口檔，讓它自己 import Vue；不要再額外載 Vue CDN，避免重複 -->
     <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
-
+    <!-- ✅ 把搜尋的 JS 放這裡（只在 Home 頁載入） -->
+    <script type="module" src="~/js/forum/home-search.js" asp-append-version="true"></script>
     <!-- 除錯用，可先留著，看 Console 是否出現這行 -->
     <script>console.log('[Home/Index] Scripts section loaded ✅');</script>
 }

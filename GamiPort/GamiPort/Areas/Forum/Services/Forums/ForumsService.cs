@@ -3,6 +3,7 @@ using GamiPort.Areas.Forum.Dtos.Forum;
 using GamiPort.Areas.Forum.Dtos.Threads;
 using GamiPort.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Thread = GamiPort.Models.Thread;
@@ -61,13 +62,16 @@ namespace GamiPort.Areas.Forum.Services.Forums
         public async Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
     int forumId, string sort, int page, int size,
     string? keyword = null, bool inContent = false, bool inGame = false,
-    CancellationToken ct = default)
+    long currentUserId = 0, CancellationToken ct = default)
         {
             page = Math.Max(1, page);
             size = Math.Clamp(size, 1, 100);
 
+            // 只拿公開貼文（前台列表）
+            var allowed = new[] { "normal", "published" };
+
             var baseQ = _db.Threads.AsNoTracking()
-                .Where(t => t.ForumId == forumId);
+                .Where(t => t.ForumId == forumId && allowed.Contains(t.Status));
 
             // 關鍵字（標題 + 可選內容）
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -75,14 +79,18 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 var k = keyword.Trim();
 
                 var pred = _db.Threads.AsNoTracking()
-                    .Where(t => t.ForumId == forumId && EF.Functions.Like(t.Title, $"%{k}%"));
+                    .Where(t => t.ForumId == forumId
+                             && t.Status == "published"
+                             && EF.Functions.Like(t.Title, $"%{k}%"));
 
                 if (inContent)
                 {
                     var contentHit =
                         from t in _db.Threads.AsNoTracking()
-                        join p in _db.ThreadPosts.AsNoTracking() on t.ThreadId equals p.ThreadId
+                        join p in _db.ThreadPosts.AsNoTracking()
+                            on t.ThreadId equals p.ThreadId
                         where t.ForumId == forumId
+                              && t.Status == "published"
                               && p.ContentMd != null
                               && EF.Functions.Like(p.ContentMd, $"%{k}%")
                         select t;
@@ -95,22 +103,23 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
             var now = DateTime.UtcNow;
 
-            // 先用匿名型別在 DB 端把要排序/分頁的欄位統統算好
+            // 匿名型別先把需要的欄位算好（⚠️ 一定要帶 CreatedBy）
             var q = baseQ
                 .Select(t => new
                 {
                     t.ThreadId,
                     t.Title,
                     t.Status,
-                    CreatedAt = t.CreatedAt,                   // 可為 null
-                    UpdatedAt = t.UpdatedAt,                   // 可為 null
+                    t.AuthorUserId,                                   // ★ 加這個才能判斷擁有者
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt,
                     ReplyCount = _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId),
                     LastActivity = (t.UpdatedAt ?? t.CreatedAt ?? now)
                 });
 
             var sortKey = (sort ?? "lastReply").ToLowerInvariant();
 
-            // 排序：只用匿名型別欄位
+            // 排序
             q = sortKey switch
             {
                 "created" => q.OrderByDescending(x => x.CreatedAt ?? x.LastActivity),
@@ -119,26 +128,28 @@ namespace GamiPort.Areas.Forum.Services.Forums
                     x.ThreadId,
                     x.Title,
                     x.Status,
+                    x.AuthorUserId,
                     x.CreatedAt,
                     x.UpdatedAt,
                     x.ReplyCount,
                     x.LastActivity,
                     Score = (double)x.ReplyCount * 1.6
-                                            - (double)EF.Functions.DateDiffHour(x.LastActivity, now) * 0.08
+                                  - (double)EF.Functions.DateDiffHour(x.LastActivity, now) * 0.08
                 })
-                              .OrderByDescending(x => x.Score)
-                              .ThenByDescending(x => x.LastActivity)
-                              .Select(x => new
-                              {
-                                  x.ThreadId,
-                                  x.Title,
-                                  x.Status,
-                                  x.CreatedAt,
-                                  x.UpdatedAt,
-                                  x.ReplyCount,
-                                  x.LastActivity
-                              }),
-                _ => q.OrderByDescending(x => x.LastActivity) // lastReply
+                        .OrderByDescending(x => x.Score)
+                        .ThenByDescending(x => x.LastActivity)
+                        .Select(x => new
+                        {
+                            x.ThreadId,
+                            x.Title,
+                            x.Status,
+                            x.AuthorUserId,
+                            x.CreatedAt,
+                            x.UpdatedAt,
+                            x.ReplyCount,
+                            x.LastActivity
+                        }),
+                _ => q.OrderByDescending(x => x.LastActivity) // lastReply（預設）
             };
 
             var total = await q.CountAsync(ct);
@@ -148,18 +159,23 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 .Take(size)
                 .ToListAsync(ct);
 
-            // 這裡才 map 成 DTO
-            var items = rows.Select(x => new ThreadListItemDto(
-                x.ThreadId,
-                x.Title,
-                x.Status,
-                x.CreatedAt ?? x.LastActivity,   // 補非 null
-                x.UpdatedAt,
-                x.ReplyCount
-            )).ToList();
+            // 投影成 DTO（在這裡算權限）
+            var items = rows.Select(x => new ThreadListItemDto
+            {
+                ThreadId = x.ThreadId,
+                Title = x.Title,
+                Status = x.Status,
+                CreatedAt = x.CreatedAt ?? x.LastActivity,
+                UpdatedAt = x.UpdatedAt,
+                Replies = x.ReplyCount,
+
+                IsOwner = (x.AuthorUserId == currentUserId),
+                CanDelete = (x.AuthorUserId == currentUserId) // 之後可加版主權限
+            }).ToList();
 
             return new PagedResult<ThreadListItemDto>(items, page, size, total);
         }
+
 
 
 
@@ -234,6 +250,76 @@ namespace GamiPort.Areas.Forum.Services.Forums
             ).FirstOrDefaultAsync(ct);
 
             return fallback;
+        }
+
+
+
+
+
+        public async Task<PagedResult<GlobalThreadSearchResultDto>> SearchThreadsAcrossForumsAsync(
+    string keyword, int page, int size, long currentUserId, CancellationToken ct)
+        {
+            keyword = keyword?.Trim() ?? "";
+            if (keyword.Length == 0)
+                return PagedResult<GlobalThreadSearchResultDto>.Empty(page, size);
+
+            var pattern = $"%{keyword}%";
+
+            // 只用子查詢，不用導航屬性
+            var baseQuery =
+    _db.Threads
+       .Where(t => t.Status == "normal" && (
+            EF.Functions.Like(t.Title, pattern) ||
+
+            // ✅ 搜回覆內容
+            _db.ThreadPosts.Any(p =>
+                p.ThreadId == t.ThreadId &&
+                p.Status == "normal" &&
+                EF.Functions.Like(p.ContentMd, pattern)
+            ) ||
+
+            // ✅ 搜論壇名稱
+            _db.Forums.Any(f =>
+                f.ForumId == t.ForumId &&
+                EF.Functions.Like(f.Name, pattern)
+            )
+        ));
+
+            var total = await baseQuery.CountAsync(ct);
+
+            var items = await baseQuery
+                .OrderByDescending(t => t.UpdatedAt)
+                .Skip((page - 1) * size)
+                .Take(size)
+                .Select(t => new GlobalThreadSearchResultDto
+                {
+                    ThreadId = t.ThreadId,
+                    ForumId = t.ForumId??0,
+                    ForumName = _db.Forums
+                                    .Where(f => f.ForumId == t.ForumId)
+                                    .Select(f => f.Name)
+                                    .FirstOrDefault() ?? "",
+
+                    Title = t.Title,
+                    AuthorId = t.AuthorUserId ?? 0,
+                    AuthorName = _db.Users
+                                    .Where(u => u.UserId == t.AuthorUserId)
+                                    .Select(u => u.UserName)
+                                    .FirstOrDefault() ?? "",
+
+                    ReplyCount = _db.ThreadPosts
+                                    .Count(p => p.ThreadId == t.ThreadId && p.Status == "normal"),
+
+                    LikeCount = _db.Reactions
+                                    .Count(r => r.TargetType == "thread" &&
+                                                r.TargetId == t.ThreadId &&
+                                                r.Kind == "like"),
+
+                    UpdatedAt = t.UpdatedAt ?? t.CreatedAt
+                })
+                .ToListAsync(ct);
+
+            return new PagedResult<GlobalThreadSearchResultDto>(items, total, page, size);
         }
 
 

@@ -2,6 +2,7 @@
 using GamiPort.Areas.Forum.Dtos.Forum;
 using GamiPort.Areas.Forum.Dtos.Threads;
 using GamiPort.Areas.Forum.Services.Forums;
+using GamiPort.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
 
@@ -23,10 +24,14 @@ namespace GamiPort.Areas.Forum.ApiControllers
     public class ForumsApiController : ControllerBase // API 用 ControllerBase（不需要 View 支援）
     {
         private readonly IForumsService _svc;
-
+        private readonly ICurrentUserService _id;
         // 透過 DI 拿到服務層（商業邏輯都在 Service）
-        public ForumsApiController(IForumsService svc) => _svc = svc;
-
+        public ForumsApiController(IForumsService svc, ICurrentUserService id) // ★ 建構子注入
+        {
+            _svc = svc;
+            _id = id;
+        }
+        private long CurrentUserId => _id.UserId ?? 0;
         // 1) 取得論壇清單（用在論壇首頁清單）
         // HTTP: GET /api/forums
         [HttpGet]
@@ -67,11 +72,11 @@ namespace GamiPort.Areas.Forum.ApiControllers
                                                     // ▼ 新增三個，預設不搜尋內容/遊戲，只搜標題
             [FromQuery] string? keyword = null,
             [FromQuery] bool inContent = false,
-            [FromQuery] bool inGame = false
-)
+            [FromQuery] bool inGame = false,
+            CancellationToken ct = default)
         {
             // 只多把參數丟給 Service，其他不動
-            var result = await _svc.GetThreadsByForumAsync(id, sort, page, size, keyword, inContent, inGame);
+            var result = await _svc.GetThreadsByForumAsync(id, sort, page, size, keyword, inContent, inGame,CurrentUserId, ct);
             return Ok(result);
         }
 
@@ -95,7 +100,24 @@ namespace GamiPort.Areas.Forum.ApiControllers
             var dto = await _svc.GetForumByGameNameAsync(name, ct);
             return dto is null ? NotFound() : Ok(dto);
         }
-    }
+        //跨所有論壇搜主題
+        // GET /api/forums/threads/search?q=elden&page=1&size=20
+        [HttpGet("threads/search")]
+        public async Task<ActionResult<PagedResult<GlobalThreadSearchResultDto>>> SearchThreads(
+            [FromQuery] string q,
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 20,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(PagedResult<GlobalThreadSearchResultDto>.Empty(page, size)); // ← 也要換型別
+
+            var result = await _svc.SearchThreadsAcrossForumsAsync(q.Trim(), page, size, CurrentUserId, ct);
+            return Ok(result);
+        }
 
 
     }
+
+
+}
