@@ -45,7 +45,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 
 			// 頭像 / 背景：處理預設圖
 			var userPictureSrc = ToBase64Src(introduce.UserPicture)
-								 ?? Url.Content("~/images/default-avatar.png"); // 若你的 ImagePathService 有更好的預設，可改這行
+								 ?? Url.Content("~/images/預設人物.png"); // 若你的 ImagePathService 有更好的預設，可改這行
 
 			var themeSrc = ToBase64Src(home?.Theme)
 						   ?? Url.Content("/images/UserHome_DefaultPicture.png");
@@ -167,7 +167,10 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			// ★ 非屋主且未公開 → 阻擋
 			if (!isSelf && !homeRow.IsPublic)
 			{
-				return View("PrivateBlocked");
+				var am = await BuildHomeVmAsync(id, isSelf);
+				if (am == null) return NotFound();
+
+				return View("PrivateBlocked", am);
 			}
 
 			var vm = await BuildHomeVmAsync(id, isSelf);
