@@ -1,175 +1,227 @@
 ﻿@* ============================================================
-   頁面：交友測試（按鈕傳參數）
-   用法：按不同顆按鈕 → 送出 RelationCommand → 服務驗證與寫入
-   重要：
-     - 若控制器有 [ValidateAntiForgeryToken]，這頁要有 @Html.AntiForgeryToken() 並在 fetch header 帶回
-     - 預設回小駝峰 JSON：{ noOp, relationId, newStatusCode, reason }
+   頁面：交友測試（程式化發送）
+   功能：
+     - 所有交友關係指令都透過 JavaScript 程式碼，呼叫 window.sendRelationCommand 函式。
+     - 不再使用按鈕上的 data-* 屬性來聲明式地定義指令參數。
+     - 以 fetch() POST JSON 給 /social_hub/relations/exec
+     - 後端服務層（RelationService）做驗證，通過就寫入資料庫
+     - 交友指令核心邏輯由 ~/js/social_hub/relation.js 提供，並將 window.sendRelationCommand 函式暴露到全域。
+   注意：
+     1) Anti-Forgery：
+        - 若控制器動作有 [ValidateAntiForgeryToken]，這頁要有 @Html.AntiForgeryToken() 並在 fetch header 帶回
+     2) JSON 鍵名大小寫：
+        - 這頁 JavaScript 以小駝峰鍵名處理（actorUserId / targetUserId 等）
+        - 控制器也會以小駝峰輸出，避免前後端對不上
+     3) 同站 Cookie：
+        - fetch 設 credentials: 'same-origin'，能帶上同站 Cookie（若將來開啟授權/認證很重要）
    ============================================================ *@
 @{
-    ViewData["Title"] = "交友測試（按鈕）";
+    ViewData["Title"] = "交友測試（程式化發送）";
     var execUrl = Url.Action("Exec", "Relations", new { area = "social_hub" });
 }
 <div class="container py-4">
-    <h2 class="mb-3">交友測試（按鈕傳參數）</h2>
+    <h2 class="mb-3">交友測試（程式化發送）</h2>
     @Html.AntiForgeryToken()
 
-    @* ------------------------------------------------------------
-       每顆按鈕都對應一次 RelationCommand：
-       - data-actor-user-id
-       - data-target-user-id
-       - data-action-code  : friend_request / accept / reject / cancel_request / block / unblock / set_nickname
-       - data-nickname     : 只在 set_nickname 使用（上限 10）
-       ------------------------------------------------------------ *@
     <div class="d-grid gap-2 col-md-6">
-        <!-- 送出交友邀請 -->
-        <button class="btn btn-primary" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000001"
-                data-target-user-id="10000002"
-                data-action-code="friend_request">
-            送出交友邀請（1 → 2）
-        </button>
-
-        <!-- 接受邀請 -->
-        <button class="btn btn-success" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000002"
-                data-target-user-id="10000001"
-                data-action-code="accept">
-            接受邀請（2 接受 1）
-        </button>
-
-        <!-- 拒絕邀請 -->
-        <button class="btn btn-outline-danger" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000002"
-                data-target-user-id="10000001"
-                data-action-code="reject">
-            拒絕邀請（2 拒絕 1）
-        </button>
-
-        <!-- 取消邀請（由邀請者取消） -->
-        <button class="btn btn-warning" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000001"
-                data-target-user-id="10000002"
-                data-action-code="cancel_request">
-            取消邀請（1 取消）
-        </button>
-
-        <!-- 封鎖 / 解除封鎖 -->
-        <button class="btn btn-dark" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000001"
-                data-target-user-id="10000002"
-                data-action-code="block">
-            封鎖（1 封鎖 2）
-        </button>
-
-        <button class="btn btn-secondary" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000001"
-                data-target-user-id="10000002"
-                data-action-code="unblock">
-            解除封鎖（1 → 2）
-        </button>
-
-        <!-- 設定暱稱（雙向關係一筆資料；這裡僅示範存 FriendNickname） -->
-        <button class="btn btn-info" data-rel
-                data-url="@execUrl"
-                data-actor-user-id="10000001"
-                data-target-user-id="10000002"
-                data-action-code="set_nickname"
-                data-nickname="小明">
-            設定暱稱（1 對 2：小明）
-        </button>
-    </div>
-
+            <!-- 送出交友邀請 -->
+            <button class="btn btn-primary" id="sendFriendRequestBtn">
+                送出交友邀請（1 → 2）
+            </button>
+    
+            <!-- 接受邀請 -->
+            <button class="btn btn-success" id="acceptRequestBtn">
+                接受邀請（2 接受 1）
+            </button>
+    
+            <!-- 拒絕邀請 -->
+            <button class="btn btn-outline-danger" id="rejectRequestBtn">
+                拒絕邀請（2 拒絕 1）
+            </button>
+    
+            <!-- 取消邀請（由邀請者取消） -->
+            <button class="btn btn-warning" id="cancelRequestBtn">
+                取消邀請（1 取消）
+            </button>
+    
+            <!-- 封鎖 / 解除封鎖 -->
+            <button class="btn btn-dark" id="blockUserBtn">
+                封鎖（1 封鎖 2）
+            </button>
+    
+            <button class="btn btn-secondary" id="unblockUserBtn">
+                解除封鎖（1 → 2）
+            </button>
+    
+            <!-- 解除好友 -->
+            <button class="btn btn-danger" id="unfriendBtn">
+                解除好友（1 → 2）
+            </button>
+    
+            <!-- 設定暱稱（雙向關係一筆資料；這裡僅示範存 FriendNickname） -->
+            <button class="btn btn-info" id="setNicknameBtn">
+                設定暱稱（1 對 2：小明）
+            </button>
+        </div>
     <div id="rel-status" class="mt-3 small text-muted"></div>
 </div>
 
 @section Scripts {
+    <script src="~/js/social_hub/relation.js"></script>
+
     <script>
-        /* ============================================================
-           前端腳本：
-           - 讀按鈕 data-* → 組 RelationCommand → POST 到 /social_hub/relations/exec
-           - 防呆：檢查必填欄位（actor/target/action）
-           - 顯示結果：No-Op / 新狀態 / 理由
-           ============================================================ */
-        (function () {
-          const $ = (s) => document.querySelector(s);
-          const toInt = (v) => (v==null || v==="" ? null : (isFinite(v) ? Number(v) : null));
+        console.log('Friends.cshtml inline script loaded.');
+        console.log('Type of window.sendRelationCommand (before DOMContentLoaded): ', typeof window.sendRelationCommand);
 
-          function buildCmd(ds) {
-            return {
-              actorUserId:  toInt(ds.actorUserId),
-              targetUserId: toInt(ds.targetUserId),
-              actionCode:   (ds.actionCode || "").trim(),
-              nickname:     (ds.nickname || null)
-            };
-          }
+        // 等待 DOM 完全載入後執行，確保按鈕元素存在
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired in Friends.cshtml');
+            console.log('Type of window.sendRelationCommand (inside DOMContentLoaded): ', typeof window.sendRelationCommand);
 
-          document.addEventListener('click', async (e) => {
-            const btn = e.target.closest('[data-rel]');
-            if (!btn) return;
-
-            const url = btn.dataset.url;
-            const cmd = buildCmd(btn.dataset);
-
-            if (!cmd.actorUserId || !cmd.targetUserId || !cmd.actionCode) {
-              alert('actorUserId / targetUserId / actionCode 為必填。');
-              return;
+            // 檢查 window.sendRelationCommand 是否為函式
+            if (typeof window.sendRelationCommand !== 'function') {
+                console.error('錯誤：window.sendRelationCommand 函式未定義或無法存取。請確認 relation.js 已正確載入並執行。');
+                // 如果函式不可用，則不綁定事件監聽器，避免後續錯誤
+                return;
             }
 
-            $('#rel-status').textContent = '送出中…';
+            // 從 Razor 變數獲取交友 API 的 URL
+            const execUrl = '@execUrl';
 
-            // Anti-Forgery（若控制器沒 [ValidateAntiForgeryToken] 可拿掉）
-            const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
-            const token = tokenEl ? tokenEl.value : null;
+            /**
+             * ===================================================================
+             * window.sendRelationCommand 函式可接受的 command 參數說明：
+             * 這些參數將作為 JSON 傳遞給後端交友 API (RelationsController.cs)。
+             * 所有參數皆為可選，但 actorUserId, targetUserId, actionCode 為必填。
+             * 後端服務層 (RelationService) 會進行存在性與長度驗證。
+             * -------------------------------------------------------------------
+             * param {object} command - 交友指令的 payload 物件。
+             * param {number} command.actorUserId - (int) 執行操作的使用者 ID。
+             * param {number} command.targetUserId - (int) 目標使用者 ID。
+             * param {string} command.actionCode - (string) 操作代碼 (e.g., "friend_request", "accept", "block")。
+             * param {string} [command.nickname] - (string) 暱稱 (僅用於 "set_nickname"，最大長度 10)。
+             * ===================================================================
+             */
 
-            const headers = {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            };
-            if (token) headers['RequestVerificationToken'] = token;
+            /**
+             * 處理交友指令發送的通用函式。
+             * param {object} command - 交友指令的 payload 物件。
+             */
+            async function handleSendRelationCommand(command) {
+                // 呼叫全域的 sendRelationCommand 函式來發送指令
+                const result = await window.sendRelationCommand({ url: execUrl, command: command });
 
-            try {
-              const res = await fetch(url, {
-                method: 'POST',
-                headers,
-                credentials: 'same-origin',
-                body: JSON.stringify(cmd)
-              });
-
-              const ct  = res.headers.get('content-type') || '';
-              const txt = await res.text();
-
-              if (!res.ok) {
-                alert(`失敗 (HTTP ${res.status})：${txt.slice(0,200)}`);
-                $('#rel-status').textContent = '';
-                return;
-              }
-              if (!ct.includes('application/json')) {
-                alert('伺服器回的不是 JSON（可能被轉址或打錯路由）。');
-                $('#rel-status').textContent = '';
-                return;
-              }
-
-              const data = JSON.parse(txt); // { noOp, relationId, newStatusCode, reason }
-              const info = [
-                `NoOp=${data.noOp}`,
-                `relationId=${data.relationId ?? '—'}`,
-                `status=${data.newStatusCode ?? '—'}`,
-                data.reason ? `reason=${data.reason}` : null
-              ].filter(Boolean).join(' | ');
-
-              alert('OK！' + info);
-              $('#rel-status').textContent = info;
-            } catch (err) {
-              alert('例外：' + err.message);
-              $('#rel-status').textContent = '';
+                if (result.succeeded) {
+                    console.log("交友指令發送成功！", result);
+                } else {
+                    console.error("交友指令發送失敗！原因: ", result.reason);
+                }
             }
-          });
-        })();
+
+            // 監聽「送出交友邀請」按鈕的點擊事件
+            const sendFriendRequestBtn = document.getElementById('sendFriendRequestBtn');
+            if (sendFriendRequestBtn) {
+                sendFriendRequestBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "friend_request"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「接受邀請」按鈕的點擊事件
+            const acceptRequestBtn = document.getElementById('acceptRequestBtn');
+            if (acceptRequestBtn) {
+                acceptRequestBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000002,
+                        targetUserId: 10000001,
+                        actionCode: "accept"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「拒絕邀請」按鈕的點擊事件
+            const rejectRequestBtn = document.getElementById('rejectRequestBtn');
+            if (rejectRequestBtn) {
+                rejectRequestBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000002,
+                        targetUserId: 10000001,
+                        actionCode: "reject"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「取消邀請」按鈕的點擊事件
+            const cancelRequestBtn = document.getElementById('cancelRequestBtn');
+            if (cancelRequestBtn) {
+                cancelRequestBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "cancel_request"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「封鎖」按鈕的點擊事件
+            const blockUserBtn = document.getElementById('blockUserBtn');
+            if (blockUserBtn) {
+                blockUserBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "block"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「解除封鎖」按鈕的點擊事件
+            const unblockUserBtn = document.getElementById('unblockUserBtn');
+            if (unblockUserBtn) {
+                unblockUserBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "unblock"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「解除好友」按鈕的點擊事件
+            const unfriendBtn = document.getElementById('unfriendBtn');
+            if (unfriendBtn) {
+                unfriendBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "unfriend"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+
+            // 監聽「設定暱稱」按鈕的點擊事件
+            const setNicknameBtn = document.getElementById('setNicknameBtn');
+            if (setNicknameBtn) {
+                setNicknameBtn.addEventListener('click', () => {
+                    const command = {
+                        actorUserId: 10000001,
+                        targetUserId: 10000002,
+                        actionCode: "set_nickname",
+                        nickname: "小明"
+                    };
+                    handleSendRelationCommand(command);
+                });
+            }
+        });
     </script>
 }

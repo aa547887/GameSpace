@@ -1,7 +1,6 @@
-@using GamiPort.Models
-@model IEnumerable<Notification>
+@model IEnumerable<GamiPort.Models.NotificationRecipient>
 
-@{ 
+@{
     ViewData["Title"] = "我的通知";
 }
 
@@ -10,16 +9,16 @@
 @if (Model != null && Model.Any())
 {
     <div class="list-group">
-        @foreach (var notification in Model)
+        @foreach (var notificationRecipient in Model)
         {
-            <div class="list-group-item list-group-item-action">
+            <div class="list-group-item list-group-item-action @(notificationRecipient.ReadAt != null ? "text-muted" : "")">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">@notification.Title</h5>
-                    <small>@notification.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                    <h5 class="mb-1">@notificationRecipient.Notification.Title</h5>
+                    <small>@notificationRecipient.Notification.CreatedAt.ToShortDateString() @notificationRecipient.Notification.CreatedAt.ToShortTimeString()</small>
                 </div>
-                <p class="mb-1">@notification.Message</p>
-                <small>來自: @(notification.SenderUser?.UserName ?? "系統")</small>
-              
+                <p class="mb-1">@notificationRecipient.Notification.Message</p>
+                @* <p class="mb-1">狀態: @(notificationRecipient.ReadAt != null ? "已讀" : "未讀")</p> *@
+                
             </div>
         }
     </div>
