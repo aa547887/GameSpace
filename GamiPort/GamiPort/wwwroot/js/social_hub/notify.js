@@ -17,15 +17,23 @@
 (function () {
     const $ = (sel) => document.querySelector(sel);
 
-    // 將「字串 / 空字串 / 數字字串」轉成合適型別（空值→null；可數字→Number）
+    /**
+     * 將「字串 / 空字串 / 數字字串」轉成合適型別（空值→null；可數字→Number）
+     * @param {string|number|null} v - 待轉換的值
+     * @returns {string|number|null} 轉換後的值
+     */
     function toMaybeNumber(v) {
         if (v == null || v === "") return null;
         return isFinite(v) ? Number(v) : v;
     }
 
-    // 從 dataset 建立送給 API 的 payload
-    function buildPayload(ds) {
-        // data-aaa-bbb → ds.aaaBbb
+    /**
+     * 從 HTML 元素的 dataset 屬性建立送給 API 的 payload 物件。
+     * data-aaa-bbb 會被映射為 payload.aaaBbb。
+     * @param {DOMStringMap} ds - HTML 元素的 dataset 物件
+     * @returns {object} 建立好的 payload 物件
+     */
+    function buildPayloadFromDataset(ds) {
         const p = {
             sourceId: toMaybeNumber(ds.sourceId),
             actionId: toMaybeNumber(ds.actionId),
@@ -42,27 +50,32 @@
         return p;
     }
 
-    // 事件代理：點到任何 [data-notify] 按鈕就送
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('[data-notify]');
-        if (!btn) return;
-
-        const url = btn.dataset.url;           // 後端 API 位址（建議用 Url.Action 產出）
-        const body = buildPayload(btn.dataset); // 組 payload JSON
+    /**
+     * 核心發送通知函式。
+     * 負責組裝請求、發送 AJAX POST 到通知 API，並處理回應。
+     * @param {object} options - 包含通知發送所需參數的物件
+     * @param {string} options.url - 通知 API 的 URL
+     * @param {object} options.payload - 通知內容的 payload 物件
+     * @returns {Promise<object>} 包含發送結果的 Promise，例如 { succeeded: true, notificationId: 123 } 或 { succeeded: false, reason: "錯誤訊息" }
+     */
+    async function sendNotification(options) {
+        const { url, payload } = options;
 
         // 最小前端驗證：至少要有一個收件人
-        if (!('toUserId' in body) && !('toManagerId' in body)) {
-            alert('請在按鈕上至少設定一個收件人（data-to-user-id 或 data-to-manager-id）。');
-            return;
+        if (!('toUserId' in payload) && !('toManagerId' in payload)) {
+            alert('請在參數中至少設定一個收件人（toUserId 或 toManagerId）。');
+            return { succeeded: false, reason: '缺少收件人' };
         }
 
-        $('#status').textContent = '送出中…';
+        // 顯示狀態訊息
+        const statusEl = $('#status');
+        if (statusEl) statusEl.textContent = '送出中…';
 
-        // 讀 Anti-Forgery Token（若控制器未使用 [ValidateAntiForgeryToken]，可略）
+        // 讀取 Anti-Forgery Token（若控制器有 [ValidateAntiForgeryToken]）
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const token = tokenEl ? tokenEl.value : null;
 
-        // 組 headers（小駝峰 Accept：請求伺服器回 JSON）
+        // 組裝請求 Headers
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -74,8 +87,8 @@
             const res = await fetch(url, {
                 method: 'POST',
                 headers,
-                credentials: 'same-origin',
-                body: JSON.stringify(body)
+                credentials: 'same-origin', // 帶上同站 Cookie
+                body: JSON.stringify(payload)
             });
 
             // 先以純文字拿回（方便在錯誤時印出 HTML 片段）
@@ -85,26 +98,45 @@
             if (!res.ok) {
                 // 例如 400/404/405/500，直接把前 200 字顯示方便排錯
                 alert(`失敗 (HTTP ${res.status})：${text.slice(0, 200)}`);
-                $('#status').textContent = '';
-                return;
+                if (statusEl) statusEl.textContent = '';
+                return { succeeded: false, reason: `HTTP ${res.status}: ${text.slice(0, 200)}` };
             }
 
             if (!contentType.includes('application/json')) {
                 // 多半是被 302 導去登入頁或打到 View（HTML）
                 alert('伺服器回應不是 JSON（可能被轉址到登入頁或打錯路由）。');
-                $('#status').textContent = '';
-                return;
+                if (statusEl) statusEl.textContent = '';
+                return { succeeded: false, reason: '伺服器回應非 JSON' };
             }
 
             // 解析 JSON；控制器回小駝峰：{ "notificationId": 123 }
             const data = JSON.parse(text);
-            const id = data.notificationId; // 若你之後改回大駝峰，這裡要改成 data.NotificationId
+            const id = data.notificationId;
 
             alert(`OK！NotificationId=${id}`);
-            $('#status').textContent = '完成';
+            if (statusEl) statusEl.textContent = '完成';
+            return { succeeded: true, notificationId: id };
         } catch (err) {
             alert('例外：' + err.message);
-            $('#status').textContent = '';
+            if (statusEl) statusEl.textContent = '';
+            return { succeeded: false, reason: err.message };
         }
+    }
+
+    // 將 sendNotification 函式暴露到全域 window 物件，以便其他腳本可以直接呼叫。
+    // 例如：window.sendNotification({ url: '/social_hub/notifications/ajax', payload: { toUserId: 1, title: 'Test' } });
+    window.sendNotification = sendNotification;
+
+    // 事件代理：監聽文件上的點擊事件。
+    // 當點擊的目標或其祖先元素帶有 `data-notify` 屬性時，觸發通知發送。
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-notify]');
+        if (!btn) return; // 如果沒有找到帶有 data-notify 的元素，則不做任何事
+
+        const url = btn.dataset.url; // 從按鈕的 data-url 屬性獲取 API URL
+        const payload = buildPayloadFromDataset(btn.dataset); // 從按鈕的 dataset 建立 payload
+
+        // 呼叫核心的 sendNotification 函式來發送通知
+        await sendNotification({ url, payload });
     });
 })();
