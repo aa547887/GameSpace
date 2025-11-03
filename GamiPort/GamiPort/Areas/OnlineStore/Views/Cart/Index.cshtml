@@ -144,255 +144,301 @@
 
 @section Scripts {
     <script>
-        /* ================= 基本工具 ================= */
-        const INPUT_DEBOUNCE = 500;
-        const QTY_MIN=1, QTY_MAX=99;
-        let toastRef=null;
+                /* ================= 基本工具 ================= */
+                const INPUT_DEBOUNCE = 500;
+                const QTY_MIN=1, QTY_MAX=99;
+                let toastRef=null;
 
-        function getAfToken(){
-          const t = document.querySelector('#af-token-form input[name="__RequestVerificationToken"]');
-          return t ? t.value : '';
-        }
-        function showToast(msg,variant='danger'){
-          const el=document.getElementById('appToast'), body=document.getElementById('appToastBody');
-          body.textContent=msg||'發生錯誤';
-          el.classList.remove('text-bg-danger','text-bg-success','text-bg-warning','text-bg-info');
-          el.classList.add('text-bg-'+variant);
-          if(!toastRef) toastRef=new bootstrap.Toast(el,{delay:2200});
-          toastRef.show();
-        }
-        function money(n){
-          const val=(n??0); return val.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});
-        }
+                function getAfToken(){
+                  const t = document.querySelector('#af-token-form input[name="__RequestVerificationToken"]');
+                  return t ? t.value : '';
+                }
+                function showToast(msg,variant='danger'){
+                  const el=document.getElementById('appToast'), body=document.getElementById('appToastBody');
+                  body.textContent=msg||'發生錯誤';
+                  el.classList.remove('text-bg-danger','text-bg-success','text-bg-warning','text-bg-info');
+                  el.classList.add('text-bg-'+variant);
+                  if(!toastRef) toastRef=new bootstrap.Toast(el,{delay:2200});
+                  toastRef.show();
+                }
+                function money(n){
+                  const val=(n??0); return val.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});
+                }
 
-        /* ================ 載入/渲染（與你原流程一致，這裡示意） ================ */
-        async function loadFull(){
-          // 這裡用假資料示意；實務請換回你原本的 /OnlineStore/Cart/Full
-          // 也可直接保留你原本的 loadFull 實作
-          const url = new URL(location.origin + '/OnlineStore/Cart/Full');
-          try{
-            const res = await fetch(url, {credentials:'same-origin'});
-            const data = await res.json();
-            if(!data.ok) return showToast(data.message||'載入失敗');
-            renderAll(data);
-          }catch(e){ showToast('網路或伺服器錯誤，請稍後再試'); }
-        }
+                /* ================ 載入/渲染（與你原流程一致，這裡示意） ================ */
+                async function loadFull(){
+                  // 這裡用假資料示意；實務請換回你原本的 /OnlineStore/Cart/Full
+                  // 也可直接保留你原本的 loadFull 實作
+                  const url = new URL(location.origin + '/OnlineStore/Cart/Full');
+                  try{
+                    const res = await fetch(url, {credentials:'same-origin'});
+                    const data = await res.json();
+                    if(!data.ok) return showToast(data.message||'載入失敗');
+                    renderAll(data);
+                  }catch(e){ showToast('網路或伺服器錯誤，請稍後再試'); }
+                }
 
-        function renderAll(data){
-          renderTable(data.items || []);
-          // 這裡如果你有回來 summary，可保留你的 renderSummary(data.summary)
-          // 關鍵：改由「勾選」決定顯示金額
-          updateCheckedTotal();
-          syncCheckoutBar();
-        }
+                function renderAll(data){
+                  renderTable(data.items || []);
+                  // 這裡如果你有回來 summary，可保留你的 renderSummary(data.summary)
+                  // 關鍵：改由「勾選」決定顯示金額
+                  updateCheckedTotal();
+                  syncCheckoutBar();
+                }
 
-        function renderTable(items){
-          const tbody=document.getElementById('cartTableBody');
-          tbody.innerHTML='';
-          if(!items.length){
-            document.getElementById('checkoutBar').classList.add('is-static'); // 空車維持樣式
-            return;
-          }
+                function renderTable(items){
+                  const tbody=document.getElementById('cartTableBody');
+                  tbody.innerHTML='';
+                  if(!items.length){
+                    document.getElementById('checkoutBar').classList.add('is-static'); // 空車維持樣式
+                    return;
+                  }
 
-          for(const it of items){
-            const tr=document.createElement('tr');
-            tr.dataset.productId=it.productId;
-            tr.dataset.subtotal = it.lineSubtotal ?? it.subtotal ?? ((it.unitPrice||0)*(it.quantity||0));
+                  for(const it of items){
+                    const tr=document.createElement('tr');
+                    tr.dataset.productId=it.productId;
+                    tr.dataset.subtotal = it.lineSubtotal ?? it.subtotal ?? ((it.unitPrice||0)*(it.quantity||0));
 
-            tr.innerHTML = `
-              <td class="text-center">
-                <input type="checkbox" class="form-check-input row-check" />
-              </td>
-              <td class="fw-semibold">${escapeHtml(it.productName||'')}</td>
-              <td class="text-end">$${money(it.unitPrice)}</td>
-              <td class="text-center">
-                <div class="input-group input-group-sm justify-content-center" style="max-width:160px;margin:auto;">
-                  <button class="btn btn-outline-secondary btn-minus" type="button" aria-label="decrease">−</button>
-                  <input class="form-control text-center qty-input" value="${it.quantity}" inputmode="numeric" pattern="[0-9]*">
-                  <button class="btn btn-outline-secondary btn-plus" type="button" aria-label="increase">＋</button>
-                </div>
-                <div class="text-danger small d-none qty-error">數量需為 ${QTY_MIN}–${QTY_MAX}</div>
-              </td>
-              <td class="line-subtotal">$${money(tr.dataset.subtotal)}</td>
-              <td><button class="btn btn-outline-danger btn-sm btn-remove" type="button">刪除</button></td>
-            `;
-            tbody.appendChild(tr);
-          }
+                    tr.innerHTML = `
+                      <td class="text-center">
+                        <input type="checkbox" class="form-check-input row-check" />
+                      </td>
+                      <td class="fw-semibold">${escapeHtml(it.productName||'')}</td>
+                      <td class="text-end">$${money(it.unitPrice)}</td>
+                      <td class="text-center">
+                        <div class="input-group input-group-sm justify-content-center" style="max-width:160px;margin:auto;">
+                          <button class="btn btn-outline-secondary btn-minus" type="button" aria-label="decrease">−</button>
+                          <input class="form-control text-center qty-input" value="${it.quantity}" inputmode="numeric" pattern="[0-9]*">
+                          <button class="btn btn-outline-secondary btn-plus" type="button" aria-label="increase">＋</button>
+                        </div>
+                        <div class="text-danger small d-none qty-error">數量需為 ${QTY_MIN}–${QTY_MAX}</div>
+                      </td>
+                      <td class="line-subtotal">$${money(tr.dataset.subtotal)}</td>
+                      <td><button class="btn btn-outline-danger btn-sm btn-remove" type="button">刪除</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                  }
 
-          // 綁事件（減、加、輸入、刪除、勾選）
-          tbody.querySelectorAll('.btn-minus').forEach(b=>b.addEventListener('click', onMinus));
-          tbody.querySelectorAll('.btn-plus').forEach(b=>b.addEventListener('click', onPlus));
-          tbody.querySelectorAll('.qty-input').forEach(inp=>{
-            inp.dataset.prev = clampQty(inp.value) ?? QTY_MIN;
-            inp.addEventListener('input', onQtyTyping);
-            inp.addEventListener('blur', onQtyCommit);
-            inp.addEventListener('keydown',e=>{ if(e.key==='Enter') e.target.blur(); });
-          });
-          tbody.querySelectorAll('.btn-remove').forEach(b=>b.addEventListener('click', onRemove));
-          tbody.querySelectorAll('.row-check').forEach(cb=>cb.addEventListener('change', ()=>updateCheckedTotal()));
-        }
+                  // 綁事件（減、加、輸入、刪除、勾選）
+                  tbody.querySelectorAll('.btn-minus').forEach(b=>b.addEventListener('click', onMinus));
+                  tbody.querySelectorAll('.btn-plus').forEach(b=>b.addEventListener('click', onPlus));
+                  tbody.querySelectorAll('.qty-input').forEach(inp=>{
+                    inp.dataset.prev = clampQty(inp.value) ?? QTY_MIN;
+                    inp.addEventListener('input', onQtyTyping);
+                    inp.addEventListener('blur', onQtyCommit);
+                    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') e.target.blur(); });
+                  });
+                  tbody.querySelectorAll('.btn-remove').forEach(b=>b.addEventListener('click', onRemove));
+                  tbody.querySelectorAll('.row-check').forEach(cb=>cb.addEventListener('change', ()=>updateCheckedTotal()));
+                }
 
-        /* ================ 數量、刪除（照你原本邏輯替換 endpoint 即可） ================ */
-        function clampQty(v){ const n=parseInt(v,10); if(Number.isNaN(n)||n<QTY_MIN||n>QTY_MAX) return null; return n; }
-        async function postAndRefresh(path, formObj){
-          const form=new FormData();
-          form.append('__RequestVerificationToken', getAfToken());
-          Object.entries(formObj||{}).forEach(([k,v])=>form.append(k,v));
-          const res = await fetch('/OnlineStore/Cart/'+path,{method:'POST',body:form,credentials:'same-origin'});
-          const data = await res.json();
-          if(!data.ok){ showToast(data.message||'操作失敗'); return; }
-          renderAll(data);
-        }
-        async function onMinus(e){
-          const tr=e.currentTarget.closest('tr');
-          const productId=tr.dataset.productId;
-          const input=tr.querySelector('.qty-input');
-          const cur=clampQty(input.value) ?? QTY_MIN;
-          if(cur<=QTY_MIN) await postAndRefresh('Remove',{productId});
-          else await postAndRefresh('UpdateQty',{productId, qty:cur-1});
-        }
-        async function onPlus(e){
-          const tr=e.currentTarget.closest('tr');
-          const productId=tr.dataset.productId;
-          const input=tr.querySelector('.qty-input');
-          const cur=clampQty(input.value) ?? QTY_MIN;
-          await postAndRefresh('UpdateQty',{productId, qty:Math.min(QTY_MAX, cur+1)});
-        }
-        function onQtyTyping(e){
-          const tr=e.currentTarget.closest('tr');
-          const productId=tr.dataset.productId;
-          const input=e.currentTarget;
-          const err=tr.querySelector('.qty-error');
-          clearTimeout(input._t);
-          input._t=setTimeout(async ()=>{
-            const q=clampQty(input.value);
-            if(q===null){ err.classList.remove('d-none'); return; }
-            err.classList.add('d-none'); input.dataset.prev=q;
-            await postAndRefresh('UpdateQty',{productId, qty:q});
-          }, INPUT_DEBOUNCE);
-        }
-        async function onQtyCommit(e){
-          const tr=e.currentTarget.closest('tr');
-          const productId=tr.dataset.productId;
-          const input=e.currentTarget;
-          const q=clampQty(input.value);
-          if(q===null){ input.value=input.dataset.prev ?? QTY_MIN; return; }
-          input.dataset.prev=q; await postAndRefresh('UpdateQty',{productId, qty:q});
-        }
-        async function onRemove(e){
-          const tr=e.currentTarget.closest('tr');
-          await postAndRefresh('Remove', {productId: tr.dataset.productId});
-        }
+                /* ================ 數量、刪除（照你原本邏輯替換 endpoint 即可） ================ */
+                function clampQty(v){ const n=parseInt(v,10); if(Number.isNaN(n)||n<QTY_MIN||n>QTY_MAX) return null; return n; }
+                async function postAndRefresh(path, formObj){
+                  const form=new FormData();
+                  form.append('__RequestVerificationToken', getAfToken());
+                  Object.entries(formObj||{}).forEach(([k,v])=>form.append(k,v));
+                  const res = await fetch('/OnlineStore/Cart/'+path,{method:'POST',body:form,credentials:'same-origin'});
+                  const data = await res.json();
+                  if(!data.ok){ showToast(data.message||'操作失敗'); return; }
+                  renderAll(data);
+                }
+                async function onMinus(e){
+                  const tr=e.currentTarget.closest('tr');
+                  const productId=tr.dataset.productId;
+                  const input=tr.querySelector('.qty-input');
+                  const cur=clampQty(input.value) ?? QTY_MIN;
+                  if(cur<=QTY_MIN){
+                    const ok = await uiConfirm('確定要刪除這個商品嗎？');
+                    if(!ok) return;
+                    await postAndRefresh('Remove',{productId});
+                  }
+                  else await postAndRefresh('UpdateQty',{productId, qty:cur-1});
+                }
+                async function onPlus(e){
+                  const tr=e.currentTarget.closest('tr');
+                  const productId=tr.dataset.productId;
+                  const input=tr.querySelector('.qty-input');
+                  const cur=clampQty(input.value) ?? QTY_MIN;
+                  await postAndRefresh('UpdateQty',{productId, qty:Math.min(QTY_MAX, cur+1)});
+                }
+                function onQtyTyping(e){
+                  const tr=e.currentTarget.closest('tr');
+                  const productId=tr.dataset.productId;
+                  const input=e.currentTarget;
+                  const err=tr.querySelector('.qty-error');
+                  clearTimeout(input._t);
+                  input._t=setTimeout(async ()=>{
+                    const q=clampQty(input.value);
+                    if(q===null){ err.classList.remove('d-none'); return; }
+                    err.classList.add('d-none'); input.dataset.prev=q;
+                    await postAndRefresh('UpdateQty',{productId, qty:q});
+                  }, INPUT_DEBOUNCE);
+                }
+                async function onQtyCommit(e){
+                  const tr=e.currentTarget.closest('tr');
+                  const productId=tr.dataset.productId;
+                  const input=e.currentTarget;
+                  const q=clampQty(input.value);
+                  if(q===null){ input.value=input.dataset.prev ?? QTY_MIN; return; }
+                  input.dataset.prev=q; await postAndRefresh('UpdateQty',{productId, qty:q});
+                }
+                async function onRemove(e){
+                  const tr=e.currentTarget.closest('tr');
+                  const ok = await uiConfirm('確定要刪除這個商品嗎？');
+                  if(!ok) return;
+                  await postAndRefresh('Remove', {productId: tr.dataset.productId});
+                }
 
-        /* ================ 勾選 → 計算總額（只加總勾選） ================ */
-                function updateCheckedTotal(){
-          const tbody=document.getElementById('cartTableBody');
-          let sum=0;
-          let anyChecked=false;
-          let qtySum = 0;
-          tbody.querySelectorAll('tr').forEach(tr=>{
-            const cb=tr.querySelector('.row-check');
-            if(cb && cb.checked){
-              anyChecked=true;
-              const sub = Number(tr.dataset.subtotal ?? 0);
-              sum += (isFinite(sub)?sub:0);
-                const qi = tr.querySelector('.qty-input');
-        const qv = parseInt(qi ? qi.value : '0', 10);
-        qtySum += (Number.isFinite(qv) ? qv : 0);
-            }
-          });
-          const bar = document.getElementById('barTotal');
-          if (bar) bar.textContent = '$' + money(sum);
+                /* ================ 勾選 → 計算總額（只加總勾選） ================ */
+                        function updateCheckedTotal(){
+                  const tbody=document.getElementById('cartTableBody');
+                  let sum=0;
+                  let anyChecked=false;
+                  let qtySum = 0;
+                  tbody.querySelectorAll('tr').forEach(tr=>{
+                    const cb=tr.querySelector('.row-check');
+                    if(cb && cb.checked){
+                      anyChecked=true;
+                      const sub = Number(tr.dataset.subtotal ?? 0);
+                      sum += (isFinite(sub)?sub:0);
+                        const qi = tr.querySelector('.qty-input');
+                const qv = parseInt(qi ? qi.value : '0', 10);
+                qtySum += (Number.isFinite(qv) ? qv : 0);
+                    }
+                  });
+                  const bar = document.getElementById('barTotal');
+                  if (bar) bar.textContent = '$' + money(sum);
 
-                const qel = document.getElementById('selCount');
-        if (qel) qel.textContent = String(qtySum);
-
-
-          // ★ 勾選控制結帳按鈕（有勾選且金額>0 才啟用；若允許$0金額也能結帳，則改成只看 anyChecked）
-          const btn = document.getElementById('btnCheckout');
-          if (btn) btn.disabled = !(anyChecked && sum > 0);
-        }
+                        const qel = document.getElementById('selCount');
+                if (qel) qel.textContent = String(qtySum);
 
 
-        /* ================ 全選按鈕（文字不變、同一顆切換） ================ */
-        document.getElementById('btnToggleAll').addEventListener('click', ()=>{
-          const tbody=document.getElementById('cartTableBody');
-          const rows = Array.from(tbody.querySelectorAll('.row-check'));
-          if(rows.length===0) return;
+                  // ★ 勾選控制結帳按鈕（有勾選且金額>0 才啟用；若允許$0金額也能結帳，則改成只看 anyChecked）
+                  const btn = document.getElementById('btnCheckout');
+                  if (btn) btn.disabled = !(anyChecked && sum > 0);
+                }
 
-          const hasUnchecked = rows.some(cb=>!cb.checked);
-          rows.forEach(cb=>cb.checked = hasUnchecked);   // 有未勾 → 全部勾起；否則全部取消
-          updateCheckedTotal();
-        });
 
-        /* ================ 整批刪除（Modal 置中 + 執行刪除） ================ */
+                /* ================ 全選按鈕（文字不變、同一顆切換） ================ */
+                document.getElementById('btnToggleAll').addEventListener('click', ()=>{
+                  const tbody=document.getElementById('cartTableBody');
+                  const rows = Array.from(tbody.querySelectorAll('.row-check'));
+                  if(rows.length===0) return;
+
+                  const hasUnchecked = rows.some(cb=>!cb.checked);
+                  rows.forEach(cb=>cb.checked = hasUnchecked);   // 有未勾 → 全部勾起；否則全部取消
+                  updateCheckedTotal();
+                });
+
+                /* ================ 整批刪除（Modal 置中 + 執行刪除） ================ */
+
+                // 單筆刪除/減到 0 用同一顆置中 Modal，但不影響「整批刪除」既有監聽
+                async function uiConfirm(message){
+                  const modalEl = document.getElementById('confirmBatchModal');
+                  if(!modalEl){ return window.confirm(message || '確定要刪除這個商品嗎？'); }
+                  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                  const titleEl = modalEl.querySelector('.modal-title');
+                  const bodyEl  = modalEl.querySelector('.modal-body');
+                  const okBtn   = document.getElementById('confirmBatchDelete');
+                  const cancelBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
+
+                  const prevTitle = titleEl ? titleEl.textContent : '';
+                  const prevBody  = bodyEl ? bodyEl.textContent : '';
+                  if(titleEl) titleEl.textContent = '刪除確認';
+                  if(bodyEl)  bodyEl.textContent  = message || '確定要刪除這個商品嗎？此操作無法復原。';
+
+                  return await new Promise(resolve=>{
+                    const onOkCapture = (e)=>{
+                      // 攔截既有「整批刪除」的 click handler
+                      e.preventDefault();
+                      e.stopImmediatePropagation();
+                      cleanup();
+                      modal.hide();
+                      resolve(true);
+                    };
+                    const onCancel = ()=>{ cleanup(); resolve(false); };
+
+                    const cleanup = ()=>{
+                      okBtn && okBtn.removeEventListener('click', onOkCapture, true);
+                      modalEl.removeEventListener('hidden.bs.modal', onCancel);
+                      if(titleEl) titleEl.textContent = prevTitle;
+                      if(bodyEl)  bodyEl.textContent  = prevBody;
+                    };
+
+                    okBtn && okBtn.addEventListener('click', onOkCapture, { once:true, capture:true });
+                    modalEl.addEventListener('hidden.bs.modal', onCancel, { once:true });
+
+                    modal.show();
+                  });
+                }
         const batchModal = new bootstrap.Modal(document.getElementById('confirmBatchModal'));
-        document.getElementById('btnBatchDelete').addEventListener('click', ()=>{
-          // 若沒有勾選，不打擾
-          const anyChecked = !!document.querySelector('.row-check:checked');
-          if(!anyChecked){ showToast('尚未選取任何品項','warning'); return; }
-          batchModal.show();
-        });
-        document.getElementById('confirmBatchDelete').addEventListener('click', async ()=>{
-          batchModal.hide();
-          const ids = Array.from(document.querySelectorAll('.row-check:checked'))
-            .map(cb=>cb.closest('tr').dataset.productId)
-            .filter(Boolean);
-          if(ids.length===0) return;
+                document.getElementById('btnBatchDelete').addEventListener('click', ()=>{
+                  // 若沒有勾選，不打擾
+                  const anyChecked = !!document.querySelector('.row-check:checked');
+                  if(!anyChecked){ showToast('尚未選取任何品項','warning'); return; }
+                  batchModal.show();
+                });
+                document.getElementById('confirmBatchDelete').addEventListener('click', async ()=>{
+                  batchModal.hide();
+                  const ids = Array.from(document.querySelectorAll('.row-check:checked'))
+                    .map(cb=>cb.closest('tr').dataset.productId)
+                    .filter(Boolean);
+                  if(ids.length===0) return;
 
-          // 若你有後端批次刪除端點，例如 RemoveBatch，請改成一次 POST。
-          // 下面用逐一呼叫 Remove（保守但相容）
-          for(const id of ids){
-            await postAndRefresh('Remove', {productId:id});
-          }
-        });
+                  // 若你有後端批次刪除端點，例如 RemoveBatch，請改成一次 POST。
+                  // 下面用逐一呼叫 Remove（保守但相容）
+                  for(const id of ids){
+                    await postAndRefresh('Remove', {productId:id});
+                  }
+                });
 
-        /* ================ 結帳方框：短清單貼下方、長清單懸浮底部 ================ */
-        function getCartFrame(){
-          const table = document.querySelector('.cart-table');
-          return table ? (table.closest('.table-responsive') || table.parentElement) : null;
-        }
-        function syncCheckoutBar(){
-          const bar = document.getElementById('checkoutBar');
-          const frame = getCartFrame();
-          if(!bar || !frame) return;
+                /* ================ 結帳方框：短清單貼下方、長清單懸浮底部 ================ */
+                function getCartFrame(){
+                  const table = document.querySelector('.cart-table');
+                  return table ? (table.closest('.table-responsive') || table.parentElement) : null;
+                }
+                function syncCheckoutBar(){
+                  const bar = document.getElementById('checkoutBar');
+                  const frame = getCartFrame();
+                  if(!bar || !frame) return;
 
-          const r = frame.getBoundingClientRect();
-          const frameBottomInView = r.bottom <= (window.innerHeight - 16); // 16px 緩衝
-          const needFix = !frameBottomInView;
+                  const r = frame.getBoundingClientRect();
+                  const frameBottomInView = r.bottom <= (window.innerHeight - 16); // 16px 緩衝
+                  const needFix = !frameBottomInView;
 
-          if(needFix){
-            bar.classList.add('is-fixed'); bar.classList.remove('is-static');
-            const fr = frame.getBoundingClientRect();
-            bar.style.left  = (fr.left + window.scrollX) + 'px';
-            bar.style.width = fr.width + 'px';
-          }else{
-            bar.classList.remove('is-fixed'); bar.classList.add('is-static');
-            bar.style.left=''; bar.style.width='';
-          }
-        }
-        window.addEventListener('load',   syncCheckoutBar);
-        window.addEventListener('resize', syncCheckoutBar);
-        window.addEventListener('scroll', syncCheckoutBar);
+                  if(needFix){
+                    bar.classList.add('is-fixed'); bar.classList.remove('is-static');
+                    const fr = frame.getBoundingClientRect();
+                    bar.style.left  = (fr.left + window.scrollX) + 'px';
+                    bar.style.width = fr.width + 'px';
+                  }else{
+                    bar.classList.remove('is-fixed'); bar.classList.add('is-static');
+                    bar.style.left=''; bar.style.width='';
+                  }
+                }
+                window.addEventListener('load',   syncCheckoutBar);
+                window.addEventListener('resize', syncCheckoutBar);
+                window.addEventListener('scroll', syncCheckoutBar);
 
-        /* ================ DEV 測試品項（保留你原本流程） ================ */
-        (function(){
-          const btn=document.getElementById('devSeed');
-          if(!btn) return;
-          btn.addEventListener('click', async ()=>{
-            try{
-              const url = new URL(location.origin + '/OnlineStore/Cart/DevSeed10');
-              const res = await fetch(url,{credentials:'same-origin'});
-              const data = await res.json();
-              if(!data.ok) return showToast(data.message||'插入失敗');
-              renderAll(data);
-            }catch(e){ showToast('插入失敗'); }
-          });
-        })();
+                /* ================ DEV 測試品項（保留你原本流程） ================ */
+                (function(){
+                  const btn=document.getElementById('devSeed');
+                  if(!btn) return;
+                  btn.addEventListener('click', async ()=>{
+                    try{
+                      const url = new URL(location.origin + '/OnlineStore/Cart/DevSeed10');
+                      const res = await fetch(url,{credentials:'same-origin'});
+                      const data = await res.json();
+                      if(!data.ok) return showToast(data.message||'插入失敗');
+                      renderAll(data);
+                    }catch(e){ showToast('插入失敗'); }
+                  });
+                })();
 
-        /* ================ 其它初始化 ================ */
-        function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-        document.addEventListener('DOMContentLoaded', loadFull);
+                /* ================ 其它初始化 ================ */
+                function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+                document.addEventListener('DOMContentLoaded', loadFull);
     </script>
 }
 
