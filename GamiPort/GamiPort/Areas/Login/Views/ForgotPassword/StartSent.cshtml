@@ -1,0 +1,21 @@
+﻿@{
+    ViewData["Title"] = "重設密碼信已寄出";
+}
+<div class="container py-4" style="max-width: 520px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4 text-center">
+            <h4 class="mb-3">@ViewData["Title"]</h4>
+            <p class="text-muted">
+                若該帳號存在，我們已寄出一封包含重設連結的 email。<br />
+                請在 <strong>1 小時內</strong> 完成操作，並留意垃圾信匣。
+            </p>
+            @if (ViewBag.Message is string msg && !string.IsNullOrWhiteSpace(msg))
+            {
+                <div class="alert alert-info text-start">@msg</div>
+            }
+            <a class="btn btn-primary w-100" asp-area="Login" asp-controller="Login" asp-action="Login">
+                返回登入
+            </a>
+        </div>
+    </div>
+</div>

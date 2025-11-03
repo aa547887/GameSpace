@@ -33,17 +33,22 @@
 
             <button type="submit" class="btn btn-primary w-100">登入</button>
 
+
             <environment include="Development">
                 <button type="button" id="Member1" class="btn btn-outline-secondary">使用者1</button>
                 <button type="button" id="Member2" class="btn btn-outline-secondary">使用者 #10000002</button>
                 <button type="button" id="Member200" class="btn btn-outline-secondary">使用者 #10000200</button>
             </environment>
 
-
         </form>
 
         <div class="text-center mt-3">
             <a asp-area="Login" asp-controller="Register" asp-action="Step1">註冊會員</a>
+        </div>
+        <div class="text-center mt-3">
+            <a asp-area="Login" asp-controller="ForgotPassword" asp-action="Start">
+                忘記密碼？
+            </a>
         </div>
     </div>
 </div>
