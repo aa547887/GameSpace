@@ -318,8 +318,11 @@
                         actorUserId: 10000001,
                         targetUserId: 10000002,
                         actionCode: "set_nickname",
-                        nickname: "小明"
+                        nickname: prompt("請輸入新暱稱：", "") // 讓使用者輸入暱稱
                     };
+                    // 如果使用者取消輸入或輸入空暱稱，則不執行
+                    if (!command.nickname) return;
+
                     const relResult = await handleSendRelationCommand(command);
 
                     if (relResult.succeeded && !relResult.noOp) {

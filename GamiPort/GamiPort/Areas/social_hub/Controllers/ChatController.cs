@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using GamiPort.Areas.social_hub.Services.Abstractions; // ★ IProfanityFilter（輸出前遮蔽）
+﻿using GamiPort.Areas.social_hub.Services.Abstractions; // ★ IProfanityFilter（輸出前遮蔽）
 using GamiPort.Infrastructure.Security;                 // IAppCurrentUser（吃登入）
 using GamiPort.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-// ✅ 改：改用我們自己的統一介面來「吃登入」；不再依賴 ILoginIdentity
-using GamiPort.Infrastructure.Security; // IAppCurrentUser
 
 namespace GamiPort.Areas.social_hub.Controllers
 {

@@ -1,96 +1,117 @@
 /* ===================================================================
-    前端腳本說明
-    1) 提供 sendRelationCommand 函式，用於發送交友關係指令。
-    2) 處理 Anti-Forgery Token。
-    3) 處理後端回應，並顯示結果。
-    =================================================================== */
+   relation.js - 前端關係操作輔助腳本
+   此腳本提供前端處理用戶關係操作 (如加好友、接受/拒絕好友請求、封鎖/解除封鎖等) 的功能。
+   它暴露了一個全域函數 `window.sendRelationCommand`，供其他腳本呼叫以執行關係相關的 AJAX 請求。
+
+   主要功能：
+   1. 發送關係命令：構建並發送 AJAX POST 請求到後端關係 API。
+   2. 參數驗證：在發送請求前，驗證必要的參數 (actorUserId, targetUserId, actionCode) 是否存在。
+   3. 安全性：自動包含 Anti-Forgery Token (如果存在)，以防止 CSRF 攻擊。
+   4. 狀態更新：在頁面上顯示請求的狀態 (例如「送出中...」)。
+   5. 回應處理：處理後端 API 的回應，包括成功、錯誤和非 JSON 格式的回應。
+   6. 全域暴露：將 `sendRelationCommand` 函數暴露到 `window` 物件，供其他腳本 (如 `Index.cshtml` 中的內聯腳本) 呼叫。
+=================================================================== */
 (function () {
-    const $ = (s) => document.querySelector(s);
-
     /**
-     * 將「字串 / 空字串 / 數字字串」轉成合適型別（空值→null；可數字→Number）
-     * @param {string|number|null} v - 待轉換的值
-     * @returns {string|number|null} 轉換後的值
-     */
-    const toInt = (v) => (v == null || v === "" ? null : (isFinite(v) ? Number(v) : null));
-
-    /**
-     * 核心發送交友關係指令函式。
-     * 負責組裝請求、發送 AJAX POST 到交友 API，並處理回應。
-     * param {object} options - 包含指令發送所需參數的物件
-     * param {string} options.url - 交友 API 的 URL (例如 /social_hub/relations/exec)
-     * param {object} options.command - 交友指令的 payload 物件
-     * param {number} options.command.actorUserId - 執行操作的使用者 ID
-     * param {number} options.command.targetUserId - 目標使用者 ID
-     * param {string} options.command.actionCode - 操作代碼 (e.g., "friend_request", "accept", "block")
-     * param {string} [options.command.nickname] - 暱稱 (僅用於 "set_nickname")
-     * returns {Promise<object>} 包含發送結果的 Promise，例如 { succeeded: true, noOp: false, newStatusCode: "ACCEPTED" } 或 { succeeded: false, reason: "錯誤訊息" }
+     * sendRelationCommand 函數
+     * 說明：此為核心函數，用於向後端發送關係操作命令。
+     *      - 接收一個包含 URL 和命令物件的 options 參數。
+     *      - 驗證命令物件中是否包含 actorUserId (執行操作的用戶ID)、targetUserId (目標用戶ID) 和 actionCode (操作代碼)。
+     *      - 顯示操作的狀態訊息。
+     *      - 讀取並包含 Anti-Forgery Token (如果存在)。
+     *      - 發送 JSON 格式的 POST 請求到指定的 URL。
+     *      - 處理伺服器回應，包括 HTTP 錯誤、非 JSON 回應和 JSON 解析錯誤。
+     *      - 返回一個 Promise，包含操作的成功狀態和相關資料 (如新的關係狀態碼)。
+     * @param {{url: string, command: {actorUserId:number, targetUserId:number, actionCode:string, nickname?:string}}} options - 關係命令的選項物件。
+     *      - `url`: 關係 API 的 URL 端點。
+     *      - `command`: 包含關係操作詳細資訊的物件。
+     *          - `actorUserId`: 執行關係操作的用戶 ID。
+     *          - `targetUserId`: 關係操作的目標用戶 ID。
+     *          - `actionCode`: 關係操作的代碼 (例如 'friend_request', 'accept', 'block')。
+     *          - `nickname`?: 可選，用戶暱稱。
+     * @returns {Promise<object>} 包含發送結果的 Promise。
+     *      - 成功時範例：`{ succeeded: true, noOp: false, newStatusCode: 'ACCEPTED', relationId: 123 }`
+     *      - 失敗時範例：`{ succeeded:false, reason:'錯誤訊息' }`
      */
     async function sendRelationCommand(options) {
-        const { url, command } = options;
-
-        // 最小前端驗證：檢查必填欄位
-        if (!command.actorUserId || !command.targetUserId || !command.actionCode) {
-            alert('actorUserId / targetUserId / actionCode 為必填。');
-            return { succeeded: false, reason: '缺少必填參數' };
+        const { url, command } = options || {};
+        // 驗證必要的命令參數
+        if (!command || !command.actorUserId || !command.targetUserId || !command.actionCode) {
+            alert('actorUserId / targetUserId / actionCode 為必填'); // 錯誤提示：缺少必要參數
+            return { succeeded: false, reason: 'MISSING_PARAMS' };
         }
 
-        // 顯示狀態訊息
-        const statusEl = $('#rel-status');
-        if (statusEl) statusEl.textContent = '送出中…';
+        // 獲取並更新頁面上的關係狀態顯示元素
+        const statusEl = document.getElementById('rel-status');
+        if (statusEl) statusEl.textContent = '送出中...'; // 顯示「送出中...」狀態
 
-        // 讀取 Anti-Forgery Token（若控制器有 [ValidateAntiForgeryToken]）
+        // 讀取 Anti-Forgery Token (用於防止 CSRF 攻擊)
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const token = tokenEl ? tokenEl.value : null;
 
-        // 組裝請求 Headers
+        // 組裝請求 Headers，指定內容類型為 JSON，並期望接收 JSON 回應
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         };
-        // 若後端有啟用 Anti-Forgery，就把 token 放在自訂 Header
+        // 如果存在 Anti-Forgery Token，則將其添加到請求頭中
         if (token) headers['RequestVerificationToken'] = token;
 
         try {
+            // 發送 AJAX POST 請求
             const res = await fetch(url, {
                 method: 'POST',
                 headers,
-                credentials: 'same-origin', // 帶上同站 Cookie
-                body: JSON.stringify(command)
+                credentials: 'same-origin', // 帶上同站 Cookie，用於身份驗證
+                body: JSON.stringify(command) // 將命令物件轉換為 JSON 字串作為請求體
             });
 
+            // 先以純文字形式獲取回應內容 (方便在錯誤時印出 HTML 片段進行排錯)
             const ct = res.headers.get('content-type') || '';
             const txt = await res.text();
 
+            // 檢查 HTTP 回應狀態碼是否為成功 (2xx)
             if (!res.ok) {
-                alert(`失敗 (HTTP ${res.status})：${txt.slice(0, 200)}`);
-                if (statusEl) statusEl.textContent = '';
+                alert(`失敗 (HTTP ${res.status})：${txt.slice(0, 200)}`); // 錯誤提示：HTTP 請求失敗
+                if (statusEl) statusEl.textContent = ''; // 清除狀態訊息
                 return { succeeded: false, reason: `HTTP ${res.status}: ${txt.slice(0, 200)}` };
             }
+            // 檢查伺服器回應的 Content-Type 是否為 JSON
             if (!ct.includes('application/json')) {
-                alert('伺服器回的不是 JSON（可能被轉址或打錯路由）。');
-                if (statusEl) statusEl.textContent = '';
-                return { succeeded: false, reason: '伺服器回應非 JSON' };
+                alert('伺服器未回傳 JSON（可能被轉向或出現 HTML）'); // 錯誤提示：伺服器回應非 JSON
+                if (statusEl) statusEl.textContent = ''; // 清除狀態訊息
+                return { succeeded: false, reason: 'NON_JSON' };
             }
 
-            const data = JSON.parse(txt); // { noOp, relationId, newStatusCode, reason }
+            let data;
+            try {
+                data = JSON.parse(txt);
+            } catch {
+                // JSON 解析失敗
+                if (statusEl) statusEl.textContent = ''; // 清除狀態訊息
+                return { succeeded: false, reason: 'PARSE_ERROR' };
+            }
+
+            // 構建關係資訊字串，用於顯示在狀態區域
             const info = [
                 `NoOp=${data.noOp}`,
-                `relationId=${data.relationId ?? '—'}`,
-                `status=${data.newStatusCode ?? '—'}`,
+                `relationId=${data.relationId ?? ''}`,
+                `status=${data.newStatusCode ?? ''}`,
                 data.reason ? `reason=${data.reason}` : null
             ].filter(Boolean).join(' | ');
 
-            alert('OK！' + info);
-            if (statusEl) statusEl.textContent = info;
-            return { succeeded: true, ...data };
+            // alert('OK：' + info); // 成功提示：顯示關係操作結果 (此行已被註釋)
+            if (statusEl) statusEl.textContent = info; // 在狀態區域顯示關係資訊
+            return { succeeded: true, ...data }; // 返回成功狀態和後端返回的資料
         } catch (err) {
-            alert('例外：' + err.message);
-            if (statusEl) statusEl.textContent = '';
+            // 捕獲網路請求或 JSON 解析過程中發生的例外
+            alert('例外：' + err.message); // 錯誤提示：發生例外
+            if (statusEl) statusEl.textContent = ''; // 清除狀態訊息
             return { succeeded: false, reason: err.message };
         }
     }
 
     // 將 sendRelationCommand 函式暴露到全域 window 物件，以便其他腳本可以直接呼叫。
+    // 範例：`window.sendRelationCommand({ url: '/social_hub/relations/exec', command: { actorUserId: 1, targetUserId: 2, actionCode: 'friend_request' } });`
     window.sendRelationCommand = sendRelationCommand;
 })();
