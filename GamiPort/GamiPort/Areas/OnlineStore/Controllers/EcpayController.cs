@@ -46,12 +46,36 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			return RedirectToAction("Success", "Checkout", new { area = "OnlineStore", orderCode });
 		}
 
+		// Areas/OnlineStore/Controllers/EcpayController.cs
 		[HttpPost("OrderResult")]
 		[IgnoreAntiforgeryToken]
-		public IActionResult OrderResultPost([FromForm] Dictionary<string, string> form)
+		public async Task<IActionResult> OrderResultPost([FromForm] Dictionary<string, string> form)
 		{
 			_logger.LogInformation("[ECPay OrderResult/POST] {raw}", Dump(form));
+
+			// ★ 本機測試很常只收到這支，因此同樣做驗簽＋嘗試入庫（與 Return/Notify 一致）
+			try
+			{
+				if (Verify(form))
+				{
+					// 會檢查 RtnCode==1、金額一致、時間解析，並把 PaymentStatus/PaymentAt 寫入
+					await TryMarkPaidAsync(form);
+				}
+				else
+				{
+					_logger.LogWarning("[ECPay OrderResult/POST] CheckMacValue verify failed.");
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "[ECPay OrderResult/POST] TryMarkPaidAsync error");
+				// 不擋前端導回，但會保留未付款狀態；使用者可以在成功頁按「重新付款」
+			}
+
 			var orderCode = form.GetValueOrDefault("MerchantTradeNo");
+			if (string.IsNullOrWhiteSpace(orderCode))
+				return RedirectToAction("OnePage", "Checkout", new { area = "OnlineStore" });
+
 			return RedirectToAction("Success", "Checkout", new { area = "OnlineStore", orderCode });
 		}
 

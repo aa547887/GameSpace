@@ -40,7 +40,7 @@
                 <form id="onepage-form" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage" method="post" novalidate>
                     @Html.AntiForgeryToken()
                     <!-- ★ 顯示通用錯誤（SP 回 0、配送/付款無效、購物車不可結帳 等會顯示在這） -->
-                    <div asp-validation-summary="All" class="alert alert-danger small mb-3" role="alert"></div>
+                    @* <div asp-validation-summary="All" class="alert alert-danger small mb-3" role="alert"></div> *@
                     <div class="mb-3">
                         <label asp-for="Recipient" class="form-label required"></label>
                         <input asp-for="Recipient" class="form-control" />

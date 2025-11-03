@@ -19,6 +19,7 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService
 using GamiPort.Infrastructure.Security;           // IAppCurrentUser
+using Microsoft.AspNetCore.Authorization;         // ★ NEW: 要求登入才可進入結帳
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -49,22 +50,79 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		[NonAction] public Task<IActionResult> PlaceOrder() => Task.FromResult<IActionResult>(NotFound());
 
 		// ───────────────────────────── 一頁式：GET ─────────────────────────────
+		[AllowAnonymous]
 		[HttpGet]
-		public async Task<IActionResult> OnePage()
+		public async Task<IActionResult> OnePage(string? selected)
 		{
+			// 未登入：導到登入後回跳到本頁（保留你原有邏輯）
+			if (!(User?.Identity?.IsAuthenticated ?? false))
+			{
+				var returnUrl = Url.Action(nameof(OnePage), "Checkout", new { area = "OnlineStore", selected })
+								?? "/OnlineStore/Checkout/OnePage";
+				var loginUrl =
+					Url.Action("Login", "Login", new { area = "Login", ReturnUrl = returnUrl }) ??
+					Url.Action("Index", "Login", new { area = "Login", ReturnUrl = returnUrl }) ??
+					"/Identity/Account/Login?ReturnUrl=" + Uri.EscapeDataString(returnUrl);
+				return Redirect(loginUrl);
+			}
+
+			// 解析勾選清單（product_id）
+			var selectedIds = (selected ?? "")
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+				.Where(id => id.HasValue).Select(id => id!.Value)
+				.Distinct().ToArray();
+
+			if (selectedIds.Length == 0)
+			{
+				// 沒選任何東西 → 回購物車
+				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
+			}
+
+			// 取 cartId / 預設配送與郵遞區號（保持你原方法）
 			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
-			var summary = await _cartSvc.GetSummaryAsync(cartId, initShipId, initZip, null);
-			ViewBag.Full = summary; // 放 DTO
+
+			// 抓整車摘要與明細（沿用你現有服務）
+			var full = await _cartSvc.GetFullAsync(cartId, initShipId, initZip, null);
+
+			// 篩選出「勾選」的明細
+			var selLines = full.Lines.Where(l => selectedIds.Contains(l.Product_Id)).ToList();
+			if (selLines.Count == 0)
+				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
+
+			// 用勾選覆蓋摘要（不改動你其他欄位，避免牽動 SQL/DTO）
+			var summary = full.Summary;
+			summary.Subtotal = selLines.Sum(x => x.Line_Subtotal);
+			summary.Subtotal_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Line_Subtotal);
+			summary.Item_Count_Total = selLines.Sum(x => x.Quantity);
+			summary.Item_Count_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Quantity);
+
+			// 若全為非實體 → 運費歸 0（常見站點邏輯；也不牽動 SQL）
+			if (summary.Item_Count_Physical == 0)
+			{
+				summary.Shipping_Fee = 0;
+			}
+
+			// 以你現有欄位重算 Grand_Total（不使用不存在的 Discount_Shipping）
+			summary.Grand_Total = summary.Subtotal
+								+ summary.Shipping_Fee
+								- summary.Discount
+								+ (summary.CouponDiscount ?? 0);
+
+			ViewBag.Full = summary;
+			TempData["__SelectedIds"] = string.Join(",", selectedIds); // 後續 PlaceOrder 可用
 
 			return View(new CheckoutOnePageVm
 			{
-				ShipMethodId = 1,
+				ShipMethodId = initShipId,
 				PayMethodId = 1,
 				Zipcode = initZip
 			});
 		}
 
+
 		// ────────────────── 一頁式：POST（驗證→建單→轉金流/或跳過） ──────────────────
+		[Authorize]
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> OnePage(CheckoutOnePageVm vm)
@@ -129,7 +187,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				return View(vm);
 			}
 
-			// ★ 4) 以「命名參數」呼叫 SP（避免參數順序不一致），任何例外或回 0 都把訊息丟到畫面
+			// ★ 4) 以「命名參數」呼叫 SP（避免參數順序不一致）
 			var pCartId = new SqlParameter("@CartId", cartId);
 			var pUserId = new SqlParameter("@UserId", userId);
 			var pShipMethodId = new SqlParameter("@ShipMethodId", vm.ShipMethodId);
@@ -176,7 +234,6 @@ EXEC dbo.usp_Order_CreateFromCart
 
 			if (newOrderId <= 0)
 			{
-				// ★ 5) 明確提示常見原因；畫面會顯示在 ValidationSummary
 				ModelState.AddModelError(string.Empty,
 					"下單失敗：可能是 (1) 購物車為空、(2) 配送/付款方式在資料庫不存在、(3) 參數順序不符或金額/欄位驗證未通過。");
 				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
@@ -184,24 +241,23 @@ EXEC dbo.usp_Order_CreateFromCart
 			}
 
 #if DEV_SKIP_PAYMENT
-    var order = await _db.SoOrderInfoes.FirstOrDefaultAsync(o => o.OrderId == newOrderId);
-    if (order != null) { order.PaymentStatus = "已付款"; order.PaymentAt = DateTime.UtcNow; await _db.SaveChangesAsync(); }
-    TempData["Msg"] = "（開發）已跳過金流並標記已付款。";
-    return RedirectToAction(nameof(Success), new { id = newOrderId });
+			var order = await _db.SoOrderInfoes.FirstOrDefaultAsync(o => o.OrderId == newOrderId);
+			if (order != null) { order.PaymentStatus = "已付款"; order.PaymentAt = DateTime.UtcNow; await _db.SaveChangesAsync(); }
+			TempData["Msg"] = "（開發）已跳過金流並標記已付款。";
+			return RedirectToAction(nameof(Success), new { id = newOrderId });
 #else
 			return RedirectToAction(nameof(StartPayment), new { id = newOrderId });
 #endif
 		}
 
-
-
 		// ─────────────────── 產生綠界表單並自動送出（含 noscript 備援） ───────────────────
+		[Authorize] // ★ NEW
 		[HttpGet]
 		public async Task<IActionResult> StartPayment(int id)
 		{
 #if DEV_SKIP_PAYMENT
-            TempData["Msg"] = "（開發）目前為跳過金流模式。";
-            return RedirectToAction(nameof(Success), new { id });
+			TempData["Msg"] = "（開發）目前為跳過金流模式。";
+			return RedirectToAction(nameof(Success), new { id });
 #else
 			var order = await _db.SoOrderInfoes
 				.Where(o => o.OrderId == id)
@@ -244,10 +300,13 @@ EXEC dbo.usp_Order_CreateFromCart
 		[HttpGet]
 		public async Task<IActionResult> Success(int id, string? orderCode)
 		{
+			// 允許以 orderCode 或 id 開啟
 			if (id <= 0 && !string.IsNullOrWhiteSpace(orderCode))
-				id = await _db.SoOrderInfoes.Where(o => o.OrderCode == orderCode).Select(o => o.OrderId).FirstOrDefaultAsync();
+				id = await _db.SoOrderInfoes.Where(o => o.OrderCode == orderCode)
+											.Select(o => o.OrderId).FirstOrDefaultAsync();
 			if (id <= 0) return RedirectToAction(nameof(OnePage));
 
+			// 撈訂單頭資料（維持匿名物件，方便 view 用 @model dynamic）
 			var order = await _db.SoOrderInfoes
 				.Where(o => o.OrderId == id)
 				.Select(o => new {
@@ -256,7 +315,7 @@ EXEC dbo.usp_Order_CreateFromCart
 					o.OrderDate,
 					o.OrderStatus,
 					o.PaymentStatus,
-					o.OrderTotal,
+					o.PaymentAt,
 					o.Subtotal,
 					o.DiscountTotal,
 					o.ShippingFee,
@@ -271,15 +330,22 @@ EXEC dbo.usp_Order_CreateFromCart
 				.FirstOrDefaultAsync();
 			if (order == null) return RedirectToAction(nameof(OnePage));
 
-			var itemCount = await _db.SoOrderItems.Where(i => i.OrderId == id).SumAsync(i => (int?)i.Quantity) ?? 0;
-
+			// 取付款方式名稱（若有）
 			string? payMethodName = null;
 			if ((order.PayMethodId ?? 0) > 0)
-				payMethodName = await _db.SoPayMethods.Where(p => p.PayMethodId == order.PayMethodId)
-													  .Select(p => p.MethodName).FirstOrDefaultAsync();
+				payMethodName = await _db.SoPayMethods
+										 .Where(p => p.PayMethodId == order.PayMethodId)
+										 .Select(p => p.MethodName)
+										 .FirstOrDefaultAsync();
 
-			ViewBag.ItemCount = itemCount;
+			// 取明細數量（可選）
+			var itemCount = await _db.SoOrderItems
+									 .Where(i => i.OrderId == id)
+									 .SumAsync(i => (int?)i.Quantity) ?? 0;
+
 			ViewBag.PayMethodName = payMethodName;
+			ViewBag.ItemCount = itemCount;
+
 			return View(order);
 		}
 

@@ -22,13 +22,11 @@
     :root {
         --checkout-bar-h: 64px;
     }
+
     @@media (max-width:576px) {
-        :root
-
-    {
-        --checkout-bar-h: 72px;
-    }
-
+        :root {
+            --checkout-bar-h: 72px;
+        }
     }
 
     /* 外框容器，內容少時固定在清單下方，要與表格空一行 */
@@ -107,8 +105,10 @@
     <!-- ★ 回復：結帳方框（內容少：貼清單下；內容多：懸浮底部） -->
     <div id="checkoutBar" class="checkout-bar is-static">
         <div class="bar-inner">
+            <!-- ★新增：顯示勾選的數量總和（不加任何樣式、不影響版面） -->
+            <div id="selCountBox">已選擇的商品數量 : <span id="selCount">0</span></div>
             <div class="bar-total">結帳總金額：<span id="barTotal">$0</span></div>
-            <a class="btn btn-primary btn-lg" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage">前往結帳</a>
+            <form id="goCheckoutForm" method="get" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage" class="d-inline"><input type="hidden" name="selected" id="selIds" /><button id="btnCheckout" type="submit" class="btn btn-primary btn-lg" disabled>前往結帳</button></form>
         </div>
     </div>
 </div>
@@ -285,18 +285,34 @@
         }
 
         /* ================ 勾選 → 計算總額（只加總勾選） ================ */
-        function updateCheckedTotal(){
+                function updateCheckedTotal(){
           const tbody=document.getElementById('cartTableBody');
           let sum=0;
+          let anyChecked=false;
+          let qtySum = 0;
           tbody.querySelectorAll('tr').forEach(tr=>{
             const cb=tr.querySelector('.row-check');
             if(cb && cb.checked){
+              anyChecked=true;
               const sub = Number(tr.dataset.subtotal ?? 0);
               sum += (isFinite(sub)?sub:0);
+                const qi = tr.querySelector('.qty-input');
+        const qv = parseInt(qi ? qi.value : '0', 10);
+        qtySum += (Number.isFinite(qv) ? qv : 0);
             }
           });
-          document.getElementById('barTotal').textContent = '$' + money(sum);
+          const bar = document.getElementById('barTotal');
+          if (bar) bar.textContent = '$' + money(sum);
+
+                const qel = document.getElementById('selCount');
+        if (qel) qel.textContent = String(qtySum);
+
+
+          // ★ 勾選控制結帳按鈕（有勾選且金額>0 才啟用；若允許$0金額也能結帳，則改成只看 anyChecked）
+          const btn = document.getElementById('btnCheckout');
+          if (btn) btn.disabled = !(anyChecked && sum > 0);
         }
+
 
         /* ================ 全選按鈕（文字不變、同一顆切換） ================ */
         document.getElementById('btnToggleAll').addEventListener('click', ()=>{
@@ -379,3 +395,56 @@
         document.addEventListener('DOMContentLoaded', loadFull);
     </script>
 }
+
+
+<script>
+    // 勾選結帳（最小入侵）：不改你的 load/render，只處理勾選與送出
+    (function(){
+      const tbody = document.getElementById('cartTableBody');
+
+      function getSelectedIds(){
+        const ids = [];
+        if (!tbody) return ids;
+        tbody.querySelectorAll('tr').forEach(tr=>{
+          const cb = tr.querySelector('.row-check');
+          if (cb && cb.checked){
+            const pid = parseInt(tr.dataset.productId, 10);
+            if (Number.isFinite(pid)) ids.push(pid);
+          }
+        });
+        return ids;
+      }
+
+      function updateCheckoutButton(){
+        const btn = document.getElementById('btnCheckout');
+        if (!btn) return;
+        btn.disabled = (getSelectedIds().length === 0);
+      }
+
+      // 表格內 checkbox 變動 → 更新金額（用你原本的函式）＋按鈕狀態
+      if (tbody){
+        tbody.addEventListener('change', function(e){
+          if (e.target && e.target.classList && e.target.classList.contains('row-check')){
+            try{ updateCheckedTotal && updateCheckedTotal(); }catch{}
+            updateCheckoutButton();
+          }
+        });
+      }
+
+      // 送出時夾帶勾選清單；無勾選則阻止送出
+      const form = document.getElementById('goCheckoutForm');
+      if (form){
+        form.addEventListener('submit', function(e){
+          const ids = getSelectedIds();
+          if (ids.length === 0){ e.preventDefault(); return; }
+          const hid = document.getElementById('selIds');
+          if (hid) hid.value = ids.join(',');
+        });
+      }
+
+      // 初始與重繪後可手動呼叫
+      window.__cart_updateCheckoutButton = updateCheckoutButton;
+      // 初始進頁時做一次（不會影響你的懸浮條樣式）
+      try{ document.addEventListener('DOMContentLoaded', updateCheckoutButton); }catch{}
+    })();
+</script>
