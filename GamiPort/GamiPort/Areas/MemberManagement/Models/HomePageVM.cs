@@ -28,6 +28,8 @@ namespace GamiPort.Areas.MemberManagement.ViewModels
 		public int VisitCount { get; set; }
 		public string? HomeCode { get; set; }
 
+		public bool IsPublic { get; set; }
+
 		// Posts
 		public List<HomePostRowVM> Posts { get; set; } = new();
 

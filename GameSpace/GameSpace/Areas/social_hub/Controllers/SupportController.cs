@@ -356,18 +356,24 @@ namespace GameSpace.Areas.social_hub.Controllers
 		#endregion
 
 		#region Ticket details / Chat
-		[HttpGet]
-		public async Task<IActionResult> Ticket(int id, int page = 1)
-		{
-			var meId = ResolveManagerId();
-			if (!meId.HasValue) return Unauthorized();
-
-			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
-			if (t == null) return NotFound();
-
-			// 未指派 → 導回
-			if (t.AssignedManagerId == null)
-			{
+		        [HttpGet]
+		        public async Task<IActionResult> Ticket(int id, int page = 1)
+		        {
+		            var meId = ResolveManagerId();
+		            if (!meId.HasValue) return Unauthorized();
+		
+		            var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
+		            if (t == null) return NotFound();
+		
+		            // [Gemini] 獨立找出使用者的第一則訊息，並傳到 View
+            var firstMessage = await _db.SupportTicketMessages.AsNoTracking()
+                .Where(m => m.TicketId == id && m.SenderUserId != null)
+                .OrderBy(m => m.SentAt).ThenBy(m => m.MessageId) // 穩定排序：先依 SentAt，再以 MessageId 當平手序，確保最早一筆
+                .FirstOrDefaultAsync();
+            ViewBag.InitialContent = firstMessage?.MessageText; // 僅作詳情顯示，非對話串
+		
+		            // 未指派 → 導回
+		            if (t.AssignedManagerId == null)			{
 				if (await _perm.HasCsAssignPermissionAsync(meId.Value))
 					return RedirectToAction(nameof(Reassign), new { id, returnUrl = Url.Action(nameof(Index), new { area = "social_hub", tab = "unassigned" }) });
 
@@ -777,32 +783,40 @@ namespace GameSpace.Areas.social_hub.Controllers
 						  : (Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Ticket), new { id }));
 		}
 
-		[HttpGet]
-		public async Task<IActionResult> TicketInfo(int id, bool modal = false)
-		{
-			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
-			if (t == null) return NotFound();
+		        [HttpGet]
+		        public async Task<IActionResult> TicketInfo(int id, bool modal = false)
+		        {
+		            var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
+		            if (t == null) return NotFound();
+		
+		            // [Gemini] 找出使用者的第一則訊息
+            var firstMessage = await _db.SupportTicketMessages.AsNoTracking()
+                .Where(m => m.TicketId == id && m.SenderUserId != null)
+                .OrderBy(m => m.SentAt).ThenBy(m => m.MessageId) // 穩定排序：先依 SentAt，再以 MessageId 當平手序，確保最早一筆
+                .FirstOrDefaultAsync();
 
-			var vm = new TicketInfoVM
-			{
-				TicketId = t.TicketId,
-				UserId = t.UserId,
-				Subject = t.Subject ?? "",
-				AssignedManagerId = t.AssignedManagerId,
-				CreatedAt = t.CreatedAt,
-				LastMessageAt = t.LastMessageAt,
-				IsClosed = t.IsClosed,
-				ClosedAt = t.ClosedAt,
-				CloseNote = t.CloseNote
-			};
-
-			if (modal)
-			{
-				ViewData["Partial"] = "_TicketInfo";
-				return View("~/Areas/social_hub/Views/Shared/ModalWrapper.cshtml", vm);
-			}
-			return RedirectToAction(nameof(Ticket), new { id });
-		}
+            ViewBag.InitialContent = firstMessage?.MessageText; // 僅作詳情顯示，非對話串
+		
+		            var vm = new TicketInfoVM
+		            {
+		                TicketId = t.TicketId,
+		                UserId = t.UserId,
+		                Subject = t.Subject ?? "",
+		                AssignedManagerId = t.AssignedManagerId,
+		                CreatedAt = t.CreatedAt,
+		                LastMessageAt = t.LastMessageAt,
+		                IsClosed = t.IsClosed,
+		                ClosedAt = t.ClosedAt,
+		                CloseNote = t.CloseNote
+		            };
+		
+		            if (modal)
+		            {
+		                ViewData["Partial"] = "_TicketInfo";
+		                return View("~/Areas/social_hub/Views/Shared/ModalWrapper.cshtml", vm);
+		            }
+		            return RedirectToAction(nameof(Ticket), new { id });
+		        }		
 		#endregion
 	}
 }

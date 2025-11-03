@@ -1,0 +1,118 @@
+@*
+    _FriendList.cshtml - 好友列表
+    說明：一個簡單的好友列表，顯示當前使用者的所有好友。
+    暫時用不到
+*@
+@{
+    var friendsApi = Url.Action("Friends", "RelationsQuery", new { area = "social_hub", onlyAccepted = true, take = 200 });
+}
+
+<style>
+    .friend-list-container {
+        /* 容器樣式 */
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 14px;
+        padding: 10px;
+    }
+
+    .friend-list-body {
+        /* 列表高度，大約是 5 個好友的高度 (5 * 60px) */
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .friend-item {
+        /* 每個好友的樣式 */
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .friend-avatar-placeholder {
+        /* 頭像佔位圓點 */
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ccc;
+        margin-right: 15px;
+    }
+
+    .friend-info {
+        /* 好友資訊 */
+    }
+
+    .friend-name {
+        /* 好友名字 */
+        font-weight: bold;
+    }
+
+    .friend-id {
+        /* 好友 ID */
+        color: #888;
+        font-size: 0.9em;
+    }
+</style>
+
+<div class="friend-list-container">
+    <h4>我的好友</h4>
+    <div class="friend-list-body" id="friendListBody">
+        <!-- 好友列表將會動態載入於此 -->
+    </div>
+</div>
+
+<script>
+    (async () => {
+        const friendListBody = document.getElementById('friendListBody');
+
+        function createFriendItem(friend) {
+            const item = document.createElement('div');
+            item.className = 'friend-item';
+
+            const id = friend.friendUserId || friend.userId;
+            const name = friend.friendName || friend.fullName || `好友 #${id}`;
+
+            item.innerHTML = `
+                <div class="friend-avatar-placeholder"></div>
+                <div class="friend-info">
+                    <div class="friend-name">${name}</div>
+                    <div class="friend-id">ID: ${id}</div>
+                </div>
+            `;
+            return item;
+        }
+
+        /**
+         * 載入好友列表
+         */
+        async function loadFriends() {
+            friendListBody.innerHTML = '<div>讀取中...</div>';
+            try {
+                const response = await fetch('@friendsApi');
+                if (!response.ok) {
+                    throw new Error('無法讀取好友列表');
+                }
+                const friends = await response.json();
+
+                friendListBody.innerHTML = '';
+                if (friends.length === 0) {
+                    friendListBody.innerHTML = '<div>尚無好友</div>';
+                    return;
+                }
+
+                friends.forEach(friend => {
+                    const friendItem = createFriendItem(friend);
+                    friendListBody.appendChild(friendItem);
+                });
+
+            } catch (error) {
+                console.error('載入好友列表時發生錯誤:', error);
+                friendListBody.innerHTML = '<div>讀取失敗</div>';
+            }
+        }
+
+        // 立即載入好友
+        await loadFriends();
+    })();
+</script>
