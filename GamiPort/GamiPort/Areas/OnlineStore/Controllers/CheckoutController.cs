@@ -6,23 +6,25 @@
 //#define DEV_SKIP_PAYMENT
 // ======================================================================
 
+using GamiPort.Areas.OnlineStore.DTO;
+using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService（真實金流用）
+using GamiPort.Areas.OnlineStore.Services;
+using GamiPort.Areas.OnlineStore.Utils;           // AnonCookie
+using GamiPort.Areas.OnlineStore.ViewModels;
+using GamiPort.Infrastructure.Security;           // ★ NEW: IAppCurrentUser
+using GamiPort.Models;                            // GameSpacedatabaseContext
+using Microsoft.AspNetCore.Http;                  // Session
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;                   // for usp_Order_CreateFromCart
+using Microsoft.EntityFrameworkCore;              // EF Core
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Data;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;                  // Session
-using GamiPort.Areas.OnlineStore.Services;
-using GamiPort.Areas.OnlineStore.ViewModels;
-using GamiPort.Areas.OnlineStore.DTO;
-using GamiPort.Areas.OnlineStore.Utils;           // AnonCookie
-using Microsoft.EntityFrameworkCore;              // EF Core
-using GamiPort.Models;                            // GameSpacedatabaseContext
-using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Data.SqlClient;                   // for usp_Order_CreateFromCart
-using System.Data;
-using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService（真實金流用）
-using GamiPort.Infrastructure.Security;           // ★ NEW: IAppCurrentUser
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -33,6 +35,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		private readonly ILookupService _lookup;
 		private readonly GameSpacedatabaseContext _db;
 		private readonly IAppCurrentUser _me;
+		private readonly SqlCartService _cart;
 
 		private static readonly Regex ZipRegex = new(@"^\d{3}(\d{2})?$", RegexOptions.Compiled);
 
@@ -40,7 +43,8 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			ICartService cartSvc,
 			ILookupService lookup,
 			GameSpacedatabaseContext db,
-			IAppCurrentUser me)                   // ★ NEW
+			IAppCurrentUser me
+			)                   // ★ NEW
 		{
 			_cartSvc = cartSvc;
 			_lookup = lookup;
@@ -414,9 +418,14 @@ EXEC dbo.usp_Order_CreateFromCart
 		{
 			var (cartId, _, _) = await GetDefaultsAsync();
 			if (!await _lookup.ShipMethodExistsAsync(shipMethodId)) shipMethodId = 1;
+
+			// 郵遞區號簡單保護
 			if (string.IsNullOrWhiteSpace(destZip) || !ZipRegex.IsMatch(destZip)) destZip = "100";
+
 			var summary = await _cartSvc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-			ViewBag.Full = new { Summary = summary };
+
+			// ★ 關鍵：給 ViewBag.Full 的型別 == CartSummaryDto（不要再包匿名物件）
+			ViewBag.Full = summary;
 		}
 
 		private static string Append(string? msg, string add) => string.IsNullOrEmpty(msg) ? add : $"{msg}、{add}";
@@ -466,6 +475,94 @@ EXEC dbo.usp_Order_CreateFromCart
 			HttpContext.Session.SetString(CartKey, cartId.ToString());
 			return (cartId, 1, "100");
 		}
+		// GET: /OnlineStore/Checkout/OnePage
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> OnePage()
+		{
+			// 1) 取得預設參數（你原有的工具方法，若沒有請改成固定值 1 / "320"）
+			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
 
+			// 2) 取摘要給右側 _CheckoutSummary（重要：直接給 DTO，不要包匿名物件）
+			var summary = await _cartSvc.GetSummaryAsync(cartId, initShipId, initZip, null);
+			ViewBag.Full = summary;
+
+			// 3) 初始化表單（本版固定：宅配=1、信用卡=1）
+			return View(new CheckoutOnePageVm
+			{
+				ShipMethodId = 1,
+				PayMethodId = 1
+			});
+		}
+
+
+
+		// ─────────────────────────────────────────────────────────
+		// 一頁式：POST
+		// 表單驗證通過 → 組合地址 → （A）導向 Review（沿用你現有流程）
+		//                                或（B）直接建立訂單（打 SP / Service）
+		// ─────────────────────────────────────────────────────────
+		// POST: /OnlineStore/Checkout/OnePage
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> OnePage(CheckoutOnePageVm vm)
+		{
+			if (!ModelState.IsValid)
+			{
+				// 驗證失敗時也要補摘要，不然右側 partial 會收不到資料
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
+				return View(vm);
+			}
+
+			// 1) 將地址合併（與你 Step1/Review 期望格式一致）
+			string fullAddress1 = $"{vm.City}{vm.District}{vm.Address1}";
+
+			// 2) 與舊的三步驟流程對齊：把資料塞進 TempData["Step1"]["Step2"]
+			TempData["Step1"] = System.Text.Json.JsonSerializer.Serialize(new CheckoutStep1Vm
+			{
+				Recipient = vm.Recipient,
+				Phone = vm.Phone,
+				DestZip = vm.Zipcode,        // 由前端行政區選擇自動帶入
+				Address1 = fullAddress1,
+				Address2 = null,
+				ShipMethodId = vm.ShipMethodId
+			});
+
+			TempData["Step2"] = System.Text.Json.JsonSerializer.Serialize(new CheckoutStep2Vm
+			{
+				PayMethodId = vm.PayMethodId,
+				CouponCode = vm.CouponCode
+			});
+
+			// 3) 直接沿用你既有 Review → PlaceOrder 流程
+			return RedirectToAction(nameof(Review));
+		}
+
+		// 取得全台縣市（由資料表 SO_RemoteZipcodes）
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> Cities()
+		{
+			// 沒有 DbSet 也沒關係，直接 Raw SQL 取 distinct
+			var cities = await _db.Database
+				.SqlQueryRaw<string>("SELECT DISTINCT city FROM dbo.SO_RemoteZipcodes ORDER BY city")
+				.ToListAsync();
+
+			return Json(cities);
+		}
+
+		// 依縣市取行政區 + 郵遞區號
+		[HttpGet, AllowAnonymous]
+		public async Task<IActionResult> Districts(string city)
+		{
+			if (string.IsNullOrWhiteSpace(city)) return Json(Array.Empty<object>());
+
+			var rows = await _db.Database
+				.SqlQueryRaw<(string district, string zipcode)>(
+					"SELECT district, zipcode FROM dbo.SO_RemoteZipcodes WHERE city = {0} ORDER BY district", city)
+				.ToListAsync();
+
+			return Json(rows.Select(x => new { district = x.district, zipcode = x.zipcode }));
+		}
 	}
+
 }
+
