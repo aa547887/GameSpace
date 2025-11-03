@@ -44,7 +44,9 @@ namespace GamiPort.Areas.OnlineStore.ViewModels
 		[Display(Name = "付款方式")]
 		public int PayMethodId { get; set; } = 1; // 信用卡
 
-		// 備用：之後綁發票、Email 等
-		public string CouponCode { get; set; } // 可留空
+		// 改成可選：
+		[Display(Name = "優惠碼")]
+		[StringLength(50)]
+		public string? CouponCode { get; set; }
 	}
 }
