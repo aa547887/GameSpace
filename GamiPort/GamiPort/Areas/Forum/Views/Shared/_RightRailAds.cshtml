@@ -8,10 +8,13 @@
     </div>
 </aside>
 
+
 <!-- 直接在 partial 中用 ES Module 載入（可行） -->
 <script type="module">
     import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js';
     import LeaderboardWidget from '/js/forum/leaderboard-widget.js';
+     
+   
 
     const el = document.getElementById('leaderboard-app');
     const limit = Number(el?.dataset?.limit ?? 10);
