@@ -1,4 +1,4 @@
-﻿// =======================
+// =======================
 // Program.cs（純 Cookie 版；不使用 Identity，不會建立 AspNetUsers）
 // 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
 // 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
@@ -11,6 +11,8 @@
 // 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
+using GamiPort.Areas.Forum.Services.Adminpost;
+using GamiPort.Areas.Forum.Services.Leaderboard;
 using GamiPort.Areas.Forum.Services.Me;
 using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
 // ★ 新增：ECPay 服務命名空間
@@ -23,7 +25,6 @@ using GamiPort.Areas.social_hub.Services.Application;
 
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
-using GamiPort.Infrastructure.Time;        // ★ IAppClock / AppClock（時間轉換）
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
@@ -36,17 +37,30 @@ namespace GamiPort
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+<<<<<<< Updated upstream
+			string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+			// 連線字串
+			var gameSpaceConn =
+	            Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+	            Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+	            Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+	            throw new InvalidOperationException("No valid DB connection string found.");
+=======
+            string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
             // 連線字串
             var gameSpaceConn =
-                builder.Configuration.GetConnectionString("GameSpace")
-                ?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-                ?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+                Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+                Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+                Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+                throw new InvalidOperationException("No valid DB connection string found.");
+>>>>>>> Stashed changes
 
-            // ------------------------------------------------------------
-            // DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
-            // ------------------------------------------------------------
-            builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
+			// ------------------------------------------------------------
+			// DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
+			// ------------------------------------------------------------
+			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
             {
                 options.UseSqlServer(gameSpaceConn);
             });
@@ -119,7 +133,8 @@ namespace GamiPort
             builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
                                        GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
             builder.Services.AddScoped<IMeContentService, MeContentService>();
-
+            builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+            builder.Services.AddScoped<IPostsService, PostsService>();
 
             // ------------------------------------------------------------
             // MVC / RazorPages / JSON 命名策略 & Anti-forgery
@@ -156,6 +171,12 @@ namespace GamiPort
             // ------------------------------------------------------------
             builder.Services.AddScoped<IAppCurrentUser, AppCurrentUser>();
 
+<<<<<<< Updated upstream
+
+
+=======
+
+            // ------------------------------------------------------------
             // ★ 時間轉換服務：UTC ↔ UTC+8（台灣時間）
             // 使用 Taipei Standard Time（Asia/Taipei 時區）
             builder.Services.AddSingleton<IAppClock>(sp =>
@@ -163,14 +184,21 @@ namespace GamiPort
                 var taiwanTz = TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time");
                 return new AppClock(taiwanTz);
             });
+            // ------------------------------------------------------------
 
+
+            // ------------------------------------------------------------
             // MiniGame Area 服務（簽到、寵物、遊戲、錢包等）
             builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.ISignInService, GamiPort.Areas.MiniGame.Services.SignInService>();
             builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IPetService, GamiPort.Areas.MiniGame.Services.PetService>();
             builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IWalletService, GamiPort.Areas.MiniGame.Services.WalletService>();
             builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IFuzzySearchService, GamiPort.Areas.MiniGame.Services.FuzzySearchService>();
             builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IGamePlayService, GamiPort.Areas.MiniGame.Services.GamePlayService>();
+            // ------------------------------------------------------------
 
+
+>>>>>>> Stashed changes
+            // ------------------------------------------------------------
             // SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
             // ------------------------------------------------------------
             builder.Services.AddSignalR(options =>
