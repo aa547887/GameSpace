@@ -24,18 +24,22 @@
             <div class="row g-4">
                 <div class="col-12 col-lg-4 text-center">
                     @{
-                        var defaultAvatar = Url.Content("~/images/預設人物.png"); // ← 放在 wwwroot/images
-                        string? imgSrc = null;
+                        var defaultAvatar = Url.Content("~/images/預設人物.png"); // 放在 wwwroot/images
+                        string imgSrc;
 
                         if (Model?.UserPicture != null && Model.UserPicture.Length > 0)
                         {
                             var b64 = Convert.ToBase64String(Model.UserPicture);
                             imgSrc = $"data:image/*;base64,{b64}";
                         }
+                        else
+                        {
+                            imgSrc = defaultAvatar; // ← 使用你宣告的預設圖
+                        }
                     }
-                    <img src="@(imgSrc ?? "https://via.placeholder.com/260x260?text=No+Image")"
+                    <img src="@imgSrc"
                          alt="頭像" class="rounded-circle mb-2"
-                         style="width: 260px; height: 260px; object-fit: cover;" />
+                         style="width: 120px; height: 120px; object-fit: cover;" />
                     <div class="text-muted">頭像</div>
                 </div>
 
@@ -60,11 +64,11 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Email</label>
+                            <label class="form-label">信箱</label>
                             <div class="form-control-plaintext">@Model.Email</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">身分證/識別碼</label>
+                            <label class="form-label">身分證字號</label>
                             <div class="form-control-plaintext">@Model.IdNumber</div>
                         </div>
 
