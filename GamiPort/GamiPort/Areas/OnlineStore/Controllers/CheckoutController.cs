@@ -52,9 +52,9 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		// ───────────────────────────── 一頁式：GET ─────────────────────────────
 		[AllowAnonymous]
 		[HttpGet]
+		// ② 一頁式 GET：計算「只含勾選」的摘要後，把 selectedIds 給 ViewBag
 		public async Task<IActionResult> OnePage(string? selected)
 		{
-			// 未登入：導到登入後回跳到本頁（保留你原有邏輯）
 			if (!(User?.Identity?.IsAuthenticated ?? false))
 			{
 				var returnUrl = Url.Action(nameof(OnePage), "Checkout", new { area = "OnlineStore", selected })
@@ -66,60 +66,36 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				return Redirect(loginUrl);
 			}
 
-			// 解析勾選清單（product_id）
 			var selectedIds = (selected ?? "")
 				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.Select(s => int.TryParse(s, out var id) ? id : (int?)null)
 				.Where(id => id.HasValue).Select(id => id!.Value)
 				.Distinct().ToArray();
-
 			if (selectedIds.Length == 0)
-			{
-				// 沒選任何東西 → 回購物車
 				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
-			}
 
-			// 取 cartId / 預設配送與郵遞區號（保持你原方法）
 			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
-
-			// 抓整車摘要與明細（沿用你現有服務）
 			var full = await _cartSvc.GetFullAsync(cartId, initShipId, initZip, null);
 
-			// 篩選出「勾選」的明細
+			// ★ 只用「被勾選」的明細覆寫摘要（你原本就有，保留）
 			var selLines = full.Lines.Where(l => selectedIds.Contains(l.Product_Id)).ToList();
-			if (selLines.Count == 0)
-				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
-
-			// 用勾選覆蓋摘要（不改動你其他欄位，避免牽動 SQL/DTO）
 			var summary = full.Summary;
 			summary.Subtotal = selLines.Sum(x => x.Line_Subtotal);
 			summary.Subtotal_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Line_Subtotal);
 			summary.Item_Count_Total = selLines.Sum(x => x.Quantity);
 			summary.Item_Count_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Quantity);
+			if (summary.Item_Count_Physical == 0) summary.Shipping_Fee = 0; // 你原本的規則
 
-			// 若全為非實體 → 運費歸 0（常見站點邏輯；也不牽動 SQL）
-			if (summary.Item_Count_Physical == 0)
-			{
-				summary.Shipping_Fee = 0;
-			}
-
-			// 以你現有欄位重算 Grand_Total（不使用不存在的 Discount_Shipping）
-			summary.Grand_Total = summary.Subtotal
-								+ summary.Shipping_Fee
-								- summary.Discount
-								+ (summary.CouponDiscount ?? 0);
+			summary.Grand_Total = summary.Subtotal + summary.Shipping_Fee - (summary.CouponDiscount ?? 0);
 
 			ViewBag.Full = summary;
-			TempData["__SelectedIds"] = string.Join(",", selectedIds); // 後續 PlaceOrder 可用
 
-			return View(new CheckoutOnePageVm
-			{
-				ShipMethodId = initShipId,
-				PayMethodId = 1,
-				Zipcode = initZip
-			});
+			// ★ 提供給右側 DataTable 使用（讓 AJAX 也只抓被勾選的品項）
+			ViewBag.SelectedIdsStr = string.Join(",", selectedIds);
+			TempData["__SelectedIds"] = ViewBag.SelectedIdsStr;
+
+			return View(new CheckoutOnePageVm { ShipMethodId = initShipId, PayMethodId = 1, Zipcode = initZip });
 		}
-
 
 		// ────────────────── 一頁式：POST（驗證→建單→轉金流/或跳過） ──────────────────
 		[Authorize]
@@ -386,17 +362,17 @@ EXEC dbo.usp_Order_CreateFromCart
 		}
 		private static string Append(string? msg, string add) => string.IsNullOrEmpty(msg) ? add : $"{msg}、{add}";
 
+		// CheckoutController.cs
+		// ① 這段我保留你原本邏輯，只把 cartId 來源統一成 EnsureCartIdAsync：
+		// 確保登入/匿名都走服務計算後的「最終 cartId」，並回寫 Session
 		private async Task<(Guid cartId, int initShipId, string initZip)> GetDefaultsAsync()
 		{
-			const string CartKey = "CartId";
-			if (Guid.TryParse(HttpContext.Session.GetString(CartKey), out var cached) && cached != Guid.Empty)
-				return (cached, 1, "100");
-
 			var anon = AnonCookie.GetOrSet(HttpContext);
 			var userId = await _me.GetUserIdAsync();
-			var cartId = await _cartSvc.EnsureCartIdAsync(userId > 0 ? userId : (int?)null, anon);
 
-			HttpContext.Session.SetString(CartKey, cartId.ToString());
+			var cartId = await _cartSvc.EnsureCartIdAsync(userId > 0 ? userId : (int?)null, anon);
+			HttpContext.Session.SetString("CartId", cartId.ToString()); // ★ 關鍵
+
 			return (cartId, 1, "100");
 		}
 		// ★ 新增：回傳目前會員三種券（未使用、未刪除）的可用張數

@@ -11,8 +11,11 @@
     var isFreeShip = (Model?.Item_Count_Physical ?? 0) == 0 || baseShip <= 0m;
     string ShipText() => isFreeShip ? "免運" : baseShip.ToString("N0");
 }
+@{
+    var selectedStr = (ViewBag?.SelectedIdsStr as string) ?? "";
+}
 
-<div id="summaryBox" class="card">
+<div id="summaryBox" class="card" data-selected="@selectedStr">
     <div class="card-header">結帳摘要</div>
 
     <div class="card-body">
@@ -140,6 +143,18 @@
 
 <script>
     (function(){
+      // ---- 讀取「被勾選的 product_id 清單」：先看 #summaryBox 的 data-selected，沒有就讀 URL ?selected= ----
+      try {
+        var _box = document.getElementById('summaryBox');
+        var _selFromBox = _box && _box.dataset ? (_box.dataset.selected || '') : '';
+        var _selFromUrl = (function(){
+          try { return new URLSearchParams(location.search).get('selected') || ''; }
+          catch { return ''; }
+        })();
+        // 供其它腳本使用（例如組 AJAX URL 時帶上 selected）
+        window.__ckSelected = (_selFromBox || _selFromUrl || '').trim();
+      } catch { window.__ckSelected = ''; }
+
       // ---- 金額基準 ----
       const base = {
         subtotal: @((decimal)baseSubtotal),
@@ -269,13 +284,6 @@
         }
       }catch{}
     })();
-        (function ensureDT(){
-      if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) return;
-      var H = document.head || document.getElementsByTagName('head')[0];
-      var jq = document.createElement('script'); jq.src = 'https://code.jquery.com/jquery-3.7.1.min.js'; H.appendChild(jq);
-      var dt = document.createElement('script'); dt.src = 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js'; H.appendChild(dt);
-      var cs = document.createElement('link');   cs.rel = 'stylesheet'; cs.href = 'https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css'; H.appendChild(cs);
-    })();
 </script>
 <!-- DataTables 載入器（已有 jQuery/DT 則自動略過） -->
 <script>
@@ -321,14 +329,16 @@
 
       // ③ 從你現有的 API 讀取明細（只讀，不碰優惠券與金額）
       function buildFullUrl(){
-        var shipEl = document.querySelector('[name="ShipMethodId"]');
-        var zipEl  = document.querySelector('[name="Zipcode"], [name="DestZip"]');
-        var shipId = shipEl ? shipEl.value : 1;
-        var zip    = zipEl  ? zipEl.value  : '100';
-        return '/OnlineStore/Cart/Full?shipMethodId=' + encodeURIComponent(shipId)
-             + '&destZip=' + encodeURIComponent(zip)
-             + '&couponCode=';
-      }
+      var shipEl = document.querySelector('[name="ShipMethodId"], [name="ShipMethod"]');
+      var zipEl  = document.querySelector('[name="Zipcode"], [name="DestZip"]');
+      var shipId = shipEl ? shipEl.value : 1;
+      var zip    = zipEl  ? zipEl.value  : '100';
+      var sel    = (window.__ckSelected || (document.getElementById('summaryBox')?.dataset.selected || '')).trim(); // ★ 新增
+      return '/OnlineStore/Cart/Full?shipMethodId=' + encodeURIComponent(shipId)
+           + '&destZip=' + encodeURIComponent(zip)
+           + '&couponCode='
+           + '&selected=' + encodeURIComponent(sel); // ★ 新增
+    }
 
       function renderRows(items){
         var tb = document.querySelector('#dt-summary-items tbody'); if(!tb) return;
@@ -356,7 +366,7 @@
           pagingType: 'simple',      // 只有上一頁 / 下一頁
           deferRender: true,
           autoWidth: false,
-          dom: 'pt',                 // 只顯示表格 + 分頁器
+          dom: 'tp',                 // 只顯示表格 + 分頁器
           language: {
             zeroRecords: '沒有符合的資料',
             paginate: { previous: '上一頁', next: '下一頁' }

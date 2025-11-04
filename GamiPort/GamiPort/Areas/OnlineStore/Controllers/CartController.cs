@@ -45,15 +45,24 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			return null;
 		}
 
-		// 內部共用：確保 cartId（若沒有匿名 cookie 就會寫入）
+		// ★ 放在 CartController 類別內（私有方法）
+		// 任何需要 cartId 的 Action 都呼叫這個，確保會先做合併
 		private async Task<Guid> EnsureCartAsync()
 		{
-			var userId = GetUserIdOrNull();
-			var anon = AnonCookie.GetOrSet(HttpContext);
-			var cartId = await _cart.EnsureCartIdAsync(userId, anon);
+			// 1) 取得匿名 cookie 與目前使用者
+			var anon = AnonCookie.GetOrSet(HttpContext);      // 仍保留你原本的工具
+			var userId = await _me.GetUserIdAsync();          // 你的 IAppCurrentUser
 
-			// ★ 關鍵：回寫 Session，統一各頁能讀到同一個 cart
+			// 2) 交給服務決定是否需要合併並回傳「最終 cartId」
+			//    規則：userId>0 就把 anon 購物車合併進會員車，否則維持匿名車
+			var cartId = await _cart.EnsureCartIdAsync(userId > 0 ? userId : (int?)null, anon);
+
+			// 3) 把「最終 cartId」回寫到 Session（修掉登入後仍拿舊車的問題）
 			HttpContext.Session.SetString("CartId", cartId.ToString());
+
+			//// 4) 若已登入，清掉匿名 cookie（避免下一次又被判定成需要合併）
+			//try { AnonCookie.Clear(); } catch { /* 若無此方法可略過 */ }
+
 			return cartId;
 		}
 		// GET: /OnlineStore/Cart/CountJson  → Navbar 會打這支來更新徽章
@@ -95,14 +104,40 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		}
 
 
-		// GET: /OnlineStore/Cart/Full?shipMethodId=&destZip=&couponCode=
+		// ＝＝＝ Full API：加相容三參數 overload（舊呼叫都能編譯） ＝＝＝
 		[HttpGet("Full")]
-		public async Task<IActionResult> Full(int shipMethodId, string destZip, string? couponCode)
+		public Task<IActionResult> Full(int shipMethodId, string destZip, string? couponCode)
+			=> Full(shipMethodId, destZip, couponCode, null);
+
+		// ＝＝＝ 主要版本（支援 selected；你先前已有，這裡給可覆蓋版） ＝＝＝
+		[HttpGet("Full")]
+		public async Task<IActionResult> Full(int shipMethodId, string destZip, string? couponCode, string? selected)
 		{
-			var cartId = await EnsureCartAsync();
+			var cartId = await EnsureCartAsync(); // ★ 關鍵：每次查資料前都會觸發合併
+
 			var vm = await _cart.GetFullAsync(cartId, shipMethodId, destZip ?? "", couponCode);
 
-			// 1) 明細：vm.Lines（不是 Items）
+			// 以下「selected 過濾」邏輯維持你既有的（如果你已經加過就沿用）
+			HashSet<int>? allow = null;
+			if (!string.IsNullOrWhiteSpace(selected))
+			{
+				allow = selected.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+								.Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+								.Where(id => id.HasValue).Select(id => id!.Value)
+								.ToHashSet();
+
+				var only = vm.Lines.Where(x => allow.Contains(x.Product_Id)).ToList();
+
+				vm.Summary.Subtotal = only.Sum(x => x.Line_Subtotal);
+				vm.Summary.Subtotal_Physical = only.Where(x => x.Is_Physical).Sum(x => x.Line_Subtotal);
+				vm.Summary.Item_Count_Total = only.Sum(x => x.Quantity);
+				vm.Summary.Item_Count_Physical = only.Where(x => x.Is_Physical).Sum(x => x.Quantity);
+				if (vm.Summary.Item_Count_Physical == 0) vm.Summary.Shipping_Fee = 0;
+				vm.Summary.Grand_Total = vm.Summary.Subtotal + vm.Summary.Shipping_Fee - (vm.Summary.CouponDiscount ?? 0);
+
+				vm = new GamiPort.Areas.OnlineStore.DTO.CartVm { Lines = only, Summary = vm.Summary };
+			}
+
 			var items = vm.Lines.Select(x => new {
 				productId = x.Product_Id,
 				productName = x.Product_Name,
@@ -112,27 +147,23 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				lineSubtotal = x.Line_Subtotal
 			}).ToList();
 
-			// 2) 總計映射：把你的底線命名 → 前端慣用駝峰命名
-			var payload = new
+			return Json(new
 			{
 				ok = true,
 				items,
 				summary = new
 				{
-					totalQty = vm.Summary.Item_Count_Total, // ← 由你定義的總件數
+					totalQty = vm.Summary.Item_Count_Total,
 					subtotal = vm.Summary.Subtotal,
 					discount = vm.Summary.Discount,
 					shipping = vm.Summary.Shipping_Fee,
 					grandTotal = vm.Summary.Grand_Total,
 					shipMethodId = shipMethodId,
 					destZip = destZip,
-					couponCode = couponCode,
-					couponMessage = (string?)null // 目前你的 DTO 沒有此欄，先給 null；之後若有就改這裡
+					couponCode = couponCode
 				}
-			};
-			return Json(payload);
+			});
 		}
-
 
 		// POST: /OnlineStore/Cart/UpdateQty
 		[HttpPost("UpdateQty")]
