@@ -1,25 +1,42 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-
+using GamiPort.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace GamiPort.Areas.Forum.Controllers
 {
     [Area("Forum")]
     public class ThreadsController : Controller
     {
-        // 這是論壇看板頁面
-        // 範例 URL: /Forum/Threads?forumId=123
-        public IActionResult Index(int forumId)
+        private readonly GameSpacedatabaseContext _db;
+
+        // ★ 建構子注入 DbContext（或你也可以改用 IForumsService）
+        public ThreadsController(GameSpacedatabaseContext db)
         {
-            ViewData["ForumId"] = forumId;
-            return View(); // 對應 Areas/Forum/Views/Threads/Index.cshtml
+            _db = db;
         }
 
-        // 這是單一主題內容頁
-        // 範例 URL: /Forum/Threads/Detail?threadId=456
-        public IActionResult Detail(long threadId)
+        // /Forum/Threads/Index?forumId=8
+        [HttpGet]
+        public async Task<IActionResult> Index([FromQuery] int forumId)
+        {
+            if (forumId <= 0) return BadRequest("forumId required");
+
+            // ★ 這裡把 forum 撈出來
+            var forum = await _db.Forums
+                                 .AsNoTracking()
+                                 .FirstOrDefaultAsync(x => x.ForumId == forumId);
+
+            ViewBag.ForumId = forumId;
+            ViewBag.ForumName = forum?.Name ?? "未命名論壇";   // ★ 不會再 CS0103 了
+            return View();
+        }
+
+        // /Forum/Threads/Detail?threadId=456
+        [HttpGet]
+        public IActionResult Detail([FromQuery] long threadId)
         {
             ViewData["ThreadId"] = threadId;
-            return View(); // 對應 Areas/Forum/Views/Threads/Detail.cshtml
+            return View();
         }
     }
 }

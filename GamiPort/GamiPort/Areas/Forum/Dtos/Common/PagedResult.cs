@@ -13,5 +13,8 @@
             Size = size;
             Total = total;
         }
+        public static PagedResult<T> Empty(int page, int size)
+        => new(Array.Empty<T>(), 0, page, size);
+
     }
 }

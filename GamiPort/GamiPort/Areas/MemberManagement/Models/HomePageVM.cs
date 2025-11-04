@@ -28,6 +28,8 @@ namespace GamiPort.Areas.MemberManagement.ViewModels
 		public int VisitCount { get; set; }
 		public string? HomeCode { get; set; }
 
+		public bool IsPublic { get; set; }
+
 		// Posts
 		public List<HomePostRowVM> Posts { get; set; } = new();
 
@@ -38,6 +40,18 @@ namespace GamiPort.Areas.MemberManagement.ViewModels
 		// Friends detail list
 		public List<FriendInfoVM> FriendAcceptedList { get; set; } = new();
 		public List<FriendInfoVM> FriendPendingList { get; set; } = new();
+
+		/// <summary>
+		/// 當前登入使用者與此小屋擁有者之間的關係狀態代碼 (例如: NONE, PENDING, ACCEPTED, BLOCKED)。
+		/// 僅當當前使用者已登入且非小屋擁有者時有意義。
+		/// </summary>
+		public string CurrentRelationStatus { get; set; } = "NONE";
+
+		/// <summary>
+		/// 若目前關係為 PENDING，這裡帶出發起請求者的 UserId（Relations.RequestedBy）。
+		/// 其他狀態可為 null。
+		/// </summary>
+		public int? CurrentRelationRequestedByUserId { get; set; }
 	}
 	public class FriendInfoVM
 	{

@@ -11,6 +11,8 @@
 // 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
+using GamiPort.Areas.Forum.Services.Adminpost;
+using GamiPort.Areas.Forum.Services.Leaderboard;
 using GamiPort.Areas.Forum.Services.Me;
 using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
 // ★ 新增：ECPay 服務命名空間
@@ -120,7 +122,8 @@ namespace GamiPort
             builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
                                        GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
             builder.Services.AddScoped<IMeContentService, MeContentService>();
-
+            builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+            builder.Services.AddScoped<IPostsService, PostsService>();
 
             // ------------------------------------------------------------
             // MVC / RazorPages / JSON 命名策略 & Anti-forgery

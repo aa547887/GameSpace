@@ -175,23 +175,13 @@
 
 <script>
     ;(async ()=>{
-      /* ---------------- 相依：時間 / SignalR（懶載入） ---------------- */
+      /* ---------------- 相依：時間 ---------------- */
       if(!window.__gpEnsureTime){
         window.__gpEnsureTime=new Promise(res=>{
           if(window.GPTime) return res();
           const s=document.createElement('script');
           s.src='~/js/social_hub/gp-time.js'.replace('~',location.origin);
           s.onload=()=>res(); s.onerror=()=>res();
-          document.head.appendChild(s);
-        });
-      }
-      if(!window.__gpEnsureSignalR){
-        window.__gpEnsureSignalR=new Promise((res,rej)=>{
-          if(window.signalR||window.SignalR||window.signalr) return res();
-          const s=document.createElement('script');
-          s.src='https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js';
-          s.crossOrigin='anonymous';
-          s.onload=()=>res(); s.onerror=()=>rej();
           document.head.appendChild(s);
         });
       }
@@ -307,8 +297,8 @@
 
       /* ---------------- 生成一列 ---------------- */
       function makeRow(friend){
-        const id   = String(friend.friendUserId ?? friend.userId ?? '').trim();
-        const base = (friend.friendName || friend.fullName || friend.displayName || ('朋友 #'+id)).trim();
+        const id   = String(friend.FriendUserId ?? friend.userId ?? '').trim(); // Changed to FriendUserId
+        const base = (friend.FriendName || friend.fullName || friend.displayName || ('朋友 #'+id)).trim(); // Changed to FriendName
         const nick = (friend.nickname || friend.remark || '').trim();
 
         const row=document.createElement('div');
@@ -327,7 +317,10 @@
             </div>
             <div class="fd-id">#${id}</div>
           </div>`;
-        row.addEventListener('click',()=> window.gpOpenChat?.(id, base));
+        row.addEventListener('click',()=> {
+            console.log('Attempting to open chat with:', { id: id, base: base });
+            window.gpOpenChat?.(id, base);
+        });
         return row;
       }
 
@@ -348,6 +341,7 @@
       async function loadFriends(){
         body.innerHTML='<div class="fd-empty">讀取中…</div>';
         const friends = await fetchFriends();
+        console.log('Friends data received:', friends); // Added console.log
         if(!Array.isArray(friends) || !friends.length){
           body.innerHTML='<div class="fd-empty">尚無好友</div>'; return;
         }
@@ -376,10 +370,7 @@
       /* ---------------- Hub 綁定（即時未讀） ---------------- */
       (async function bindHub(){
         try{
-          await window.__gpEnsureSignalR;
-          const SR=window.signalR||window.SignalR||window.signalr;
-          const conn=new SR.HubConnectionBuilder().withUrl("/social_hub/chatHub").withAutomaticReconnect().build();
-          await conn.start().catch(()=>{});
+          const conn = await window.getChatHubConnection();
 
           // 未讀更新（欄位名容錯）
           conn.on("UnreadUpdate", data=>{
