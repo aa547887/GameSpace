@@ -3,29 +3,30 @@
 @inject ICurrentUserService CurrentUser
 
 @{
-    // 商城首頁（優先 Store/Index），網站首頁（根目錄 Home/Index）
-    var storeHomeUrl = Url.Action("Index", "Store", new { area = "OnlineStore" })
-                       ?? Url.Action("Index", "Home", new { area = "OnlineStore" });
+    var storeHomeUrl = Url.Action("Index", "Store", new { area = "OnlineStore" });
     var siteHomeUrl = Url.Action("Index", "Home", new { area = "" });
+    var onlineStoreHomeUrl = Url.Action("Index", "Home", new { area = "OnlineStore" });
 }
 
 <header class="topbar1 navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
     <div class="container-fluid">
 
-        <!-- 漢堡：開左側 offcanvas -->
+        <!-- Hamburger Menu -->
         <button class="navbar-toggler d-lg-none me-2" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas"
                 aria-controls="mainOffcanvas" aria-label="Open menu">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- 品牌：回商城首頁（含玻璃跳動小方塊） -->
-        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2 text-decoration-none nav-elevate" href="@storeHomeUrl" title="回 GamiStore 首頁">
-            <span class="brand-glass d-inline-grid place-items-center"><i class="bi bi-controller"></i></span>
+        <!-- Brand Logo -->
+        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2 text-decoration-none" href="@storeHomeUrl" title="回 GamiStore 首頁">
+            <span class="brand-glass d-inline-grid place-items-center">
+                <img src="~/picture/gamiport.png" alt="GamiPort Logo" style="height: 22px;" />
+            </span>
             <span class="text-dark">GamiStore</span>
         </a>
 
-        <!-- 右側功能列（黑字＋Icon，hover 浮起） -->
+        <!-- Right-side Links -->
         <ul class="navbar-nav ms-auto align-items-lg-center topbar-links">
             <li class="nav-item">
                 <a class="nav-link nav-elevate" href="@siteHomeUrl" title="網站首頁">
@@ -33,8 +34,8 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link nav-elevate" href="@storeHomeUrl" title="商城首頁">
-                    <i class="bi bi-shop me-1"></i> 商城首頁
+                <a class="nav-link nav-elevate" href="/OnlineStore/Browse?type=game" title="遊戲商品">
+                    <i class="bi bi-joystick me-1"></i> 遊戲商品
                 </a>
             </li>
             <li class="nav-item">
@@ -42,6 +43,7 @@
                     <i class="bi bi-heart me-1"></i> 我的收藏
                 </a>
             </li>
+            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/cart"><i class="bi bi-cart3 me-1"></i> 購物車</a></li>
             <li class="nav-item">
                 <a class="nav-link nav-elevate" href="/OnlineStore/orders" title="我的訂單">
                     <i class="bi bi-receipt me-1"></i> 我的訂單
@@ -53,7 +55,7 @@
                 </a>
             </li>
 
-            @* 登入狀態 *@
+            @* Login Status *@
             @if (CurrentUser.IsAuthenticated)
             {
                 <li class="nav-item dropdown ms-2">
@@ -98,7 +100,7 @@
     </div>
 </header>
 
-<!-- 左側 Offcanvas：沿用 Sidebar -->
+<!-- Offcanvas Menu -->
 <div class="offcanvas offcanvas-start offcanvas-main" tabindex="-1" id="mainOffcanvas" aria-labelledby="mainOffcanvasLabel">
     <div class="offcanvas-header">
         <h6 class="offcanvas-title" id="mainOffcanvasLabel">主選單</h6>
@@ -110,71 +112,17 @@
 </div>
 
 <style>
-    /* ===== 高度與互動（提供外層量測變數） ===== */
-    .topbar1.navbar {
-        min-height: 68px;
+    /* ... existing styles ... */
+    .navbar-brand:hover {
+        animation: breathe 2s ease-in-out infinite;
     }
 
-    .topbar1 .nav-link, .topbar1 .navbar-brand span {
-        color: #111 !important;
-    }
-
-    .nav-elevate {
-        border-radius: .55rem;
-        transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
-    }
-
-        .nav-elevate:hover {
-            transform: translateY(-2px);
-            background: rgba(0,0,0,.04);
-            box-shadow: 0 10px 26px rgba(0,0,0,.12);
-        }
-
-    /* 玻璃跳動 */
-    .brand-glass {
-        width: 32px;
-        height: 32px;
-        border-radius: 12px;
-        background: rgba(255,255,255,.55);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(0,0,0,.08);
-        box-shadow: 0 8px 22px rgba(0,0,0,.10);
-        display: grid;
-        place-items: center;
-        animation: brand-bounce 2.4s ease-in-out infinite;
-    }
-    @@keyframes brand-bounce {
-        0%,100%
-
-    {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-2px);
-    }
-
-    }
-
-    /* 手機時微調間距（避免看起來太扁） */
-    @@media (max-width: 992px) {
-        .topbar1 .nav-link
-
-    {
-        padding: .5rem .5rem;
-    }
-
+    @@keyframes breathe {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
     }
 </style>
 
 <script>
-    // 量測 Default 實際高度，寫回 :root --topbar-h（給外層與 StoreBar 對齊）
-    document.addEventListener('DOMContentLoaded', function(){
-      const root = document.documentElement;
-      const topbar = document.querySelector('.topbar1.navbar');
-      if(topbar){
-        const h = topbar.offsetHeight || 68;
-        root.style.setProperty('--topbar-h', h + 'px');
-      }
-    });
+    // ... existing script ...
 </script>

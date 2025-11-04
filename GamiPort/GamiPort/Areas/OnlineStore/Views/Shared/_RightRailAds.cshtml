@@ -1,51 +1,75 @@
-﻿@* 右側欄廣告：上方 hover 才掃光 + 呼吸；下方持續高光 *@
-<div class="right-rail-ads">
-    <a class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4" href="#" title="廣告 1"></a>
-    <a class="ad-box ad-300x600 ad-shine" href="#" title="廣告 2"></a>
+﻿<div class="right-rail-ads">
+    <!-- 上：300x250（呼吸 + 掃光） -->
+    <a class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4" href="#">
+        <img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="">
+    </a>
+
+    <!-- 中：300x600 大幅 -->
+    <a class="ad-box ad-300x600 ad-shine mb-4" href="#">
+        <img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="">
+    </a>
+
+    <!-- 下：三個方形 300x250 -->
+    <a class="ad-box ad-300x250 ad-hover-sheen mb-4" href="#"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></a>
+    <a class="ad-box ad-300x250 ad-hover-sheen mb-4" href="#"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt=""></a>
+    <a class="ad-box ad-300x250 ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt=""></a>
 </div>
 
 <style>
     .right-rail-ads .ad-box {
         display: block;
         width: 100%;
-        border-radius: 14px;
+        border-radius: 12px;
         overflow: hidden;
-        background: linear-gradient(135deg,#eceff7,#dfe6ff);
-        box-shadow: 0 12px 30px rgba(0,0,0,.12);
-        position: relative;
+        background: #f3f4f6;
+        box-shadow: 0 10px 30px rgba(0,0,0,.08);
     }
-    /* 尺寸 */
+
     .ad-300x250 {
-        aspect-ratio: 300/250;
+        aspect-ratio: 300 / 250;
     }
 
     .ad-300x600 {
-        aspect-ratio: 300/600;
+        aspect-ratio: 300 / 600;
     }
 
-    /* 掃光（滑過才出現） */
-    .ad-hover-sheen::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -150%;
-        width: 50%;
+    .right-rail-ads img {
+        width: 100%;
         height: 100%;
-        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%);
-        transform: skewX(-20deg);
-        transition: left .6s ease;
-        pointer-events: none;
+        object-fit: cover;
+        display: block;
+        transition: transform .25s ease;
     }
 
-    .ad-hover-sheen:hover::after {
-        left: 130%;
+    .right-rail-ads .ad-box:hover img {
+        transform: scale(1.03);
     }
 
-    /* 呼吸 */
+    .ad-hover-sheen {
+        position: relative;
+    }
+
+        .ad-hover-sheen::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 50%, transparent 100%);
+            transform: skewX(-20deg);
+            transition: left .55s ease;
+            pointer-events: none;
+        }
+
+        .ad-hover-sheen:hover::after {
+            left: 130%;
+        }
+
     .ad-breathe {
-        animation: ad-b 3s ease-in-out infinite;
+        animation: breathe 2.8s ease-in-out infinite;
     }
-    @@keyframes ad-b {
+    @@keyframes breathe {
         0%,100%
 
     {
@@ -53,18 +77,8 @@
     }
 
     50% {
-        transform: scale(1.01);
+        transform: scale(1.015);
     }
 
-    }
-
-    /* 持續高光（不需 hover） */
-    .ad-shine::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(120% 80% at 10% 10%, rgba(255,255,255,.35), transparent 60%), linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,0));
-        mix-blend-mode: screen;
-        pointer-events: none;
     }
 </style>

@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "商品詳細";
+    Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
+    var pid = (int)ViewData["ProductId"];
+}
+<section class="container py-4" id="app" data-pid="@pid">
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm bg-light">
+                <img id="cover" src="/images/placeholder-cover.png" class="w-100 h-100" style="object-fit:cover;">
+            </div>
+            <div id="thumbs" class="d-flex flex-wrap gap-2 mt-2"></div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <h2 id="name" class="fw-bold mb-2">...</h2>
+            <div class="mb-2">
+                <span class="badge text-bg-dark" id="ptype"></span>
+            </div>
+            <div class="h4 fw-bold mb-3">
+                <span id="price"></span>
+                <span class="text-muted fs-6" id="cc">TWD</span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-star-fill"></i>
+                <span id="rating">0.0</span>
+                <small class="text-muted" id="ratingcnt">(0)</small>
+            </div>
+
+            <div class="d-flex gap-2 mb-4">
+                <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 直接下單</button>
+                <button class="btn btn-lg btn-outline-dark flex-fill" data-action="add-cart"><i class="bi bi-cart-plus me-1"></i> 加入購物車</button>
+                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的最愛"><i class="bi bi-heart"></i></button>
+            </div>
+
+            <div>
+                <h5 class="fw-bold">商品介紹</h5>
+                <p id="desc" class="text-secondary"></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        const pid = document.getElementById('app').dataset.pid;
+        const api = `/OnlineStore/api/StoreApi/product-detail/${pid}`;
+
+        function money(v){
+          return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);
+        }
+
+        (async function(){
+          const res = await fetch(api);
+          if(!res.ok){ document.getElementById('name').textContent = '找不到商品'; return; }
+          const x = await res.json();
+
+          document.getElementById('name').textContent = x.productName;
+          document.getElementById('ptype').textContent = x.productType || '';
+          document.getElementById('price').textContent = `\$${money(x.price)}`;
+          document.getElementById('cc').textContent = x.currencyCode || 'TWD';
+          document.getElementById('desc').textContent = x.productDescription || '—';
+          document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
+          document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
+
+          const cover = x.coverUrl || "/images/placeholder-cover.png";
+          document.getElementById('cover').src = cover;
+
+          const thumbs = x.gallery?.length ? x.gallery : [cover];
+          document.getElementById('thumbs').innerHTML = thumbs.map(url =>
+            `<img src="${url}" class="rounded" style="width:72px;height:72px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
+          ).join('');
+
+          document.getElementById('thumbs').addEventListener('click', (e)=>{
+            if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
+          });
+
+          // 按鈕事件（之後串接你的後端）
+          document.addEventListener('click', (e)=>{
+            const btn = e.target.closest('button[data-action]');
+            if(!btn) return;
+            const act = btn.getAttribute('data-action');
+            if(act==='add-cart'){
+              alert(`已加入購物車（商品ID: ${x.productId}）`);
+            }else if(act==='buy-now'){
+              location.href = `/OnlineStore/Checkout/CreateOrder?productId=${x.productId}`;
+            }else if(act==='fav'){
+              btn.classList.toggle('text-danger');
+            }
+          });
+        })();
+    </script>
+}
+

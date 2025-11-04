@@ -181,10 +181,14 @@ namespace GamiPort
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
 			builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
 
-			// ------------------------------------------------------------
-			// 建立 App
-			// ------------------------------------------------------------
-			var app = builder.Build();
+            //=============ImgBB商城圖片上傳服務===========
+            builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
+            builder.Services.AddHttpClient<ImgBbService>();
+
+            // ------------------------------------------------------------
+            // 建立 App
+            // ------------------------------------------------------------
+            var app = builder.Build();
 
 			// ------------------------------------------------------------
 			// HTTP Pipeline
@@ -237,9 +241,12 @@ namespace GamiPort
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
+		
 			app.MapControllerRoute(
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
 
 			// Razor Pages（若你有使用）
 			app.MapRazorPages();

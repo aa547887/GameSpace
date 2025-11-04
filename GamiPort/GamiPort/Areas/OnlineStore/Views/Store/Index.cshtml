@@ -1,89 +1,380 @@
-﻿@{
-    ViewData["Title"] = "GamiStore - 商城";
+@{
+    ViewData["Title"] = "GamiStore";
 }
+
 <div class="container-xxl py-3">
-    <div class="alert alert-info">前往完整瀏覽頁。</div>
-    <a class="btn btn-primary" href="/OnlineStore/store/browse">開始瀏覽</a>
+
+    <!-- Carousel Wrapper -->
+    <div class="carousel-wrapper">
+        <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
+        <div class="carousel-inner hero-inner">
+            <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt="GamiStore Birthday"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="卡比"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="NINJA"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt="絕對摩拳"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt="無雙戰技"></div>
+        </div>
+        <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev"><i class="bi bi-chevron-left"></i></button>
+        <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next"><i class="bi bi-chevron-right"></i></button>
+        <div class="hero-indicators"><div class="hero-progress"><span></span></div></div>
+        <div class="hero-fade hero-fade-left"></div>
+        <div class="hero-fade hero-fade-right"></div>
+    </div>
+    </div>
+    <div class="hero-search-wrapper">
+         <div class="hero-search">
+            <i class="bi bi-search"></i>
+            <input id="heroQ" placeholder="搜尋遊戲、周邊、點數卡…" />
+            <button class="btn btn-primary btn-sm" id="heroGo"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+
+    <!-- Content and Ads (Two Columns) -->
+    <div class="row g-4">
+        <!-- Main Content Column -->
+        <div class="col-lg-9">
+            <!-- ✳️ 區塊 A：『最新 / 收藏 / 點擊』三切換排行榜 -->
+            <section class="my-5 content-block" id="triRank">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">排行榜</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-dark active" data-tri="latest">最新上架</button>
+                        <button class="btn btn-outline-dark" data-tri="favorite">收藏排行</button>
+                        <button class="btn btn-outline-dark" data-tri="click">點擊排行</button>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-8"><div class="row g-3" id="triTop3"></div></div>
+                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="triList" style="--bs-list-group-border-color:transparent;"></ol></div>
+                </div>
+            </section>
+
+            <!-- ✳️ 區塊 B：『熱銷排行』五切換 -->
+            <section class="my-5 content-block" id="salesRank">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">熱銷排行</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary active" data-sales="daily">日</button>
+                        <button class="btn btn-outline-primary" data-sales="weekly">週</button>
+                        <button class="btn btn-outline-primary" data-sales="monthly">月</button>
+                        <button class="btn btn-outline-primary" data-sales="quarterly">季</button>
+                        <button class="btn btn-outline-primary" data-sales="yearly">年</button>
+                    </div>
+                </div>
+                <input type="date" id="rank-date" class="form-control form-control-sm" style="width: auto;">
+                <div class="row g-3 mt-3">
+                    <div class="col-lg-8"><div class="row g-3" id="salesTop3"></div></div>
+                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="salesList" style="--bs-list-group-border-color:transparent;"></ol></div>
+                </div>
+            </section>
+
+            <!-- ✳️ 區塊 C：『最新上架』 -->
+            <section class="my-5" id="latest5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">最新上架</h4>
+                    <a class="small" href="/OnlineStore/Store/Browse?sort=newest">更多…</a>
+                </div>
+                <div class="row g-3" id="latestRow"></div>
+            </section>
+
+            <!-- ✳️ 區塊 D：『三顆分類 + 5×3 隨機小卡』 -->
+            <section class="my-5" id="categoryRandom">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">探索更多</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary active" data-cat="game">遊戲商品</button>
+                        <button class="btn btn-outline-secondary" data-cat="notgame">周邊商品</button>
+                        <button class="btn btn-outline-secondary" data-cat="pointcard">點數卡</button>
+                    </div>
+                </div>
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3" id="catGrid"></div>
+                 <div class="text-end mt-3">
+                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=game">更多遊戲…</a>
+                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=notgame">更多周邊…</a>
+                    <a class="small" href="/OnlineStore/Store/Browse?merchTypeId=3">更多點數卡…</a>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Ad Column -->
+        <aside class="col-lg-3 d-none d-lg-block">
+            <div class="ad-rail">
+                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.cshtml")
+            </div>
+        </aside>
+    </div>
 </div>
-@* @{
-    ViewData["Title"] = "商店首頁";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
+
 @section Styles {
-    <link rel="stylesheet" href="~/css/site.store.css" />
     <style>
-        .hero-carousel .carousel-item {
-            max-height: 420px;
+        .ad-rail {
+            position: sticky;
+            top: 80px;
+        }
+        .hero-search-wrapper { 
+            margin-top: 1.5rem; 
+            margin-bottom: 2rem; 
+            display: flex; 
+            justify-content: center; 
+        }
+        .content-block {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
         }
 
-            .hero-carousel .carousel-item img {
-                object-fit: cover;
+        .hero-search { display: flex; align-items: center; gap: 10px; width: min(720px, 94%); padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,.08); box-shadow: 0 8px 24px rgba(0,0,0,.1); transition: background .2s; }
+        .hero-search:hover { background: rgba(255,255,255,.9); }
+        .hero-search input { border: 0; background: transparent; outline: none; width: 100%; font-size: 1.05rem; }
+        .hero-search .btn { border-radius: 10px; }
+
+        /* Card styles for rankings and product previews */
+        .card { border: 1px solid #e0e0e0; border-radius: 8px; background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,.1); }
+        .card .ratio { background-color: #f5f5f5; }
+        .card .card-body { padding: 1rem; }
+        .card .card-title { font-weight: 600; font-size: 1rem; line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: .5rem; }
+        .card .fw-semibold { font-weight: 700; }
+        .list-group-item { border-bottom: 1px dashed rgba(0,0,0,.06); }
+        .list-group-item:last-child { border-bottom: 0; }
+
+        /* Advanced Center-Mode Carousel */
+        .carousel-wrapper { position: relative; background-color: #f0f2f5; border-radius: 16px; padding: 2rem 0; overflow: hidden; }
+        #storeHero { overflow: visible; }
+        .carousel-inner { overflow: visible; height: 380px; }
+        #storeHero .carousel-item { display: block; position: absolute; width: 100%; height: 100%; transition: transform 0.6s ease, opacity 0.6s ease, filter 0.6s ease; }
+        #storeHero .carousel-item img { width: 100%; height: 100%; object-fit: contain; }
+        #storeHero .carousel-control-prev, #storeHero .carousel-control-next { width: 5%; background: rgba(0,0,0,0.1); border-radius: 12px; margin: 0 1rem; transition: background-color 0.2s ease; }
+        #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover { background: rgba(0,0,0,0.3); }
+        #storeHero .carousel-indicators { bottom: -50px; gap: 8px; }
+        #storeHero .carousel-indicators button { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; border: 0; opacity: 0.7; transition: width .3s ease, border-radius .3s ease; }
+        #storeHero .carousel-indicators .active { width: 30px; border-radius: 5px; background-color: #0d6efd; }
+
+        .home-row .card {
+            border: none;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0,0,0,.07);
+        }
+
+        .home-row .card-img-wrap {
+            position: relative;
+            padding-top: 100%;
+            background: #f6f6f8;
+        }
+
+            .home-row .card-img-wrap img {
+                position: absolute;
+                inset: 0;
                 width: 100%;
-                height: 420px;
+                height: 100%;
+                object-fit: cover;
+                transition: transform .2s ease;
             }
 
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: .5rem;
+        .home-row .card:hover .card-img-wrap img {
+            transform: scale(1.05);
         }
-
-            .section-title .sub {
-                color: #93a1b3;
-                font-size: .95rem
-            }
     </style>
 }
 
-<div class="container py-4">
-    <!-- 置頂輪播（Bootstrap Carousel） -->
-    <div id="heroCarousel" class="carousel slide hero-carousel mb-4" data-bs-ride="carousel">
-        <div class="carousel-inner rounded-4 overflow-hidden shadow">
-            <div class="carousel-item active"><img src="/images/banner-1.jpg" alt="banner1"></div>
-            <div class="carousel-item"><img src="/images/banner-2.jpg" alt="banner2"></div>
-            <div class="carousel-item"><img src="/images/banner-3.jpg" alt="banner3"></div>
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span><span class="visually-hidden">Prev</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span><span class="visually-hidden">Next</span>
-        </button>
-        <div class="carousel-indicators">
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
-        </div>
-    </div>
-
-    <!-- 排行：本週熱門 -->
-    <div class="mb-4">
-        <div class="section-title mb-2">
-            <h4 class="m-0">本週熱門</h4><span class="sub">Hot this week</span>
-            <a class="ms-auto small" href="/OnlineStore/Store/Rankings">看更多 →</a>
-        </div>
-        <div id="rank-hot"></div>
-    </div>
-
-    <!-- 排行：高評價 -->
-    <div class="mb-4">
-        <div class="section-title mb-2">
-            <h4 class="m-0">高評價</h4><span class="sub">Top rated</span>
-            <a class="ms-auto small" href="/OnlineStore/Store/Rankings">看更多 →</a>
-        </div>
-        <div id="rank-rating"></div>
-    </div>
-
-    <!-- 排行：熱銷 -->
-    <div>
-        <div class="section-title mb-2">
-            <h4 class="m-0">熱銷</h4><span class="sub">Best sellers</span>
-            <a class="ms-auto small" href="/OnlineStore/Store/Rankings">看更多 →</a>
-        </div>
-        <div id="rank-sales"></div>
-    </div>
-</div>
-
 @section Scripts {
-    <script type="module" src="~/js/onlinestore/rankings-home.js"></script>
-} *@
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const POINTCARD_MERCHTYPE_ID = 3;
+
+            // ===== Helper Functions =====
+            const $  = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+            const fmtCurrency = (n) => new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(n ?? 0);
+            const img = (u) => u || '/images/placeholder.png';
+            const tagLine = (p) => (p.productType?.toLowerCase() === 'game') ? (p.platformName ?? '') : (p.merchTypeName ?? '');
+
+            // ===== Ranking & Product Loading Logic =====
+            function renderTop3AndList(items, top3Sel, listSel){
+                const top3 = items.slice(0,3);
+                const rest = items.slice(3,10);
+                $(top3Sel).innerHTML = top3.map((p,i)=>`
+                    <div class="col-12 col-md-4">
+                        <a href="/OnlineStore/Store/Product/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
+                            <div class="card-body">
+                                <span class="badge bg-dark me-2">${i+1}</span>
+                                <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                <h6 class="card-title mt-1 text-truncate" title="${p.productName}">${p.productName}</h6>
+                                <div class="fw-semibold">${fmtCurrency(p.price)}</div>
+                            </div>
+                        </a>
+                    </div>`).join('');
+                $(listSel).innerHTML = rest.map((p,i)=>`
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a class="text-decoration-none text-dark" href="/OnlineStore/Store/Product/${p.productCode}">${p.productName}</a>
+                        <span class="small text-muted">${tagLine(p) || ''}</span>
+                    </li>`).join('');
+            }
+
+            const triState = { tab: 'latest' };
+            async function loadTri(){
+                let list = [];
+                if (triState.tab === 'latest') {
+                    const data = await fetch('/api/store/products?sort=newest&pageSize=10').then(r=>r.json());
+                    list = data.items;
+                } else {
+                    const type = triState.tab;
+                    const url  = `/api/store/rankings?type=${type}&period=daily&take=10`;
+                    list = await fetch(url).then(r=>r.json());
+                }
+                renderTop3AndList(list, '#triTop3', '#triList');
+            }
+            $('#triRank .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-tri]'); if (!btn) return;
+                $$('#triRank .btn-group .btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                triState.tab = btn.getAttribute('data-tri');
+                loadTri();
+            });
+
+            const salesState = { period: 'daily' };
+            async function loadSales(){
+                const url  = `/api/store/rankings?type=sales&period=${salesState.period}&take=10`;
+                const list = await fetch(url).then(r=>r.json());
+                renderTop3AndList(list, '#salesTop3', '#salesList');
+            }
+            $('#salesRank .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-sales]'); if (!btn) return;
+                $$('#salesRank .btn-group .btn').forEach(b=>b.classList.remove('active','btn-primary'));
+                btn.classList.add('active','btn-primary');
+                salesState.period = btn.getAttribute('data-sales');
+                loadSales();
+            });
+
+            async function loadLatest5(){
+                const data = await fetch('/api/store/products?sort=newest&pageSize=5').then(r=>r.json());
+                $('#latestRow').innerHTML = (data.items ?? []).map(p=>`
+                    <div class="col">
+                        <a href="/OnlineStore/Store/Product/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
+                            <div class="card-body">
+                                <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                <h6 class="card-title text-truncate" title="${p.productName}">${p.productName}</h6>
+                                <div class="fw-semibold">${fmtCurrency(p.price)}</div>
+                            </div>
+                        </a>
+                    </div>`).join('');
+            }
+
+            const catState = { tab: 'game' };
+            async function loadCategoryRandom(){
+                console.log('[Debug] Initializing category randomizer...');
+                let url = '/api/store/products?page=1&pageSize=15&sort=random';
+                if (catState.tab === 'game') url += '&type=game';
+                if (catState.tab === 'notgame') url += `&type=notgame&excludeMerchTypeId=${POINTCARD_MERCHTYPE_ID}`;
+                if (catState.tab === 'pointcard') url += `&type=notgame&merchTypeId=${POINTCARD_MERCHTYPE_ID}`;
+
+                console.log('[Debug] Fetching random products from URL:', url);
+                try {
+                    const data = await fetch(url).then(r=>r.json());
+                    console.log('[Debug] Data received from API:', data);
+
+                    if (!data || !data.items || data.items.length === 0) {
+                        console.log('[Debug] No items found. Displaying empty message.');
+                        $('#catGrid').innerHTML = '<p class="text-muted">此分類暫無商品。</p>';
+                        return;
+                    }
+
+                    console.log(`[Debug] Rendering ${data.items.length} cards...`);
+                    $('#catGrid').innerHTML = (data.items ?? []).map(p=>`
+                        <div class="col">
+                            <a href="/OnlineStore/Store/Product/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                                <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
+                                <div class="card-body">
+                                    <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                    <h6 class="card-title text-truncate" title="${p.productName}">${p.productName}</h6>
+                                    <div class="fw-semibold">${fmtCurrency(p.price)}</div>
+                                </div>
+                            </a>
+                        </div>`).join('');
+                    console.log('[Debug] Card rendering complete.');
+                } catch (error) {
+                    console.error('[Debug] Error in loadCategoryRandom:', error);
+                    $('#catGrid').innerHTML = '<p class="text-danger">載入商品時發生錯誤。</p>';
+                }
+            }
+            $('#categoryRandom .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-cat]'); if (!btn) return;
+                $$('#categoryRandom .btn-group .btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                catState.tab = btn.getAttribute('data-cat');
+                console.log('[Debug] Category tab changed to:', catState.tab);
+                loadCategoryRandom();
+            });
+
+            document.body.addEventListener('click', function(e){
+                const link = e.target.closest('.product-link');
+                if (link?.dataset.productId){
+                    const pid = link.dataset.productId;
+                    if (navigator.sendBeacon){
+                        navigator.sendBeacon(`/api/store/products/${pid}/click`, JSON.stringify({ userId:null }));
+                    } else {
+                        fetch(`/api/store/products/${pid}/click`, { method:'POST', body: JSON.stringify({ userId:null }), keepalive:true });
+                    }
+                }
+            });
+
+            // ===== init =====
+            loadTri().catch(console.error);
+            loadSales().catch(console.error);
+            loadLatest5().catch(console.error);
+            loadCategoryRandom().catch(console.error);
+
+            // ===== Advanced Carousel Logic =====
+            const carousel = document.getElementById('storeHero');
+            const items = Array.from(carousel.querySelectorAll('.carousel-item'));
+
+            function updateCarouselClasses(activeIndex) {
+                items.forEach((item, i) => {
+                    item.classList.remove('active');
+                    
+                    let newTransform = 'translateX(200%)'; // Hide far away
+                    let newOpacity = 0.5;
+                    let newFilter = 'grayscale(1)';
+
+                    if (i === activeIndex) { // Active slide
+                        newTransform = 'translateX(0) scale(1)';
+                        newOpacity = 1;
+                        newFilter = 'grayscale(0)';
+                        item.classList.add('active');
+                    } else if (i === (activeIndex + 1) % items.length) { // Next slide
+                        newTransform = 'translateX(55%) scale(0.8)';
+                    } else if (i === (activeIndex - 1 + items.length) % items.length) { // Previous slide
+                        newTransform = 'translateX(-55%) scale(0.8)';
+                    } else { // Hidden slides
+                        newOpacity = 0;
+                    }
+
+                    item.style.transform = newTransform;
+                    item.style.opacity = newOpacity;
+                    item.style.filter = newFilter;
+                });
+            }
+
+            const indicatorContainer = carousel.querySelector('.carousel-indicators');
+            indicatorContainer.innerHTML = ''; // Clear existing indicators
+            items.forEach((_, i) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.dataset.bsTarget = '#storeHero';
+                button.dataset.bsSlideTo = i;
+                if (i === 0) button.classList.add('active');
+                indicatorContainer.appendChild(button);
+            });
+
+            carousel.addEventListener('slide.bs.carousel', function (e) {
+                updateCarouselClasses(e.to);
+            });
+
+            const initialActiveIndex = items.findIndex(item => item.classList.contains('active'));
+            updateCarouselClasses(initialActiveIndex > -1 ? initialActiveIndex : 0);
+        });
+    </script>
+}
