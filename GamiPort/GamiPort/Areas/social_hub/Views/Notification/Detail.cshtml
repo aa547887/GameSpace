@@ -1,0 +1,111 @@
+@model GamiPort.Models.NotificationRecipient
+@* js失效版 *@
+@{
+    // 頁面標題
+    ViewData["Title"] = "通知詳情";
+
+    // 取用通知本體，避免重複撰寫長鏈結
+    var n = Model.Notification;
+
+    // 判斷發送者（使用者/管理員/系統）
+    string senderName = n?.SenderUser?.UserName
+                         ?? n?.SenderUser?.UserAccount
+                         ?? n?.SenderManager?.ManagerName
+                         ?? "系統";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/social_hub/notification.css" />
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">@ViewData["Title"]</h2>
+
+    @* 若為本次開啟自動標記為已讀，顯示提示 *@
+    @if (ViewBag.AutoRead == true)
+    {
+        <div class="alert alert-success d-flex align-items-center">
+            <i class="fas fa-check-circle me-2"></i> 已自動標記為已讀
+        </div>
+    }
+
+    <div class="card shadow-sm hover-lift notice-card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div class="me-2 min-w-0">
+                    <div class="fw-bold h5 mb-1 title-line" title="@(n?.Title ?? "(無標題)")">
+                        @(n?.Title ?? "(無標題)")
+                    </div>
+                    <div class="text-muted small">
+                        <span class="badge bg-secondary me-2">來源/動作</span>
+                        @((n?.Source?.SourceName ?? "未設定") + " / " + (n?.Action?.ActionName ?? "未設定"))
+                        @if (!string.IsNullOrWhiteSpace(n?.Group?.GroupName))
+                        {
+                            <span class="ms-2 badge bg-info text-dark">群組</span>
+                            <span class="ms-1">@n?.Group?.GroupName</span>
+                        }
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="mb-1">
+                        <span class="badge @(Model.ReadAt == null ? "bg-warning text-dark" : "bg-success")">
+                            @(Model.ReadAt == null ? "未讀" : "已讀")
+                        </span>
+                    </div>
+                    <small class="text-muted d-flex align-items-center flex-wrap gap-2">
+                        <span><i class="far fa-clock me-1"></i>@n?.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                        @if (Model.ReadAt != null)
+                        {
+                            <span><i class="fas fa-eye ms-2 me-1"></i>已讀於 @Model.ReadAt?.ToString("yyyy/MM/dd HH:mm")</span>
+                        }
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3 text-muted">
+                <i class="far fa-user me-2"></i>
+                <span>發送者：<strong class="text-dark">@senderName</strong></span>
+            </div>
+
+            @* 通知內文 *@
+            <div class="content-block" id="notifyContent">@((n?.Message ?? "").Trim())</div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted small"></div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary tool-btn" onclick="copyContent()">
+                        <i class="far fa-copy me-1"></i>複製內容
+                    </button>
+                    <a class="btn btn-outline-primary tool-btn"
+                       asp-action="Index" asp-controller="Notification" asp-area="social_hub">
+                        <i class="fas fa-list-ul me-1"></i>返回列表
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 複製通知內文到剪貼簿
+    function copyContent() {
+        const el = document.getElementById('notifyContent');
+        if (!el) return;
+        const text = el.innerText || el.textContent || '';
+        navigator.clipboard?.writeText(text).then(() => {
+            const btns = document.querySelectorAll('.tool-btn');
+            btns.forEach(b => {
+                const original = b.innerHTML;
+                if (b.textContent.includes('複製內容')) {
+                    b.innerHTML = '<i class="fas fa-check me-1"></i>已複製';
+                    b.classList.remove('btn-outline-secondary');
+                    b.classList.add('btn-success');
+                    setTimeout(() => { b.innerHTML = original; b.classList.add('btn-outline-secondary'); b.classList.remove('btn-success'); }, 1200);
+                }
+            });
+        });
+    }
+</script>
+

@@ -1,29 +1,292 @@
 @model IEnumerable<GamiPort.Models.NotificationRecipient>
 
 @{
-    ViewData["Title"] = "我的通知";
+    ViewData["Title"] = "通知中心";
+    var total = (int)(ViewBag.TotalCount ?? (Model?.Count() ?? 0));
+    var unread = (int)(ViewBag.UnreadCount ?? (Model?.Count(x => x.ReadAt == null) ?? 0));
+    var page = (int)(ViewBag.Page ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+
+    string TrimN(string s, int n = 20)
+    {
+        var t = (s ?? string.Empty).Trim();
+        return t.Length <= n ? t : t.Substring(0, n) + "...";
+    }
 }
 
-<h1>我的通知</h1>
+@section Styles {
+    <link rel="stylesheet" href="~/css/social_hub/notification.css" />
+}
 
-@if (Model != null && Model.Any())
-{
-    <div class="list-group">
-        @foreach (var notificationRecipient in Model)
-        {
-            <div class="list-group-item list-group-item-action @(notificationRecipient.ReadAt != null ? "text-muted" : "")">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">@notificationRecipient.Notification.Title</h5>
-                    <small>@notificationRecipient.Notification.CreatedAt.ToShortDateString() @notificationRecipient.Notification.CreatedAt.ToShortTimeString()</small>
-                </div>
-                <p class="mb-1">@notificationRecipient.Notification.Message</p>
-                @* <p class="mb-1">狀態: @(notificationRecipient.ReadAt != null ? "已讀" : "未讀")</p> *@
-                
-            </div>
-        }
+<div class="container py-4">
+    <h2 class="mb-3">@ViewData["Title"]</h2>
+
+    @if (TempData["Msg"] is string topMsg && !string.IsNullOrWhiteSpace(topMsg))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @topMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+            <span class="badge bg-primary me-2">總數 <span id="totalCounter">@total</span></span>
+            <span class="badge bg-warning text-dark">未讀 <span id="unreadCounter">@unread</span></span>
+        </div>
     </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="alert alert-info mb-0">目前沒有通知。</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm hover-lift">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>我的通知</strong>
+                <small class="text-muted">點檢視看完整內容；未讀可直接標記</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 notif-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>標題</th>
+                                <th>內容</th>
+                                <th>來源</th>
+                                <th>動作</th>
+                                <th>寄送者</th>
+                                <th class="col-slim">建立時間</th>
+                                <th class="col-slim">狀態</th>
+                                <th class="col-slim" style="width:180px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var n = item.Notification;
+                                var titleFull = (n?.Title ?? "(無標題)").Trim();
+                                var msgFull = (n?.Message ?? string.Empty).Trim();
+                                var srcFull = n?.Source?.SourceName ?? $"#{n?.SourceId}";
+                                var actFull = n?.Action?.ActionName ?? $"#{n?.ActionId}";
+                                var senderFull = n?.SenderUser?.UserName
+                                                  ?? n?.SenderUser?.UserAccount
+                                                  ?? n?.SenderManager?.ManagerName
+                                                  ?? "系統";
+                                var senderKind = n?.SenderUser != null ? "user" : (n?.SenderManager != null ? "manager" : "system");
+
+                                <tr class="@(item.ReadAt == null ? "unread-row" : string.Empty)" data-rec-id="@item.RecipientId">
+                                    <td class="title-line" title="@titleFull">@TrimN(titleFull, 16)</td>
+                                    <td class="title-line" title="@msgFull">@TrimN(msgFull, 24)</td>
+                                    <td class="title-line" title="@srcFull">@TrimN(srcFull, 12)</td>
+                                    <td class="title-line" title="@actFull">@TrimN(actFull, 12)</td>
+                                    <td class="title-line" title="@senderFull">
+                                        <span class="badge badge-role @(senderKind)">@senderKind</span>
+                                        <span class="ms-1">@TrimN(senderFull, 14)</span>
+                                    </td>
+                                    <td class="col-slim">@n?.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td class="col-slim">
+                                        @if (item.ReadAt == null)
+                                        {
+                                            <span class="badge badge-status unread"><span class="dot"></span>未讀</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-status read"><span class="dot"></span>已讀</span>
+                                        }
+                                    </td>
+                                    <td class="col-slim">
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1 js-detail-btn" data-id="@item.RecipientId">檢視</button>
+
+                                        @if (item.ReadAt == null)
+                                        {
+                                            <form asp-action="MarkRead" asp-controller="Notification" asp-area="social_hub" method="post" class="d-inline js-markread-form">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.RecipientId" />
+                                                <button class="btn btn-sm btn-outline-success js-markread-btn" type="submit">標記已讀</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <nav aria-label="通知分頁" class="p-3">
+                @{
+                    var start = System.Math.Max(1, page - 2);
+                    var end = System.Math.Min(totalPages, page + 2);
+                }
+                <ul class="pagination mb-0">
+                    <li class="page-item @(page <= 1 ? "disabled" : string.Empty)">
+                        <a class="page-link" href="@Url.Action("Index","Notification", new { area = "social_hub", page = page - 1 })">上一頁</a>
+                    </li>
+                    @for (var i = start; i <= end; i++)
+                    {
+                        <li class="page-item @(i == page ? "active" : string.Empty)">
+                            <a class="page-link" href="@Url.Action("Index","Notification", new { area = "social_hub", page = i })">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(page >= totalPages ? "disabled" : string.Empty)">
+                        <a class="page-link" href="@Url.Action("Index","Notification", new { area = "social_hub", page = page + 1 })">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // 以 AJAX 標記已讀，避免整頁刷新
+        document.addEventListener('click', async function (ev) {
+            const btn = ev.target.closest('.js-markread-btn');
+            if (!btn) return;
+            const form = btn.closest('.js-markread-form');
+            if (!form) return;
+            ev.preventDefault();
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '處理中...';
+
+            const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData,
+                    redirect: 'follow'
+                });
+
+                let ok = res.ok;
+                try {
+                    const data = await res.clone().json();
+                    ok = ok && data && (data.ok === true);
+                } catch (_) { }
+
+                if (!ok) throw new Error('HTTP ' + res.status);
+
+                const tr = form.closest('tr[data-rec-id]');
+                if (tr) {
+                    tr.classList.remove('unread-row');
+                    const statusBadge = tr.querySelector('.badge-status');
+                    if (statusBadge) {
+                        statusBadge.classList.remove('unread');
+                        statusBadge.classList.add('read');
+                        statusBadge.innerHTML = '<span class="dot"></span>已讀';
+                    }
+                    form.remove();
+                }
+                const unreadEl = document.getElementById('unreadCounter');
+                if (unreadEl) {
+                    const val = parseInt(unreadEl.textContent || '0', 10);
+                    if (!isNaN(val) && val > 0) unreadEl.textContent = String(val - 1);
+                }
+            } catch (err) {
+                console.error('標記已讀失敗：', err);
+                alert('標記已讀失敗，請稍後重試');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+        });
+    </script>
+    <script>
+        // 以 AJAX 載入通知詳情 Partial，顯示於 Bootstrap Modal
+        (function(){
+            const modalEl = document.getElementById('notifDetailModal');
+            let modal;
+            document.addEventListener('click', async function(ev){
+                const btn = ev.target.closest('.js-detail-btn');
+                if(!btn) return;
+                const id = btn.getAttribute('data-id');
+                if(!id) return;
+                ev.preventDefault();
+                const url = '@Url.Action("DetailPartial","Notification", new { area = "social_hub" })' + '?id=' + encodeURIComponent(id);
+                try {
+                    const res = await fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest' } });
+                    if(!res.ok) throw new Error('HTTP '+res.status);
+                    const html = await res.text();
+                    const body = modalEl.querySelector('.modal-body');
+                    body.innerHTML = html;
+                    // 同步列表為已讀
+                    const tr = document.querySelector('tr[data-rec-id="'+id+'"]');
+                    if (tr && tr.classList.contains('unread-row')) {
+                        tr.classList.remove('unread-row');
+                        const badge = tr.querySelector('.badge-status');
+                        if (badge) { badge.classList.remove('unread'); badge.classList.add('read'); badge.innerHTML = '<span class="dot"></span>已讀'; }
+                        const unreadEl = document.getElementById('unreadCounter');
+                        if (unreadEl) {
+                            const val = parseInt(unreadEl.textContent || '0', 10);
+                            if (!isNaN(val) && val > 0) unreadEl.textContent = String(val - 1);
+                        }
+                    }
+                    modal = modal || new bootstrap.Modal(modalEl);
+                    modal.show();
+                } catch(err) {
+                    console.error('載入詳情失敗：', err);
+                    alert('載入詳情失敗，請稍後再試');
+                }
+            });
+
+            // Modal 內複製內容
+            document.addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('#notifDetailModal .js-copy');
+                if (!btn) return;
+                ev.preventDefault();
+                const card = btn.closest('.card');
+                const content = card ? card.querySelector('.content-block') : null;
+                const text = content ? (content.innerText || content.textContent || '') : '';
+                if (!text) return;
+
+                const original = btn.innerHTML;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    btn.innerHTML = '<i class="fas fa-check me-1"></i>已複製';
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-success');
+                    setTimeout(() => {
+                        btn.innerHTML = original;
+                        btn.classList.add('btn-outline-secondary');
+                        btn.classList.remove('btn-success');
+                    }, 1200);
+                } catch (err) {
+                    console.error('複製失敗：', err);
+                }
+            });
+        })();
+    </script>
 }
-else
-{
-    <p>目前沒有任何通知。</p>
-}
+
+<div class="modal fade" id="notifDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">通知詳情</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-muted">載入中...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+
