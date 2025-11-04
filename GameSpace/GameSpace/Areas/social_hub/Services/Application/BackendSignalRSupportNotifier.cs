@@ -61,9 +61,7 @@ namespace GameSpace.Areas.social_hub.Services.Application
 		/// - Connected / Connecting / Reconnecting：不動作
 		/// - Disconnected：上鎖後呼叫 StartAsync()
 		/// </summary>
-		private async Task 
-			
-			StartedAsync()
+		private async Task EnsureStartedAsync()
 		{
 			if (_conn.State == HubConnectionState.Connected
 			 || _conn.State == HubConnectionState.Connecting

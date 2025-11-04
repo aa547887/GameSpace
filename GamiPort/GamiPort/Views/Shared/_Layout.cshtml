@@ -25,6 +25,8 @@
     <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar2.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
+    <!-- _RightRailAds樣式 -->
+    <link href="~/css/Forum/forum.css" rel="stylesheet" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
 </head>
@@ -40,13 +42,15 @@
             @await Html.PartialAsync("_TopbarLevel2")
 
             <div class="container-fluid py-3">
-                <div class="row g-4">
+                <div class="row g-4 justify-content-center">
                     <div class="col-12 col-xxl-9">
-                        @RenderBody()
+                        <div class="d-flex justify-content-center justify-content-xxl-start">
+                            @RenderBody()
+                        </div>
                     </div>
                     <aside class="col-xl-3 d-none d-xl-block">
                         <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
+                            @await Html.PartialAsync("/Areas/Forum/Views/Shared/_RightRailAds.cshtml")
                         </div>
                     </aside>
                 </div>
