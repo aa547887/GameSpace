@@ -27,6 +27,7 @@ using GamiPort.Models;                     // GameSpacedatabaseContext（業務�
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace GamiPort
 {
@@ -81,7 +82,7 @@ namespace GamiPort
                     // Cookie 屬性
                     opts.Cookie.Name = "GamiPort.User";   // 與後台 Cookie 不同名，避免互蓋
                     opts.Cookie.HttpOnly = true;
-                    opts.Cookie.SameSite = SameSiteMode.Lax; // Step1 Hub 允許匿名連線，先用 Lax 即可
+					opts.Cookie.SameSite = SameSiteMode.Lax; // Step1 Hub 允許匿名連線，先用 Lax 即可
                     opts.ExpireTimeSpan = TimeSpan.FromDays(7);
                     opts.SlidingExpiration = true;
                 });
