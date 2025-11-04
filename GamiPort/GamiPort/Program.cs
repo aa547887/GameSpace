@@ -22,6 +22,7 @@ using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
+using GamiPort.Areas.OnlineStore.Utils;   // AnonCookie
 
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
@@ -29,6 +30,9 @@ using GamiPort.Models;                     // GameSpacedatabaseContext（業務�
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
+// Program.cs 最上面加（若尚未有）
+
+
 
 namespace GamiPort
 {
