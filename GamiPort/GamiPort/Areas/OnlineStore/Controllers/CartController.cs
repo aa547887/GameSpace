@@ -135,7 +135,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 
 
 		// POST: /OnlineStore/Cart/UpdateQty
-		[HttpPost]
+		[HttpPost("UpdateQty")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> UpdateQty(int productId, int qty, int shipMethodId, string destZip, string? couponCode)
 		{
@@ -153,7 +153,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		}
 
 		// POST: /OnlineStore/Cart/Remove
-		[HttpPost]
+		[HttpPost("Remove")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Remove(int productId, int shipMethodId, string destZip, string? couponCode)
 		{
@@ -170,7 +170,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		}
 
 		// POST: /OnlineStore/Cart/Clear
-		[HttpPost]
+		[HttpPost("Clear")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Clear(int shipMethodId, string destZip, string? couponCode)
 		{
@@ -247,7 +247,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				Qty = Math.Max(1, qty),   // ← 這裡用 Math.Max（不是 Math.max）
 				ImageThumb = imageThumb,
 				IsSelected = true,
-				ItemStatus = "Active",
+				//ItemStatus = "Active",
 				IsDeleted = false,
 				CreatedAt = now,
 				UpdatedAt = now
@@ -277,6 +277,47 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				return StatusCode(500, new { ok = false, code = "DEVADD_FAILED", message = ex.Message, detail = ex.InnerException?.Message });
 			}
 		}
+		//// GET: /OnlineStore/Cart/DevSeed10?shipMethodId=1&destZip=320&couponCode=
+		//// 目的：一次插入 product_id 121~130 各 1 件，用來快速測試未登入/登入購物流程
+		//[HttpGet("DevSeed10")]
+		//public async Task<IActionResult> DevSeed10(int shipMethodId = 1, string destZip = "320", string? couponCode = null)
+		//{
+		//	try
+		//	{
+		//		var cartId = await EnsureCartAsync();
+
+		//		// 依序嘗試 121..130；有缺的 id 會自動略過，不會中斷測試
+		//		int added = 0;
+		//		for (int pid = 121; pid <= 130; pid++)
+		//		{
+		//			var picked = await PickProductAsync(pid);
+		//			if (picked.pid == 0) continue; // 該商品不存在或被刪除 → 略過
+
+		//			await AddItemToCartAsync(
+		//				cartId: cartId,
+		//				productId: picked.pid,
+		//				qty: 1,
+		//				productName: picked.name,
+		//				unitPrice: picked.price,
+		//				imageThumb: picked.img
+		//			);
+		//			added++;
+		//		}
+
+		//		if (added == 0)
+		//		{
+		//			// 都找不到 → 回傳清楚訊息給前端
+		//			return StatusCode(500, new { ok = false, code = "NO_PRODUCT_121_130", message = "121~130 都沒有可加入的商品（請先建立商品資料）" });
+		//		}
+
+		//		// 回傳最新購物車（跟原本 DevAdd 一樣走 Full()，前端可直接重繪）
+		//		return await Full(shipMethodId, destZip, couponCode);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		return StatusCode(500, new { ok = false, code = "DEVSEED10_FAIL", message = ex.Message, detail = ex.InnerException?.Message });
+		//	}
+		//}
 #endif
 		// 使用者在購物車按「前往結帳」
 		[HttpPost("GoCheckout")]
@@ -319,6 +360,41 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			{
 				TempData["Toast"] = "插入失敗：" + ex.Message;
 				return RedirectToAction("Index");
+			}
+		}
+		[HttpGet("DevSeed10")]
+		public async Task<IActionResult> DevSeed10(int shipMethodId = 1, string destZip = "320", string? couponCode = null)
+		{
+			try
+			{
+				var cartId = await EnsureCartAsync();
+
+				int added = 0;
+				for (int pid = 121; pid <= 130; pid++)
+				{
+					var picked = await PickProductAsync(pid);   // 你現有的挑商品方法
+					if (picked.pid == 0) continue;
+
+					await AddItemToCartAsync(
+						cartId: cartId,
+						productId: picked.pid,
+						qty: 1,
+						productName: picked.name,
+						unitPrice: picked.price,
+						imageThumb: picked.img
+					);
+					added++;
+				}
+
+				if (added == 0)
+					return StatusCode(500, new { ok = false, code = "NO_PRODUCT_121_130", message = "121~130 都沒有可加入的商品" });
+
+				// 回傳 Full() 讓前端重繪（沿用你原本流程）
+				return await Full(shipMethodId, destZip, couponCode);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { ok = false, code = "DEVSEED10_FAIL", message = ex.Message, detail = ex.InnerException?.Message });
 			}
 		}
 	}

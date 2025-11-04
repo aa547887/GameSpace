@@ -5,7 +5,7 @@
 
 @section Styles {
     <!-- 你的 forum.css 可留，但別動版面寬度到破版就好 -->
-    <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
+    @* <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" /> *@
     <style>
         /* 安全的小樣式，避免拉寬整頁造成溢出 */
         html, body, .container, .container-fluid {
@@ -22,6 +22,13 @@
     <h2 class="m-0">論壇 / 所有遊戲</h2>
 </div>
 
+<!-- ✅ 搜尋結果 / 論壇列表的掛載容器 -->
+<div id="home-content">
+    <div id="forums-app">
+        <forum-list></forum-list>
+    </div>
+</div>
+
 <!-- ✅ Vue 掛載點（ID 必須是 #forums-app，和 main.js 對得上） -->
 <div id="forums-app">
     <forum-list></forum-list>
@@ -36,7 +43,8 @@
 @section Scripts {
     <!-- 只載入口檔，讓它自己 import Vue；不要再額外載 Vue CDN，避免重複 -->
     <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
-
+    <!-- ✅ 把搜尋的 JS 放這裡（只在 Home 頁載入） -->
+    <script type="module" src="~/js/forum/home-search.js" asp-append-version="true"></script>
     <!-- 除錯用，可先留著，看 Console 是否出現這行 -->
     <script>console.log('[Home/Index] Scripts section loaded ✅');</script>
 }

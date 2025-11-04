@@ -1,27 +1,25 @@
 ﻿// Areas/OnlineStore/Controllers/CheckoutController.cs
-// ======================================================================
-// ▶▶▶ 一鍵切換（只改這裡）：
-//    取消註解 = 啟用「開發期：跳過金流」
-//    註解/刪除 = 走「真實金流（綠界）」 
 //#define DEV_SKIP_PAYMENT
-// ======================================================================
-
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;                  // Session
+using Microsoft.AspNetCore.Http;
 using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.OnlineStore.ViewModels;
 using GamiPort.Areas.OnlineStore.DTO;
 using GamiPort.Areas.OnlineStore.Utils;           // AnonCookie
-using Microsoft.EntityFrameworkCore;              // EF Core
-using GamiPort.Models;                            // GameSpacedatabaseContext
+using Microsoft.EntityFrameworkCore;
+using GamiPort.Models;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Data.SqlClient;                   // for usp_Order_CreateFromCart
+using Microsoft.Data.SqlClient;
 using System.Data;
-using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService（真實金流用）
+using GamiPort.Areas.OnlineStore.Payments;        // EcpayPaymentService
+using GamiPort.Infrastructure.Security;           // IAppCurrentUser
+using Microsoft.AspNetCore.Authorization;         // ★ NEW: 要求登入才可進入結帳
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -31,228 +29,242 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		private readonly ICartService _cartSvc;
 		private readonly ILookupService _lookup;
 		private readonly GameSpacedatabaseContext _db;
+		private readonly IAppCurrentUser _me;
 
 		private static readonly Regex ZipRegex = new(@"^\d{3}(\d{2})?$", RegexOptions.Compiled);
 
-		public CheckoutController(ICartService cartSvc, ILookupService lookup, GameSpacedatabaseContext db)
+		public CheckoutController(ICartService cartSvc, ILookupService lookup, GameSpacedatabaseContext db, IAppCurrentUser me)
 		{
 			_cartSvc = cartSvc;
 			_lookup = lookup;
 			_db = db;
+			_me = me;
 		}
 
-		private async Task LoadShipMethodsAsync() => ViewBag.ShipMethods = await _lookup.GetShipMethodsAsync();
-		private async Task LoadPayMethodsAsync() => ViewBag.PayMethods = await _lookup.GetPayMethodsAsync();
+		// ──────────────────── 舊版三步驟：停用路由（避免誤用） ────────────────────
+		[NonAction] public Task<IActionResult> Step1() => Task.FromResult<IActionResult>(NotFound());
+		[NonAction] public Task<IActionResult> Step1(CheckoutStep1Vm vm) => Task.FromResult<IActionResult>(NotFound());
+		[NonAction] public Task<IActionResult> Step2() => Task.FromResult<IActionResult>(NotFound());
+		[NonAction] public Task<IActionResult> Step2(CheckoutStep2Vm vm) => Task.FromResult<IActionResult>(NotFound());
+		[NonAction] public Task<IActionResult> Review() => Task.FromResult<IActionResult>(NotFound());
+		[NonAction] public Task<IActionResult> PlaceOrder() => Task.FromResult<IActionResult>(NotFound());
 
+		// ───────────────────────────── 一頁式：GET ─────────────────────────────
+		[AllowAnonymous]
 		[HttpGet]
-		public async Task<IActionResult> Step1()
+		public async Task<IActionResult> OnePage(string? selected)
 		{
+			// 未登入：導到登入後回跳到本頁（保留你原有邏輯）
+			if (!(User?.Identity?.IsAuthenticated ?? false))
+			{
+				var returnUrl = Url.Action(nameof(OnePage), "Checkout", new { area = "OnlineStore", selected })
+								?? "/OnlineStore/Checkout/OnePage";
+				var loginUrl =
+					Url.Action("Login", "Login", new { area = "Login", ReturnUrl = returnUrl }) ??
+					Url.Action("Index", "Login", new { area = "Login", ReturnUrl = returnUrl }) ??
+					"/Identity/Account/Login?ReturnUrl=" + Uri.EscapeDataString(returnUrl);
+				return Redirect(loginUrl);
+			}
+
+			// 解析勾選清單（product_id）
+			var selectedIds = (selected ?? "")
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+				.Where(id => id.HasValue).Select(id => id!.Value)
+				.Distinct().ToArray();
+
+			if (selectedIds.Length == 0)
+			{
+				// 沒選任何東西 → 回購物車
+				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
+			}
+
+			// 取 cartId / 預設配送與郵遞區號（保持你原方法）
 			var (cartId, initShipId, initZip) = await GetDefaultsAsync();
-			var summary = await _cartSvc.GetSummaryAsync(cartId, initShipId, initZip, null);
-			ViewBag.Full = new { Summary = summary };
 
-			await LoadShipMethodsAsync();
-			return View(new CheckoutStep1Vm { ShipMethodId = initShipId, DestZip = initZip });
+			// 抓整車摘要與明細（沿用你現有服務）
+			var full = await _cartSvc.GetFullAsync(cartId, initShipId, initZip, null);
+
+			// 篩選出「勾選」的明細
+			var selLines = full.Lines.Where(l => selectedIds.Contains(l.Product_Id)).ToList();
+			if (selLines.Count == 0)
+				return RedirectToAction("Index", "Cart", new { area = "OnlineStore" });
+
+			// 用勾選覆蓋摘要（不改動你其他欄位，避免牽動 SQL/DTO）
+			var summary = full.Summary;
+			summary.Subtotal = selLines.Sum(x => x.Line_Subtotal);
+			summary.Subtotal_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Line_Subtotal);
+			summary.Item_Count_Total = selLines.Sum(x => x.Quantity);
+			summary.Item_Count_Physical = selLines.Where(x => x.Is_Physical).Sum(x => x.Quantity);
+
+			// 若全為非實體 → 運費歸 0（常見站點邏輯；也不牽動 SQL）
+			if (summary.Item_Count_Physical == 0)
+			{
+				summary.Shipping_Fee = 0;
+			}
+
+			// 以你現有欄位重算 Grand_Total（不使用不存在的 Discount_Shipping）
+			summary.Grand_Total = summary.Subtotal
+								+ summary.Shipping_Fee
+								- summary.Discount
+								+ (summary.CouponDiscount ?? 0);
+
+			ViewBag.Full = summary;
+			TempData["__SelectedIds"] = string.Join(",", selectedIds); // 後續 PlaceOrder 可用
+
+			return View(new CheckoutOnePageVm
+			{
+				ShipMethodId = initShipId,
+				PayMethodId = 1,
+				Zipcode = initZip
+			});
 		}
 
+
+		// ────────────────── 一頁式：POST（驗證→建單→轉金流/或跳過） ──────────────────
+		[Authorize]
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Step1(CheckoutStep1Vm vm)
+		public async Task<IActionResult> OnePage(CheckoutOnePageVm vm)
 		{
+			// ★ 如果沒有輸入優惠碼，就把它視為可選，移除 Required 的驗證錯誤
+			if (string.IsNullOrWhiteSpace(vm.CouponCode))
+			{
+				ModelState.Remove(nameof(vm.CouponCode));
+				vm.CouponCode = null;
+			}
 			if (!ModelState.IsValid)
 			{
-				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.DestZip, null);
-				await LoadShipMethodsAsync();
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
 				return View(vm);
 			}
 
-			if (!await _lookup.ShipMethodExistsAsync(vm.ShipMethodId))
-				ModelState.AddModelError(nameof(vm.ShipMethodId), "配送方式不合法");
+			// ★ 1) 後端嚴格驗證 + 自動回退到可用的配送/付款方式（避免 DB 無此 Id 造成 SP=0）
+			if (!await _db.SoShipMethods.AnyAsync(s => s.ShipMethodId == vm.ShipMethodId))
+			{
+				var fallbackShip = await _db.SoShipMethods.OrderBy(s => s.ShipMethodId).Select(s => (int?)s.ShipMethodId).FirstOrDefaultAsync();
+				if (fallbackShip == null)
+					ModelState.AddModelError(nameof(vm.ShipMethodId), "找不到可用的配送方式");
+				else
+					vm.ShipMethodId = fallbackShip.Value;
+			}
+			if (!await _db.SoPayMethods.AnyAsync(p => p.PayMethodId == vm.PayMethodId))
+			{
+				var fallbackPay = await _db.SoPayMethods.OrderBy(p => p.PayMethodId).Select(p => (int?)p.PayMethodId).FirstOrDefaultAsync();
+				if (fallbackPay == null)
+					ModelState.AddModelError(nameof(vm.PayMethodId), "找不到可用的付款方式");
+				else
+					vm.PayMethodId = fallbackPay.Value;
+			}
+			if (string.IsNullOrWhiteSpace(vm.Zipcode) || !ZipRegex.IsMatch(vm.Zipcode))
+				ModelState.AddModelError(nameof(vm.Zipcode), "郵遞區號格式錯誤");
 
 			if (!ModelState.IsValid)
 			{
-				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.DestZip, null);
-				await LoadShipMethodsAsync();
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
 				return View(vm);
 			}
 
-			TempData["Step1"] = System.Text.Json.JsonSerializer.Serialize(vm);
-			return RedirectToAction(nameof(Step2));
-		}
-
-		[HttpGet]
-		public async Task<IActionResult> Step2()
-		{
-			var (shipMethodId, destZip) = GetStep1ValuesOrDefault();
-			await RefreshSummaryToViewBagAsync(shipMethodId, destZip, null);
-			await LoadPayMethodsAsync();
-			return View(new CheckoutStep2Vm());
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Step2(CheckoutStep2Vm vm)
-		{
-			var (shipMethodId, destZip) = GetStep1ValuesOrDefault();
-
-			if (!ModelState.IsValid)
-			{
-				await RefreshSummaryToViewBagAsync(shipMethodId, destZip, vm.CouponCode);
-				await LoadPayMethodsAsync();
-				return View(vm);
-			}
-
-			if (!await _lookup.PayMethodExistsAsync(vm.PayMethodId))
-				ModelState.AddModelError(nameof(vm.PayMethodId), "付款方式不合法");
-
-			if (!ModelState.IsValid)
-			{
-				await RefreshSummaryToViewBagAsync(shipMethodId, destZip, vm.CouponCode);
-				await LoadPayMethodsAsync();
-				return View(vm);
-			}
-
-			TempData["Step2"] = System.Text.Json.JsonSerializer.Serialize(vm);
-			return RedirectToAction(nameof(Review));
-		}
-
-		[HttpGet]
-		public async Task<IActionResult> Review()
-		{
-			var (shipMethodId, destZip) = GetStep1ValuesOrDefault();
-			var step2 = GetStep2OrDefault();
-			await RefreshSummaryToViewBagAsync(shipMethodId, destZip, step2.CouponCode);
-#if DEV_SKIP_PAYMENT
-			ViewBag.DevSkip = true;   // 可在 View 顯示提示（非必要）
-#else
-			ViewBag.DevSkip = false;
-#endif
-			return View(step2);
-		}
-
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> PlaceOrder()
-		{
-			// 1) 取 Step1/Step2
-			var step1 = default(CheckoutStep1Vm);
-			var step2 = default(CheckoutStep2Vm);
-			try
-			{
-				step1 = System.Text.Json.JsonSerializer.Deserialize<CheckoutStep1Vm>((string)TempData.Peek("Step1"));
-				step2 = System.Text.Json.JsonSerializer.Deserialize<CheckoutStep2Vm>((string)TempData.Peek("Step2"));
-			}
-			catch { }
-
-			if (step1 == null || step2 == null)
-			{
-				TempData["Msg"] = "結帳流程逾時或資料遺失，請重新操作。";
-				return RedirectToAction(nameof(Step1));
-			}
-
-			// 2) 金額重算
-			var (shipMethodId, destZip) = (step1.ShipMethodId, step1.DestZip);
+			// ★ 2) 取 cartId / userId（避免 0 導致 SP 失敗）
 			var (cartId, _, _) = await GetDefaultsAsync();
-			var summary = await _cartSvc.GetSummaryAsync(cartId, shipMethodId, destZip, step2.CouponCode);
+			int? cartUserId = await _db.SoCarts.Where(c => c.CartId == cartId).Select(c => (int?)c.UserId).FirstOrDefaultAsync();
+			int userId = cartUserId ?? await _me.GetUserIdAsync();
+			if (userId <= 0)
+				userId = await _db.Users.OrderBy(u => u.UserId).Select(u => u.UserId).FirstOrDefaultAsync();
+			if (userId <= 0)
+			{
+				ModelState.AddModelError(string.Empty, "找不到有效的使用者資料，無法建立訂單。");
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
+				return View(vm);
+			}
 
+			// ★ 3) 拉摘要，確認可結帳
+			var summary = await _cartSvc.GetSummaryAsync(cartId, vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
 			if (!summary.Can_Checkout)
 			{
-				TempData["Msg"] = summary.Block_Reason ?? "目前無法下單，請稍後再試。";
-				return RedirectToAction(nameof(Review));
+				ModelState.AddModelError(string.Empty, summary.Block_Reason ?? "目前無法下單，請稍後再試。");
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
+				return View(vm);
 			}
 
-			// 2.5) 取得 userId
-			int? cartUserId = await _db.SoCarts.Where(c => c.CartId == cartId).Select(c => (int?)c.UserId).FirstOrDefaultAsync();
-			int userId = (cartUserId.HasValue && await _db.Users.AnyAsync(u => u.UserId == cartUserId.Value))
-				? cartUserId.Value
-				: await _db.Users.OrderBy(u => u.UserId).Select(u => u.UserId).FirstOrDefaultAsync();
+			// ★ 4) 以「命名參數」呼叫 SP（避免參數順序不一致）
+			var pCartId = new SqlParameter("@CartId", cartId);
+			var pUserId = new SqlParameter("@UserId", userId);
+			var pShipMethodId = new SqlParameter("@ShipMethodId", vm.ShipMethodId);
+			var pPayMethodId = new SqlParameter("@PayMethodId", vm.PayMethodId);
+			var pRecipient = new SqlParameter("@Recipient", (object)vm.Recipient ?? DBNull.Value);
+			var pPhone = new SqlParameter("@Phone", (object)vm.Phone ?? DBNull.Value);
+			var pDestZip = new SqlParameter("@DestZip", (object)vm.Zipcode ?? DBNull.Value);
+			var pAddress1 = new SqlParameter("@Address1", (object)($"{vm.City}{vm.District}{vm.Address1}") ?? DBNull.Value);
+			var pAddress2 = new SqlParameter("@Address2", DBNull.Value);
+			var pCouponCode = new SqlParameter("@CouponCode", (object?)vm.CouponCode ?? DBNull.Value);
+			var pCouponDiscount = new SqlParameter("@CouponDiscount", (object)(summary.CouponDiscount ?? 0m));
+			var pCouponMessage = new SqlParameter("@CouponMessage", (object?)summary.CouponMessage ?? DBNull.Value);
+			var pOrderId = new SqlParameter("@OrderId", SqlDbType.Int) { Direction = ParameterDirection.Output };
 
-			if (userId == 0)
+			int newOrderId = 0;
+			try
 			{
-				TempData["Msg"] = "找不到有效的使用者資料，無法建立訂單。";
-				return RedirectToAction(nameof(Review));
-			}
-
-			// 3) 建單 SP
-			var orderIdParam = new SqlParameter
-			{
-				ParameterName = "@OrderId",
-				SqlDbType = SqlDbType.Int,
-				Direction = ParameterDirection.Output
-			};
-
-			var couponDiscount = summary.CouponDiscount ?? 0m;
-			var couponMsg = summary.CouponMessage ?? (string?)null;
-
-			var sql = @"
+				await _db.Database.ExecuteSqlRawAsync(@"
 EXEC dbo.usp_Order_CreateFromCart
-    @CartId=@p0, @UserId=@p1, @ShipMethodId=@p2, @PayMethodId=@p3,
-    @Recipient=@p4, @Phone=@p5, @DestZip=@p6, @Address1=@p7, @Address2=@p8,
-    @CouponCode=@p9, @CouponDiscount=@p10, @CouponMessage=@p11,
-    @OrderId=@OrderId OUTPUT;";
+      @CartId=@CartId,
+      @UserId=@UserId,
+      @ShipMethodId=@ShipMethodId,
+      @PayMethodId=@PayMethodId,
+      @Recipient=@Recipient,
+      @Phone=@Phone,
+      @DestZip=@DestZip,
+      @Address1=@Address1,
+      @Address2=@Address2,
+      @CouponCode=@CouponCode,
+      @CouponDiscount=@CouponDiscount,
+      @CouponMessage=@CouponMessage,
+      @OrderId=@OrderId OUTPUT;",
+				pCartId, pUserId, pShipMethodId, pPayMethodId, pRecipient, pPhone, pDestZip,
+				pAddress1, pAddress2, pCouponCode, pCouponDiscount, pCouponMessage, pOrderId);
 
-			await _db.Database.ExecuteSqlRawAsync(sql, new object[] {
-				new SqlParameter("@p0", cartId),
-				new SqlParameter("@p1", userId),
-				new SqlParameter("@p2", step1.ShipMethodId),
-				new SqlParameter("@p3", step2.PayMethodId),
-				new SqlParameter("@p4", step1.Recipient),
-				new SqlParameter("@p5", step1.Phone),
-				new SqlParameter("@p6", step1.DestZip),
-				new SqlParameter("@p7", step1.Address1),
-				new SqlParameter("@p8", (object?)step1.Address2 ?? DBNull.Value),
-				new SqlParameter("@p9", (object?)step2.CouponCode ?? DBNull.Value),
-				new SqlParameter("@p10", couponDiscount),
-				new SqlParameter("@p11", (object?)couponMsg ?? DBNull.Value),
-				orderIdParam
-			});
+				newOrderId = (int)(pOrderId.Value ?? 0);
+			}
+			catch (Exception ex)
+			{
+				ModelState.AddModelError(string.Empty, $"建立訂單時發生例外：{ex.Message}");
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
+				return View(vm);
+			}
 
-			int newOrderId = (int)(orderIdParam.Value ?? 0);
 			if (newOrderId <= 0)
 			{
-				TempData["Msg"] = "下單失敗，請稍後再試。";
-				return RedirectToAction(nameof(Review));
+				ModelState.AddModelError(string.Empty,
+					"下單失敗：可能是 (1) 購物車為空、(2) 配送/付款方式在資料庫不存在、(3) 參數順序不符或金額/欄位驗證未通過。");
+				await RefreshSummaryToViewBagAsync(vm.ShipMethodId, vm.Zipcode, vm.CouponCode);
+				return View(vm);
 			}
-
-			// 4) 清暫存
-			TempData.Remove("Step1");
-			TempData.Remove("Step2");
 
 #if DEV_SKIP_PAYMENT
-			// ───────────────────────────────────────────────
-			// ★ 開發期：跳過金流 → 只更新主檔，不寫交易/稽核/歷史（避免約束衝突）
-			// ───────────────────────────────────────────────
 			var order = await _db.SoOrderInfoes.FirstOrDefaultAsync(o => o.OrderId == newOrderId);
-			if (order != null)
-			{
-				order.PaymentStatus = "已付款";
-				order.PaymentAt = DateTime.UtcNow;
-				await _db.SaveChangesAsync();
-			}
+			if (order != null) { order.PaymentStatus = "已付款"; order.PaymentAt = DateTime.UtcNow; await _db.SaveChangesAsync(); }
 			TempData["Msg"] = "（開發）已跳過金流並標記已付款。";
 			return RedirectToAction(nameof(Success), new { id = newOrderId });
 #else
-			// ───────────────────────────────────────────────
-			// ★ 正式：轉去金流（由 StartPayment → 綠界）
-			// ───────────────────────────────────────────────
 			return RedirectToAction(nameof(StartPayment), new { id = newOrderId });
 #endif
 		}
 
+		// ─────────────────── 產生綠界表單並自動送出（含 noscript 備援） ───────────────────
+		[Authorize] // ★ NEW
 		[HttpGet]
 		public async Task<IActionResult> StartPayment(int id)
 		{
 #if DEV_SKIP_PAYMENT
-			// 防止手動打 URL 時又被送去綠界
 			TempData["Msg"] = "（開發）目前為跳過金流模式。";
 			return RedirectToAction(nameof(Success), new { id });
 #else
 			var order = await _db.SoOrderInfoes
 				.Where(o => o.OrderId == id)
-				.Select(o => new { o.OrderId, o.OrderCode, o.GrandTotal })
+				.Select(o => new { o.OrderId, o.OrderCode, o.GrandTotal, o.PaymentStatus })
 				.FirstOrDefaultAsync();
 
-			if (order == null) return RedirectToAction(nameof(Step1));
+			if (order == null) return RedirectToAction(nameof(OnePage));
 
 			var svc = HttpContext.RequestServices.GetRequiredService<EcpayPaymentService>();
 			var (action, fields) = svc.BuildCreditRequest(
@@ -261,14 +273,26 @@ EXEC dbo.usp_Order_CreateFromCart
 				itemName: "GamiPort 商品",
 				returnPath: $"/Ecpay/Return?oid={id}",
 				orderResultPath: $"/Ecpay/OrderResult?oid={id}",
-				clientBackPath: "/OnlineStore/Checkout/Review"
+				clientBackPath: "/OnlineStore/Checkout/OnePage"
 			);
 
-			var sb = new System.Text.StringBuilder();
+			var sb = new StringBuilder();
+			sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'><title>前往付款</title></head><body>");
 			sb.AppendLine($"<form id='f' method='post' action='{action}'>");
 			foreach (var kv in fields)
-				sb.AppendLine($"<input type='hidden' name='{kv.Key}' value='{System.Net.WebUtility.HtmlEncode(kv.Value)}'/>");
-			sb.AppendLine("</form><script>document.getElementById('f').submit();</script>");
+			{
+				var k = System.Net.WebUtility.HtmlEncode(kv.Key);
+				var v = System.Net.WebUtility.HtmlEncode(kv.Value);
+				sb.AppendLine($"  <input type='hidden' name='{k}' value='{v}' />");
+			}
+			sb.AppendLine("  <noscript>");
+			sb.AppendLine("    <p>已產生付款資料，但您的瀏覽器停用 JavaScript。請點下方按鈕前往綠界付款。</p>");
+			sb.AppendLine("    <button type='submit'>前往付款</button>");
+			sb.AppendLine("  </noscript>");
+			sb.AppendLine("</form>");
+			sb.AppendLine("<script>try{document.getElementById('f').submit();}catch(e){}</script>");
+			sb.AppendLine("</body></html>");
+
 			return Content(sb.ToString(), "text/html; charset=utf-8");
 #endif
 		}
@@ -276,11 +300,13 @@ EXEC dbo.usp_Order_CreateFromCart
 		[HttpGet]
 		public async Task<IActionResult> Success(int id, string? orderCode)
 		{
+			// 允許以 orderCode 或 id 開啟
 			if (id <= 0 && !string.IsNullOrWhiteSpace(orderCode))
-				id = await _db.SoOrderInfoes.Where(o => o.OrderCode == orderCode).Select(o => o.OrderId).FirstOrDefaultAsync();
+				id = await _db.SoOrderInfoes.Where(o => o.OrderCode == orderCode)
+											.Select(o => o.OrderId).FirstOrDefaultAsync();
+			if (id <= 0) return RedirectToAction(nameof(OnePage));
 
-			if (id <= 0) return RedirectToAction(nameof(Step1));
-
+			// 撈訂單頭資料（維持匿名物件，方便 view 用 @model dynamic）
 			var order = await _db.SoOrderInfoes
 				.Where(o => o.OrderId == id)
 				.Select(o => new {
@@ -289,7 +315,7 @@ EXEC dbo.usp_Order_CreateFromCart
 					o.OrderDate,
 					o.OrderStatus,
 					o.PaymentStatus,
-					o.OrderTotal,
+					o.PaymentAt,
 					o.Subtotal,
 					o.DiscountTotal,
 					o.ShippingFee,
@@ -300,21 +326,30 @@ EXEC dbo.usp_Order_CreateFromCart
 					o.DestZip,
 					o.Address1,
 					o.Address2
-				}).FirstOrDefaultAsync();
+				})
+				.FirstOrDefaultAsync();
+			if (order == null) return RedirectToAction(nameof(OnePage));
 
-			if (order == null) return RedirectToAction(nameof(Step1));
-
-			var itemCount = await _db.SoOrderItems.Where(i => i.OrderId == id).SumAsync(i => (int?)i.Quantity) ?? 0;
-
+			// 取付款方式名稱（若有）
 			string? payMethodName = null;
-			if (order.PayMethodId > 0)
-				payMethodName = await _db.SoPayMethods.Where(p => p.PayMethodId == order.PayMethodId).Select(p => p.MethodName).FirstOrDefaultAsync();
+			if ((order.PayMethodId ?? 0) > 0)
+				payMethodName = await _db.SoPayMethods
+										 .Where(p => p.PayMethodId == order.PayMethodId)
+										 .Select(p => p.MethodName)
+										 .FirstOrDefaultAsync();
 
-			ViewBag.ItemCount = itemCount;
+			// 取明細數量（可選）
+			var itemCount = await _db.SoOrderItems
+									 .Where(i => i.OrderId == id)
+									 .SumAsync(i => (int?)i.Quantity) ?? 0;
+
 			ViewBag.PayMethodName = payMethodName;
+			ViewBag.ItemCount = itemCount;
+
 			return View(order);
 		}
 
+		// Ajax：摘要盒
 		[HttpGet]
 		public async Task<IActionResult> SummaryBox(int shipMethodId, string destZip, string? coupon)
 		{
@@ -347,50 +382,65 @@ EXEC dbo.usp_Order_CreateFromCart
 			if (!await _lookup.ShipMethodExistsAsync(shipMethodId)) shipMethodId = 1;
 			if (string.IsNullOrWhiteSpace(destZip) || !ZipRegex.IsMatch(destZip)) destZip = "100";
 			var summary = await _cartSvc.GetSummaryAsync(cartId, shipMethodId, destZip, coupon);
-			ViewBag.Full = new { Summary = summary };
+			ViewBag.Full = summary;
 		}
-
 		private static string Append(string? msg, string add) => string.IsNullOrEmpty(msg) ? add : $"{msg}、{add}";
-
-		private (int shipMethodId, string destZip) GetStep1ValuesOrDefault()
-		{
-			try
-			{
-				if (TempData.Peek("Step1") is string json)
-				{
-					var vm = System.Text.Json.JsonSerializer.Deserialize<CheckoutStep1Vm>(json);
-					if (vm != null) return (vm.ShipMethodId, vm.DestZip);
-				}
-			}
-			catch { }
-			return (1, "100");
-		}
-
-		private CheckoutStep2Vm GetStep2OrDefault()
-		{
-			try
-			{
-				if (TempData.Peek("Step2") is string json)
-				{
-					var vm = System.Text.Json.JsonSerializer.Deserialize<CheckoutStep2Vm>(json);
-					if (vm != null) return vm;
-				}
-			}
-			catch { }
-			return new CheckoutStep2Vm();
-		}
 
 		private async Task<(Guid cartId, int initShipId, string initZip)> GetDefaultsAsync()
 		{
-			var anonToken = AnonCookie.GetOrSet(HttpContext);
 			const string CartKey = "CartId";
-
 			if (Guid.TryParse(HttpContext.Session.GetString(CartKey), out var cached) && cached != Guid.Empty)
 				return (cached, 1, "100");
 
-			var cartId = await _cartSvc.EnsureCartIdAsync(null, anonToken);
+			var anon = AnonCookie.GetOrSet(HttpContext);
+			var userId = await _me.GetUserIdAsync();
+			var cartId = await _cartSvc.EnsureCartIdAsync(userId > 0 ? userId : (int?)null, anon);
+
 			HttpContext.Session.SetString(CartKey, cartId.ToString());
 			return (cartId, 1, "100");
+		}
+		// ★ 新增：回傳目前會員三種券（未使用、未刪除）的可用張數
+		[HttpGet]
+		[Area("OnlineStore")]
+		public async Task<IActionResult> CouponCounts()
+		{
+			// 取得目前登入者的 UserId（未登入或取不到就回 0）
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0)
+				return Json(new { free = 0, pct = 0, minus = 0 });
+
+			// 用最保守的 ADO.NET 查詢，避免碰到你 EF 實體命名差異
+			using var conn = _db.Database.GetDbConnection();
+			await conn.OpenAsync();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+        SELECT CouponTypeID, COUNT(*) AS Cnt
+        FROM dbo.Coupon WITH (NOLOCK)
+        WHERE UserID = @uid
+          AND ISNULL(IsDeleted, 0) = 0
+          AND ISNULL(IsUsed, 0) = 0
+          AND UsedInOrderID IS NULL
+          AND CouponTypeID IN (1,2,3)
+        GROUP BY CouponTypeID;";
+			var p = cmd.CreateParameter();
+			p.ParameterName = "@uid";
+			p.Value = userId;
+			cmd.Parameters.Add(p);
+
+			int free = 0, pct = 0, minus = 0;
+			using (var rd = await cmd.ExecuteReaderAsync())
+			{
+				while (await rd.ReadAsync())
+				{
+					var t = rd.GetInt32(0);
+					var c = rd.GetInt32(1);
+					if (t == 1) free = c;
+					else if (t == 2) pct = c;
+					else if (t == 3) minus = c;
+				}
+			}
+			return Json(new { free, pct, minus });
 		}
 	}
 }

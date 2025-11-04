@@ -1,126 +1,78 @@
-﻿// =============================================================
-// RelationsQueryController（查詢版）— 支援可設定的「好友狀態」
-// appsettings.json：
-// "Relations": {
-//   "AcceptedStatusCodes": [ "FRIEND", "ACCEPTED", "APPROVED", "MUTUAL" ],
-//   "AcceptedStatusIds":   [ 2 ]   // 若你資料表使用固定的 status_id（例如 2 代表好友）
-// }
-// =============================================================
-using System.Globalization;
-using GamiPort.Infrastructure.Security;
-using GamiPort.Models;
-using Microsoft.AspNetCore.Authorization;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using GamiPort.Models;
 
 namespace GamiPort.Areas.social_hub.Controllers
 {
-	[Area("social_hub")]
-	[ApiController]
-	[Route("social_hub/relations")]
-	public sealed class RelationsQueryController : ControllerBase
-	{
-		private readonly GameSpacedatabaseContext _db;
-		private readonly IAppCurrentUser _appCurrentUser;
-		private readonly IConfiguration _cfg;
+    [Area("social_hub")]
+    [ApiController]
+    [Route("social_hub/relations")] // shares base with RelationsController
+    public sealed class RelationsQueryController : ControllerBase
+    {
+        private readonly GameSpacedatabaseContext _db;
+        public RelationsQueryController(GameSpacedatabaseContext db) => _db = db;
 
-		public RelationsQueryController(GameSpacedatabaseContext db, IAppCurrentUser appCurrentUser, IConfiguration cfg)
-		{
-			_db = db;
-			_appCurrentUser = appCurrentUser;
-			_cfg = cfg;
-		}
+        // GET social_hub/relations/friends?onlyAccepted=true&take=200
+        [HttpGet("friends")]
+        public async Task<IActionResult> Friends(
+            [FromQuery] bool onlyAccepted = true,
+            [FromQuery] int take = 200,
+            CancellationToken ct = default)
+        {
+            var currentUserId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0")
+                : 0;
 
-		[AllowAnonymous]
-		[HttpGet("friends")]
-		public async Task<IActionResult> Friends([FromQuery] bool onlyAccepted = true,
-												 [FromQuery] int take = 12,
-												 CancellationToken ct = default)
-		{
-			var meId = await _appCurrentUser.GetUserIdAsync();
-			if (meId <= 0)
-				return Unauthorized(new { reason = "need_user", message = "請用 ?asUser=10000001 或設定 DevLogin:UserId" });
+            if (currentUserId == 0) return Unauthorized();
 
-			// 讀設定：哪些狀態算「好友」
-			var acceptedCodes = _cfg.GetSection("Relations:AcceptedStatusCodes").Get<string[]>() ??
-								new[] { "FRIEND", "ACCEPTED", "APPROVED", "MUTUAL" };
-			var acceptedIds = _cfg.GetSection("Relations:AcceptedStatusIds").Get<int[]>() ?? Array.Empty<int>();
+            var friends = await _db.Relations
+                .AsNoTracking()
+                .Where(r => (r.UserIdSmall == currentUserId || r.UserIdLarge == currentUserId) && r.StatusId == 2) // StatusId 2 for ACCEPTED
+                .Include(r => r.UserIdLargeNavigation)
+                .Include(r => r.UserIdSmallNavigation)
+                .Select(r => new
+                {
+                    FriendUserId = r.UserIdSmall == currentUserId ? r.UserIdLarge : r.UserIdSmall,
+                    FriendName = (r.UserIdSmall == currentUserId
+                                  ? (r.UserIdLargeNavigation != null ? r.UserIdLargeNavigation.UserName : null)
+                                  : (r.UserIdSmallNavigation != null ? r.UserIdSmallNavigation.UserName : null)) ?? "",
+                })
+                .Take(take)
+                .ToListAsync(ct);
 
-			var q = _db.Relations
-				.AsNoTracking()
-				.Include(r => r.Status)
-				.Where(r => r.UserIdSmall == meId || r.UserIdLarge == meId);
+            return Ok(friends);
+        }
 
-			if (onlyAccepted)
-			{
-				// 同時支援以 code 或 id 過濾；兩者任一符合即視為好友
-				q = q.Where(r =>
-					acceptedIds.Contains(r.StatusId) ||
-					acceptedCodes.Contains(r.Status.StatusCode));
-			}
+        // GET social_hub/relations/pair-info?a=<userId1>&b=<userId2>
+        [HttpGet("pair-info")]
+        public async Task<IActionResult> PairInfo([FromQuery] int a, [FromQuery] int b, CancellationToken ct)
+        {
+            if (a <= 0 || b <= 0) return BadRequest(new { reason = "invalid user ids" });
+            var small = Math.Min(a, b);
+            var large = Math.Max(a, b);
 
-			var raw = await q
-				.OrderByDescending(r => r.CreatedAt)
-				.Take(Math.Clamp(take, 1, 100))
-				.Select(r => new
-				{
-					FriendUserId = r.UserIdSmall == meId ? r.UserIdLarge : r.UserIdSmall,
-					Nickname = r.FriendNickname,
-					StatusId = r.StatusId,
-					StatusCode = r.Status.StatusCode,
-					StatusName = r.Status.StatusName,
-					Since = r.CreatedAt
-				})
-				.ToListAsync(ct);
+            var info = await _db.Relations
+                .AsNoTracking()
+                .Where(r => r.UserIdSmall == small && r.UserIdLarge == large)
+                .Select(r => new
+                {
+                    r.RequestedBy,
+                    StatusCode = _db.RelationStatuses
+                        .Where(s => s.StatusId == r.StatusId)
+                        .Select(s => s.StatusCode)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync(ct);
 
-			var shaped = raw.Select(x => new
-			{
-				friendUserId = x.FriendUserId,
-				displayName = !string.IsNullOrWhiteSpace(x.Nickname) ? x.Nickname : $"User #{x.FriendUserId}",
-				nickname = x.Nickname,
-				statusId = x.StatusId,
-				statusCode = x.StatusCode,
-				statusName = x.StatusName,
-				sinceIso = x.Since.ToString("o", CultureInfo.InvariantCulture)
-			});
+            if (info is null)
+                return Ok(new { statusCode = "NONE", requestedBy = (int?)null });
 
-			return Ok(shaped);
-		}
-
-		// ---------- 小工具：除錯用，列出我參與的所有關係與狀態 ----------
-		[AllowAnonymous]
-		[HttpGet("friends/debug")]
-		public async Task<IActionResult> FriendsDebug(CancellationToken ct = default)
-		{
-			var meId = await _appCurrentUser.GetUserIdAsync();
-			if (meId <= 0)
-				return Unauthorized(new { reason = "need_user" });
-
-			var list = await _db.Relations
-				.AsNoTracking()
-				.Include(r => r.Status)
-				.Where(r => r.UserIdSmall == meId || r.UserIdLarge == meId)
-				.OrderBy(r => r.CreatedAt)
-				.Select(r => new {
-					relationId = r.RelationId,
-					userIdSmall = r.UserIdSmall,
-					userIdLarge = r.UserIdLarge,
-					statusId = r.StatusId,
-					statusCode = r.Status.StatusCode,
-					statusName = r.Status.StatusName,
-					createdAtIso = r.CreatedAt
-				})
-				.ToListAsync(ct);
-
-			return Ok(list.Select(x => new {
-				x.relationId,
-				x.userIdSmall,
-				x.userIdLarge,
-				x.statusId,
-				x.statusCode,
-				x.statusName,
-				createdAtIso = x.createdAtIso.ToString("o", CultureInfo.InvariantCulture)
-			}));
-		}
-	}
+            return Ok(new { statusCode = info.StatusCode ?? "NONE", requestedBy = info.RequestedBy });
+        }
+    }
 }
+

@@ -20,7 +20,7 @@ namespace GamiPort.Areas.Forum.Services.Me
 
         public MeContentService(GameSpacedatabaseContext db) => _db = db;
 
-        public async Task<PagedResult<MyThreadRowDto>> GetMyThreadsAsync(long userId, string sort, int page, int size)
+        public async Task<PagedResult<MyThreadRowDto>> GetMyThreadsAsync(long userId, string sort, int page, int size, CancellationToken ct = default)
         {
             page = Math.Max(page, 1);
             size = Math.Clamp(size, 1, 100);
@@ -60,7 +60,7 @@ namespace GamiPort.Areas.Forum.Services.Me
             return new PagedResult<MyThreadRowDto>(items, page, size, total);
         }
 
-        public async Task<PagedResult<MyPostRowDto>> GetMyPostsAsync(long userId, string sort, int page, int size)
+        public async Task<PagedResult<MyPostRowDto>> GetMyPostsAsync(long userId, string sort, int page, int size, CancellationToken ct = default)
         {
             page = Math.Max(page, 1);
             size = Math.Clamp(size, 1, 100);
@@ -97,7 +97,7 @@ namespace GamiPort.Areas.Forum.Services.Me
         }
 
         public async Task<PagedResult<MyLikedThreadRowDto>> GetMyLikedThreadsAsync(
-    long userId, string sort, int page, int size)
+    long userId, string sort, int page, int size, CancellationToken ct = default)
         {
             page = Math.Max(page, 1);
             size = Math.Clamp(size, 1, 100);

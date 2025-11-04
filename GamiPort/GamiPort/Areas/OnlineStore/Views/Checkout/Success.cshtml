@@ -1,128 +1,107 @@
-﻿@* Views/OnlineStore/Checkout/Success.cshtml *@
-@model dynamic
-@using System
-@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
-
+﻿@model dynamic
 @{
     ViewData["Title"] = "訂單成立";
-    // 付款狀態判斷
-    bool isPaid = false;
-    var ps = (string)(Model?.PaymentStatus ?? "");
-    if (!string.IsNullOrWhiteSpace(ps))
+    string payStatus = (string)(Model?.PaymentStatus ?? "");
+    bool paid = payStatus == "已付款" || payStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+    string Fm(decimal? v) => v.HasValue ? string.Format("{0:N0}", v.Value) : "0";
+}
+
+<!-- ★ 窄版置中容器：同時包住標題、綠色提示與卡片，確保寬度一致 -->
+<div class="success-narrow mx-auto">
+
+    <h2 class="mb-3 text-center">訂單成立</h2>
+
+    @if (paid)
     {
-        var t = ps.Trim();
-        isPaid = t == "已付款" || t.Equals("PAID", StringComparison.OrdinalIgnoreCase) || t.Equals("SUCCESS", StringComparison.OrdinalIgnoreCase);
-    }
-
-    // 開發開關與密鑰（來自 appsettings.json: PaymentDev）
-    bool devEnabled = bool.TryParse(Cfg["PaymentDev:EnableSkipFlow"], out var _b) && _b;
-    string devSecret = Cfg["PaymentDev:Secret"] ?? "";
-}
-
-<h2 class="mb-3">訂單成立</h2>
-
-@if (TempData["Msg"] is string msg)
-{
-    <div class="alert alert-info">@msg</div>
-}
-
-<div class="alert alert-success">
-    已成功建立訂單（ID：@Model.OrderId @((Model?.OrderCode != null) ? $" / 單號：{Model.OrderCode}" : "")）。感謝您的購買！
-</div>
-
-@if (isPaid)
-{
-    <div class="alert alert-info">此訂單已完成付款（@Model.PaymentStatus）。</div>
-    @* 若已付款，隱藏開發按鈕，避免誤導 *@
-    @if (devEnabled)
-    {
-        <div class="text-muted small mb-3">（開發模式啟用中，但此單已付款，因此隱藏模擬按鈕）</div>
-    }
-}
-else
-{
-    <div class="card mb-3 border-warning">
-        <div class="card-header bg-warning-subtle">付款提醒</div>
-        <div class="card-body">
-            <div class="mb-2">此訂單尚未付款，請盡速完成付款。</div>
-            <a class="btn btn-primary"
-               asp-area="OnlineStore" asp-controller="Payment" asp-action="Start"
-               asp-route-id="@Model.OrderId">
-                前往付款（綠界模擬）
-            </a>
+        <div class="alert alert-success mb-3">
+            ✅ 付款成功！我們已收到款項並開始處理您的訂單。
         </div>
-    </div>
-
-    @* --- 開發用：三顆模擬按鈕（未付款 && devEnabled 才顯示） --- *@
-    @if (devEnabled)
+    }
+    else
     {
-        <div class="card mt-3 border-secondary">
-            <div class="card-header bg-secondary-subtle">開發者工具（跳過金流）</div>
-            <div class="card-body">
-                <div class="d-flex flex-wrap gap-2">
-                    <!-- 付款成功：改主檔為已付款 -->
-                    <form asp-area="OnlineStore" asp-controller="Ecpay" asp-action="DevPaySuccess" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="orderCode" value="@Model.OrderCode" />
-                        <input type="hidden" name="secret" value="@devSecret" />
-                        <button type="submit" class="btn btn-success">模擬：付款成功</button>
-                    </form>
+        <div class="alert alert-warning mb-3">
+            ⏳ 付款處理中：系統尚未收到金流完成通知。您可稍候片刻，或點選下方「重新付款」。
+        </div>
+    }
 
-                    <!-- 付款失敗：導回 Review -->
-                    <form asp-area="OnlineStore" asp-controller="Ecpay" asp-action="DevPayFail" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="orderCode" value="@Model.OrderCode" />
-                        <input type="hidden" name="secret" value="@devSecret" />
-                        <button type="submit" class="btn btn-outline-danger">模擬：付款失敗</button>
-                    </form>
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="vstack gap-2">
+                <div><strong>單號：</strong>@Model.OrderCode</div>
+                <div><strong>成立時間：</strong>@(Model?.OrderDate?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                <div><strong>付款狀態：</strong>@payStatus</div>
+                @if (Model?.PaymentAt != null)
+                {
+                    <div><strong>入帳時間：</strong>@(((DateTime)Model.PaymentAt).ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                }
 
-                    <!-- 退款：把主檔標記已退款 -->
-                    <form asp-area="OnlineStore" asp-controller="Ecpay" asp-action="DevRefund" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="orderCode" value="@Model.OrderCode" />
-                        <input type="hidden" name="secret" value="@devSecret" />
-                        <button type="submit" class="btn btn-outline-secondary">模擬：退款</button>
-                    </form>
-                </div>
-                <div class="form-text mt-2">※ 僅在開發期間使用；上線請關閉 <code>PaymentDev.EnableSkipFlow</code> 或移除此區塊。</div>
+                <hr class="my-2" />
+
+                <div><strong>應付金額：</strong>@Fm(Model?.GrandTotal)</div>
+                <div><strong>付款方式：</strong>@(ViewBag.PayMethodName ?? "-")</div>
+                <div><strong>收件人：</strong>@Model.Recipient　@Model.Phone</div>
+                <div><strong>收件地址：</strong>@Model.Address1 @Model.Address2</div>
+                <div><strong>商品總數：</strong>@(ViewBag.ItemCount ?? 0)</div>
             </div>
         </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        @* <a class="btn btn-primary"
+           asp-area="OnlineStore" asp-controller="Orders" asp-action="Detail"
+           asp-route-orderCode="@Model.OrderCode">查看此筆訂單</a> *@
+
+        <a class="btn btn-outline-primary"
+           asp-area="OnlineStore" asp-controller="Orders" asp-action="Index">回到我的訂單</a>
+
+        @if (!paid)
+        {
+            <a class="btn btn-warning"
+               asp-area="OnlineStore" asp-controller="Orders" asp-action="RetryPay"
+               asp-route-orderCode="@Model.OrderCode">重新付款</a>
+            <button type="button" class="btn btn-outline-dark" onclick="location.reload()">重新整理</button>
+        }
+    </div>
+</div>
+
+<!-- 只影響本頁的樣式 -->
+<style>
+    /* ★ 藍框示意的窄版寬度 */
+    .success-narrow {
+        max-width: 960px; /* 需要更窄就改 900/880/840 */
+        width: 100%;
     }
-}
+    @@media (min-width: 1400px) {
+        .success-narrow
 
-<div class="card mb-3">
-    <div class="card-header">訂單摘要</div>
-    <div class="card-body">
-        <ul class="list-unstyled mb-0">
-            <li>成立時間：@Model.OrderDate</li>
-            <li>訂單狀態：@Model.OrderStatus</li>
-            <li>付款狀態：@Model.PaymentStatus</li>
-            @if (!string.IsNullOrWhiteSpace((string?)ViewBag.PayMethodName))
-            {
-                <li>付款方式：@ViewBag.PayMethodName</li>
-            }
-            <li>商品小計：@String.Format("{0:N0}", Model.Subtotal)</li>
-            <li>運費：@String.Format("{0:N0}", Model.ShippingFee)</li>
-            <li>優惠折抵：@String.Format("{0:N0}", Model.DiscountTotal)</li>
-            <li><strong>應付金額：@String.Format("{0:N0}", Model.GrandTotal)</strong></li>
-            <li>品項總數：@ViewBag.ItemCount</li>
-        </ul>
-    </div>
-</div>
+    {
+        max-width: 920px;
+    }
 
-<div class="card mb-3">
-    <div class="card-header">收件資訊</div>
-    <div class="card-body">
-        <ul class="list-unstyled mb-0">
-            <li>收件人：@Model.Recipient</li>
-            <li>聯絡電話：@Model.Phone</li>
-            <li>寄送地址：@Model.DestZip @Model.Address1 @((Model?.Address2 != null) ? Model.Address2 : "")</li>
-        </ul>
-    </div>
-</div>
+    }
+    @@media (min-width: 1600px) {
+        .success-narrow
 
-<div class="d-flex gap-2">
-    <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">回購物車</a>
-    <a asp-area="OnlineStore" asp-controller="Orders" asp-action="Index" class="btn btn-outline-secondary">查看我的訂單</a>
-    <a href="/" class="btn btn-success">繼續逛逛</a>
-</div>
+    {
+        max-width: 900px;
+    }
+
+    }
+    @@media (max-width: 575.98px) {
+        .success-narrow
+
+    {
+        padding-left: .75rem;
+        padding-right: .75rem;
+    }
+
+    }
+
+    /* ★ 確保 alert 與 card 都吃滿容器寬度（避免與容器寬度不一致） */
+    .success-narrow .alert,
+    .success-narrow .card {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+</style>

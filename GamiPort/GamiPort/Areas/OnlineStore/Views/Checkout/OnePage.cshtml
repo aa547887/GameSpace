@@ -1,0 +1,224 @@
+﻿@using GamiPort.Areas.OnlineStore.DTO
+@{
+    CartSummaryDto full =
+        ViewBag.Full as CartSummaryDto
+        ?? (ViewBag.Full?.Summary as CartSummaryDto)
+        ?? new CartSummaryDto { Rule_Notes_Json = "[]" };
+}
+@model GamiPort.Areas.OnlineStore.ViewModels.CheckoutOnePageVm
+@{
+    ViewData["Title"] = "填寫購買資料";
+}
+@section Styles {
+    <style>
+        .req-hint {
+            font-size: .9rem;
+            color: #6c757d;
+        }
+
+        .form-label.required::before {
+            content: "＊";
+            color: #dc3545;
+            margin-right: .25rem;
+            font-weight: 700;
+            font-size: .9em;
+        }
+
+        .card-onepage .form-control, .card-onepage .form-select {
+            max-width: 520px;
+        }
+    </style>
+}
+<h2 class="mb-3">填寫購買資料</h2>
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        <div class="card card-onepage shadow-sm">
+            <div class="card-header py-2">
+                <span class="req-hint"><span class="text-danger fw-bold">＊</span> 為必填</span>
+            </div>
+            <div class="card-body">
+                <form id="onepage-form" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <!-- ★ 顯示通用錯誤（SP 回 0、配送/付款無效、購物車不可結帳 等會顯示在這） -->
+                    @* <div asp-validation-summary="All" class="alert alert-danger small mb-3" role="alert"></div> *@
+                    <div class="mb-3">
+                        <label asp-for="Recipient" class="form-label required"></label>
+                        <input asp-for="Recipient" class="form-control" />
+                        <span asp-validation-for="Recipient" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Phone" class="form-label required"></label>
+                        <input asp-for="Phone" class="form-control" inputmode="numeric" placeholder="09xxxxxxxx" />
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+
+                    <input type="hidden" asp-for="Zipcode" id="Zipcode" />
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="City" class="form-label required"></label>
+                            <select asp-for="City" class="form-select" id="tw-city"></select>
+                            <span asp-validation-for="City" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="District" class="form-label required"></label>
+                            <select asp-for="District" class="form-select" id="tw-district"></select>
+                            <span asp-validation-for="District" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="Address1" class="form-label required"></label>
+                        <input asp-for="Address1" class="form-control" placeholder="例：中山北路三段 123 號" />
+                        <span asp-validation-for="Address1" class="text-danger small"></span>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="mb-3">
+                        <label asp-for="ShipMethodId" class="form-label required"></label>
+                        <select asp-for="ShipMethodId" class="form-select">
+                            <option value="1">宅配</option>
+                        </select>
+                        <span asp-validation-for="ShipMethodId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PayMethodId" class="form-label required"></label>
+                        <select asp-for="PayMethodId" class="form-select">
+                            <option value="1">信用卡</option>
+                        </select>
+                        <span asp-validation-for="PayMethodId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mt-2 d-flex gap-2">
+                        <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">返回購物車</a>
+                        <button type="submit" class="btn btn-primary">送出訂單資料</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+        @if (ViewBag.Full != null)
+        {
+            @await Html.PartialAsync("_CheckoutSummary", full)
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // －－－－ 回填用（一定要在 <script> 內）－－－－
+        const preCity     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.City ?? ""));
+        const preDistrict = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.District ?? ""));
+        const preZip      = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.Zipcode ?? ""));
+
+        // jQuery 驗證
+        $.validator.setDefaults({ onfocusout: function (el) { this.element(el); } });
+        const $form = $('#onepage-form');
+        $form.removeData('validator').removeData('unobtrusiveValidation');
+        $.validator.unobtrusive.parse($form);
+
+        $('[name="Phone"]').on('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+
+        const $city = $('#tw-city'), $dist = $('#tw-district'), $zip = $('#Zipcode');
+
+        const fallbackCities = [
+            "臺北市","新北市","桃園市","臺中市","臺南市","高雄市",
+            "基隆市","新竹市","新竹縣","苗栗縣","彰化縣","南投縣",
+            "雲林縣","嘉義市","嘉義縣","屏東縣","宜蘭縣","花蓮縣",
+            "臺東縣","澎湖縣","金門縣","連江縣"
+        ];
+        const fallbackDistricts = {
+          "臺北市":[["中正區","100"],["大同區","103"],["中山區","104"],["松山區","105"],["大安區","106"],["萬華區","108"],["信義區","110"],["士林區","111"],["北投區","112"],["內湖區","114"],["南港區","115"],["文山區","116"]],
+          "新北市":[["萬里區","207"],["金山區","208"],["板橋區","220"],["汐止區","221"],["深坑區","222"],["石碇區","223"],["瑞芳區","224"],["平溪區","226"],["雙溪區","227"],["貢寮區","228"],["新店區","231"],["坪林區","232"],["烏來區","233"],["永和區","234"],["中和區","235"],["土城區","236"],["三峽區","237"],["樹林區","238"],["鶯歌區","239"],["三重區","241"],["新莊區","242"],["泰山區","243"],["林口區","244"],["蘆洲區","247"],["五股區","248"],["八里區","249"],["淡水區","251"],["三芝區","252"],["石門區","253"]],
+          "桃園市":[["桃園區","330"],["龜山區","333"],["八德區","334"],["蘆竹區","338"],["中壢區","320"],["平鎮區","324"],["龍潭區","325"],["楊梅區","326"],["新屋區","327"],["觀音區","328"],["大園區","337"],["大溪區","335"],["復興區","336"]],
+          "臺中市":[["中區","400"],["東區","401"],["南區","402"],["西區","403"],["北區","404"],["北屯區","406"],["西屯區","407"],["南屯區","408"],["太平區","411"],["大里區","412"],["霧峰區","413"],["烏日區","414"],["豐原區","420"],["后里區","421"],["石岡區","422"],["東勢區","423"],["和平區","424"],["新社區","426"],["潭子區","427"],["大雅區","428"],["神岡區","429"],["大肚區","432"],["沙鹿區","433"],["龍井區","434"],["梧棲區","435"],["清水區","436"],["大甲區","437"],["外埔區","438"],["大安區","439"]],
+          "臺南市":[["中西區","700"],["東區","701"],["南區","702"],["北區","704"],["安平區","708"],["安南區","709"],["永康區","710"],["歸仁區","711"],["新化區","712"],["左鎮區","713"],["玉井區","714"],["楠西區","715"],["南化區","716"],["仁德區","717"],["關廟區","718"],["龍崎區","719"],["官田區","720"],["麻豆區","721"],["佳里區","722"],["西港區","723"],["七股區","724"],["將軍區","725"],["學甲區","726"],["北門區","727"],["新營區","730"],["後壁區","731"],["白河區","732"],["東山區","733"],["六甲區","734"],["下營區","735"],["柳營區","736"],["鹽水區","737"],["善化區","741"],["大內區","742"],["山上區","743"],["新市區","744"],["安定區","745"]],
+          "高雄市":[["新興區","800"],["前金區","801"],["苓雅區","802"],["鹽埕區","803"],["鼓山區","804"],["旗津區","805"],["前鎮區","806"],["三民區","807"],["楠梓區","811"],["小港區","812"],["左營區","813"],["仁武區","814"],["大社區","815"],["岡山區","820"],["路竹區","821"],["阿蓮區","822"],["田寮區","823"],["燕巢區","824"],["橋頭區","825"],["梓官區","826"],["彌陀區","827"],["永安區","828"],["湖內區","829"],["鳳山區","830"],["大寮區","831"],["林園區","832"],["鳥松區","833"],["大樹區","840"],["旗山區","842"],["美濃區","843"],["六龜區","844"],["內門區","845"],["杉林區","846"],["甲仙區","847"],["桃源區","848"],["那瑪夏區","849"],["茂林區","851"],["茄萣區","852"]]
+        };
+
+        function fillCities(list){
+            $city.empty().append($('<option/>',{value:'',text:'請選擇'}));
+            (list||[]).forEach(c => $city.append($('<option/>',{value:c,text:c})));
+        }
+        function clearDistrict(){
+            $dist.empty().append($('<option/>',{value:'',text:'請選擇'}));
+            $zip.val('');
+        }
+        function fillDistrict(city, rows){
+            clearDistrict();
+            (rows||[]).forEach(([d,z]) => $dist.append($('<option/>',{value:d,text:d,'data-zip':z})));
+        }
+        function autoPickFirstDistrictIfEmpty() {
+            if (!$zip.val()) {
+                const $opt = $dist.find('option[value!=""]').first();
+                if ($opt.length) { $dist.val($opt.val()).trigger('change'); }
+            }
+        }
+
+        // 載入城市 → 選回 preCity（若有）
+        fetch('@Url.Action("Cities", "Checkout", new { area = "OnlineStore" })')
+          .then(r => r.ok ? r.json() : Promise.reject(r.status))
+          .then(list => {
+              fillCities(list && list.length ? list : fallbackCities);
+              if (preCity) { $city.val(preCity).trigger('change'); }
+          })
+          .catch(() => {
+              fillCities(fallbackCities);
+              if (preCity) { $city.val(preCity).trigger('change'); }
+          });
+
+        // 城市改變 → 取區（API 失敗則用 fallback）
+        $city.on('change', function(){
+            const c = $(this).val();
+            clearDistrict();
+            if(!c) return;
+
+            fetch('@Url.Action("Districts", "Checkout", new { area = "OnlineStore" })' + '?city=' + encodeURIComponent(c))
+              .then(r => r.ok ? r.json() : Promise.reject(r.status))
+              .then(rows => {
+                  const packed = (rows && rows.length) ? rows.map(x => [x.district, x.zipcode]) : (fallbackDistricts[c] || []);
+                  fillDistrict(c, packed);
+                  if (preCity === c && preDistrict) {
+                      $dist.val(preDistrict).trigger('change');
+                      if (preZip) $zip.val(preZip);
+                  } else {
+                      autoPickFirstDistrictIfEmpty();
+                  }
+              })
+              .catch(() => {
+                  if (fallbackDistricts[c]) {
+                      fillDistrict(c, fallbackDistricts[c]);
+                      if (preCity === c && preDistrict) {
+                          $dist.val(preDistrict).trigger('change');
+                          if (preZip) $zip.val(preZip);
+                      } else {
+                          autoPickFirstDistrictIfEmpty();
+                      }
+                  }
+              });
+        }); // ←←← 別漏掉這個收尾
+
+        // 區改變 → 帶 Zip
+        $dist.on('change', function(){
+            const z = $(this).find(':selected').data('zip') || '';
+            $zip.val(z);
+        });
+
+        // 送出前若 Zip 空 → 試著補，不行就擋下提示
+        $form.on('submit', function (e) {
+            if (!$zip.val()) {
+                const dz = $dist.find(':selected').data('zip');
+                if (dz) $zip.val(dz);
+                else { e.preventDefault(); alert('請選縣市與區，才能帶出郵遞區號'); }
+            }
+        });
+    </script>
+}

@@ -12,7 +12,7 @@ export const ForumList = {
         <li v-if="items.length===0" class="list-group-item text-muted">目前沒有論壇</li>
       </ul>
       <div v-else>載入中…</div>
-      <div v-if="error" class="alert alert-danger mt-2">{{ error }}</div>
+      <div v-if="error" class="alert alert-danger mt-  2">{{ error }}</div>
     </section>
   `,
     data() { return { items: [], loading: false, error: '' }; },

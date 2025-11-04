@@ -11,6 +11,8 @@
 // 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
+using GamiPort.Areas.Forum.Services.Adminpost;
+using GamiPort.Areas.Forum.Services.Leaderboard;
 using GamiPort.Areas.Forum.Services.Me;
 using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
 // ★ 新增：ECPay 服務命名空間
@@ -36,17 +38,19 @@ namespace GamiPort
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+			string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-            // 連線字串
-            var gameSpaceConn =
-                builder.Configuration.GetConnectionString("GameSpace")
-                ?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-                ?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+			// 連線字串
+			var gameSpaceConn =
+	            Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+	            Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+	            Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+	            throw new InvalidOperationException("No valid DB connection string found.");
 
-            // ------------------------------------------------------------
-            // DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
-            // ------------------------------------------------------------
-            builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
+			// ------------------------------------------------------------
+			// DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
+			// ------------------------------------------------------------
+			builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
             {
                 options.UseSqlServer(gameSpaceConn);
             });
@@ -119,7 +123,8 @@ namespace GamiPort
             builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
                                        GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
             builder.Services.AddScoped<IMeContentService, MeContentService>();
-
+            builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+            builder.Services.AddScoped<IPostsService, PostsService>();
 
             // ------------------------------------------------------------
             // MVC / RazorPages / JSON 命名策略 & Anti-forgery
