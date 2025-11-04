@@ -1,14 +1,14 @@
 ﻿// Areas/OnlineStore/Controllers/EcpayController.cs
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using GamiPort.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -33,46 +33,47 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		{
 			_logger.LogInformation("[ECPay Return/POST] {raw}", Dump(form));
 			if (!Verify(form)) return Content("0|CheckMacValue Fail");
+
 			await TryMarkPaidAsync(form);
-			var orderCode = form.GetValueOrDefault("MerchantTradeNo");
+
+			var mt = form.GetValueOrDefault("MerchantTradeNo");
+			var orderCode = ExtractOrderCode(mt);
+			if (string.IsNullOrWhiteSpace(orderCode))
+				return RedirectToAction("OnePage", "Checkout", new { area = "OnlineStore" });
+
 			return RedirectToAction("Success", "Checkout", new { area = "OnlineStore", orderCode });
 		}
 
 		[HttpGet("Return")]
 		public IActionResult ReturnGet()
 		{
-			var orderCode = Request.Query["MerchantTradeNo"].ToString();
-			_logger.LogInformation("[ECPay Return/GET] MerchantTradeNo={code}", orderCode);
+			var mt = Request.Query["MerchantTradeNo"].ToString();
+			var orderCode = ExtractOrderCode(mt);
+			_logger.LogInformation("[ECPay Return/GET] MerchantTradeNo={code} -> orderCode={oc}", mt, orderCode);
+
+			if (string.IsNullOrWhiteSpace(orderCode))
+				return RedirectToAction("OnePage", "Checkout", new { area = "OnlineStore" });
+
 			return RedirectToAction("Success", "Checkout", new { area = "OnlineStore", orderCode });
 		}
 
-		// Areas/OnlineStore/Controllers/EcpayController.cs
 		[HttpPost("OrderResult")]
 		[IgnoreAntiforgeryToken]
 		public async Task<IActionResult> OrderResultPost([FromForm] Dictionary<string, string> form)
 		{
 			_logger.LogInformation("[ECPay OrderResult/POST] {raw}", Dump(form));
-
-			// ★ 本機測試很常只收到這支，因此同樣做驗簽＋嘗試入庫（與 Return/Notify 一致）
 			try
 			{
-				if (Verify(form))
-				{
-					// 會檢查 RtnCode==1、金額一致、時間解析，並把 PaymentStatus/PaymentAt 寫入
-					await TryMarkPaidAsync(form);
-				}
-				else
-				{
-					_logger.LogWarning("[ECPay OrderResult/POST] CheckMacValue verify failed.");
-				}
+				if (Verify(form)) await TryMarkPaidAsync(form);
+				else _logger.LogWarning("[ECPay OrderResult/POST] CheckMacValue verify failed.");
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "[ECPay OrderResult/POST] TryMarkPaidAsync error");
-				// 不擋前端導回，但會保留未付款狀態；使用者可以在成功頁按「重新付款」
 			}
 
-			var orderCode = form.GetValueOrDefault("MerchantTradeNo");
+			var mt = form.GetValueOrDefault("MerchantTradeNo");
+			var orderCode = ExtractOrderCode(mt);
 			if (string.IsNullOrWhiteSpace(orderCode))
 				return RedirectToAction("OnePage", "Checkout", new { area = "OnlineStore" });
 
@@ -82,8 +83,13 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		[HttpGet("OrderResult")]
 		public IActionResult OrderResultGet()
 		{
-			var orderCode = Request.Query["MerchantTradeNo"].ToString();
-			_logger.LogInformation("[ECPay OrderResult/GET] MerchantTradeNo={code}", orderCode);
+			var mt = Request.Query["MerchantTradeNo"].ToString();
+			var orderCode = ExtractOrderCode(mt);
+			_logger.LogInformation("[ECPay OrderResult/GET] MerchantTradeNo={code} -> orderCode={oc}", mt, orderCode);
+
+			if (string.IsNullOrWhiteSpace(orderCode))
+				return RedirectToAction("OnePage", "Checkout", new { area = "OnlineStore" });
+
 			return RedirectToAction("Success", "Checkout", new { area = "OnlineStore", orderCode });
 		}
 
@@ -93,6 +99,7 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		{
 			_logger.LogInformation("[ECPay Notify] {raw}", Dump(form));
 			if (!Verify(form)) return Content("0|CheckMacValue Fail");
+
 			await TryMarkPaidAsync(form);
 			return Content("1|OK");
 		}
@@ -103,21 +110,25 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 			{
 				var rtnCode = data.GetValueOrDefault("RtnCode");
 				var tradeAmtStr = data.GetValueOrDefault("TradeAmt");
-				var merchantTradeNo = data.GetValueOrDefault("MerchantTradeNo");
+				var mt = data.GetValueOrDefault("MerchantTradeNo");
+				var orderCode = ExtractOrderCode(mt);
 				var payDateStr = data.GetValueOrDefault("PaymentDate");
 
-				if (rtnCode != "1" || string.IsNullOrWhiteSpace(merchantTradeNo))
-					return false;
+				if (rtnCode != "1" || string.IsNullOrWhiteSpace(orderCode)) return false;
 
-				var order = await _db.SoOrderInfoes.FirstOrDefaultAsync(o => o.OrderCode == merchantTradeNo);
+				var order = await _db.SoOrderInfoes.FirstOrDefaultAsync(o => o.OrderCode == orderCode);
 				if (order == null) return false;
 
 				if (!int.TryParse(tradeAmtStr, out var paidAmt)) return false;
-				var expectAmt = (int)Math.Round(order.GrandTotal ?? 0m);
+
+				// ★ 非 nullable decimal：直接計算折抵後金額
+				var expect = order.Subtotal + order.ShippingFee - order.DiscountTotal;
+				var expectAmt = (int)Math.Round(expect, MidpointRounding.AwayFromZero);
+
 				if (paidAmt != expectAmt) return false;
 
 				if (!DateTime.TryParse(payDateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-					dt = DateTime.UtcNow;
+					dt = DateTime.Now;
 
 				order.PaymentStatus = "已付款";
 				order.PaymentAt = dt.ToUniversalTime();
@@ -144,9 +155,17 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 							.ToDictionary(kv => kv.Key, kv => kv.Value);
 
 			var local = GamiPort.Areas.OnlineStore.Payments.EcpayPaymentService.MakeCheckMacValue(
-				clone, key: "pwFHCqoQZGmho4w6", iv: "EkRm7iFT261dpevs"); // 3002607 金鑰
+				clone, key: "pwFHCqoQZGmho4w6", iv: "EkRm7iFT261dpevs"); // 3002607
 
 			return string.Equals(local, recv, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string ExtractOrderCode(string? merchantTradeNo)
+		{
+			if (string.IsNullOrWhiteSpace(merchantTradeNo)) return "";
+			var s = merchantTradeNo.Trim();
+			if (s.Length >= 4 && (s[0] == 'D' || s[0] == 'P')) return s.Substring(1, s.Length - 1 - 2);
+			return s;
 		}
 	}
 }

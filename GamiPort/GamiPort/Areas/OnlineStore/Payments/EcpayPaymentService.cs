@@ -21,11 +21,15 @@ namespace GamiPort.Areas.OnlineStore.Payments
 		{
 			var req = _http.HttpContext!.Request;
 			string Abs(string path) => new Uri(new Uri($"{req.Scheme}://{req.Host}"), path).ToString();
+			// ★ 原本：["MerchantTradeNo"] = orderCode,
+			var envPrefix = "D"; // ★ Dev 用 "D"，正式環境你再改成 "P"
+			var rand2 = Random.Shared.Next(10, 99).ToString(); // 兩碼隨機尾碼
+			var merchantTradeNo = $"{envPrefix}{orderCode}{rand2}";
 
 			var fields = new Dictionary<string, string>
 			{
 				["MerchantID"] = MerchantID,
-				["MerchantTradeNo"] = orderCode,
+				["MerchantTradeNo"] = merchantTradeNo,
 				["MerchantTradeDate"] = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"),
 				["PaymentType"] = "aio",
 				["TotalAmount"] = ((int)Math.Round(amount)).ToString(),

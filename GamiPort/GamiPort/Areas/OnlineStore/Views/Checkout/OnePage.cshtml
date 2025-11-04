@@ -30,17 +30,28 @@
     </style>
 }
 <h2 class="mb-3">填寫購買資料</h2>
+<!-- ★ 一鍵注入：只新增這一小段，不改動原有結構與樣式 -->
 <div class="row g-4">
     <div class="col-12 col-lg-7">
         <div class="card card-onepage shadow-sm">
-            <div class="card-header py-2">
+            <div class="card-header py-2 d-flex align-items-center justify-content-between">
                 <span class="req-hint"><span class="text-danger fw-bold">＊</span> 為必填</span>
+                <button type="button" id="btnQuickFillCheckout" class="btn btn-sm btn-outline-primary">
+                    一鍵注入資料
+                </button>
             </div>
             <div class="card-body">
-                <form id="onepage-form" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage" method="post" novalidate>
+                <form id="onepage-form" asp-area="OnlineStore" asp-controller="Checkout" asp-action="OnePage" method="post" novalidate >
                     @Html.AntiForgeryToken()
-                    <!-- ★ 顯示通用錯誤（SP 回 0、配送/付款無效、購物車不可結帳 等會顯示在這） -->
+
+                    <!-- ★★★ 將摘要的目前值同步到後端（實際金額仍以伺服器重算為準） -->
+                    <input type="hidden" name="CouponCode" id="hfCouponCode" value="@Model?.CouponCode" />
+                    <input type="hidden" name="Subtotal" id="hfSubtotal" value="@(full?.Subtotal ?? 0m)" />
+                    <input type="hidden" name="ShippingFee" id="hfShippingFee" value="@(full?.Shipping_Fee ?? 0m)" />
+                    <input type="hidden" name="CouponDiscount" id="hfCouponDiscount" value="@(full?.CouponDiscount ?? 0m)" />
+
                     @* <div asp-validation-summary="All" class="alert alert-danger small mb-3" role="alert"></div> *@
+
                     <div class="mb-3">
                         <label asp-for="Recipient" class="form-label required"></label>
                         <input asp-for="Recipient" class="form-control" />
@@ -112,12 +123,11 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // －－－－ 回填用（一定要在 <script> 內）－－－－
+        // －－－－ 回填與驗證（沿用你原本的）－－－－
         const preCity     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.City ?? ""));
         const preDistrict = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.District ?? ""));
         const preZip      = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.Zipcode ?? ""));
 
-        // jQuery 驗證
         $.validator.setDefaults({ onfocusout: function (el) { this.element(el); } });
         const $form = $('#onepage-form');
         $form.removeData('validator').removeData('unobtrusiveValidation');
@@ -144,81 +154,107 @@
           "高雄市":[["新興區","800"],["前金區","801"],["苓雅區","802"],["鹽埕區","803"],["鼓山區","804"],["旗津區","805"],["前鎮區","806"],["三民區","807"],["楠梓區","811"],["小港區","812"],["左營區","813"],["仁武區","814"],["大社區","815"],["岡山區","820"],["路竹區","821"],["阿蓮區","822"],["田寮區","823"],["燕巢區","824"],["橋頭區","825"],["梓官區","826"],["彌陀區","827"],["永安區","828"],["湖內區","829"],["鳳山區","830"],["大寮區","831"],["林園區","832"],["鳥松區","833"],["大樹區","840"],["旗山區","842"],["美濃區","843"],["六龜區","844"],["內門區","845"],["杉林區","846"],["甲仙區","847"],["桃源區","848"],["那瑪夏區","849"],["茂林區","851"],["茄萣區","852"]]
         };
 
-        function fillCities(list){
-            $city.empty().append($('<option/>',{value:'',text:'請選擇'}));
-            (list||[]).forEach(c => $city.append($('<option/>',{value:c,text:c})));
-        }
-        function clearDistrict(){
-            $dist.empty().append($('<option/>',{value:'',text:'請選擇'}));
-            $zip.val('');
-        }
-        function fillDistrict(city, rows){
-            clearDistrict();
-            (rows||[]).forEach(([d,z]) => $dist.append($('<option/>',{value:d,text:d,'data-zip':z})));
-        }
-        function autoPickFirstDistrictIfEmpty() {
-            if (!$zip.val()) {
-                const $opt = $dist.find('option[value!=""]').first();
-                if ($opt.length) { $dist.val($opt.val()).trigger('change'); }
-            }
-        }
+        function fillCities(list){ $city.empty().append($('<option/>',{value:'',text:'請選擇'})); (list||[]).forEach(c => $city.append($('<option/>',{value:c,text:c}))); }
+        function clearDistrict(){ $dist.empty().append($('<option/>',{value:'',text:'請選擇'})); $zip.val(''); }
+        function fillDistrict(city, rows){ clearDistrict(); (rows||[]).forEach(([d,z]) => $dist.append($('<option/>',{value:d,text:d,'data-zip':z}))); }
+        function autoPickFirstDistrictIfEmpty(){ if(!$zip.val()){ const $opt=$dist.find('option[value!=""]').first(); if($opt.length){ $dist.val($opt.val()).trigger('change'); } } }
 
-        // 載入城市 → 選回 preCity（若有）
         fetch('@Url.Action("Cities", "Checkout", new { area = "OnlineStore" })')
-          .then(r => r.ok ? r.json() : Promise.reject(r.status))
-          .then(list => {
-              fillCities(list && list.length ? list : fallbackCities);
-              if (preCity) { $city.val(preCity).trigger('change'); }
-          })
-          .catch(() => {
-              fillCities(fallbackCities);
-              if (preCity) { $city.val(preCity).trigger('change'); }
-          });
+          .then(r=>r.ok?r.json():Promise.reject(r.status))
+          .then(list=>{ fillCities(list&&list.length?list:fallbackCities); if(preCity){ $city.val(preCity).trigger('change'); }})
+          .catch(()=>{ fillCities(fallbackCities); if(preCity){ $city.val(preCity).trigger('change'); }});
 
-        // 城市改變 → 取區（API 失敗則用 fallback）
         $city.on('change', function(){
-            const c = $(this).val();
-            clearDistrict();
-            if(!c) return;
-
-            fetch('@Url.Action("Districts", "Checkout", new { area = "OnlineStore" })' + '?city=' + encodeURIComponent(c))
-              .then(r => r.ok ? r.json() : Promise.reject(r.status))
-              .then(rows => {
-                  const packed = (rows && rows.length) ? rows.map(x => [x.district, x.zipcode]) : (fallbackDistricts[c] || []);
-                  fillDistrict(c, packed);
-                  if (preCity === c && preDistrict) {
-                      $dist.val(preDistrict).trigger('change');
-                      if (preZip) $zip.val(preZip);
-                  } else {
-                      autoPickFirstDistrictIfEmpty();
-                  }
+            const c=$(this).val(); clearDistrict(); if(!c) return;
+            fetch('@Url.Action("Districts", "Checkout", new { area = "OnlineStore" })'+'?city='+encodeURIComponent(c))
+              .then(r=>r.ok?r.json():Promise.reject(r.status))
+              .then(rows=>{
+                  const packed=(rows&&rows.length)?rows.map(x=>[x.district,x.zipcode]):(fallbackDistricts[c]||[]);
+                  fillDistrict(c,packed);
+                  if(preCity===c && preDistrict){ $dist.val(preDistrict).trigger('change'); if(preZip)$zip.val(preZip); } else { autoPickFirstDistrictIfEmpty(); }
               })
-              .catch(() => {
-                  if (fallbackDistricts[c]) {
-                      fillDistrict(c, fallbackDistricts[c]);
-                      if (preCity === c && preDistrict) {
-                          $dist.val(preDistrict).trigger('change');
-                          if (preZip) $zip.val(preZip);
-                      } else {
-                          autoPickFirstDistrictIfEmpty();
-                      }
-                  }
-              });
-        }); // ←←← 別漏掉這個收尾
-
-        // 區改變 → 帶 Zip
-        $dist.on('change', function(){
-            const z = $(this).find(':selected').data('zip') || '';
-            $zip.val(z);
+              .catch(()=>{ if(fallbackDistricts[c]){ fillDistrict(c,fallbackDistricts[c]); if(preCity===c && preDistrict){ $dist.val(preDistrict).trigger('change'); if(preZip)$zip.val(preZip);} else { autoPickFirstDistrictIfEmpty(); } }});
         });
 
-        // 送出前若 Zip 空 → 試著補，不行就擋下提示
-        $form.on('submit', function (e) {
-            if (!$zip.val()) {
-                const dz = $dist.find(':selected').data('zip');
-                if (dz) $zip.val(dz);
-                else { e.preventDefault(); alert('請選縣市與區，才能帶出郵遞區號'); }
+        $dist.on('change', function(){ const z=$(this).find(':selected').data('zip')||''; $zip.val(z); });
+
+        $form.on('submit', function(e){
+            if(!$zip.val()){
+                const dz=$dist.find(':selected').data('zip'); if(dz) $zip.val(dz); else { e.preventDefault(); alert('請選縣市與區，才能帶出郵遞區號'); }
             }
         });
+
+        // ★★★ 同步摘要 → hidden（refreshSummary 存在時自動掛勾）
+        function __syncSummaryHidden(s){
+            try{
+                document.getElementById('hfCouponCode').value     = (s?.couponCode ?? '').toString();
+                document.getElementById('hfSubtotal').value       = (s?.subtotal ?? 0).toString();
+                document.getElementById('hfShippingFee').value    = (s?.shippingFee ?? 0).toString();
+                document.getElementById('hfCouponDiscount').value = (s?.couponDiscount ?? 0).toString();
+            }catch(_){}
+        }
+        (function bootstrapSync(){
+            __syncSummaryHidden({
+                couponCode:     @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.CouponCode ?? "")),
+                subtotal:       @Html.Raw(System.Text.Json.JsonSerializer.Serialize(full?.Subtotal ?? 0m)),
+                shippingFee:    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(full?.Shipping_Fee ?? 0m)),
+                couponDiscount: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(full?.CouponDiscount ?? 0m))
+            });
+        })();
+        (function hookRefreshSummary(){
+            var old=window.refreshSummary;
+            if(typeof old==='function'){
+                window.refreshSummary=function(){
+                    var p=old.apply(this,arguments);
+                    try{ if(p && typeof p.then==='function'){ p.then(function(d){ if(d) __syncSummaryHidden(d); }); } }catch(_){}
+                    return p;
+                };
+            }
+        })();
+              (function () {
+          // 依「label 文字」找對應輸入欄位（先用 label[for] 對應，找不到就往右邊的輸入控件找）
+          function byLabel(labelText) {
+            const labs = document.querySelectorAll('label');
+            const norm = s => (s || '').replace(/\s+/g, '');
+            const key = norm(labelText);
+            for (const lab of labs) {
+              if (norm(lab.textContent).startsWith(key)) {
+                // 1) 有 for 屬性 → 直接抓對應 id
+                if (lab.htmlFor) {
+                  const el = document.getElementById(lab.htmlFor);
+                  if (el) return el;
+                }
+                // 2) 沒有 for → 從 label 的父層找第一個 input/textarea/select
+                let scope = lab.closest('.form-group, .mb-3, .row, .col, div') || lab.parentElement;
+                if (scope) {
+                  const el = scope.querySelector('input, textarea, select');
+                  if (el) return el;
+                }
+              }
+            }
+            return null;
+          }
+
+          function setVal(el, val) {
+            if (!el) return;
+            el.value = val;
+            // 盡量觸發前端驗證/格式化
+            el.dispatchEvent(new Event('input',  { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.dispatchEvent(new Event('blur',   { bubbles: true }));
+          }
+
+          // 綁定按鈕
+          document.getElementById('btnQuickFillCheckout')?.addEventListener('click', function () {
+            // 依畫面上看到的標籤文字抓欄位
+            const elRecipient = byLabel('收件人');
+            const elPhone     = byLabel('手機號碼');
+            const elAddr1     = byLabel('路名/門牌');
+
+            setVal(elRecipient, '成博儒');
+            setVal(elPhone,     '0930778577');
+            setVal(elAddr1,     '承德路一段1號');
+          });
+        })();
     </script>
 }
