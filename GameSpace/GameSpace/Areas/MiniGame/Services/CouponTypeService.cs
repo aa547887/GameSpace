@@ -9,11 +9,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<CouponTypeService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
-        public CouponTypeService(GameSpacedatabaseContext context, ILogger<CouponTypeService> logger)
+        public CouponTypeService(GameSpacedatabaseContext context, ILogger<CouponTypeService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         // CouponType 基本 CRUD
@@ -36,7 +38,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                couponType.ValidFrom = DateTime.UtcNow;
+                couponType.ValidFrom = _appClock.UtcNow;
                 // IsActive property does not exist in CouponType
                 _context.CouponTypes.Add(couponType);
                 await _context.SaveChangesAsync();
@@ -143,7 +145,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.CouponTypes
                 .AsNoTracking()
-                .Where(ct => (ct.ValidFrom <= DateTime.UtcNow && ct.ValidTo >= DateTime.UtcNow))
+                .Where(ct => (ct.ValidFrom <= _appClock.UtcNow && ct.ValidTo >= _appClock.UtcNow))
                 .OrderBy(ct => ct.Name)
                 .ToListAsync();
         }
@@ -174,7 +176,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetActiveCouponTypesCountAsync()
         {
-            return await _context.CouponTypes.AsNoTracking().CountAsync(ct => (ct.ValidFrom <= DateTime.UtcNow && ct.ValidTo >= DateTime.UtcNow));
+            return await _context.CouponTypes.AsNoTracking().CountAsync(ct => (ct.ValidFrom <= _appClock.UtcNow && ct.ValidTo >= _appClock.UtcNow));
         }
 
         public async Task<Dictionary<string, int>> GetCouponTypesDistributionAsync()

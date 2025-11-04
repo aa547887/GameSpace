@@ -1,6 +1,7 @@
 ﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -10,13 +11,15 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<MiniGameAdminService> _logger;
+        private readonly IAppClock _appClock;
         private static readonly TimeZoneInfo TaipeiTimeZone =
             TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time");
 
-        public MiniGameAdminService(GameSpacedatabaseContext context, ILogger<MiniGameAdminService> logger)
+        public MiniGameAdminService(GameSpacedatabaseContext context, ILogger<MiniGameAdminService> logger, IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         private (DateTime startUtc, DateTime endUtc) GetTaipeiDateRange(DateTime taipeiDate)
@@ -115,7 +118,9 @@ namespace GameSpace.Areas.MiniGame.Services
                 // 更新錢包
                 wallet.UserPoint = newBalance;
 
-                // 記錄 WalletHistory（在 Description 中記錄餘額變化）
+                // 記錄 WalletHistory（在 Description 中記錄餘額變化） - 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
                 var history = new WalletHistory
                 {
                     UserId = userId,
@@ -123,7 +128,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = points,
                     Description = $"{reason} (餘額：{balanceBefore} → {newBalance})",
                     ItemCode = "ADMIN_ADJUST",
-                    ChangeTime = DateTime.UtcNow
+                    ChangeTime = nowTaiwanTime  // 使用台灣時間
                 };
                 _context.WalletHistories.Add(history);
 
@@ -165,6 +170,10 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<bool> AddUserCouponAsync(int userId, int couponTypeId, int quantity = 1)
         {
+            // 使用台灣時間
+            var nowUtc = _appClock.UtcNow;
+            var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
             for (int i = 0; i < quantity; i++)
             {
                 var coupon = new GameSpace.Models.Coupon
@@ -172,8 +181,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     UserId = userId,
                     CouponTypeId = couponTypeId,
                     IsUsed = false,
-                    AcquiredTime = DateTime.UtcNow,
-                    CouponCode = $"CPN-{DateTime.UtcNow:yyyyMM}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}"
+                    AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                    CouponCode = $"CPN-{nowTaiwanTime:yyyyMM}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}",  // 使用台灣時間生成序號
+                    IsDeleted = false  // 必填字段：未刪除
                 };
                 _context.Coupons.Add(coupon);
             }
@@ -263,6 +274,10 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<bool> AddUserEVoucherAsync(int userId, int EvoucherTypeId, int quantity = 1)
         {
+            // 使用台灣時間
+            var nowUtc = _appClock.UtcNow;
+            var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
             for (int i = 0; i < quantity; i++)
             {
                 var evoucher = new Evoucher
@@ -270,8 +285,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     UserId = userId,
                     EvoucherTypeId = EvoucherTypeId,
                     IsUsed = false,
-                    AcquiredTime = DateTime.UtcNow,
-                    EvoucherCode = $"EV-{EvoucherTypeId}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}"
+                    AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                    EvoucherCode = $"EV-{EvoucherTypeId}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}",
+                    IsDeleted = false  // 必填字段：未刪除
                 };
                 _context.Evouchers.Add(evoucher);
             }

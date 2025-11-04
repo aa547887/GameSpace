@@ -140,9 +140,6 @@
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                         <i class="fas fa-undo"></i> 重置
                     </button>
-                    <button type="button" class="btn btn-success" onclick="exportPets()">
-                        <i class="fas fa-download"></i> 匯出
-                    </button>
                 </div>
             </form>
         </div>
@@ -320,11 +317,6 @@
 <script>
 function resetForm() {
     document.getElementById("searchForm").reset();
-}
-
-function exportPets() {
-    // 匯出寵物列表
-    alert("匯出功能開發中...");
 }
 
 function editPet(petId) {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
+using GameSpace.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -16,13 +17,16 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<WalletMutationService> _logger;
+        private readonly IAppClock _appClock;
 
         public WalletMutationService(
             GameSpacedatabaseContext context,
-            ILogger<WalletMutationService> logger)
+            ILogger<WalletMutationService> logger,
+            IAppClock appClock)
         {
             _context = context;
             _logger = logger;
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         /// <summary>
@@ -77,14 +81,16 @@ namespace GameSpace.Areas.MiniGame.Services
                 wallet.UserPoint += points;
                 var balanceAfter = wallet.UserPoint;
 
-                // 記錄異動歷史
+                // 記錄異動歷史 - 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
                 var history = new WalletHistory
                 {
                     UserId = userId,
                     ChangeType = points > 0 ? "管理員發放點數" : "管理員扣除點數",
                     PointsChanged = points,
                     Description = $"{reason} (操作者: 管理員 ID {operatorId})",
-                    ChangeTime = DateTime.UtcNow
+                    ChangeTime = nowTaiwanTime  // 使用台灣時間
                 };
                 _context.WalletHistories.Add(history);
 
@@ -143,9 +149,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     return WalletMutationResult.CreateFailure($"找不到優惠券類型 ID: {couponTypeId}", userId);
                 }
 
-                // 檢查優惠券是否有效
-                var now = DateTime.UtcNow;
-                if (couponType.ValidTo < now)
+                // 檢查優惠券是否有效 - 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+                if (couponType.ValidTo < nowTaiwanTime)
                 {
                     return WalletMutationResult.CreateFailure(
                         $"優惠券類型「{couponType.Name}」已過期（到期日：{couponType.ValidTo:yyyy-MM-dd}）",
@@ -166,9 +173,10 @@ namespace GameSpace.Areas.MiniGame.Services
                         CouponTypeId = couponTypeId,
                         UserId = userId,
                         IsUsed = false,
-                        AcquiredTime = now,
-                        UsedTime = null,
-                        UsedInOrderId = null
+                        AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                        UsedTime = null,  // 明確設為 null
+                        UsedInOrderId = null,
+                        IsDeleted = false  // 必填字段：未刪除
                     };
                     _context.Coupons.Add(coupon);
                     generatedCodes.Add(couponCode);
@@ -182,7 +190,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = 0,
                     ItemCode = string.Join(", ", generatedCodes),
                     Description = $"發放優惠券「{couponType.Name}」x{quantity} (操作者: 管理員 ID {operatorId})",
-                    ChangeTime = now
+                    ChangeTime = nowTaiwanTime  // 使用台灣時間
                 };
                 _context.WalletHistories.Add(history);
 
@@ -201,7 +209,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     GeneratedCode = generatedCodes.FirstOrDefault(),
                     GeneratedCodes = generatedCodes,
                     HistoryLogId = history.LogId,
-                    OperationTime = now
+                    OperationTime = nowTaiwanTime
                 };
             }
             catch (Exception ex)
@@ -239,9 +247,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     return WalletMutationResult.CreateFailure($"找不到電子禮券類型 ID: {evoucherTypeId}", userId);
                 }
 
-                // 檢查電子禮券是否有效
-                var now = DateTime.UtcNow;
-                if (evoucherType.ValidTo < now)
+                // 檢查電子禮券是否有效 - 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+                if (evoucherType.ValidTo < nowTaiwanTime)
                 {
                     return WalletMutationResult.CreateFailure(
                         $"電子禮券類型「{evoucherType.Name}」已過期（到期日：{evoucherType.ValidTo:yyyy-MM-dd}）",
@@ -273,8 +282,9 @@ namespace GameSpace.Areas.MiniGame.Services
                         EvoucherTypeId = evoucherTypeId,
                         UserId = userId,
                         IsUsed = false,
-                        AcquiredTime = now,
-                        UsedTime = null
+                        AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                        UsedTime = null,  // 明確設為 null
+                        IsDeleted = false  // 必填字段：未刪除
                     };
                     _context.Evouchers.Add(evoucher);
                     generatedCodes.Add(evoucherCode);
@@ -288,7 +298,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = 0,
                     ItemCode = string.Join(", ", generatedCodes),
                     Description = $"發放電子禮券「{evoucherType.Name}」x{quantity} (操作者: 管理員 ID {operatorId})",
-                    ChangeTime = now
+                    ChangeTime = nowTaiwanTime  // 使用台灣時間
                 };
                 _context.WalletHistories.Add(history);
 
@@ -307,7 +317,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     GeneratedCode = generatedCodes.FirstOrDefault(),
                     GeneratedCodes = generatedCodes,
                     HistoryLogId = history.LogId,
-                    OperationTime = now
+                    OperationTime = nowTaiwanTime
                 };
             }
             catch (Exception ex)
@@ -342,7 +352,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     return WalletMutationResult.CreateFailure($"找不到電子禮券 ID: {evoucherId}");
                 }
 
-                var now = DateTime.UtcNow;
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
                 string operationDesc = string.Empty;
 
                 switch (action.ToLowerInvariant())
@@ -370,7 +382,7 @@ namespace GameSpace.Areas.MiniGame.Services
                         }
 
                         evoucher.IsUsed = true;
-                        evoucher.UsedTime = now;
+                        evoucher.UsedTime = nowTaiwanTime;  // 使用台灣時間
                         operationDesc = $"標記電子禮券「{evoucher.EvoucherType?.Name ?? "未知"}」為已使用，序號：{evoucher.EvoucherCode}";
                         break;
 
@@ -384,7 +396,7 @@ namespace GameSpace.Areas.MiniGame.Services
                         }
 
                         evoucher.IsUsed = false;
-                        evoucher.UsedTime = null;
+                        evoucher.UsedTime = null;  // 明確設為 null
                         operationDesc = $"恢復電子禮券「{evoucher.EvoucherType?.Name ?? "未知"}」為未使用狀態，序號：{evoucher.EvoucherCode}";
                         break;
 
@@ -400,7 +412,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = 0,
                     ItemCode = evoucher.EvoucherCode,
                     Description = $"{operationDesc} (操作者: 管理員 ID {operatorId})",
-                    ChangeTime = now
+                    ChangeTime = nowTaiwanTime  // 使用台灣時間
                 };
                 _context.WalletHistories.Add(history);
 
@@ -418,7 +430,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     UserId = evoucher.UserId,
                     GeneratedCode = evoucher.EvoucherCode,
                     HistoryLogId = history.LogId,
-                    OperationTime = now
+                    OperationTime = nowTaiwanTime
                 };
             }
             catch (Exception ex)
@@ -464,7 +476,7 @@ namespace GameSpace.Areas.MiniGame.Services
         /// </summary>
         private string GenerateUniqueCouponCode()
         {
-            var now = DateTime.UtcNow;
+            var now = _appClock.ToAppTime(_appClock.UtcNow);  // 使用台灣時間生成序號
             var yearMonth = now.ToString("yyMM");
             var random = new Random();
             string code;

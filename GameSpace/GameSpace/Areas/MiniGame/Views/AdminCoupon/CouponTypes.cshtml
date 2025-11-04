@@ -1,3 +1,4 @@
+@using GameSpace.Areas.MiniGame.Helpers
 @model dynamic
 @{
     ViewData["Title"] = "優惠券類型管理";
@@ -158,6 +159,7 @@
                         <div class="form-group">
                             <label for="sortBy">排序方式</label>
                             <select class="form-control" id="sortBy" name="sortBy">
+                                <option value="id" selected="@(ViewBag.SortBy == "id" || string.IsNullOrEmpty(ViewBag.SortBy) ? "selected" : null)">類型ID (預設)</option>
                                 <option value="name" selected="@(ViewBag.SortBy == "name" ? "selected" : null)">類型名稱</option>
                                 <option value="points" selected="@(ViewBag.SortBy == "points" ? "selected" : null)">兌換點數</option>
                                 <option value="discount" selected="@(ViewBag.SortBy == "discount" ? "selected" : null)">折扣值</option>
@@ -209,45 +211,55 @@
                         {
                             @foreach (var couponType in Model.CouponTypes)
                             {
+                                // 提取所有 dynamic 属性，避免运行时绑定错误
+                                var couponTypeId = couponType.CouponTypeId as int?;
+                                var name = couponType.Name as string;
+                                var discountType = couponType.DiscountType as string;
+                                var discountValue = couponType.DiscountValue as decimal?;
+                                var minSpend = couponType.MinSpend as decimal?;
+                                var pointsCost = couponType.PointsCost as int?;
+                                var validFrom = couponType.ValidFrom as DateTime?;
+                                var validTo = couponType.ValidTo as DateTime?;
+
+                                var now = DateTime.Now;
+                                var isValid = validFrom <= now && validTo >= now;
+                                var isNotStarted = validFrom > now;
+
                                 <tr>
-                                    <td>@couponType.CouponTypeId</td>
-                                    <td>@couponType.Name</td>
+                                    <td>@(couponTypeId ?? 0)</td>
+                                    <td>@(name ?? "未知")</td>
                                     <td>
-                                        @if (couponType.DiscountType == "PERCENT")
+                                        @if (discountType == "PERCENT")
                                         {
                                             <span class="badge badge-info">百分比</span>
                                         }
-                                        else if (couponType.DiscountType == "AMOUNT")
+                                        else if (discountType == "AMOUNT")
                                         {
                                             <span class="badge badge-success">固定金額</span>
                                         }
                                     </td>
                                     <td>
-                                        @if (couponType.DiscountType == "PERCENT")
+                                        @if (discountType == "PERCENT")
                                         {
-                                            @($"{couponType.DiscountValue}%")
+                                            @($"{discountValue ?? 0}%")
                                         }
                                         else
                                         {
-                                            @($"NT$ {couponType.DiscountValue:N0}")
+                                            @($"NT$ {discountValue ?? 0:N0}")
                                         }
                                     </td>
-                                    <td>NT$ @couponType.MinSpend.ToString("N0")</td>
-                                    <td>@couponType.PointsCost</td>
+                                    <td>NT$ @((minSpend ?? 0).ToString("N0"))</td>
+                                    <td>@(pointsCost ?? 0)</td>
                                     <td>
-                                        @couponType.ValidFrom.ToString("yyyy-MM-dd") ~ 
-                                        @couponType.ValidTo.ToString("yyyy-MM-dd")
+                                        @(validFrom.ToUtc8String("yyyy-MM-dd")) ~
+                                        @(validTo.ToUtc8String("yyyy-MM-dd"))
                                     </td>
                                     <td>
-                                        @{
-                                            var now = DateTime.Now;
-                                            var isValid = couponType.ValidFrom <= now && couponType.ValidTo >= now;
-                                        }
                                         @if (isValid)
                                         {
                                             <span class="badge badge-success">有效</span>
                                         }
-                                        else if (couponType.ValidFrom > now)
+                                        else if (isNotStarted)
                                         {
                                             <span class="badge badge-warning">未開始</span>
                                         }
@@ -258,12 +270,23 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="@Url.Action("EditCouponType", "AdminCoupon", new { id = couponType.CouponTypeId })" class="btn btn-warning btn-sm">
+                                            <a href="@Url.Action("EditCouponType", "AdminCoupon", new { id = couponTypeId })" class="btn btn-warning btn-sm" title="編輯">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form asp-action="DeleteCouponType" method="post" style="display: inline;" onsubmit="return confirm('確定要刪除這個優惠券類型嗎？此操作無法復原！')">
-                                                <input type="hidden" name="id" value="@couponType.CouponTypeId" />
-                                                <button type="submit" class="btn btn-danger btn-sm">
+                                            @if (isValid || isNotStarted)
+                                            {
+                                                <form asp-action="DisableCouponType" method="post" style="display: inline;" onsubmit="return confirm('確定要停用這個優惠券類型嗎？停用後將無法兌換此類型優惠券。')">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@(couponTypeId ?? 0)" />
+                                                    <button type="submit" class="btn btn-secondary btn-sm" title="停用（軟刪除）">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <form asp-action="DeleteCouponType" method="post" style="display: inline;" onsubmit="return confirm('⚠️ 警告：確定要永久刪除這個優惠券類型嗎？\n\n此操作將執行軟刪除（IsDeleted=true），刪除後該類型將不再顯示於列表中。\n\n確定要繼續嗎？')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@(couponTypeId ?? 0)" />
+                                                <button type="submit" class="btn btn-danger btn-sm" title="刪除（軟刪除）">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>

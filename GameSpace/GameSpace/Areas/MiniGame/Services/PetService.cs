@@ -9,11 +9,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<PetService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
-        public PetService(GameSpacedatabaseContext context, ILogger<PetService> logger)
+        public PetService(GameSpacedatabaseContext context, ILogger<PetService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         // Pet 基本 CRUD
@@ -228,7 +230,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (pet.Experience < requiredExp) return false;
 
                 pet.Level++;
-                pet.LevelUpTime = DateTime.UtcNow;
+                pet.LevelUpTime = _appClock.UtcNow;
                 pet.Experience -= requiredExp;
 
                 // 獎勵點數 - 使用分段公式
@@ -236,7 +238,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 // Level 241-250: +250 點（上限）
                 var pointsReward = CalculateLevelUpReward(pet.Level);
                 pet.PointsGainedLevelUp += pointsReward;
-                pet.PointsGainedTimeLevelUp = DateTime.UtcNow;
+                pet.PointsGainedTimeLevelUp = _appClock.UtcNow;
 
                 // 更新使用者錢包
                 var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == pet.UserId);
@@ -253,7 +255,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = pointsReward,
                     ItemCode = $"PET_LEVELUP_{pet.Level}",
                     Description = $"寵物升級至 Level {pet.Level}",
-                    ChangeTime = DateTime.UtcNow
+                    ChangeTime = _appClock.UtcNow
                 };
                 _context.WalletHistories.Add(history);
 
@@ -332,7 +334,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 // 更新寵物
                 pet.SkinColor = colorCode;
-                pet.SkinColorChangedTime = DateTime.UtcNow;
+                pet.SkinColorChangedTime = _appClock.UtcNow;
                 pet.PointsChangedSkinColor += pointsCost;
 
                 // 記錄歷史
@@ -343,7 +345,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = -pointsCost,
                     ItemCode = $"SKIN_{colorCode}",
                     Description = $"寵物換膚色: {colorCode}",
-                    ChangeTime = DateTime.UtcNow
+                    ChangeTime = _appClock.UtcNow
                 };
                 _context.WalletHistories.Add(history);
 
@@ -373,7 +375,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 // 更新寵物
                 pet.BackgroundColor = colorCode;
-                pet.BackgroundColorChangedTime = DateTime.UtcNow;
+                pet.BackgroundColorChangedTime = _appClock.UtcNow;
                 pet.PointsChangedBackgroundColor += pointsCost;
 
                 // 記錄歷史
@@ -384,7 +386,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     PointsChanged = -pointsCost,
                     ItemCode = $"BG_{colorCode}",
                     Description = $"寵物換背景: {colorCode}",
-                    ChangeTime = DateTime.UtcNow
+                    ChangeTime = _appClock.UtcNow
                 };
                 _context.WalletHistories.Add(history);
 

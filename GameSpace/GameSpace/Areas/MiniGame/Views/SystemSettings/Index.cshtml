@@ -1,0 +1,223 @@
+@model IEnumerable<GameSpace.Models.SystemSetting>
+
+@{
+    ViewData["Title"] = "系統設定管理";
+    var categories = ViewBag.Categories as List<string>;
+    var currentCategory = ViewBag.CurrentCategory as string;
+    var searchKey = ViewBag.SearchKey as string;
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cogs"></i> 系統設定管理
+        </h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 新增設定
+        </a>
+    </div>
+
+    <!-- 成功/錯誤訊息 -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["WarningMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 篩選與搜尋 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter"></i> 篩選與搜尋
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="form-inline">
+                <div class="form-group mr-3 mb-2">
+                    <label class="mr-2">類別：</label>
+                    <select name="category" class="form-control">
+                        <option value="">全部類別</option>
+                        @if (categories != null)
+                        {
+                            foreach (var cat in categories)
+                            {
+                                <option value="@cat" selected="@(cat == currentCategory)">@cat</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label class="mr-2">設定鍵：</label>
+                    <input type="text" name="searchKey" class="form-control" placeholder="搜尋設定鍵..." value="@searchKey" />
+                </div>
+                <button type="submit" class="btn btn-primary mb-2 mr-2">
+                    <i class="fas fa-search"></i> 搜尋
+                </button>
+                <a asp-action="Index" class="btn btn-secondary mb-2">
+                    <i class="fas fa-redo"></i> 清除篩選
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- 設定列表 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list"></i> 設定列表 (共 @Model.Count() 筆)
+            </h6>
+        </div>
+        <div class="card-body">
+            @if (!Model.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 目前沒有符合條件的設定項目
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 5%">ID</th>
+                                <th style="width: 15%">類別</th>
+                                <th style="width: 25%">設定鍵</th>
+                                <th style="width: 20%">設定值</th>
+                                <th style="width: 10%">類型</th>
+                                <th style="width: 8%">狀態</th>
+                                <th style="width: 8%">唯讀</th>
+                                <th style="width: 9%">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.SettingId</td>
+                                    <td>
+                                        <span class="badge badge-info">@item.Category</span>
+                                    </td>
+                                    <td>
+                                        <code>@item.SettingKey</code>
+                                    </td>
+                                    <td>
+                                        @if (item.SettingValue != null && item.SettingValue.Length > 50)
+                                        {
+                                            <span title="@item.SettingValue">@item.SettingValue.Substring(0, 50)...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@item.SettingValue</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">@item.SettingType</span>
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> 啟用
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">
+                                                <i class="fas fa-times"></i> 停用
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsReadOnly)
+                                        {
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-lock"></i> 是
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light">
+                                                <i class="fas fa-unlock"></i> 否
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.SettingId"
+                                               class="btn btn-info btn-sm" title="詳情">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.SettingId"
+                                               class="btn btn-warning btn-sm" title="編輯">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            @if (!item.IsReadOnly)
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@item.SettingId"
+                                                   class="btn btn-danger btn-sm" title="刪除">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 說明文字 -->
+    <div class="alert alert-info">
+        <h5><i class="fas fa-info-circle"></i> 使用說明</h5>
+        <ul class="mb-0">
+            <li><strong>類別 (Category)</strong>: 將設定分類管理，如 Game, Pet, SignIn, Wallet 等</li>
+            <li><strong>設定鍵 (SettingKey)</strong>: 唯一識別碼，程式中用來讀取設定的鍵值</li>
+            <li><strong>設定值 (SettingValue)</strong>: 實際的配置值，可以是數字、字串、JSON 等</li>
+            <li><strong>類型 (SettingType)</strong>: 設定值的資料類型，如 Number, String, JSON, Boolean</li>
+            <li><strong>唯讀 (IsReadOnly)</strong>: 標記為唯讀的設定無法刪除，修改時需謹慎</li>
+            <li><strong>修改生效</strong>: 設定修改後會在 30 分鐘內生效（快取更新時間）</li>
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // 初始化 DataTable
+            $('#dataTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Chinese-traditional.json"
+                },
+                "pageLength": 25,
+                "order": [[1, 'asc'], [2, 'asc']]
+            });
+        });
+    </script>
+}

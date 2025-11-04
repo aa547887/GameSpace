@@ -1,0 +1,235 @@
+@using GameSpace.Areas.MiniGame.Helpers
+@model GameSpace.Models.SystemSetting
+
+@{
+    ViewData["Title"] = "編輯系統設定";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-edit"></i> 編輯系統設定
+        </h1>
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.SettingId" class="btn btn-info">
+                <i class="fas fa-eye"></i> 查看詳情
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 警告訊息 -->
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["WarningMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 表單卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-edit"></i> 設定資料
+            </h6>
+            <span class="badge badge-info">ID: @Model.SettingId</span>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="SettingId" />
+                <input type="hidden" asp-for="CreatedAt" />
+                <input type="hidden" asp-for="IsDeleted" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!-- 設定鍵 -->
+                <div class="form-group row">
+                    <label asp-for="SettingKey" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 設定鍵 (SettingKey)
+                    </label>
+                    <div class="col-md-9">
+                        <input asp-for="SettingKey" class="form-control" />
+                        <span asp-validation-for="SettingKey" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            唯一識別碼，建議使用點號分隔的命名空間格式
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 設定值 -->
+                <div class="form-group row">
+                    <label asp-for="SettingValue" class="col-md-3 col-form-label text-md-right">
+                        設定值 (SettingValue)
+                    </label>
+                    <div class="col-md-9">
+                        <textarea asp-for="SettingValue" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="SettingValue" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            根據設定類型輸入對應的值，JSON 類型請確保格式正確
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 描述 -->
+                <div class="form-group row">
+                    <label asp-for="Description" class="col-md-3 col-form-label text-md-right">
+                        描述 (Description)
+                    </label>
+                    <div class="col-md-9">
+                        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- 類別 -->
+                <div class="form-group row">
+                    <label asp-for="Category" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 類別 (Category)
+                    </label>
+                    <div class="col-md-9">
+                        <select asp-for="Category" class="form-control">
+                            <option value="General">General (一般)</option>
+                            <option value="Game">Game (遊戲)</option>
+                            <option value="Pet">Pet (寵物)</option>
+                            <option value="SignIn">SignIn (簽到)</option>
+                            <option value="Wallet">Wallet (錢包)</option>
+                            <option value="Coupon">Coupon (優惠券)</option>
+                            <option value="EVoucher">EVoucher (電子禮券)</option>
+                            <option value="System">System (系統)</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- 設定類型 -->
+                <div class="form-group row">
+                    <label asp-for="SettingType" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 設定類型 (SettingType)
+                    </label>
+                    <div class="col-md-9">
+                        <select asp-for="SettingType" class="form-control">
+                            <option value="String">String (字串)</option>
+                            <option value="Number">Number (數字)</option>
+                            <option value="Boolean">Boolean (布林值)</option>
+                            <option value="JSON">JSON (JSON 物件)</option>
+                        </select>
+                        <span asp-validation-for="SettingType" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- 唯讀 -->
+                <div class="form-group row">
+                    <label asp-for="IsReadOnly" class="col-md-3 col-form-label text-md-right">
+                        唯讀 (IsReadOnly)
+                    </label>
+                    <div class="col-md-9">
+                        <div class="custom-control custom-checkbox">
+                            <input asp-for="IsReadOnly" class="custom-control-input" type="checkbox" id="isReadOnlyCheck" />
+                            <label class="custom-control-label" for="isReadOnlyCheck">
+                                標記為唯讀（唯讀設定無法刪除）
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 啟用 -->
+                <div class="form-group row">
+                    <label asp-for="IsActive" class="col-md-3 col-form-label text-md-right">
+                        啟用 (IsActive)
+                    </label>
+                    <div class="col-md-9">
+                        <div class="custom-control custom-checkbox">
+                            <input asp-for="IsActive" class="custom-control-input" type="checkbox" id="isActiveCheck" />
+                            <label class="custom-control-label" for="isActiveCheck">
+                                啟用此設定
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            停用的設定不會被程式讀取
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 建立時間 (唯讀顯示) -->
+                <div class="form-group row">
+                    <label class="col-md-3 col-form-label text-md-right">
+                        建立時間
+                    </label>
+                    <div class="col-md-9">
+                        <input type="text" class="form-control-plaintext" readonly value="@Model.CreatedAt.ToUtc8String("yyyy-MM-dd HH:mm:ss") UTC+8" />
+                    </div>
+                </div>
+
+                <!-- 更新時間 (唯讀顯示) -->
+                @if (Model.UpdatedAt != null)
+                {
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label text-md-right">
+                            最後更新時間
+                        </label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control-plaintext" readonly value="@Model.UpdatedAt.ToUtc8String("yyyy-MM-dd HH:mm:ss") UTC+8" />
+                        </div>
+                    </div>
+                }
+
+                <!-- 按鈕 -->
+                <div class="form-group row">
+                    <div class="col-md-9 offset-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 儲存變更
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                        @if (!Model.IsReadOnly)
+                        {
+                            <a asp-action="Delete" asp-route-id="@Model.SettingId" class="btn btn-danger float-right">
+                                <i class="fas fa-trash"></i> 刪除
+                            </a>
+                        }
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 注意事項 -->
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle"></i> 注意事項</h5>
+            <p class="mb-0">此設定已標記為<strong>唯讀</strong>，請謹慎修改。唯讀設定通常用於系統核心功能，修改不當可能導致系統異常。</p>
+        </div>
+    }
+
+    <div class="alert alert-info">
+        <h5><i class="fas fa-info-circle"></i> 修改說明</h5>
+        <ul class="mb-0">
+            <li>設定修改後會在 <strong>30 分鐘內</strong>生效（快取更新時間）</li>
+            <li>如需立即生效，請重啟應用程式或清除快取</li>
+            <li>JSON 類型設定請確保格式正確，否則可能導致程式讀取失敗</li>
+            <li>Number 類型設定值應為純數字（可含小數點）</li>
+            <li>Boolean 類型設定值應為 true 或 false</li>
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

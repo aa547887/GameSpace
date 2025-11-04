@@ -1,5 +1,6 @@
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
+using GameSpace.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -9,11 +10,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<CouponService> _logger;
+        private readonly IAppClock _appClock;
 
-        public CouponService(GameSpacedatabaseContext context, ILogger<CouponService> logger)
+        public CouponService(GameSpacedatabaseContext context, ILogger<CouponService> logger, IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         public async Task<IEnumerable<Coupon>> GetAllCouponsAsync()
@@ -112,7 +115,11 @@ namespace GameSpace.Areas.MiniGame.Services
                     return false;
                 }
 
-                coupon.AcquiredTime = DateTime.UtcNow;
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                coupon.AcquiredTime = _appClock.ToAppTime(nowUtc);
+                coupon.UsedTime = null;  // 明確設為 null
+                coupon.IsDeleted = false;  // 必填字段：未刪除
 
                 _context.Coupons.Add(coupon);
                 await _context.SaveChangesAsync();
@@ -222,9 +229,11 @@ namespace GameSpace.Areas.MiniGame.Services
                     return false;
                 }
 
+                // 使用台灣時間
                 if (coupon.CouponType != null)
                 {
-                    var now = DateTime.UtcNow;
+                    var nowUtc = _appClock.UtcNow;
+                    var now = _appClock.ToAppTime(nowUtc);
                     if (now < coupon.CouponType.ValidFrom || now > coupon.CouponType.ValidTo)
                     {
                         _logger.LogWarning("優惠券已過期或尚未生效: CouponId={CouponId}, ValidFrom={ValidFrom}, ValidTo={ValidTo}",
@@ -233,8 +242,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     }
                 }
 
+                var nowUtc2 = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc2);
                 coupon.IsUsed = true;
-                coupon.UsedTime = DateTime.UtcNow;
+                coupon.UsedTime = nowTaiwanTime;  // 使用台灣時間
                 coupon.UsedInOrderId = orderId;
 
                 await _context.SaveChangesAsync();
@@ -396,6 +407,10 @@ namespace GameSpace.Areas.MiniGame.Services
                     return false;
                 }
 
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                 var couponCode = GenerateCouponCode();
 
                 var coupon = new Coupon
@@ -404,7 +419,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     CouponTypeId = couponTypeId,
                     UserId = userId,
                     IsUsed = false,
-                    AcquiredTime = DateTime.UtcNow
+                    AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                    IsDeleted = false  // 必填字段：未刪除
                 };
 
                 _context.Coupons.Add(coupon);
@@ -426,7 +443,9 @@ namespace GameSpace.Areas.MiniGame.Services
         private string GenerateCouponCode()
         {
             var random = new Random();
-            var yearMonth = DateTime.UtcNow.ToString("yyMM");
+            var nowUtc = _appClock.UtcNow;
+            var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+            var yearMonth = nowTaiwanTime.ToString("yyMM");  // 使用台灣時間生成序號
             var randomCode = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
             return $"CPN-{yearMonth}-{randomCode}";

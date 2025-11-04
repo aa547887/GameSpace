@@ -412,6 +412,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public DateTime? EndTime { get; set; }
         public bool Aborted { get; set; }
         public int? Duration { get; set; }
+        public string ScoreRank { get; set; } = string.Empty;
     }
 
     /// <summary>

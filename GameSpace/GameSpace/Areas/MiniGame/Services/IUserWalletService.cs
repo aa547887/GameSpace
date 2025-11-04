@@ -12,7 +12,6 @@ namespace GameSpace.Areas.MiniGame.Services
         Task<bool> IssueCouponAsync(int userId, int couponTypeId, string description);
         Task<bool> IssueEVoucherAsync(int userId, int evoucherTypeId, string description);
         Task<PagedResult<WalletHistory>> GetWalletHistoryAsync(WalletHistoryQueryModel query);
-        Task<bool> ExportWalletHistoryAsync(WalletHistoryQueryModel query, string filePath);
     }
 }
 

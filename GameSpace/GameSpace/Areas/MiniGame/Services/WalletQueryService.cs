@@ -35,10 +35,18 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Include(w => w.User)
                     .AsQueryable();
 
-                // 篩選條件
-                if (query.UserId.HasValue)
+                // 篩選條件 - UserId and SearchTerm (UserName) use OR logic (union)
+                // When both conditions match, priority order: UserId > UserName
+                var hasUserId = query.UserId.HasValue;
+                var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    source = source.Where(w => w.UserId == query.UserId.Value);
+                    // Use OR logic: match either condition
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    source = source.Where(w =>
+                        (hasUserId && w.UserId == query.UserId.Value) ||
+                        (hasSearchTerm && w.User != null && (w.User.UserAccount.Contains(term) || w.User.UserName.Contains(term))));
                 }
 
                 if (query.MinAmount.HasValue)
@@ -51,25 +59,41 @@ namespace GameSpace.Areas.MiniGame.Services
                     source = source.Where(w => w.UserPoint <= query.MaxAmount.Value);
                 }
 
-                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+                // 排序 - when UserId or SearchTerm conditions exist, apply priority ordering first
+                IOrderedQueryable<UserWallet> sortedSource;
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    var term = query.SearchTerm.Trim();
-                    source = source.Where(w =>
-                        (w.User != null && (w.User.UserAccount.Contains(term) ||
-                                           w.User.UserName.Contains(term))));
+                    // Priority ordering: UserId > UserName
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    var priorityOrdered = source.OrderBy(w =>
+                        hasUserId && w.UserId == query.UserId.Value ? 1 :
+                        hasSearchTerm && w.User != null && (w.User.UserAccount.Contains(term) || w.User.UserName.Contains(term)) ? 2 : 3
+                    );
+
+                    // Then apply user-specified sorting as secondary sort
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "points_asc" => priorityOrdered.ThenBy(w => w.UserPoint),
+                        "userid_desc" => priorityOrdered.ThenByDescending(w => w.UserId),
+                        "userid_asc" => priorityOrdered.ThenBy(w => w.UserId),
+                        _ => priorityOrdered.ThenByDescending(w => w.UserPoint)
+                    };
+                }
+                else
+                {
+                    // No search conditions, use regular sorting
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "points_asc" => source.OrderBy(w => w.UserPoint),
+                        "userid_desc" => source.OrderByDescending(w => w.UserId),
+                        "userid_asc" => source.OrderBy(w => w.UserId),
+                        _ => source.OrderByDescending(w => w.UserPoint)
+                    };
                 }
 
-                // 排序
-                source = query.SortBy?.ToLowerInvariant() switch
-                {
-                    "points_asc" => source.OrderBy(w => w.UserPoint),
-                    "userid_desc" => source.OrderByDescending(w => w.UserId),
-                    "userid_asc" => source.OrderBy(w => w.UserId),
-                    _ => source.OrderByDescending(w => w.UserPoint)
-                };
-
-                var totalCount = await source.CountAsync();
-                var items = await source
+                var totalCount = await sortedSource.CountAsync();
+                var items = await sortedSource
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -117,10 +141,19 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Include(c => c.CouponType)
                     .AsQueryable();
 
-                // 篩選條件
-                if (query.UserId.HasValue)
+                // 篩選條件 - UserId and SearchTerm (UserName) use OR logic (union)
+                // When both conditions match, priority order: UserId > UserName
+                var hasUserId = query.UserId.HasValue;
+                var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    source = source.Where(c => c.UserId == query.UserId.Value);
+                    // Use OR logic: match either condition
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    source = source.Where(c =>
+                        (hasUserId && c.UserId == query.UserId.Value) ||
+                        (hasSearchTerm && (c.CouponCode.Contains(term) ||
+                                          (c.User != null && (c.User.UserAccount.Contains(term) || c.User.UserName.Contains(term))))));
                 }
 
                 if (query.CouponTypeId.HasValue)
@@ -139,24 +172,40 @@ namespace GameSpace.Areas.MiniGame.Services
                     };
                 }
 
-                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+                // 排序 - when UserId or SearchTerm conditions exist, apply priority ordering first
+                IOrderedQueryable<Coupon> sortedSource;
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    var term = query.SearchTerm.Trim();
-                    source = source.Where(c =>
-                        c.CouponCode.Contains(term) ||
-                        (c.User != null && (c.User.UserAccount.Contains(term) || c.User.UserName.Contains(term))));
+                    // Priority ordering: UserId > UserName
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    var priorityOrdered = source.OrderBy(c =>
+                        hasUserId && c.UserId == query.UserId.Value ? 1 :
+                        hasSearchTerm && (c.CouponCode.Contains(term) ||
+                                         (c.User != null && (c.User.UserAccount.Contains(term) || c.User.UserName.Contains(term)))) ? 2 : 3
+                    );
+
+                    // Then apply user-specified sorting as secondary sort
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "acquiredtime" => query.Descending ? priorityOrdered.ThenByDescending(c => c.AcquiredTime) : priorityOrdered.ThenBy(c => c.AcquiredTime),
+                        "usetime" => query.Descending ? priorityOrdered.ThenByDescending(c => c.UsedTime) : priorityOrdered.ThenBy(c => c.UsedTime),
+                        _ => priorityOrdered.ThenByDescending(c => c.AcquiredTime)
+                    };
+                }
+                else
+                {
+                    // No search conditions, use regular sorting
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "acquiredtime" => query.Descending ? source.OrderByDescending(c => c.AcquiredTime) : source.OrderBy(c => c.AcquiredTime),
+                        "usetime" => query.Descending ? source.OrderByDescending(c => c.UsedTime) : source.OrderBy(c => c.UsedTime),
+                        _ => source.OrderByDescending(c => c.AcquiredTime)
+                    };
                 }
 
-                // 排序
-                source = query.SortBy?.ToLowerInvariant() switch
-                {
-                    "acquiredtime" => query.Descending ? source.OrderByDescending(c => c.AcquiredTime) : source.OrderBy(c => c.AcquiredTime),
-                    "usetime" => query.Descending ? source.OrderByDescending(c => c.UsedTime) : source.OrderBy(c => c.UsedTime),
-                    _ => source.OrderByDescending(c => c.AcquiredTime)
-                };
-
-                var totalCount = await source.CountAsync();
-                var items = await source.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                var totalCount = await sortedSource.CountAsync();
+                var items = await sortedSource.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
                 var records = items.Select(c => new UserCouponReadModel
                 {
@@ -210,10 +259,19 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Include(e => e.EvoucherType)
                     .AsQueryable();
 
-                // 篩選條件
-                if (query.UserId.HasValue)
+                // 篩選條件 - UserId and SearchTerm (UserName) use OR logic (union)
+                // When both conditions match, priority order: UserId > UserName
+                var hasUserId = query.UserId.HasValue;
+                var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    source = source.Where(e => e.UserId == query.UserId.Value);
+                    // Use OR logic: match either condition
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    source = source.Where(e =>
+                        (hasUserId && e.UserId == query.UserId.Value) ||
+                        (hasSearchTerm && (e.EvoucherCode.Contains(term) ||
+                                          (e.User != null && (e.User.UserAccount.Contains(term) || e.User.UserName.Contains(term))))));
                 }
 
                 if (query.EVoucherTypeId.HasValue)
@@ -224,14 +282,6 @@ namespace GameSpace.Areas.MiniGame.Services
                 if (!string.IsNullOrWhiteSpace(query.TypeCode))
                 {
                     source = source.Where(e => e.EvoucherType != null && e.EvoucherType.Name.Contains(query.TypeCode));
-                }
-
-                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
-                {
-                    var term = query.SearchTerm.Trim();
-                    source = source.Where(e =>
-                        e.EvoucherCode.Contains(term) ||
-                        (e.User != null && (e.User.UserAccount.Contains(term) || e.User.UserName.Contains(term))));
                 }
 
                 if (!string.IsNullOrWhiteSpace(query.Status))
@@ -245,16 +295,40 @@ namespace GameSpace.Areas.MiniGame.Services
                     };
                 }
 
-                // 排序
-                source = query.SortBy?.ToLowerInvariant() switch
-                {
-                    "acquiredtime" => query.Descending ? source.OrderByDescending(e => e.AcquiredTime) : source.OrderBy(e => e.AcquiredTime),
-                    "validto" => query.Descending ? source.OrderByDescending(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue) : source.OrderBy(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue),
-                    _ => source.OrderByDescending(e => e.AcquiredTime)
-                };
+                // 排序 - when UserId or SearchTerm conditions exist, apply priority ordering first
+                IOrderedQueryable<Evoucher> sortedSource;
 
-                var totalCount = await source.CountAsync();
-                var items = await source.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                if (hasUserId || hasSearchTerm)
+                {
+                    // Priority ordering: UserId > UserName
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    var priorityOrdered = source.OrderBy(e =>
+                        hasUserId && e.UserId == query.UserId.Value ? 1 :
+                        hasSearchTerm && (e.EvoucherCode.Contains(term) ||
+                                         (e.User != null && (e.User.UserAccount.Contains(term) || e.User.UserName.Contains(term)))) ? 2 : 3
+                    );
+
+                    // Then apply user-specified sorting as secondary sort
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "acquiredtime" => query.Descending ? priorityOrdered.ThenByDescending(e => e.AcquiredTime) : priorityOrdered.ThenBy(e => e.AcquiredTime),
+                        "validto" => query.Descending ? priorityOrdered.ThenByDescending(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue) : priorityOrdered.ThenBy(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue),
+                        _ => priorityOrdered.ThenByDescending(e => e.AcquiredTime)
+                    };
+                }
+                else
+                {
+                    // No search conditions, use regular sorting
+                    sortedSource = query.SortBy?.ToLowerInvariant() switch
+                    {
+                        "acquiredtime" => query.Descending ? source.OrderByDescending(e => e.AcquiredTime) : source.OrderBy(e => e.AcquiredTime),
+                        "validto" => query.Descending ? source.OrderByDescending(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue) : source.OrderBy(e => e.EvoucherType != null ? e.EvoucherType.ValidTo : DateTime.MinValue),
+                        _ => source.OrderByDescending(e => e.AcquiredTime)
+                    };
+                }
+
+                var totalCount = await sortedSource.CountAsync();
+                var items = await sortedSource.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
                 var records = items.Select(e => new Models.ViewModels.EVoucherReadModel
                 {
@@ -308,10 +382,19 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Include(h => h.User)
                     .AsQueryable();
 
-                // 篩選條件
-                if (query.UserId.HasValue)
+                // 篩選條件 - UserId and SearchTerm (UserName) use OR logic (union)
+                // When both conditions match, priority order: UserId > UserName
+                var hasUserId = query.UserId.HasValue;
+                var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    source = source.Where(h => h.UserId == query.UserId.Value);
+                    // Use OR logic: match either condition
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    source = source.Where(h =>
+                        (hasUserId && h.UserId == query.UserId.Value) ||
+                        (hasSearchTerm && ((h.Description != null && h.Description.Contains(term)) ||
+                                          (h.User != null && (h.User.UserAccount.Contains(term) || h.User.UserName.Contains(term))))));
                 }
 
                 if (!string.IsNullOrWhiteSpace(query.ChangeType))
@@ -329,19 +412,30 @@ namespace GameSpace.Areas.MiniGame.Services
                     source = source.Where(h => h.ChangeTime <= query.EndDate.Value);
                 }
 
-                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+                // 排序 - when UserId or SearchTerm conditions exist, apply priority ordering first
+                IOrderedQueryable<WalletHistory> sortedSource;
+
+                if (hasUserId || hasSearchTerm)
                 {
-                    var term = query.SearchTerm.Trim();
-                    source = source.Where(h =>
-                        h.Description != null && h.Description.Contains(term) ||
-                        (h.User != null && (h.User.UserAccount.Contains(term) || h.User.UserName.Contains(term))));
+                    // Priority ordering: UserId > UserName
+                    var term = hasSearchTerm ? query.SearchTerm.Trim() : "";
+                    var priorityOrdered = source.OrderBy(h =>
+                        hasUserId && h.UserId == query.UserId.Value ? 1 :
+                        hasSearchTerm && ((h.Description != null && h.Description.Contains(term)) ||
+                                         (h.User != null && (h.User.UserAccount.Contains(term) || h.User.UserName.Contains(term)))) ? 2 : 3
+                    );
+
+                    // Then apply ChangeTime descending as secondary sort
+                    sortedSource = priorityOrdered.ThenByDescending(h => h.ChangeTime);
+                }
+                else
+                {
+                    // No search conditions, use regular sorting
+                    sortedSource = source.OrderByDescending(h => h.ChangeTime);
                 }
 
-                // 排序
-                source = source.OrderByDescending(h => h.ChangeTime);
-
-                var totalCount = await source.CountAsync();
-                var items = await source.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                var totalCount = await sortedSource.CountAsync();
+                var items = await sortedSource.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
                 // 查詢當前餘額
                 var lookupIds = items.Select(h => h.UserId).Distinct().ToList();

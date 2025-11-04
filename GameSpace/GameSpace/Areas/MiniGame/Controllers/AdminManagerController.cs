@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
 using System.Text;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -14,9 +15,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme, Policy = "AdminOnly")]
     public class AdminManagerController : MiniGameBaseController
     {
-        public AdminManagerController(GameSpacedatabaseContext context)
+        private readonly IFuzzySearchService _fuzzySearchService;
+
+        public AdminManagerController(GameSpacedatabaseContext context, IFuzzySearchService fuzzySearchService)
             : base(context)
         {
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // GET: AdminManager
@@ -31,12 +35,56 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             int? selectedRoleId = null;
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 模糊搜尋：SearchTerm（聯集OR邏輯，使用 FuzzySearchService）
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(searchTerm);
+
+            List<int> matchedManagerIds = new List<int>();
+            Dictionary<int, int> managerPriority = new Dictionary<int, int>();
+
+            if (hasSearchTerm)
             {
-                query = query.Where(m => (m.ManagerName != null && m.ManagerName.Contains(searchTerm)) ||
-                                       (m.ManagerAccount != null && m.ManagerAccount.Contains(searchTerm)) ||
-                                       m.ManagerEmail.Contains(searchTerm));
+                var term = searchTerm.Trim();
+
+                // 查詢所有管理員並使用 FuzzySearchService 計算優先順序
+                var allManagers = await _context.ManagerData
+                    .AsNoTracking()
+                    .Select(m => new { m.ManagerId, m.ManagerAccount, m.ManagerName, m.ManagerEmail })
+                    .ToListAsync();
+
+                foreach (var manager in allManagers)
+                {
+                    int priority = 0;
+
+                    // 管理員ID精確匹配優先
+                    if (manager.ManagerId.ToString().Equals(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 1; // 完全匹配 ManagerId
+                    }
+                    else if (manager.ManagerId.ToString().Contains(term))
+                    {
+                        priority = 2; // 部分匹配 ManagerId
+                    }
+
+                    // 如果ID沒有匹配，使用模糊搜尋
+                    if (priority == 0)
+                    {
+                        priority = _fuzzySearchService.CalculateMatchPriority(
+                            term,
+                            manager.ManagerAccount ?? "",
+                            manager.ManagerName ?? "",
+                            manager.ManagerEmail ?? ""
+                        );
+                    }
+
+                    // 如果匹配成功（priority > 0），加入結果
+                    if (priority > 0)
+                    {
+                        matchedManagerIds.Add(manager.ManagerId);
+                        managerPriority[manager.ManagerId] = priority;
+                    }
+                }
+
+                query = query.Where(m => matchedManagerIds.Contains(m.ManagerId));
             }
 
             // 狀態篩選
@@ -55,23 +103,53 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 query = query.Where(m => m.ManagerRoles.Any(mr => mr.ManagerRoleId == roleId));
             }
 
-            // 排序
-            query = sortBy switch
-            {
-                "account" => query.OrderBy(m => m.ManagerAccount),
-                "email" => query.OrderBy(m => m.ManagerEmail),
-                "created" => query.OrderBy(m => m.AdministratorRegistrationDate),
-                _ => query.OrderBy(m => m.ManagerName)
-            };
-
-            // 分頁
+            // 計算統計數據（從篩選後的查詢）
             var totalCount = await query.CountAsync();
-            var managers = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
 
-            var activeManagers = await _context.ManagerData.CountAsync(m => !m.ManagerLockoutEnabled || !m.ManagerLockoutEnd.HasValue || m.ManagerLockoutEnd <= DateTime.Now);
+            // 優先順序排序：先取資料再排序
+            var allItems = await query.ToListAsync();
+            var managers = allItems;
+
+            if (hasSearchTerm)
+            {
+                // 在記憶體中進行優先順序排序
+                var ordered = allItems.OrderBy(m =>
+                {
+                    // 如果管理員匹配，返回對應優先順序
+                    if (managerPriority.ContainsKey(m.ManagerId))
+                    {
+                        return managerPriority[m.ManagerId];
+                    }
+                    return 99;
+                });
+
+                // 次要排序
+                var sorted = sortBy switch
+                {
+                    "account" => ordered.ThenBy(m => m.ManagerAccount),
+                    "email" => ordered.ThenBy(m => m.ManagerEmail),
+                    "created" => ordered.ThenBy(m => m.AdministratorRegistrationDate),
+                    _ => ordered.ThenBy(m => m.ManagerName)
+                };
+
+                managers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                // 沒有搜尋條件時使用預設排序
+                var sorted = sortBy switch
+                {
+                    "account" => allItems.OrderBy(m => m.ManagerAccount),
+                    "email" => allItems.OrderBy(m => m.ManagerEmail),
+                    "created" => allItems.OrderBy(m => m.AdministratorRegistrationDate),
+                    _ => allItems.OrderBy(m => m.ManagerName)
+                };
+
+                managers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
+
+            // Calculate statistics from filtered data (use already filtered 'allItems' collection)
+            var activeManagers = allItems.Count(m => !m.ManagerLockoutEnabled || !m.ManagerLockoutEnd.HasValue || m.ManagerLockoutEnd <= DateTime.Now);
             var roles = await _context.ManagerRolePermissions
                 .OrderBy(r => r.RoleName)
                 .ToListAsync();

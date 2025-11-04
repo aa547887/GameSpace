@@ -17,9 +17,7 @@
             <a href="@Url.Action("QueryPets")" class="btn btn-info">
                 <i class="fas fa-paw me-1"></i>返回寵物清單查詢
             </a>
-            <a href="@Url.Action("Index")" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>返回
-            </a>
+        
         </div>
     </div>
 
@@ -31,12 +29,12 @@
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-3">
-                    <label for="UserId" class="form-label">用戶ID</label>
-                    <input type="text" class="form-control" id="UserId" name="UserId" value="@Model.UserId" placeholder="輸入用戶ID">
+                    <label for="UserId" class="form-label">會員ID</label>
+                    <input type="text" class="form-control" id="UserId" name="UserId" value="@Model.UserId" placeholder="輸入會員ID（支援模糊查詢）">
                 </div>
                 <div class="col-md-3">
                     <label for="PetId" class="form-label">寵物ID</label>
-                    <input type="text" class="form-control" id="PetId" name="PetId" value="@Model.PetId" placeholder="輸入寵物ID">
+                    <input type="text" class="form-control" id="PetId" name="PetId" value="@Model.PetId" placeholder="輸入寵物ID（支援模糊查詢）">
                 </div>
                 <div class="col-md-3">
                     <label for="ChangeType" class="form-label">更換類型</label>
@@ -69,6 +67,12 @@
                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                         <i class="fas fa-undo"></i> 重置
                     </button>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            查詢說明：支援模糊查詢 | 同時填寫會員ID和寵物ID時，優先使用會員ID | 不填任何條件則顯示全部結果
+                        </small>
+                    </div>
                 </div>
             </form>
         </div>
@@ -88,7 +92,7 @@
                         <thead>
                             <tr>
                                 <th>記錄ID</th>
-                                <th>用戶ID</th>
+                                <th>會員ID</th>
                                 <th>寵物ID</th>
                                 <th>寵物名稱</th>
                                 <th>更換類型</th>

@@ -1,5 +1,6 @@
 ﻿using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models;
+using GameSpace.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameSpace.Areas.MiniGame.Services
@@ -8,11 +9,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<EVoucherService> _logger;
+        private readonly IAppClock _appClock;
 
-        public EVoucherService(GameSpacedatabaseContext context, ILogger<EVoucherService> logger)
+        public EVoucherService(GameSpacedatabaseContext context, ILogger<EVoucherService> logger, IAppClock appClock)
         {
             _context = context;
             _logger = logger;
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         public async Task<IEnumerable<Evoucher>> GetAllEVouchersAsync()
@@ -176,10 +179,11 @@ namespace GameSpace.Areas.MiniGame.Services
                     return false;
                 }
 
-                // 檢查過期日期
+                // 檢查過期日期 - 使用台灣時間
                 if (eVoucher.EvoucherType != null)
                 {
-                    var now = DateTime.UtcNow;
+                    var nowUtc = _appClock.UtcNow;
+                    var now = _appClock.ToAppTime(nowUtc);
                     if (now < eVoucher.EvoucherType.ValidFrom || now > eVoucher.EvoucherType.ValidTo)
                     {
                         _logger.LogWarning("嘗試使用已過期電子憑證: {EVoucherId}", eVoucherId);
@@ -187,16 +191,18 @@ namespace GameSpace.Areas.MiniGame.Services
                     }
                 }
 
-                // 更新憑證狀態
+                // 更新憑證狀態 - 使用台灣時間
+                var nowUtc2 = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc2);
                 eVoucher.IsUsed = true;
-                eVoucher.UsedTime = DateTime.UtcNow;
+                eVoucher.UsedTime = nowTaiwanTime;
 
                 // 記錄兌換日誌
                 var log = new EvoucherRedeemLog
                 {
                     EvoucherId = eVoucherId,
                     UserId = eVoucher.UserId,
-                    ScannedAt = DateTime.UtcNow,
+                    ScannedAt = nowTaiwanTime,  // 使用台灣時間
                     Status = "Redeemed"
                 };
                 _context.EvoucherRedeemLogs.Add(log);
@@ -222,6 +228,10 @@ namespace GameSpace.Areas.MiniGame.Services
                 var eVoucherType = await _context.EvoucherTypes.FindAsync(eVoucherTypeId);
                 if (eVoucherType == null) return false;
 
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                 var eVoucherCode = GenerateEVoucherCode(eVoucherType.Name);
                 var eVoucher = new Evoucher
                 {
@@ -229,7 +239,9 @@ namespace GameSpace.Areas.MiniGame.Services
                     EvoucherTypeId = eVoucherTypeId,
                     UserId = userId,
                     IsUsed = false,
-                    AcquiredTime = DateTime.UtcNow
+                    AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                    IsDeleted = false  // 必填字段：未刪除
                 };
 
                 _context.Evouchers.Add(eVoucher);

@@ -588,6 +588,26 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [Range(0, 100, ErrorMessage = "最大健康度必須在 0-100 之間")]
         public int MaxHealth { get; set; } = 100;
 
+        [Display(Name = "每日飢餓度衰減")]
+        [Required(ErrorMessage = "每日飢餓度衰減為必填欄位")]
+        [Range(0, 100, ErrorMessage = "每日飢餓度衰減必須在 0-100 之間")]
+        public int DailyDecayHunger { get; set; } = 20;
+
+        [Display(Name = "每日心情衰減")]
+        [Required(ErrorMessage = "每日心情衰減為必填欄位")]
+        [Range(0, 100, ErrorMessage = "每日心情衰減必須在 0-100 之間")]
+        public int DailyDecayMood { get; set; } = 30;
+
+        [Display(Name = "每日體力衰減")]
+        [Required(ErrorMessage = "每日體力衰減為必填欄位")]
+        [Range(0, 100, ErrorMessage = "每日體力衰減必須在 0-100 之間")]
+        public int DailyDecayStamina { get; set; } = 10;
+
+        [Display(Name = "每日清潔度衰減")]
+        [Required(ErrorMessage = "每日清潔度衰減為必填欄位")]
+        [Range(0, 100, ErrorMessage = "每日清潔度衰減必須在 0-100 之間")]
+        public int DailyDecayCleanliness { get; set; } = 20;
+
         [Display(Name = "飢餓度衰減率")]
         [Required(ErrorMessage = "飢餓度衰減率為必填欄位")]
         [Range(1, 10, ErrorMessage = "飢餓度衰減率必須在 1-10 之間")]
@@ -774,22 +794,6 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [StringLength(50, ErrorMessage = "寵物名稱長度不能超過 50 個字元")]
         public string? PetName { get; set; }
 
-        [Display(Name = "最低等級")]
-        [Range(1, 100, ErrorMessage = "最低等級必須在 1-100 之間")]
-        public int? MinLevel { get; set; }
-
-        [Display(Name = "最高等級")]
-        [Range(1, 100, ErrorMessage = "最高等級必須在 1-100 之間")]
-        public int? MaxLevel { get; set; }
-
-        [Display(Name = "最低經驗值")]
-        [Range(0, int.MaxValue, ErrorMessage = "最低經驗值必須大於等於 0")]
-        public int? MinExperience { get; set; }
-
-        [Display(Name = "最高經驗值")]
-        [Range(0, int.MaxValue, ErrorMessage = "最高經驗值必須大於等於 0")]
-        public int? MaxExperience { get; set; }
-
         [Display(Name = "膚色")]
         [StringLength(10, ErrorMessage = "膚色代碼長度不能超過 10 個字元")]
         public string? SkinColor { get; set; }
@@ -802,13 +806,12 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         [StringLength(100, ErrorMessage = "搜尋關鍵字長度不能超過 100 個字元")]
         public string? SearchTerm { get; set; }
 
-        [Display(Name = "排序欄位")]
-        [StringLength(50, ErrorMessage = "排序欄位長度不能超過 50 個字元")]
-        public string SortBy { get; set; } = "name";
-
-        [Display(Name = "排序順序")]
-        [StringLength(10, ErrorMessage = "排序順序長度不能超過 10 個字元")]
-        public string? SortOrder { get; set; } = "asc";
+        /// <summary>
+        /// 排序方式 - 支援組合格式如 "level_asc", "level_desc", "exp_asc", "exp_desc", "health_asc", "health_desc", "petname_asc", "petname_desc", "userid_asc", "userid_desc"
+        /// </summary>
+        [Display(Name = "排序方式")]
+        [StringLength(50, ErrorMessage = "排序方式長度不能超過 50 個字元")]
+        public string SortBy { get; set; } = "level_desc";
 
         [Display(Name = "頁碼")]
         [Range(1, int.MaxValue, ErrorMessage = "頁碼必須大於等於 1")]

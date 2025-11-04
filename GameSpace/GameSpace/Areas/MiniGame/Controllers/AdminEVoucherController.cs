@@ -5,6 +5,8 @@ using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.social_hub.Auth;
+using GameSpace.Infrastructure.Time;
+using GameSpace.Areas.MiniGame.Services;
 using EVoucherCreateModel = GameSpace.Areas.MiniGame.Models.EVoucherCreateModel;
 
 namespace GameSpace.Areas.MiniGame.Controllers
@@ -13,9 +15,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme, Policy = "AdminOnly")]
     public class AdminEVoucherController : MiniGameBaseController
     {
-        public AdminEVoucherController(GameSpacedatabaseContext context)
-            : base(context)
+        private readonly IFuzzySearchService _fuzzySearchService;
+
+        public AdminEVoucherController(GameSpacedatabaseContext context, IAppClock appClock, IFuzzySearchService fuzzySearchService)
+            : base(context, appClock)
         {
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // GET: AdminEVoucher
@@ -26,18 +31,87 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Include(e => e.EvoucherType)
                 .AsQueryable();
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 模糊搜尋：SearchTerm（聯集OR邏輯，使用 FuzzySearchService）
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(searchTerm);
+
+            List<int> matchedEVoucherIds = new List<int>();
+            Dictionary<int, int> evoucherPriority = new Dictionary<int, int>();
+
+            if (hasSearchTerm)
             {
-                query = query.Where(e => e.EvoucherCode.Contains(searchTerm) || 
-                                       e.User.UserName.Contains(searchTerm) || 
-                                       e.EvoucherType.Name.Contains(searchTerm));
+                var term = searchTerm.Trim();
+
+                // 查詢所有電子禮券並使用 FuzzySearchService 計算優先順序
+                var allEVouchers = await _context.Evouchers
+                    .Include(e => e.User)
+                    .Include(e => e.EvoucherType)
+                    .AsNoTracking()
+                    .Select(e => new {
+                        e.EvoucherId,
+                        e.EvoucherCode,
+                        UserName = e.User != null ? e.User.UserName : "",
+                        UserAccount = e.User != null ? e.User.UserAccount : "",
+                        TypeName = e.EvoucherType != null ? e.EvoucherType.Name : ""
+                    })
+                    .ToListAsync();
+
+                foreach (var evoucher in allEVouchers)
+                {
+                    int priority = 0;
+
+                    // 電子禮券代碼精確匹配優先
+                    if (evoucher.EvoucherCode.Equals(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 1; // 完全匹配 EvoucherCode
+                    }
+                    else if (evoucher.EvoucherCode.StartsWith(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 2; // 開頭匹配
+                    }
+                    else if (evoucher.EvoucherCode.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 3; // 包含匹配
+                    }
+
+                    // 如果代碼沒有匹配，嘗試類型名稱匹配
+                    if (priority == 0 && !string.IsNullOrEmpty(evoucher.TypeName))
+                    {
+                        if (evoucher.TypeName.Equals(term, StringComparison.OrdinalIgnoreCase))
+                        {
+                            priority = 1;
+                        }
+                        else if (evoucher.TypeName.Contains(term, StringComparison.OrdinalIgnoreCase))
+                        {
+                            priority = 3;
+                        }
+                    }
+
+                    // 如果還沒匹配，嘗試用戶名模糊搜尋
+                    if (priority == 0)
+                    {
+                        priority = _fuzzySearchService.CalculateMatchPriority(
+                            term,
+                            evoucher.UserAccount,
+                            evoucher.UserName
+                        );
+                    }
+
+                    // 如果匹配成功（priority > 0），加入結果
+                    if (priority > 0)
+                    {
+                        matchedEVoucherIds.Add(evoucher.EvoucherId);
+                        evoucherPriority[evoucher.EvoucherId] = priority;
+                    }
+                }
+
+                query = query.Where(e => matchedEVoucherIds.Contains(e.EvoucherId));
             }
 
-            // 狀態篩選
+            // 狀態篩選 - 使用台灣時間
             if (!string.IsNullOrEmpty(status))
             {
-                var now = DateTime.Now;
+                var nowUtc = _appClock.UtcNow;
+                var now = _appClock.ToAppTime(nowUtc);
                 query = status switch
                 {
                     "unused" => query.Where(e => !e.IsUsed && e.EvoucherType.ValidTo >= now),
@@ -53,22 +127,52 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 query = query.Where(e => e.EvoucherTypeId == typeId);
             }
 
-            // 排序
-            query = sortBy switch
-            {
-                "type" => query.OrderBy(e => e.EvoucherType.Name),
-                "user" => query.OrderBy(e => e.User.UserName),
-                "acquired" => query.OrderByDescending(e => e.AcquiredTime),
-                "used" => query.OrderByDescending(e => e.UsedTime),
-                _ => query.OrderBy(e => e.EvoucherCode)
-            };
-
-            // 分頁
+            // 計算統計數據（從篩選後的查詢）
             var totalCount = await query.CountAsync();
-            var evouchers = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+
+            // 優先順序排序：先取資料再排序
+            var allItems = await query.ToListAsync();
+            var evouchers = allItems;
+
+            if (hasSearchTerm)
+            {
+                // 在記憶體中進行優先順序排序
+                var ordered = allItems.OrderBy(e =>
+                {
+                    // 如果電子禮券匹配，返回對應優先順序
+                    if (evoucherPriority.ContainsKey(e.EvoucherId))
+                    {
+                        return evoucherPriority[e.EvoucherId];
+                    }
+                    return 99;
+                });
+
+                // 次要排序
+                var sorted = sortBy switch
+                {
+                    "type" => ordered.ThenBy(e => e.EvoucherType.Name),
+                    "user" => ordered.ThenBy(e => e.User.UserName),
+                    "acquired" => ordered.ThenByDescending(e => e.AcquiredTime),
+                    "used" => ordered.ThenByDescending(e => e.UsedTime),
+                    _ => ordered.ThenBy(e => e.EvoucherCode)
+                };
+
+                evouchers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                // 沒有搜尋條件時使用資料庫排序
+                var sorted = sortBy switch
+                {
+                    "type" => allItems.OrderBy(e => e.EvoucherType.Name),
+                    "user" => allItems.OrderBy(e => e.User.UserName),
+                    "acquired" => allItems.OrderByDescending(e => e.AcquiredTime),
+                    "used" => allItems.OrderByDescending(e => e.UsedTime),
+                    _ => allItems.OrderBy(e => e.EvoucherCode)
+                };
+
+                evouchers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
 
             var viewModel = new AdminEVoucherIndexViewModel
             {
@@ -87,8 +191,40 @@ namespace GameSpace.Areas.MiniGame.Controllers
             ViewBag.EvoucherType = evoucherType;
             ViewBag.SortBy = sortBy;
             ViewBag.TotalEVouchers = totalCount;
-            ViewBag.UsedEVouchers = await _context.Evouchers.CountAsync(e => e.IsUsed);
-            ViewBag.UnusedEVouchers = await _context.Evouchers.CountAsync(e => !e.IsUsed);
+
+            // Build filtered query for statistics (before pagination)
+            var statsQuery = _context.Evouchers
+                .Include(e => e.User)
+                .Include(e => e.EvoucherType)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                statsQuery = statsQuery.Where(e => e.EvoucherCode.Contains(searchTerm) ||
+                                       e.User.UserName.Contains(searchTerm) ||
+                                       e.EvoucherType.Name.Contains(searchTerm));
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                var nowUtc = _appClock.UtcNow;
+                var now = _appClock.ToAppTime(nowUtc);
+                statsQuery = status switch
+                {
+                    "unused" => statsQuery.Where(e => !e.IsUsed && e.EvoucherType.ValidTo >= now),
+                    "used" => statsQuery.Where(e => e.IsUsed),
+                    "expired" => statsQuery.Where(e => !e.IsUsed && e.EvoucherType.ValidTo < now),
+                    _ => statsQuery
+                };
+            }
+
+            if (!string.IsNullOrEmpty(evoucherType) && int.TryParse(evoucherType, out int statsTypeId))
+            {
+                statsQuery = statsQuery.Where(e => e.EvoucherTypeId == statsTypeId);
+            }
+
+            ViewBag.UsedEVouchers = await statsQuery.CountAsync(e => e.IsUsed);
+            ViewBag.UnusedEVouchers = await statsQuery.CountAsync(e => !e.IsUsed);
             ViewBag.EvoucherTypes = await _context.EvoucherTypes.CountAsync();
             ViewBag.EvoucherTypeList = await _context.EvoucherTypes.ToListAsync();
 
@@ -140,14 +276,19 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return View(model);
                 }
 
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                 var eVoucher = new Evoucher
                 {
                     EvoucherTypeId = model.EvoucherTypeId,
                     UserId = model.UserId,
                     EvoucherCode = model.EvoucherCode,
-                    AcquiredTime = model.AcquiredTime ?? DateTime.Now,
-                    UsedTime = null,
-                    IsUsed = false
+                    AcquiredTime = model.AcquiredTime ?? nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null
+                    IsUsed = false,
+                    IsDeleted = false  // 必填字段：未刪除
                 };
 
                 _context.Add(eVoucher);
@@ -171,29 +312,95 @@ namespace GameSpace.Areas.MiniGame.Controllers
         // POST: AdminEVoucher/CreateType
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateType(AdminEVoucherTypeCreateViewModel model)
+        public async Task<IActionResult> CreateType([Bind("Name,Description,ValueAmount,ValidFrom,ValidTo,PointsCost,TotalAvailable")] EvoucherType eVoucherType)
         {
             if (ModelState.IsValid)
             {
-                var eVoucherType = new EvoucherType
+                // 驗證：截止日必須晚於起始日
+                if (eVoucherType.ValidFrom >= eVoucherType.ValidTo)
                 {
-                    Name = model.Name,
-                    Description = model.Description,
-                    ValueAmount = model.ValueAmount,
-                    ValidFrom = model.ValidFrom,
-                    ValidTo = model.ValidTo,
-                    PointsCost = model.PointsCost,
-                    TotalAvailable = model.TotalAvailable
-                };
+                    ModelState.AddModelError("ValidTo", "有效截止日必須晚於有效起始日");
+                    return View(eVoucherType);
+                }
+
+                // 設定預設值
+                eVoucherType.IsDeleted = false;
+                eVoucherType.DeletedAt = null;
+                eVoucherType.DeletedBy = null;
+                eVoucherType.DeleteReason = null;
 
                 _context.Add(eVoucherType);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "禮券類型建立成功";
-                return RedirectToAction(nameof(EvoucherTypes));
+                TempData["SuccessMessage"] = $"電子禮券類型「{eVoucherType.Name}」建立成功";
+                return RedirectToAction("AdjustEVoucher", "WalletAdmin");
             }
 
-            return View(model);
+            return View(eVoucherType);
+        }
+
+        // POST: AdminEVoucher/DisableEVoucherType
+        // 停用電子禮券類型 (軟刪除)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DisableEVoucherType(int id)
+        {
+            try
+            {
+                var evoucherType = await _context.EvoucherTypes.FindAsync(id);
+                if (evoucherType == null)
+                {
+                    TempData["ErrorMessage"] = "找不到要停用的電子禮券類型";
+                    return RedirectToAction("AdjustEVoucher", "WalletAdmin");
+                }
+
+                // 軟刪除：設定 IsDeleted = true
+                evoucherType.IsDeleted = true;
+                evoucherType.DeletedAt = _appClock.UtcNow;
+                evoucherType.DeleteReason = "管理員停用";
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"電子禮券類型「{evoucherType.Name}」已停用";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"停用失敗：{ex.Message}";
+            }
+
+            return RedirectToAction("AdjustEVoucher", "WalletAdmin");
+        }
+
+        // POST: AdminEVoucher/DeleteEVoucherType
+        // 刪除電子禮券類型 (軟刪除)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteEVoucherType(int id)
+        {
+            try
+            {
+                var evoucherType = await _context.EvoucherTypes.FindAsync(id);
+                if (evoucherType == null)
+                {
+                    TempData["ErrorMessage"] = "找不到要刪除的電子禮券類型";
+                    return RedirectToAction("AdjustEVoucher", "WalletAdmin");
+                }
+
+                // 軟刪除：設定 IsDeleted = true
+                evoucherType.IsDeleted = true;
+                evoucherType.DeletedAt = _appClock.UtcNow;
+                evoucherType.DeleteReason = "管理員透過後台刪除";
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"電子禮券類型「{evoucherType.Name}」已刪除（軟刪除）";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"刪除失敗：{ex.Message}";
+            }
+
+            return RedirectToAction("AdjustEVoucher", "WalletAdmin");
         }
 
         // GET: AdminEVoucher/Edit/5
@@ -328,11 +535,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 eVoucher.IsUsed = !eVoucher.IsUsed;
                 if (eVoucher.IsUsed && !eVoucher.UsedTime.HasValue)
                 {
-                    eVoucher.UsedTime = DateTime.Now;
+                    // 使用台灣時間
+                    var nowUtc = _appClock.UtcNow;
+                    eVoucher.UsedTime = _appClock.ToAppTime(nowUtc);
                 }
                 else if (!eVoucher.IsUsed)
                 {
-                    eVoucher.UsedTime = null;
+                    eVoucher.UsedTime = null;  // 明確設為 null
                 }
 
                 _context.Update(eVoucher);
@@ -348,7 +557,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetEVoucherStats()
         {
-            var now = DateTime.Now;
+            // 使用台灣時間
+            var nowUtc = _appClock.UtcNow;
+            var now = _appClock.ToAppTime(nowUtc);
             var stats = new
             {
                 total = await _context.Evouchers.CountAsync(),
@@ -417,10 +628,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 query = query.Where(et => et.Name.Contains(searchTerm) || et.Description.Contains(searchTerm));
             }
 
-            // 狀態篩選
+            // 狀態篩選 - 使用台灣時間
             if (!string.IsNullOrEmpty(status))
             {
-                var now = DateTime.Now;
+                var nowUtc = _appClock.UtcNow;
+                var now = _appClock.ToAppTime(nowUtc);
                 query = status switch
                 {
                     "active" => query.Where(et => et.ValidFrom <= now && et.ValidTo >= now),
@@ -674,13 +886,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 return NotFound();
             }
 
-            // 取得使用此類型的電子禮券統計
+            // 取得使用此類型的電子禮券統計 - 使用台灣時間
             var relatedVouchers = await _context.Evouchers
                 .Include(e => e.User)
                 .Where(e => e.EvoucherTypeId == id)
                 .ToListAsync();
 
-            var now = DateTime.Now;
+            var nowUtc = _appClock.UtcNow;
+            var now = _appClock.ToAppTime(nowUtc);
 
             ViewBag.TotalVouchers = relatedVouchers.Count;
             ViewBag.UsedVouchers = relatedVouchers.Count(e => e.IsUsed);
@@ -726,7 +939,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpGet]
         public async Task<IActionResult> GetEvoucherTypeStats()
         {
-            var now = DateTime.Now;
+            // 使用台灣時間
+            var nowUtc = _appClock.UtcNow;
+            var now = _appClock.ToAppTime(nowUtc);
             var stats = new
             {
                 totalTypes = await _context.EvoucherTypes.CountAsync(),
@@ -809,13 +1024,19 @@ namespace GameSpace.Areas.MiniGame.Controllers
                         code = $"EV-{eVoucherType.Name.Substring(0, Math.Min(4, eVoucherType.Name.Length)).ToUpper()}-{random.Next(1000, 9999)}-{random.Next(100000, 999999)}";
                     }
 
+                    // 使用台灣時間
+                    var nowUtc = _appClock.UtcNow;
+                    var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                     var voucher = new Evoucher
                     {
                         EvoucherTypeId = typeId,
                         UserId = userId,
                         EvoucherCode = code,
-                        AcquiredTime = DateTime.Now,
-                        IsUsed = false
+                        AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                        UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                        IsUsed = false,
+                        IsDeleted = false  // 必填字段：未刪除
                     };
 
                     _context.Add(voucher);

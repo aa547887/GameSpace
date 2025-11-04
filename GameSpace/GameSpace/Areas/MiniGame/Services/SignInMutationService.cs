@@ -13,14 +13,16 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<SignInMutationService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
         private static readonly TimeZoneInfo TaipeiTimeZone =
             TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time");
         private const string SignInRuleSelectSql = "SELECT Id, SignInDay, Points, Experience, HasCoupon, CouponTypeCode, IsActive, CreatedAt, UpdatedAt, Description, IsDeleted, DeletedAt, DeletedBy, DeleteReason FROM SignInRule WHERE IsDeleted = 0";
 
-        public SignInMutationService(GameSpacedatabaseContext context, ILogger<SignInMutationService> logger)
+        public SignInMutationService(GameSpacedatabaseContext context, ILogger<SignInMutationService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         private (DateTime startUtc, DateTime endUtc) GetTaipeiDateRange(DateTime taipeiDate)
@@ -54,7 +56,7 @@ namespace GameSpace.Areas.MiniGame.Services
                     CouponTypeCode = model.CouponTypeCode,
                     IsActive = model.IsActive,
                     Description = model.Description,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = _appClock.UtcNow
                 };
 
                 _context.Set<SignInRule>().Add(rule);
@@ -102,7 +104,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 rule.CouponTypeCode = model.CouponTypeCode;
                 rule.IsActive = model.IsActive;
                 rule.Description = model.Description;
-                rule.UpdatedAt = DateTime.UtcNow;
+                rule.UpdatedAt = _appClock.UtcNow;
 
                 await _context.SaveChangesAsync();
 
@@ -141,7 +143,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     // Soft delete - set IsActive to false
                     rule.IsActive = false;
-                    rule.UpdatedAt = DateTime.UtcNow;
+                    rule.UpdatedAt = _appClock.UtcNow;
                 }
                 else
                 {
@@ -202,7 +204,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 string? coupon = rule?.HasCoupon == true ? rule.CouponTypeCode : null;
 
                 // Create the sign-in record
-                var now = DateTime.UtcNow;
+                var now = _appClock.UtcNow;
                 var record = new UserSignInStat
                 {
                     UserId = model.UserId,

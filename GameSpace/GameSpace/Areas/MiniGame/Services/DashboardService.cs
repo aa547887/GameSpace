@@ -9,17 +9,19 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<DashboardService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
-        public DashboardService(GameSpacedatabaseContext context, ILogger<DashboardService> logger)
+        public DashboardService(GameSpacedatabaseContext context, ILogger<DashboardService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         // 總覽統計
         public async Task<DashboardOverview> GetDashboardOverviewAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            var today = _appClock.ToAppTime(_appClock.UtcNow).Date;
 
             var overview = new DashboardOverview
             {
@@ -43,7 +45,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<UserStatistics> GetUserStatisticsAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            var today = _appClock.ToAppTime(_appClock.UtcNow).Date;
             var weekAgo = today.AddDays(-7);
             var monthAgo = today.AddMonths(-1);
 
@@ -74,7 +76,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<GameStatistics> GetGameStatisticsAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            var today = _appClock.ToAppTime(_appClock.UtcNow).Date;
             var weekAgo = today.AddDays(-7);
             var monthAgo = today.AddMonths(-1);
 
@@ -94,7 +96,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<RevenueStatistics> GetRevenueStatisticsAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            var today = _appClock.ToAppTime(_appClock.UtcNow).Date;
             var weekAgo = today.AddDays(-7);
             var monthAgo = today.AddMonths(-1);
 
@@ -125,7 +127,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 趨勢數據
         public async Task<Dictionary<string, int>> GetUserGrowthTrendAsync(int days = 30)
         {
-            var startDate = DateTime.UtcNow.Date.AddDays(-days);
+            var startDate = _appClock.ToAppTime(_appClock.UtcNow).Date.AddDays(-days);
             var users = await _context.Users
                 .AsNoTracking()
                 .Include(u => u.UserIntroduce)
@@ -142,7 +144,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<Dictionary<string, int>> GetGamePlayTrendAsync(int days = 30)
         {
-            var startDate = DateTime.UtcNow.Date.AddDays(-days);
+            var startDate = _appClock.ToAppTime(_appClock.UtcNow).Date.AddDays(-days);
             var signIns = await _context.UserSignInStats
                 .AsNoTracking()
                 .Where(s => s.SignTime >= startDate)
@@ -158,7 +160,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<Dictionary<string, decimal>> GetRevenueTrendAsync(int days = 30)
         {
-            var startDate = DateTime.UtcNow.Date.AddDays(-days);
+            var startDate = _appClock.ToAppTime(_appClock.UtcNow).Date.AddDays(-days);
             var revenue = await _context.WalletHistories
                 .AsNoTracking()
                 .Where(h => h.ChangeTime >= startDate && h.PointsChanged < 0)
@@ -303,7 +305,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     Level = "Critical",
                     Message = "資料庫連線失敗",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = _appClock.UtcNow
                 });
             }
 
@@ -317,7 +319,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     Level = "Warning",
                     Message = $"有 {lowPointUsers} 位使用者點數低於 10",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = _appClock.UtcNow
                 });
             }
 
@@ -325,14 +327,14 @@ namespace GameSpace.Areas.MiniGame.Services
             var expiringSoon = await _context.Coupons
                 .AsNoTracking()
                 .Include(c => c.CouponType)
-                .CountAsync(c => !c.IsUsed && c.CouponType.ValidTo <= DateTime.UtcNow.AddDays(7));
+                .CountAsync(c => !c.IsUsed && c.CouponType.ValidTo <= _appClock.UtcNow.AddDays(7));
             if (expiringSoon > 0)
             {
                 alerts.Add(new SystemAlert
                 {
                     Level = "Info",
                     Message = $"有 {expiringSoon} 張優惠券將在 7 天內到期",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = _appClock.UtcNow
                 });
             }
 

@@ -44,9 +44,67 @@ namespace GameSpace.Areas.MiniGame.Services
                 // UserSignInStats (DbSet) 返回 UserSignInStat (實體)
                 var queryable = _context.UserSignInStats.AsQueryable();
 
-                // 篩選條件
-                if (query.UserId.HasValue)
-                    queryable = queryable.Where(s => s.UserId == query.UserId.Value);
+                // Fuzzy search with priority ordering
+                var hasUserId = query.UserId.HasValue;
+                var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+
+                if (hasUserId || hasSearchTerm)
+                {
+                    var userIdValue = hasUserId ? query.UserId!.Value : 0;
+                    var userIdStr = hasUserId ? userIdValue.ToString() : "";
+                    var term = hasSearchTerm ? query.SearchTerm!.Trim() : "";
+
+                    // First get matching user IDs
+                    var matchedUserIds = await _context.Users
+                        .AsNoTracking()
+                        .Where(u =>
+                            (hasUserId && u.UserId.ToString().Contains(userIdStr)) ||
+                            (hasSearchTerm && (u.UserAccount.Contains(term) || u.UserName.Contains(term))))
+                        .Select(u => new { u.UserId, u.UserAccount, u.UserName })
+                        .ToListAsync();
+
+                    var userIdList = matchedUserIds.Select(u => u.UserId).ToList();
+                    queryable = queryable.Where(s => userIdList.Contains(s.UserId));
+
+                    // Add priority ordering
+                    var userPriority = matchedUserIds.ToDictionary(
+                        u => u.UserId,
+                        u => hasUserId && u.UserId == userIdValue ? 1 :
+                             hasUserId && u.UserId.ToString().Contains(userIdStr) ? 2 :
+                             hasSearchTerm && u.UserAccount.Contains(term) ? 3 :
+                             hasSearchTerm && u.UserName.Contains(term) ? 4 : 5
+                    );
+
+                    queryable = queryable.OrderBy(s => userPriority.ContainsKey(s.UserId) ? userPriority[s.UserId] : 99);
+
+                    // Then apply user-specified sorting as secondary
+                    if (!string.IsNullOrEmpty(query.SortBy))
+                    {
+                        if (query.Descending)
+                            queryable = ((IOrderedQueryable<UserSignInStat>)queryable).ThenByDescending(s => EF.Property<object>(s, query.SortBy));
+                        else
+                            queryable = ((IOrderedQueryable<UserSignInStat>)queryable).ThenBy(s => EF.Property<object>(s, query.SortBy));
+                    }
+                    else
+                    {
+                        queryable = ((IOrderedQueryable<UserSignInStat>)queryable).ThenByDescending(s => s.SignTime);
+                    }
+                }
+                else
+                {
+                    // Normal sorting when no search
+                    if (!string.IsNullOrEmpty(query.SortBy))
+                    {
+                        if (query.Descending)
+                            queryable = queryable.OrderByDescending(s => EF.Property<object>(s, query.SortBy));
+                        else
+                            queryable = queryable.OrderBy(s => EF.Property<object>(s, query.SortBy));
+                    }
+                    else
+                    {
+                        queryable = queryable.OrderByDescending(s => s.SignTime);
+                    }
+                }
 
                 if (query.StartDate.HasValue)
                     queryable = queryable.Where(s => s.SignTime >= query.StartDate.Value);
@@ -58,19 +116,6 @@ namespace GameSpace.Areas.MiniGame.Services
                     queryable = queryable.Where(s => s.PointsGained >= query.MinConsecutiveDays.Value);
 
                 var totalCount = await queryable.CountAsync();
-
-                // 排序 - 使用 SortBy 屬性
-                if (!string.IsNullOrEmpty(query.SortBy))
-                {
-                    if (query.Descending)
-                        queryable = queryable.OrderByDescending(s => EF.Property<object>(s, query.SortBy));
-                    else
-                        queryable = queryable.OrderBy(s => EF.Property<object>(s, query.SortBy));
-                }
-                else
-                {
-                    queryable = queryable.OrderByDescending(s => s.SignTime);
-                }
 
                 // 分頁
                 var dbItems = await queryable
@@ -100,8 +145,8 @@ namespace GameSpace.Areas.MiniGame.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "取得簽到統計失敗: UserId={UserId}, PageNumber={PageNumber}",
-                    query.UserId, query.PageNumber);
+                _logger.LogError(ex, "取得簽到統計失敗: UserId={UserId}, SearchTerm={SearchTerm}, PageNumber={PageNumber}",
+                    query.UserId, query.SearchTerm, query.PageNumber);
                 return new PagedResult<GameSpace.Areas.MiniGame.Models.UserSignInStats>();
             }
         }

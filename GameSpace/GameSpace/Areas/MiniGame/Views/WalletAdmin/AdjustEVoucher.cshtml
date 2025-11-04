@@ -123,7 +123,8 @@
                             <th><i class="fas fa-store me-1"></i>商家名稱</th>
                             <th class="text-end"><i class="fas fa-dollar-sign me-1"></i>面額</th>
                             <th class="text-end"><i class="fas fa-paper-plane me-1"></i>已發放</th>
-                            <th class="text-end pe-4"><i class="fas fa-check-circle me-1"></i>未使用</th>
+                            <th class="text-end"><i class="fas fa-check-circle me-1"></i>未使用</th>
+                            <th class="text-center pe-4"><i class="fas fa-cogs me-1"></i>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -146,13 +147,34 @@
                                 <td class="text-end">
                                     <span class="badge bg-info">@summary.TotalIssued</span>
                                 </td>
-                                <td class="text-end pe-4">
+                                <td class="text-end">
                                     <span class="badge bg-warning text-dark">@summary.UnusedCount</span>
                                     @if (summary.TotalIssued > 0)
                                     {
                                         <br />
                                         <small class="text-muted">使用率: @usageRate.ToString("F1")%</small>
                                     }
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-area="MiniGame" asp-controller="AdminEVoucher" asp-action="EditType" asp-route-id="@summary.EVoucherTypeId" class="btn btn-outline-warning btn-sm" title="編輯">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form asp-area="MiniGame" asp-controller="AdminEVoucher" asp-action="DisableEVoucherType" method="post" style="display: inline;" onsubmit="return confirm('確定要停用此電子禮券類型嗎？停用後會員將無法兌換此類型禮券。')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@summary.EVoucherTypeId" />
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="停用（軟刪除）">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </form>
+                                        <form asp-area="MiniGame" asp-controller="AdminEVoucher" asp-action="DeleteEVoucherType" method="post" style="display: inline;" onsubmit="return confirm('⚠️ 警告：確定要刪除此電子禮券類型嗎？\n\n此操作將執行軟刪除（IsDeleted=true），刪除後該類型將不再顯示於列表中。\n\n確定要繼續嗎？')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@summary.EVoucherTypeId" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="刪除（軟刪除）">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }
