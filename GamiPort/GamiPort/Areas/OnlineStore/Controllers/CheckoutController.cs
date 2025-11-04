@@ -399,5 +399,48 @@ EXEC dbo.usp_Order_CreateFromCart
 			HttpContext.Session.SetString(CartKey, cartId.ToString());
 			return (cartId, 1, "100");
 		}
+		// ★ 新增：回傳目前會員三種券（未使用、未刪除）的可用張數
+		[HttpGet]
+		[Area("OnlineStore")]
+		public async Task<IActionResult> CouponCounts()
+		{
+			// 取得目前登入者的 UserId（未登入或取不到就回 0）
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0)
+				return Json(new { free = 0, pct = 0, minus = 0 });
+
+			// 用最保守的 ADO.NET 查詢，避免碰到你 EF 實體命名差異
+			using var conn = _db.Database.GetDbConnection();
+			await conn.OpenAsync();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+        SELECT CouponTypeID, COUNT(*) AS Cnt
+        FROM dbo.Coupon WITH (NOLOCK)
+        WHERE UserID = @uid
+          AND ISNULL(IsDeleted, 0) = 0
+          AND ISNULL(IsUsed, 0) = 0
+          AND UsedInOrderID IS NULL
+          AND CouponTypeID IN (1,2,3)
+        GROUP BY CouponTypeID;";
+			var p = cmd.CreateParameter();
+			p.ParameterName = "@uid";
+			p.Value = userId;
+			cmd.Parameters.Add(p);
+
+			int free = 0, pct = 0, minus = 0;
+			using (var rd = await cmd.ExecuteReaderAsync())
+			{
+				while (await rd.ReadAsync())
+				{
+					var t = rd.GetInt32(0);
+					var c = rd.GetInt32(1);
+					if (t == 1) free = c;
+					else if (t == 2) pct = c;
+					else if (t == 3) minus = c;
+				}
+			}
+			return Json(new { free, pct, minus });
+		}
 	}
 }

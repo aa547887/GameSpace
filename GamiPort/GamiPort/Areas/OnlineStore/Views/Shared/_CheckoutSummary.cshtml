@@ -2,53 +2,521 @@
 @model CartSummaryDto
 
 @{
-    // 是否要顯示「免運」
-    var isFreeShip = (Model?.Item_Count_Physical ?? 0) == 0 || (Model?.Shipping_Fee ?? 0m) <= 0m;
-    string ShipText() => isFreeShip ? "免運" : Model!.Shipping_Fee.ToString("N0");
+    // ── 基本金額（沿用你原本 Model） ──
+    var baseSubtotal = Model?.Subtotal ?? 0m;
+    var baseShip = Model?.Shipping_Fee ?? 0m;
+    var baseDiscount = Model?.CouponDiscount ?? 0m;
+    var baseGrand = Model?.Grand_Total ?? (baseSubtotal + baseShip - (Model?.CouponDiscount ?? 0m));
+
+    var isFreeShip = (Model?.Item_Count_Physical ?? 0) == 0 || baseShip <= 0m;
+    string ShipText() => isFreeShip ? "免運" : baseShip.ToString("N0");
 }
 
 <div id="summaryBox" class="card">
     <div class="card-header">結帳摘要</div>
+
     <div class="card-body">
+
+        <!-- 優惠券：左 checkbox、右(圖+張數) -->
+        <div class="mb-2">
+            <div class="small text-muted mb-1">優惠券</div>
+
+            <div id="couponArea" class="vstack gap-2">
+                
+                <!-- 免運券 -->
+                <div class="coupon-row">
+                    <input id="cpn-free" class="form-check-input js-coupon" type="checkbox"
+                           value="1" data-kind="free" aria-label="免運券" />
+                    免運券(不限金額)
+                    <span class="coupon-count js-count-free">(載入中)</span>
+                </div>
+
+                <!-- 85 折券（滿 1,500） -->
+                <div class="coupon-row">
+                    <input id="cpn-pct" class="form-check-input js-coupon" type="checkbox"
+                           value="2" data-kind="pct" aria-label="85 折券（滿 1,500）" />
+                    85折券(滿1500元即可使用)
+                    <span class="coupon-count js-count-pct">(載入中)</span>
+                </div>
+
+                <!-- 滿 500 折 50 元 -->
+                <div class="coupon-row">
+                    <input id="cpn-minus" class="form-check-input js-coupon" type="checkbox"
+                           value="3" data-kind="minus" aria-label="滿 500 折 50 元" />
+                   滿500元折抵50元
+                    <span class="coupon-count js-count-minus">(載入中)</span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 金額小節 -->
         <div class="d-flex justify-content-between">
             <span>商品小計</span>
-            <strong>@Model.Subtotal.ToString("N0")</strong>
+            <strong id="js-subtotal">@baseSubtotal.ToString("N0")</strong>
         </div>
-
         <div class="d-flex justify-content-between">
             <span>運費</span>
-            <strong>@ShipText()</strong>
+            <strong id="js-ship">@ShipText()</strong>
         </div>
-
         <div class="d-flex justify-content-between">
             <span>優惠折抵</span>
-            <strong class="text-danger">@((Model.CouponDiscount ?? 0m).ToString("N0"))</strong>
+            <strong id="js-discount" class="text-danger">@((baseDiscount).ToString("N0"))</strong>
         </div>
 
-        @if (!string.IsNullOrWhiteSpace(Model.CouponMessage))
+        @if (!string.IsNullOrWhiteSpace(Model?.CouponMessage))
         {
-            <div class="text-muted small mt-1">@Model.CouponMessage</div>
+            <div id="js-coupon-msg" class="text-muted small mt-1">@Model.CouponMessage</div>
+        }
+        else
+        {
+            <div id="js-coupon-msg" class="text-muted small mt-1 d-none"></div>
         }
     </div>
 
     <div class="card-footer d-flex justify-content-between">
         <span>應付金額</span>
-        <strong class="fs-5">@Model.Grand_Total.ToString("N0")</strong>
+        <strong id="js-grand" class="fs-5">@baseGrand.ToString("N0")</strong>
     </div>
 </div>
 
-<!-- 渲染摘要時，同步 Navbar 購物車徽章（避免結帳頁顯示 0） -->
+<style>
+    /* ---- 右側摘要限定樣式，避免影響其它區塊 ---- */
+    #summaryBox .card-body {
+        overflow-x: hidden;
+    }
+    /* 保險起見，防水平卷軸 */
+
+    /* 每列：左 checkbox、右(圖+張數) 靠右 */
+    #couponArea .coupon-row {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 44px;
+    }
+
+    #couponArea .form-check-input {
+        margin: 0;
+        flex: none;
+    }
+
+    #couponArea .coupon-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        max-width: 100%; /* 不讓右側內容超出卡片 */
+    }
+
+    /* 券圖尺寸嚴格限制，避免原始大圖撐爆 */
+    #couponArea .coupon-img {
+        height: clamp(36px, 4.2vw, 48px); /* 手機小、桌機最多 48px 高 */
+        width: auto;
+        max-width: 140px; /* 保護上限：很寬的圖也不會爆 */
+        object-fit: contain; /* 以完整內容顯示 */
+        display: block;
+    }
+
+    /* 張數小字且不換行 */
+    #couponArea .coupon-count {
+        font-size: .9rem;
+        color: #6c757d;
+        white-space: nowrap;
+    }
+
+    /* 禁用（0 張／未達門檻）：灰階半透明 */
+    #couponArea .is-disabled .coupon-img {
+        filter: grayscale(100%) opacity(.45);
+    }
+
+    #couponArea .is-disabled .coupon-count {
+        color: #adb5bd;
+    }
+
+    #summaryBox table {
+        width: 100% !important;
+    }
+</style>
+
+<script>
+    (function(){
+      // ---- 金額基準 ----
+      const base = {
+        subtotal: @((decimal)baseSubtotal),
+        ship: @((decimal)baseShip),
+        discount: @((decimal)baseDiscount),
+        grand: @((decimal)baseGrand),
+        shipIsFreeByRule: @((isFreeShip).ToString().ToLower())
+      };
+
+      const area = document.getElementById('couponArea');
+      const rows = Array.from(area.querySelectorAll('.coupon-row'));
+      const inputs = rows.map(r => r.querySelector('.js-coupon'));
+
+      const el = {
+        subtotal: document.getElementById('js-subtotal'),
+        ship: document.getElementById('js-ship'),
+        discount: document.getElementById('js-discount'),
+        grand: document.getElementById('js-grand'),
+        msg: document.getElementById('js-coupon-msg'),
+        countFree:  area.querySelector('.js-count-free'),
+        countPct:   area.querySelector('.js-count-pct'),
+        countMinus: area.querySelector('.js-count-minus'),
+      };
+
+      const counts = { free:0, pct:0, minus:0 };
+
+      // 取券張數
+      fetch('@Url.Action("CouponCounts", "Checkout", new { area = "OnlineStore" })', { credentials:'same-origin' })
+        .then(r => r.json())
+        .then(({free,pct,minus})=>{
+          counts.free = free|0; counts.pct = pct|0; counts.minus = minus|0;
+          el.countFree.textContent  = `（${counts.free} 張）`;
+          el.countPct.textContent   = `（${counts.pct} 張）`;
+          el.countMinus.textContent = `（${counts.minus} 張）`;
+          enforceEligibility();
+        })
+        .catch(()=>{
+          counts.free = counts.pct = counts.minus = 0;
+          el.countFree.textContent = el.countPct.textContent = el.countMinus.textContent = '（0 張）';
+          enforceEligibility();
+        });
+
+      function setRowDisabled(input, isDisabled, titleText){
+        input.disabled = !!isDisabled;
+        input.title = isDisabled ? (titleText || '') : '';
+        const row = input.closest('.coupon-row');
+        row.classList.toggle('is-disabled', !!isDisabled);
+        if(isDisabled && input.checked){ input.checked = false; }
+      }
+
+      function enforceEligibility(){
+        const enough1500 = base.subtotal >= 1500;
+        const enough500  = base.subtotal >= 500;
+
+        // 免運：只看張數
+        setRowDisabled(document.getElementById('cpn-free'),
+                       counts.free===0, counts.free===0 ? '沒有可用的免運券' : '');
+
+        // 85 折：張數>0 且 小計≥1500
+        setRowDisabled(document.getElementById('cpn-pct'),
+                       !(counts.pct>0 && enough1500),
+                       counts.pct===0 ? '沒有可用的 85 折券' : '小計需滿 1,500 才能使用 85 折券');
+
+        // 滿 500 折 50：張數>0 且 小計≥500
+        setRowDisabled(document.getElementById('cpn-minus'),
+                       !(counts.minus>0 && enough500),
+                       counts.minus===0 ? '沒有可用的滿 500 折 50' : '小計需滿 500 才能使用滿 500 折 50');
+
+        recalc(); // 防殘留折扣
+      }
+
+      // 互斥
+      inputs.forEach(chk => chk.addEventListener('change', e=>{
+        if(e.currentTarget.checked){
+          inputs.forEach(x => { if(x !== e.currentTarget) x.checked = false; });
+        }
+        recalc();
+      }));
+
+      function recalc(){
+        let ship = base.ship;
+        let discount = 0;
+        let msg = '';
+        const picked = inputs.find(c => c.checked);
+
+        if (picked && picked.dataset.kind === 'free') {
+          ship = 0; msg = '已套用：免運券';
+        } else if (picked && picked.dataset.kind === 'pct') {
+          if (base.subtotal >= 1500) {
+            discount = Math.round(base.subtotal * 0.15);
+            msg = '已套用：85 折券（滿 1,500）';
+          } else msg = '85 折需滿 1,500 才能使用';
+        } else if (picked && picked.dataset.kind === 'minus') {
+          if (base.subtotal >= 500) {
+            discount = 50;
+            msg = '已套用：滿 500 折 50 元';
+          } else msg = '需滿 500 元才可使用';
+        }
+
+        const shipText = (ship === 0 || base.shipIsFreeByRule) ? '免運' : formatN0(ship);
+        const grand = Math.max(0, base.subtotal + (base.shipIsFreeByRule ? 0 : ship) - discount);
+
+        el.ship.textContent     = shipText;
+        el.discount.textContent = formatN0(discount);
+        el.grand.textContent    = formatN0(grand);
+        if (msg){ el.msg.textContent = msg; el.msg.classList.remove('d-none'); }
+        else { el.msg.textContent = ''; el.msg.classList.add('d-none'); }
+      }
+
+      function formatN0(n){
+        try { return Number(n).toLocaleString('zh-TW', { maximumFractionDigits:0 }); }
+        catch { return String(n); }
+      }
+
+      // 初始化
+      enforceEligibility();
+
+      // 你原本的 navCartBadge（保留）
+      try{
+        var qty = @Model.Item_Count_Total;
+        var badge = document.getElementById('navCartBadge');
+        if (badge) {
+          var elb = badge.querySelector('.badge-count') || badge;
+          var n = Math.max(0, parseInt(qty, 10) || 0);
+          elb.textContent = (n > 99) ? '99+' : String(n);
+          badge.classList.toggle('d-none', n <= 0);
+        }
+      }catch{}
+    })();
+        (function ensureDT(){
+      if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) return;
+      var H = document.head || document.getElementsByTagName('head')[0];
+      var jq = document.createElement('script'); jq.src = 'https://code.jquery.com/jquery-3.7.1.min.js'; H.appendChild(jq);
+      var dt = document.createElement('script'); dt.src = 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js'; H.appendChild(dt);
+      var cs = document.createElement('link');   cs.rel = 'stylesheet'; cs.href = 'https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css'; H.appendChild(cs);
+    })();
+</script>
+<!-- DataTables 載入器（已有 jQuery/DT 則自動略過） -->
 <script>
     (function () {
-        try {
-            var qty = @Model.Item_Count_Total;
-            var badge = document.getElementById('navCartBadge');
-            if (!badge) return;
-            var el = badge.querySelector('.badge-count') || badge;
-            var n = Math.max(0, parseInt(qty, 10) || 0);
-            el.textContent = (n > 99) ? '99+' : String(n);
-            // 若你想讓 0 也顯示，就把下行的「> 0」改成「>= 0」
-            badge.classList.toggle('d-none', n <= 0);
-        } catch {}
+      // ① 固定左右兩張卡片為 col-lg-5（不動其它 class）
+      (function fixTwoCols(){
+        var box = document.getElementById('summaryBox'); if(!box) return;
+        var me  = box.closest('[class*="col-"]');
+        var row = me && me.parentElement; if(!me || !row || !row.classList.contains('row')) return;
+        var peer = Array.from(row.children).find(function(el){ return el!==me && el.querySelector('.card'); });
+        if(!peer) return;
+        function set5(el){
+          el.className = el.className.replace(/\bcol-lg-\d+\b/g,'').replace(/\s+/g,' ').trim() + ' col-lg-5';
+        }
+        set5(me); set5(peer);
+        var sum = 0; Array.from(row.children).forEach(function(el){ var m = el.className.match(/\bcol-lg-(\d+)\b/); if(m) sum += +m[1]; });
+        var gap = 12 - sum; if (gap>0){ var sp = document.createElement('div'); sp.className = 'd-none d-lg-block col-lg-'+gap; row.appendChild(sp); }
+      })();
+
+      // ② 動態建立（或取得）商品表格
+      function ensureItemsTable() {
+        var box = document.getElementById('summaryBox'); if (!box) return null;
+        var body = box.querySelector('.card-body') || box;
+        var exists = body.querySelector('#dt-summary-items');
+        if (exists) return exists;
+
+        var wrap = document.createElement('div');
+        wrap.className = 'mb-3';
+        wrap.id = 'ck-selected-box';
+        wrap.innerHTML =
+          '<div class="small text-muted mb-1">已選擇的商品</div>' +
+          '<table id="dt-summary-items" class="table table-sm table-striped table-bordered align-middle mb-0">' +
+          '  <thead class="table-light">' +
+          '    <tr><th>商品名稱</th><th class="text-end">單價</th><th class="text-end">數量</th></tr>' +
+          '  </thead><tbody></tbody>' +
+          '</table>';
+        body.insertBefore(wrap, body.firstChild);
+        return wrap.querySelector('#dt-summary-items');
+      }
+
+      function fmtN0(n){ return (Math.round(+n||0)).toLocaleString('zh-TW'); }
+      function esc(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+      // ③ 從你現有的 API 讀取明細（只讀，不碰優惠券與金額）
+      function buildFullUrl(){
+        var shipEl = document.querySelector('[name="ShipMethodId"]');
+        var zipEl  = document.querySelector('[name="Zipcode"], [name="DestZip"]');
+        var shipId = shipEl ? shipEl.value : 1;
+        var zip    = zipEl  ? zipEl.value  : '100';
+        return '/OnlineStore/Cart/Full?shipMethodId=' + encodeURIComponent(shipId)
+             + '&destZip=' + encodeURIComponent(zip)
+             + '&couponCode=';
+      }
+
+      function renderRows(items){
+        var tb = document.querySelector('#dt-summary-items tbody'); if(!tb) return;
+        tb.innerHTML = (items||[]).map(function(x){
+          return '<tr>'
+            + '<td>' + esc(x.productName || '') + '</td>'
+            + '<td class="text-end">$' + fmtN0(x.unitPrice) + '</td>'
+            + '<td class="text-end">' + (x.quantity || 0) + '</td>'
+            + '</tr>';
+        }).join('');
+      }
+
+      // ④ 初始化 DataTable（每頁 5 筆、上一頁/下一頁、無筆數選單、無 info）
+      function initDataTable(tbl){
+        if (!tbl || !window.jQuery || !jQuery.fn || !jQuery.fn.DataTable) return;
+        if (jQuery.fn.DataTable.isDataTable(tbl)) return;
+
+        jQuery(tbl).DataTable({
+          pageLength: 5,
+          lengthChange: false,
+          searching: false,
+          ordering: false,
+          info: false,
+          paging: true,
+          pagingType: 'simple',      // 只有上一頁 / 下一頁
+          deferRender: true,
+          autoWidth: false,
+          dom: 'pt',                 // 只顯示表格 + 分頁器
+          language: {
+            zeroRecords: '沒有符合的資料',
+            paginate: { previous: '上一頁', next: '下一頁' }
+          }
+        });
+      }
+
+      // ⑤ 啟動（先畫表格 → 等 DataTables 可用就啟用分頁）
+      function boot(){
+        var tbl = ensureItemsTable(); if(!tbl) return;
+
+        fetch(buildFullUrl(), { credentials: 'same-origin' })
+          .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+          .then(function(d){ renderRows((d && d.items) || []); })
+          .catch(function(){ renderRows([]); })
+          .finally(function(){
+            // 不用長輪詢；最多等 1.5s，DT 可用就啟用分頁
+            var waited = 0, step = 100, max = 1500;
+            (function waitDT(){
+              if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) { initDataTable(tbl); return; }
+              waited += step;
+              if (waited >= max) return; // 放棄啟用 DT（仍保留純表格，不影響你其它邏輯）
+              setTimeout(waitDT, step);
+            })();
+          });
+      }
+
+      boot();
+    })();
+</script>
+
+<script>
+    (function ensureDT(){
+      if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) return;
+      var H = document.head || document.getElementsByTagName('head')[0];
+
+      // CSS
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css';
+      H.appendChild(css);
+
+      // jQuery（若已存在就不載）
+      if (!window.jQuery) {
+        var jq = document.createElement('script');
+        jq.src = 'https://code.jquery.com/jquery-3.7.1.min.js';
+        jq.defer = true;
+        H.appendChild(jq);
+      }
+      // DataTables
+      var dt = document.createElement('script');
+      dt.src = 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js';
+      dt.defer = true;
+      H.appendChild(dt);
+    })();
+</script>
+
+
+<script>
+    (function () {
+      // ① 固定左右兩張卡片為 col-lg-5（不動其它 class）
+      (function fixTwoCols(){
+        var box = document.getElementById('summaryBox'); if(!box) return;
+        var me  = box.closest('[class*="col-"]');
+        var row = me && me.parentElement; if(!me || !row || !row.classList.contains('row')) return;
+        var peer = Array.from(row.children).find(function(el){ return el!==me && el.querySelector('.card'); });
+        if(!peer) return;
+        function set5(el){
+          el.className = el.className.replace(/\bcol-lg-\d+\b/g,'').replace(/\s+/g,' ').trim() + ' col-lg-5';
+        }
+        set5(me); set5(peer);
+        var sum = 0; Array.from(row.children).forEach(function(el){ var m = el.className.match(/\bcol-lg-(\d+)\b/); if(m) sum += +m[1]; });
+        var gap = 12 - sum; if (gap>0){ var sp = document.createElement('div'); sp.className = 'd-none d-lg-block col-lg-'+gap; row.appendChild(sp); }
+      })();
+
+      // ② 在摘要卡片的 card-body 開頭動態插入「已選擇的商品」表格（不改你的 HTML）
+      function ensureItemsTable() {
+        var box = document.getElementById('summaryBox'); if (!box) return null;
+        var body = box.querySelector('.card-body') || box;
+        // 若已經建立過就直接回傳
+        var exists = body.querySelector('#dt-summary-items'); if (exists) return exists;
+
+        var wrap = document.createElement('div');
+        wrap.className = 'mb-3';
+        wrap.id = 'ck-selected-box';
+        wrap.innerHTML =
+          '<div class="small text-muted mb-1">已選擇的商品</div>' +
+          '<table id="dt-summary-items" class="table table-sm table-striped table-bordered align-middle mb-0">' +
+          '  <thead class="table-light">' +
+          '    <tr><th>商品名稱</th><th class="text-end">單價</th><th class="text-end">數量</th></tr>' +
+          '  </thead><tbody></tbody>' +
+          '</table>';
+
+        body.insertBefore(wrap, body.firstChild); // 插在最上方，不干擾你的優惠券區塊
+        return wrap.querySelector('#dt-summary-items');
+      }
+
+      function fmtN0(n){ return (Math.round(+n||0)).toLocaleString('zh-TW'); }
+
+      // ③ 從你現有的 API 讀取明細（不影響你的計算/優惠券），只拿 items 來畫表格
+      function buildFullUrl(){
+        // 嘗試從一頁式表單抓目前的配送與郵遞區號；抓不到就給安全預設
+        var shipEl = document.querySelector('[name="ShipMethodId"]');
+        var zipEl  = document.querySelector('[name="Zipcode"], [name="DestZip"]');
+        var shipId = shipEl ? shipEl.value : 1;
+        var zip    = zipEl  ? zipEl.value  : '100';
+        return '/OnlineStore/Cart/Full?shipMethodId=' + encodeURIComponent(shipId)
+             + '&destZip=' + encodeURIComponent(zip)
+             + '&couponCode='; // 只讀清單，不帶入優惠碼避免牽動你的邏輯
+      }
+
+      function renderRows(items){
+        var tb = document.querySelector('#dt-summary-items tbody'); if(!tb) return;
+        tb.innerHTML = (items||[]).map(function(x){
+          return '<tr>'
+            + '<td>' + (x.productName || '') + '</td>'
+            + '<td class="text-end">$' + fmtN0(x.unitPrice) + '</td>'
+            + '<td class="text-end">' + (x.quantity || 0) + '</td>'
+            + '</tr>';
+        }).join('');
+      }
+
+      function initDataTable(tbl){
+        if (!tbl || !window.jQuery || !jQuery.fn || !jQuery.fn.DataTable) return;
+        if (jQuery.fn.DataTable.isDataTable(tbl)) return;
+        jQuery(tbl).DataTable({
+          pageLength: 5,
+          lengthChange: false,
+          searching: false,
+          ordering: false,
+          info: true,
+          paging: true,
+          pagingType: 'simple',  // 只有上一頁/下一頁
+          language: {
+            zeroRecords: '沒有符合的資料',
+            info: '第 _START_–_END_ 筆，共 _TOTAL_ 筆',
+            infoEmpty: '共 0 筆',
+            paginate: { previous: '上一頁', next: '下一頁' }
+          }
+        });
+      }
+
+      function boot(){
+        var tbl = ensureItemsTable(); if(!tbl) return;
+
+        fetch(buildFullUrl(), { credentials: 'same-origin' })
+          .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+          .then(function(d){ renderRows((d && d.items) || []); })
+          .catch(function(){ /* 靜默失敗，不影響其它功能 */ })
+          .finally(function(){
+            // 等 DataTables 可用後初始化（避免載入時序問題）
+            var tries=0, iv=setInterval(function(){
+              tries++;
+              if (window.jQuery && jQuery.fn && jQuery.fn.DataTable){ clearInterval(iv); initDataTable(tbl); }
+              else if (tries>80){ clearInterval(iv); }
+            }, 100);
+          });
+      }
+
+      // 執行一次（只讀，不改你的任何邏輯）
+      boot();
     })();
 </script>
