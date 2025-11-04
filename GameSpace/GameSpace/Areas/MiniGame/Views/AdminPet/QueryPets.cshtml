@@ -15,9 +15,6 @@
             <a href="@Url.Action("ColorChangeHistory")" class="btn btn-info">
                 <i class="fas fa-palette me-1"></i>換膚／換背景紀錄查詢
             </a>
-            <a href="@Url.Action("Index")" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>返回
-            </a>
         </div>
     </div>
 
@@ -95,71 +92,91 @@
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <div class="form-floating">
-                            <input type="text" class="form-control rounded" id="userId" name="userId" placeholder="輸入會員ID">
-                            <label for="userId"><i class="fas fa-user me-1"></i>會員ID</label>
+                            <input type="number" class="form-control rounded" id="UserId" name="UserId" placeholder="輸入會員ID">
+                            <label for="UserId"><i class="fas fa-user me-1"></i>會員ID</label>
                         </div>
                     </div>
                     <div class="col-md-3 mb-3">
                         <div class="form-floating">
-                            <input type="text" class="form-control rounded" id="userName" name="userName" placeholder="輸入會員名稱">
-                            <label for="userName"><i class="fas fa-user-tag me-1"></i>會員名稱</label>
+                            <input type="text" class="form-control rounded" id="SearchTerm" name="SearchTerm" placeholder="輸入會員名稱或寵物名稱">
+                            <label for="SearchTerm"><i class="fas fa-search me-1"></i>搜尋關鍵字</label>
                         </div>
                     </div>
                     <div class="col-md-3 mb-3">
                         <div class="form-floating">
-                            <input type="text" class="form-control rounded" id="petName" name="petName" placeholder="輸入寵物名稱">
-                            <label for="petName"><i class="fas fa-paw me-1"></i>寵物名稱</label>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="form-floating">
-                            <select class="form-control rounded" id="petType" name="petType">
-                                <option value="">全部類型</option>
-                                <option value="slime">史萊姆</option>
-                                <option value="dragon">龍</option>
-                                <option value="cat">貓</option>
-                                <option value="dog">狗</option>
-                            </select>
-                            <label for="petType"><i class="fas fa-dragon me-1"></i>寵物類型</label>
+                            <input type="text" class="form-control rounded" id="PetName" name="PetName" placeholder="輸入寵物名稱">
+                            <label for="PetName"><i class="fas fa-paw me-1"></i>寵物名稱（額外條件）</label>
                         </div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <div class="form-floating">
-                            <input type="number" class="form-control rounded" id="minLevel" name="minLevel" placeholder="1" min="1">
-                            <label for="minLevel"><i class="fas fa-arrow-up me-1"></i>最小等級</label>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="form-floating">
-                            <input type="number" class="form-control rounded" id="maxLevel" name="maxLevel" placeholder="100" max="100">
-                            <label for="maxLevel"><i class="fas fa-arrow-down me-1"></i>最大等級</label>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="form-floating">
-                            <select class="form-control rounded" id="status" name="status">
-                                <option value="">全部狀態</option>
-                                <option value="healthy">健康</option>
-                                <option value="normal">普通</option>
-                                <option value="needcare">需照顧</option>
-                                <option value="critical">危急</option>
+                            <select class="form-control rounded" id="SkinColor" name="SkinColor">
+                                <option value="">全部膚色</option>
+                                @{
+                                    var skinColors = ViewBag.SkinColors as List<dynamic>;
+                                    if (skinColors != null)
+                                    {
+                                        foreach (var color in skinColors)
+                                        {
+                                            if (ViewBag.SkinColor == color.Code)
+                                            {
+                                                <option value="@color.Code" selected>@color.Code(@color.Name)</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@color.Code">@color.Code(@color.Name)</option>
+                                            }
+                                        }
+                                    }
+                                }
                             </select>
-                            <label for="status"><i class="fas fa-heartbeat me-1"></i>健康狀態</label>
+                            <label for="SkinColor"><i class="fas fa-palette me-1"></i>膚色</label>
                         </div>
                     </div>
                     <div class="col-md-3 mb-3">
                         <div class="form-floating">
-                            <select class="form-control rounded" id="color" name="color">
-                                <option value="">全部顏色</option>
-                                <option value="red">紅色</option>
-                                <option value="blue">藍色</option>
-                                <option value="green">綠色</option>
-                                <option value="yellow">黃色</option>
-                                <option value="purple">紫色</option>
+                            <select class="form-control rounded" id="BackgroundColor" name="BackgroundColor">
+                                <option value="">全部背景</option>
+                                @{
+                                    var backgroundColors = ViewBag.BackgroundColors as List<dynamic>;
+                                    if (backgroundColors != null)
+                                    {
+                                        foreach (var bg in backgroundColors)
+                                        {
+                                            if (ViewBag.BackgroundColor == bg.Code)
+                                            {
+                                                <option value="@bg.Code" selected>@bg.Code(@bg.Name)</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@bg.Code">@bg.Code(@bg.Name)</option>
+                                            }
+                                        }
+                                    }
+                                }
                             </select>
-                            <label for="color"><i class="fas fa-palette me-1"></i>顏色</label>
+                            <label for="BackgroundColor"><i class="fas fa-image me-1"></i>背景</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="form-floating">
+                            <select class="form-control rounded" id="SortBy" name="SortBy">
+                                <option value="level_desc" selected>等級（高 → 低）</option>
+                                <option value="level_asc">等級（低 → 高）</option>
+                                <option value="exp_desc">經驗值（高 → 低）</option>
+                                <option value="exp_asc">經驗值（低 → 高）</option>
+                                <option value="health_desc">健康度（高 → 低）</option>
+                                <option value="health_asc">健康度（低 → 高）</option>
+                                <option value="petname_asc">寵物名稱（A → Z）</option>
+                                <option value="petname_desc">寵物名稱（Z → A）</option>
+                                <option value="userid_asc">會員ID（低 → 高）</option>
+                                <option value="userid_desc">會員ID（高 → 低）</option>
+                            </select>
+                            <label for="SortBy"><i class="fas fa-sort me-1"></i>排序方式</label>
                         </div>
                     </div>
                 </div>
@@ -170,9 +187,6 @@
                         </button>
                         <button type="button" class="btn btn-secondary btn-lg rounded-pill" id="resetBtn">
                             <i class="fas fa-undo me-2"></i>重置
-                        </button>
-                        <button type="button" class="btn btn-success btn-lg rounded-pill" id="exportBtn">
-                            <i class="fas fa-download me-2"></i>匯出
                         </button>
                     </div>
                 </div>

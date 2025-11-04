@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameSpace.Data;
 using GameSpace.Models;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Controllers
 {
@@ -14,10 +15,12 @@ namespace GameSpace.Controllers
 	public class CouponTypesController : Controller
 	{
 		private readonly GameSpacedatabaseContext _context;
+		private readonly IFuzzySearchService _fuzzySearchService;
 
-		public CouponTypesController(GameSpacedatabaseContext context)
+		public CouponTypesController(GameSpacedatabaseContext context, IFuzzySearchService fuzzySearchService)
 		{
 			_context = context;
+			_fuzzySearchService = fuzzySearchService;
 		}
 
 		// GET: /CouponTypes
@@ -28,8 +31,24 @@ namespace GameSpace.Controllers
 
 			if (!string.IsNullOrWhiteSpace(q))
 			{
-				var kw = q.Trim();
-				query = query.Where(x => x.Name.Contains(kw));
+				// Apply fuzzy search with 5-level priority on Name and Description
+				var allCouponTypes = await query.ToListAsync();
+
+				var couponTypesWithPriority = allCouponTypes
+					.Select(ct => new
+					{
+						CouponType = ct,
+						Priority = _fuzzySearchService.CalculateMatchPriority(q, ct.Name ?? "", ct.Description ?? "")
+					})
+					.Where(x => x.Priority > 0)
+					.OrderBy(x => x.Priority)
+					.ThenBy(x => x.CouponType.ValidTo)
+					.ThenBy(x => x.CouponType.CouponTypeId)
+					.Select(x => x.CouponType)
+					.ToList();
+
+				ViewBag.Query = q;
+				return View(couponTypesWithPriority);
 			}
 
 			var list = await query

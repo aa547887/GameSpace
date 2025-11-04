@@ -1,0 +1,149 @@
+@using GameSpace.Areas.MiniGame.Helpers
+@model GameSpace.Models.SystemSetting
+
+@{
+    ViewData["Title"] = "刪除系統設定";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-trash-alt text-danger"></i> 刪除系統設定
+        </h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 警告訊息 -->
+    <div class="alert alert-danger">
+        <h5><i class="fas fa-exclamation-triangle"></i> 警告</h5>
+        <p class="mb-0">您確定要刪除此設定嗎？此操作為<strong>軟刪除</strong>，設定將被標記為已刪除但不會從資料庫中移除。</p>
+    </div>
+
+    <!-- 設定詳情卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-danger text-white">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-info-circle"></i> 設定詳情
+            </h6>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">設定 ID</dt>
+                <dd class="col-sm-9">@Model.SettingId</dd>
+
+                <dt class="col-sm-3">設定鍵</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.SettingKey</code>
+                </dd>
+
+                <dt class="col-sm-3">設定值</dt>
+                <dd class="col-sm-9">
+                    <pre class="bg-light p-2 mb-0">@Model.SettingValue</pre>
+                </dd>
+
+                <dt class="col-sm-3">描述</dt>
+                <dd class="col-sm-9">@(Model.Description ?? "無")</dd>
+
+                <dt class="col-sm-3">類別</dt>
+                <dd class="col-sm-9">
+                    <span class="badge badge-info">@Model.Category</span>
+                </dd>
+
+                <dt class="col-sm-3">設定類型</dt>
+                <dd class="col-sm-9">
+                    <span class="badge badge-secondary">@Model.SettingType</span>
+                </dd>
+
+                <dt class="col-sm-3">狀態</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge badge-success">
+                            <i class="fas fa-check"></i> 啟用
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-secondary">
+                            <i class="fas fa-times"></i> 停用
+                        </span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">唯讀</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsReadOnly)
+                    {
+                        <span class="badge badge-warning">
+                            <i class="fas fa-lock"></i> 是
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-light">
+                            <i class="fas fa-unlock"></i> 否
+                        </span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">建立時間</dt>
+                <dd class="col-sm-9">@Model.CreatedAt.ToUtc8String("yyyy-MM-dd HH:mm:ss") UTC+8</dd>
+
+                @if (Model.UpdatedAt != null)
+                {
+                    <dt class="col-sm-3">最後更新時間</dt>
+                    <dd class="col-sm-9">@Model.UpdatedAt.ToUtc8String("yyyy-MM-dd HH:mm:ss") UTC+8</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <!-- 刪除表單 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-danger">
+                <i class="fas fa-edit"></i> 刪除原因
+            </h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="SettingId" />
+
+                <div class="form-group">
+                    <label for="deleteReason">請輸入刪除原因（選填）：</label>
+                    <textarea class="form-control" id="deleteReason" name="deleteReason" rows="3" placeholder="例如：設定已過時、已被其他設定取代、測試用設定等..."></textarea>
+                    <small class="form-text text-muted">
+                        此原因將記錄在資料庫中供日後稽核使用
+                    </small>
+                </div>
+
+                <div class="form-group mb-0">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> 確認刪除
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> 取消
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.SettingId" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> 改為編輯
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 影響說明 -->
+    <div class="alert alert-warning">
+        <h5><i class="fas fa-exclamation-triangle"></i> 刪除影響</h5>
+        <ul class="mb-0">
+            <li>此操作為<strong>軟刪除</strong>，設定將被標記為 <code>IsDeleted = true</code></li>
+            <li>已刪除的設定不會出現在列表中，也不會被程式讀取</li>
+            <li>如需恢復設定，請聯絡資料庫管理員直接修改資料庫</li>
+            <li>刪除核心設定可能導致相關功能異常，請謹慎操作</li>
+            <li><strong>注意</strong>：如果此設定正被程式使用，刪除後程式將使用預設值（如果有定義）</li>
+        </ul>
+    </div>
+</div>

@@ -185,9 +185,6 @@
                         <button type="button" class="btn btn-secondary rounded-pill" onclick="resetForm()">
                             <i class="fas fa-undo me-2"></i>重置
                         </button>
-                        <button type="button" class="btn btn-success rounded-pill" onclick="exportRecords()">
-                            <i class="fas fa-download me-2"></i>匯出
-                        </button>
                     </div>
                 </div>
             </form>
@@ -211,6 +208,7 @@
                             <th><i class="fas fa-flag-checkered me-1"></i>遊戲結果</th>
                             <th><i class="fas fa-star me-1"></i>獲得經驗值</th>
                             <th><i class="fas fa-coins me-1"></i>獲得點數</th>
+                            <th><i class="fas fa-medal me-1"></i>分數階級</th>
                             <th><i class="fas fa-ticket-alt me-1"></i>優惠券</th>
                             <th><i class="fas fa-hourglass-half me-1"></i>遊戲時長</th>
                             <th class="text-center pe-4"><i class="fas fa-cog me-1"></i>操作</th>
@@ -305,6 +303,30 @@
                                         }
                                     </td>
                                     <td>
+                                        @{
+                                            var rankClass = record.ScoreRank switch
+                                            {
+                                                string s when s.StartsWith("SSS") => "bg-gradient-danger text-white",
+                                                string s when s.StartsWith("SS") => "bg-gradient-warning text-dark",
+                                                string s when s.StartsWith("S") => "bg-gradient-info text-white",
+                                                string s when s.StartsWith("A") => "bg-gradient-success text-white",
+                                                string s when s.StartsWith("B") => "bg-gradient-primary text-white",
+                                                string s when s.StartsWith("C") => "bg-gradient-secondary text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(record.ScoreRank))
+                                        {
+                                            <span class="badge @rankClass rounded-pill">
+                                                <i class="fas fa-medal me-1"></i>@record.ScoreRank
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
                                         @if (!string.IsNullOrWhiteSpace(record.CouponGained))
                                         {
                                             <span class="badge bg-info rounded-pill">
@@ -342,7 +364,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="9" class="text-center p-5">
+                                <td colspan="10" class="text-center p-5">
                                     <i class="fas fa-search fa-3x text-muted mb-3"></i>
                                     @if (Model.Query.UserId.HasValue || !string.IsNullOrWhiteSpace(Model.Query.UserName))
                                     {
@@ -427,10 +449,6 @@
 function resetForm() {
     document.getElementById("searchForm").reset();
     window.location.href = '@Url.Action("ViewGameRecords")';
-}
-
-function exportRecords() {
-    alert("匯出功能開發中...");
 }
 
 function viewGameDetails(playId) {

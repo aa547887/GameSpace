@@ -194,14 +194,16 @@ namespace GameSpace.Areas.MiniGame.Services
                     {
                         wallet.UserPoint += input.AdjustPoints.Value;
 
-                        // 記錄錢包歷史
+                        // 記錄錢包歷史 - 使用台灣時間
+                        var nowUtc = _appClock.UtcNow;
+                        var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
                         var walletHistory = new WalletHistory
                         {
                             UserId = record.UserId,
                             ChangeType = input.AdjustPoints.Value > 0 ? "手動補發" : "手動扣除",
                             PointsChanged = input.AdjustPoints.Value,
                             Description = $"{input.Reason ?? "管理員手動調整遊戲紀錄"} (操作者: {manager.ManagerName} ID {operatorId}, 調整後餘額: {wallet.UserPoint})",
-                            ChangeTime = _appClock.UtcNow
+                            ChangeTime = nowTaiwanTime  // 使用台灣時間
                         };
                         _context.WalletHistories.Add(walletHistory);
                     }
@@ -217,11 +219,14 @@ namespace GameSpace.Areas.MiniGame.Services
                     }
                 }
 
-                // 補發優惠券
+                // 補發優惠券 - 使用台灣時間
                 if (input.IssueCoupon && !string.IsNullOrEmpty(input.CouponTypeCode))
                 {
+                    var nowUtc = _appClock.UtcNow;
+                    var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                     var couponType = await _context.CouponTypes
-                        .FirstOrDefaultAsync(ct => ct.Name == input.CouponTypeCode && ct.ValidTo >= _appClock.UtcNow);
+                        .FirstOrDefaultAsync(ct => ct.Name == input.CouponTypeCode && ct.ValidTo >= nowTaiwanTime);
 
                     if (couponType != null)
                     {
@@ -231,9 +236,10 @@ namespace GameSpace.Areas.MiniGame.Services
                             CouponTypeId = couponType.CouponTypeId,
                             CouponCode = GenerateCouponCode(),
                             IsUsed = false,
-                            AcquiredTime = _appClock.UtcNow,
-                            UsedTime = null,
-                            UsedInOrderId = null
+                            AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                            UsedTime = null,  // 明確設為 null
+                            UsedInOrderId = null,
+                            IsDeleted = false  // 必填字段：未刪除
                         };
                         _context.Coupons.Add(coupon);
 
@@ -245,7 +251,7 @@ namespace GameSpace.Areas.MiniGame.Services
                             PointsChanged = 0,
                             ItemCode = coupon.CouponCode,
                             Description = $"手動補發優惠券 {couponType.Name} (操作者: 管理員 ID {operatorId})",
-                            ChangeTime = _appClock.UtcNow
+                            ChangeTime = nowTaiwanTime  // 使用台灣時間
                         };
                         _context.WalletHistories.Add(couponHistory);
                     }

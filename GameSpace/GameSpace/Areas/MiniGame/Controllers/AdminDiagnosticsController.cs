@@ -12,8 +12,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminDiagnosticsController : MiniGameBaseController
     {
-        public AdminDiagnosticsController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context, adminService)
+        private readonly IFuzzySearchService _fuzzySearchService;
+
+        public AdminDiagnosticsController(GameSpacedatabaseContext context, IMiniGameAdminService adminService, IFuzzySearchService fuzzySearchService) : base(context, adminService)
         {
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // 系統診斷首頁
@@ -270,25 +273,58 @@ namespace GameSpace.Areas.MiniGame.Controllers
             if (query.EndDate.HasValue)
                 queryable = queryable.Where(e => e.Timestamp <= query.EndDate.Value);
 
+            var totalCount = 0;
+            List<ErrorLogModel> items;
+
             if (!string.IsNullOrEmpty(query.Message))
-                queryable = queryable.Where(e => e.Message.Contains(query.Message));
+            {
+                // Apply fuzzy search with 5-level priority on Message, Exception, Source
+                var allLogs = await queryable.ToListAsync();
 
-            var totalCount = await queryable.CountAsync();
+                var logsWithPriority = allLogs
+                    .Select(e => new
+                    {
+                        Log = e,
+                        Priority = _fuzzySearchService.CalculateMatchPriority(query.Message, e.Message ?? "", e.Exception ?? "", e.Source ?? "")
+                    })
+                    .Where(x => x.Priority > 0)
+                    .OrderBy(x => x.Priority)
+                    .ThenByDescending(x => x.Log.Timestamp)
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .Select(x => new ErrorLogModel
+                    {
+                        LogId = x.Log.LogId,
+                        Level = x.Log.Level,
+                        Message = x.Log.Message,
+                        Exception = x.Log.Exception,
+                        Timestamp = x.Log.Timestamp,
+                        Source = x.Log.Source
+                    })
+                    .ToList();
 
-            var items = await queryable
-                .OrderByDescending(e => e.Timestamp)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .Select(e => new ErrorLogModel
-                {
-                    LogId = e.LogId,
-                    Level = e.Level,
-                    Message = e.Message,
-                    Exception = e.Exception,
-                    Timestamp = e.Timestamp,
-                    Source = e.Source
-                })
-                .ToListAsync();
+                totalCount = logsWithPriority.Count;
+                items = logsWithPriority;
+            }
+            else
+            {
+                totalCount = await queryable.CountAsync();
+
+                items = await queryable
+                    .OrderByDescending(e => e.Timestamp)
+                    .Skip((query.PageNumber - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .Select(e => new ErrorLogModel
+                    {
+                        LogId = e.LogId,
+                        Level = e.Level,
+                        Message = e.Message,
+                        Exception = e.Exception,
+                        Timestamp = e.Timestamp,
+                        Source = e.Source
+                    })
+                    .ToListAsync();
+            }
 
             return new PagedResult<ErrorLogModel>
             {

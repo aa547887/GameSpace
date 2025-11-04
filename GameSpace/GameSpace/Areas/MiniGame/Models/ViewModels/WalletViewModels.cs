@@ -159,6 +159,7 @@ namespace GameSpace.Areas.MiniGame.Models.ViewModels
         public string DiscountType { get; set; } = string.Empty; // "Percentage" or "Amount"
         public decimal DiscountValue { get; set; }
         public decimal? MinOrderAmount { get; set; }
+        public string DisplayText => $"{CouponTypeId}({Name})";  // 下拉菜單顯示格式：1(免運券)
     }
 
     /// <summary>

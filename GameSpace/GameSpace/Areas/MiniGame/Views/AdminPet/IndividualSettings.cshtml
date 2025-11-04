@@ -13,9 +13,6 @@
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fas fa-paw text-primary me-2"></i>會員個別寵物設定
         </h1>
-        <a href="@Url.Action("QueryPets", "AdminPet")" class="btn btn-secondary">
-            <i class="fas fa-arrow-left me-1"></i>返回寵物列表
-        </a>
     </div>
 
     <!-- TempData Messages -->
@@ -130,6 +127,10 @@
                     <div class="mb-3">
                         <label class="text-muted small">用戶ID</label>
                         <p class="h6 mb-0"><span class="badge bg-secondary">@ViewBag.UserId</span></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">會員名稱</label>
+                        <p class="h6 mb-0"><strong>@ViewBag.UserName</strong></p>
                     </div>
                     <div class="mb-3">
                         <label class="text-muted small">當前寵物名稱</label>
@@ -271,16 +272,23 @@
                                 <div class="form-floating mb-3">
                                     <select asp-for="SkinColor" class="form-control rounded">
                                         <option value="">-- 不變更 --</option>
-                                        <option value="#FFD700">🟡 金色 (#FFD700)</option>
-                                        <option value="#FF6B6B">🔴 紅色 (#FF6B6B)</option>
-                                        <option value="#4ECDC4">🔵 青色 (#4ECDC4)</option>
-                                        <option value="#45B7D1">🔵 藍色 (#45B7D1)</option>
-                                        <option value="#FFA07A">🟠 橙色 (#FFA07A)</option>
-                                        <option value="#98D8C8">🟢 綠色 (#98D8C8)</option>
-                                        <option value="#F7DC6F">🟡 黃色 (#F7DC6F)</option>
-                                        <option value="#BB8FCE">🟣 紫色 (#BB8FCE)</option>
-                                        <option value="#85C1E2">🔵 淺藍 (#85C1E2)</option>
-                                        <option value="#FFFFFF">⚪ 白色 (#FFFFFF)</option>
+                                        @{
+                                            var skinColors = ViewBag.SkinColors as List<dynamic>;
+                                            if (skinColors != null)
+                                            {
+                                                foreach (var color in skinColors)
+                                                {
+                                                    if (Model.SkinColor == color.Code)
+                                                    {
+                                                        <option value="@color.Code" selected>@color.Code(@color.Name)</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@color.Code">@color.Code(@color.Name)</option>
+                                                    }
+                                                }
+                                            }
+                                        }
                                     </select>
                                     <label asp-for="SkinColor"><i class="fas fa-palette me-1"></i>膚色</label>
                                     <span asp-validation-for="SkinColor" class="text-danger"></span>
@@ -294,18 +302,25 @@
                                 <div class="form-floating mb-3">
                                     <select asp-for="BackgroundColor" class="form-control rounded">
                                         <option value="">-- 不變更 --</option>
-                                        <option value="#FFFFFF">⚪ 白色 (#FFFFFF)</option>
-                                        <option value="#F0F0F0">⚪ 淺灰 (#F0F0F0)</option>
-                                        <option value="#E8F5E9">🟢 淺綠 (#E8F5E9)</option>
-                                        <option value="#E3F2FD">🔵 淺藍 (#E3F2FD)</option>
-                                        <option value="#FFF3E0">🟠 淺橙 (#FFF3E0)</option>
-                                        <option value="#FCE4EC">🔴 淺粉 (#FCE4EC)</option>
-                                        <option value="#F3E5F5">🟣 淺紫 (#F3E5F5)</option>
-                                        <option value="#E0F2F1">🔵 淺青 (#E0F2F1)</option>
-                                        <option value="#FFF8E1">🟡 淺黃 (#FFF8E1)</option>
-                                        <option value="#EFEBE9">🟤 米色 (#EFEBE9)</option>
+                                        @{
+                                            var backgroundColors = ViewBag.BackgroundColors as List<dynamic>;
+                                            if (backgroundColors != null)
+                                            {
+                                                foreach (var bg in backgroundColors)
+                                                {
+                                                    if (Model.BackgroundColor == bg.Code)
+                                                    {
+                                                        <option value="@bg.Code" selected>@bg.Code(@bg.Name)</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@bg.Code">@bg.Code(@bg.Name)</option>
+                                                    }
+                                                }
+                                            }
+                                        }
                                     </select>
-                                    <label asp-for="BackgroundColor"><i class="fas fa-image me-1"></i>背景顏色</label>
+                                    <label asp-for="BackgroundColor"><i class="fas fa-image me-1"></i>背景</label>
                                     <span asp-validation-for="BackgroundColor" class="text-danger"></span>
                                 </div>
                                 <small class="form-text text-muted d-block mb-3">選擇 "不變更" 則保持原背景</small>
@@ -318,11 +333,11 @@
                             <div class="mt-2">
                                 <span class="me-3">
                                     <strong>膚色：</strong>
-                                    <span class="badge" style="background-color: @Model.SkinColor; color: #fff; padding: 8px 12px;">@Model.SkinColor</span>
+                                    <span class="badge" style="background-color: @Model.SkinColor; color: #fff; padding: 8px 12px;">@($"{Model.SkinColor}({ViewBag.CurrentSkinColorName})")</span>
                                 </span>
                                 <span>
                                     <strong>背景：</strong>
-                                    <span class="badge" style="background-color: @Model.BackgroundColor; color: #333; border: 1px solid #ddd; padding: 8px 12px;">@Model.BackgroundColor</span>
+                                    <span class="badge" style="background-color: @Model.BackgroundColor; color: #333; border: 1px solid #ddd; padding: 8px 12px;">@($"{Model.BackgroundColor}({ViewBag.CurrentBackgroundColorName})")</span>
                                 </span>
                             </div>
                         </div>

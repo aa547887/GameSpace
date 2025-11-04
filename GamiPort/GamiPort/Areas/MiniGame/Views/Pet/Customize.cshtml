@@ -1,0 +1,529 @@
+@using GamiPort.Areas.MiniGame.Helpers
+@model dynamic
+@{
+    ViewData["Title"] = "寵物定制";
+    var userPoints = ViewBag.UserPoints ?? 0;
+    var skinColorOptions = ViewBag.SkinColorOptions as List<dynamic> ?? new List<dynamic>();
+    var backgroundColorOptions = ViewBag.BackgroundColorOptions as List<dynamic> ?? new List<dynamic>();
+    var currentSkinColor = ViewBag.CurrentSkinColor ?? "#ff6b6b";
+    var currentBackgroundColor = ViewBag.CurrentBackgroundColor ?? "#ffffff";
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <style>
+        .customize-page-bg {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .customize-card {
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: none;
+            margin-bottom: 2rem;
+        }
+
+        .customize-card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border-radius: 24px 24px 0 0 !important;
+            padding: 1.25rem 1.5rem;
+            border: none;
+        }
+
+        .customize-card-body {
+            padding: 2rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .color-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #ddd;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-option.selected .color-swatch {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.25);
+            transform: scale(1.1);
+        }
+
+        .color-option:hover .color-swatch {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-label {
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .color-cost {
+            display: inline-block;
+            background: #e0f2f1;
+            color: #17a2b8;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .background-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .background-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            border: 4px solid #ddd;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .background-option.selected .background-swatch {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.25);
+            transform: scale(1.1);
+        }
+
+        .background-option:hover .background-swatch {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .preview-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px solid #e8f0f4;
+            margin-bottom: 2rem;
+        }
+
+        .preview-header {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+        }
+
+        .preview-pet-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 4px solid white;
+        }
+
+        .preview-pet-name {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-banner {
+            background: #e0f2f1;
+            border-left: 4px solid #17a2b8;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .info-banner i {
+            color: #17a2b8;
+            font-size: 1.25rem;
+        }
+
+        .info-banner small {
+            color: #0d9488;
+            font-weight: 500;
+        }
+
+        .points-display {
+            background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .points-amount {
+            font-size: 1.75rem;
+            font-weight: bold;
+        }
+
+        .points-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-confirm:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0a7d72 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-confirm:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            background: #f0f4f8;
+            color: #2c3e50;
+            border: 2px solid #e8f0f4;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-cancel:hover {
+            border-color: #17a2b8;
+            color: #17a2b8;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e8f0f4, transparent);
+            margin: 2rem 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .success-message.show {
+            display: flex;
+        }
+
+        @@media (max-width: 768px) {
+            .color-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .customize-card-body {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+
+    <div class="customize-page-bg">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-palette-fill text-info fs-2 me-3"></i>
+                    <div>
+                        <h2 class="mb-0">寵物定制</h2>
+                        <p class="text-muted mb-0">自訂您寵物的外觀風格</p>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted d-block">您的點數</small>
+                    <h4 class="mb-0 text-teal fw-bold" id="userPointsDisplay">@userPoints</h4>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="success-message" id="successMessage">
+                <i class="bi bi-check-circle-fill"></i>
+                <span id="successText">定制成功！</span>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="preview-card" id="previewCard" style="background-color: @currentBackgroundColor">
+                <div class="preview-header">預覽</div>
+                <div class="preview-pet-avatar" style="background-color: @currentSkinColor; border-color: white;">
+                    <i class="bi bi-heart-fill text-white"></i>
+                </div>
+                <div class="preview-pet-name" id="previewPetName">@(ViewBag.PetName ?? "我的寵物")</div>
+            </div>
+
+            <!-- Skin Color Customization -->
+            <div class="customize-card">
+                <div class="customize-card-header">
+                    <h5 class="mb-0"><i class="bi bi-palette me-2"></i>膚色定制</h5>
+                </div>
+                <div class="customize-card-body">
+                    <div class="info-banner">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <small>選擇您喜歡的膚色，點擊進行更換</small>
+                    </div>
+
+                    <div class="color-grid" id="skinColorGrid">
+                        <!-- Skin colors will be populated here -->
+                    </div>
+
+                    <div class="points-display">
+                        <div class="points-label">點數成本</div>
+                        <div class="points-amount" id="skinColorCost">0</div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-confirm" id="confirmSkinColor" disabled>
+                            <i class="bi bi-check-lg me-2"></i>確認更換膚色
+                        </button>
+                        <button class="btn-cancel" onclick="resetSkinColorSelection()">
+                            <i class="bi bi-x-lg me-2"></i>取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Background Customization -->
+            <div class="customize-card">
+                <div class="customize-card-header">
+                    <h5 class="mb-0"><i class="bi bi-image me-2"></i>背景定制</h5>
+                </div>
+                <div class="customize-card-body">
+                    <div class="info-banner">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <small>選擇背景顏色，點擊進行更換</small>
+                    </div>
+
+                    <div class="color-grid" id="backgroundColorGrid">
+                        <!-- Background colors will be populated here -->
+                    </div>
+
+                    <div class="points-display">
+                        <div class="points-label">點數成本</div>
+                        <div class="points-amount" id="backgroundColorCost">0</div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-confirm" id="confirmBackgroundColor" disabled>
+                            <i class="bi bi-check-lg me-2"></i>確認更換背景
+                        </button>
+                        <button class="btn-cancel" onclick="resetBackgroundColorSelection()">
+                            <i class="bi bi-x-lg me-2"></i>取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="text-center mt-4">
+                <a href="/MiniGame/Pet/Index" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>返回寵物頁面
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in production, these should come from the server
+        const skinColorOptions = [
+            { color: '#ff6b6b', name: '紅色', cost: 100 },
+            { color: '#ffa500', name: '橙色', cost: 100 },
+            { color: '#ffd93d', name: '黃色', cost: 100 },
+            { color: '#6bcf7f', name: '綠色', cost: 100 },
+            { color: '#4ecdc4', name: '青色', cost: 150 },
+            { color: '#17a2b8', name: '靛色', cost: 150 },
+            { color: '#6c5ce7', name: '紫色', cost: 200 },
+            { color: '#fd79a8', name: '粉色', cost: 100 }
+        ];
+
+        const backgroundColorOptions = [
+            { color: '#ffffff', name: '白色', cost: 0 },
+            { color: '#f0f4f8', name: '淺藍', cost: 0 },
+            { color: '#e8f0f4', name: '冰藍', cost: 50 },
+            { color: '#fff8e1', name: '淺黃', cost: 50 },
+            { color: '#e8f5e9', name: '淺綠', cost: 50 },
+            { color: '#fce4ec', name: '淺粉', cost: 75 }
+        ];
+
+        let selectedSkinColor = '@currentSkinColor';
+        let selectedBackgroundColor = '@currentBackgroundColor';
+
+        function initializeSkinColors() {
+            const grid = document.getElementById('skinColorGrid');
+            grid.innerHTML = '';
+            skinColorOptions.forEach(option => {
+                const div = document.createElement('div');
+                div.className = `color-option ${option.color === selectedSkinColor ? 'selected' : ''}`;
+                div.onclick = () => selectSkinColor(option.color, option.cost);
+                div.innerHTML = `
+                    <div class="color-swatch" style="background-color: ${option.color}"></div>
+                    <div class="color-label">${option.name}</div>
+                    <div class="color-cost">${option.cost} 點</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function initializeBackgroundColors() {
+            const grid = document.getElementById('backgroundColorGrid');
+            grid.innerHTML = '';
+            backgroundColorOptions.forEach(option => {
+                const div = document.createElement('div');
+                div.className = `background-option ${option.color === selectedBackgroundColor ? 'selected' : ''}`;
+                div.onclick = () => selectBackgroundColor(option.color, option.cost);
+                div.innerHTML = `
+                    <div class="background-swatch" style="background-color: ${option.color}"></div>
+                    <div class="color-label">${option.name}</div>
+                    <div class="color-cost">${option.cost} 點</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function selectSkinColor(color, cost) {
+            selectedSkinColor = color;
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            event.target.closest('.color-option').classList.add('selected');
+            document.getElementById('skinColorCost').textContent = cost;
+            document.getElementById('previewCard').style.backgroundColor = selectedBackgroundColor;
+            document.querySelector('.preview-pet-avatar').style.backgroundColor = color;
+            document.getElementById('confirmSkinColor').disabled = false;
+        }
+
+        function selectBackgroundColor(color, cost) {
+            selectedBackgroundColor = color;
+            document.querySelectorAll('.background-option').forEach(el => el.classList.remove('selected'));
+            event.target.closest('.background-option').classList.add('selected');
+            document.getElementById('backgroundColorCost').textContent = cost;
+            document.getElementById('previewCard').style.backgroundColor = color;
+            document.getElementById('confirmBackgroundColor').disabled = false;
+        }
+
+        function resetSkinColorSelection() {
+            selectedSkinColor = '@currentSkinColor';
+            initializeSkinColors();
+            document.getElementById('previewCard').style.backgroundColor = selectedBackgroundColor;
+            document.querySelector('.preview-pet-avatar').style.backgroundColor = selectedSkinColor;
+            document.getElementById('confirmSkinColor').disabled = true;
+        }
+
+        function resetBackgroundColorSelection() {
+            selectedBackgroundColor = '@currentBackgroundColor';
+            initializeBackgroundColors();
+            document.getElementById('previewCard').style.backgroundColor = selectedBackgroundColor;
+            document.getElementById('confirmBackgroundColor').disabled = true;
+        }
+
+        // Confirm buttons click handlers
+        document.getElementById('confirmSkinColor').addEventListener('click', async function () {
+            const cost = parseInt(skinColorOptions.find(o => o.color === selectedSkinColor).cost);
+            if (await confirmCustomization('膚色', cost)) {
+                // Update current skin color
+                document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+                document.querySelector(`.color-option[style*="${selectedSkinColor}"]`)?.classList.add('selected');
+                showSuccessMessage('膚色更換成功！');
+            }
+        });
+
+        document.getElementById('confirmBackgroundColor').addEventListener('click', async function () {
+            const cost = parseInt(backgroundColorOptions.find(o => o.color === selectedBackgroundColor).cost);
+            if (await confirmCustomization('背景', cost)) {
+                document.querySelectorAll('.background-option').forEach(el => el.classList.remove('selected'));
+                document.querySelector(`.background-option[style*="${selectedBackgroundColor}"]`)?.classList.add('selected');
+                showSuccessMessage('背景更換成功！');
+            }
+        });
+
+        async function confirmCustomization(type, cost) {
+            // TODO: Call API endpoint to save customization
+            // POST /api/pet/customize
+            // { type: 'skinColor'|'backgroundColor', value: color, cost: cost }
+            return true;
+        }
+
+        function showSuccessMessage(message) {
+            const messageEl = document.getElementById('successMessage');
+            document.getElementById('successText').textContent = message;
+            messageEl.classList.add('show');
+            setTimeout(() => messageEl.classList.remove('show'), 3000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeSkinColors();
+            initializeBackgroundColors();
+        });
+    </script>
+}
+else
+{
+    <div class="container py-5 text-center">
+        <i class="bi bi-lock fs-1 text-muted mb-3 d-block"></i>
+        <h4 class="text-muted">請先登入</h4>
+        <p class="text-muted">登入後即可定制您的寵物</p>
+        <a href="/Login" class="btn btn-primary">前往登入</a>
+    </div>
+}

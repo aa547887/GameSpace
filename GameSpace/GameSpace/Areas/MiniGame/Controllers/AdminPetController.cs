@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
 using GameSpace.Areas.MiniGame.Services;
@@ -16,19 +17,25 @@ namespace GameSpace.Areas.MiniGame.Controllers
         private readonly IPetRulesService _petRulesService;
         private readonly IPetQueryService _petQueryService;
         private readonly IPetMutationService _petMutationService;
+        private readonly IFuzzySearchService _fuzzySearchService;
+        private readonly ILogger<AdminPetController> _logger;
 
         public AdminPetController(
             GameSpacedatabaseContext context,
             IPetService petService,
             IPetRulesService petRulesService,
             IPetQueryService petQueryService,
-            IPetMutationService petMutationService)
+            IPetMutationService petMutationService,
+            IFuzzySearchService fuzzySearchService,
+            ILogger<AdminPetController> logger)
             : base(context)
         {
             _petService = petService;
             _petRulesService = petRulesService;
             _petQueryService = petQueryService;
             _petMutationService = petMutationService;
+            _fuzzySearchService = fuzzySearchService;
+            _logger = logger;
         }
 
         // GET: AdminPet
@@ -37,30 +44,93 @@ namespace GameSpace.Areas.MiniGame.Controllers
         {
             var pets = await _petService.GetAllPetsAsync();
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 模糊搜尋：SearchTerm（聯集OR邏輯，使用 FuzzySearchService）
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(searchTerm);
+            Dictionary<int, int> petPriority = new Dictionary<int, int>();
+
+            if (hasSearchTerm)
             {
-                if (int.TryParse(searchTerm, out int userId))
+                var term = searchTerm.Trim();
+                var matchedPets = new List<GameSpace.Models.Pet>();
+
+                foreach (var pet in pets)
                 {
-                    pets = pets.Where(p => p.UserId == userId);
+                    int priority = 0;
+
+                    // 寵物ID精確匹配優先
+                    if (pet.PetId.ToString().Equals(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 1; // 完全匹配 PetId
+                    }
+                    else if (pet.PetId.ToString().Contains(term))
+                    {
+                        priority = 2; // 部分匹配 PetId
+                    }
+
+                    // 如果ID沒有匹配，檢查UserId
+                    if (priority == 0 && int.TryParse(term, out int userId))
+                    {
+                        if (pet.UserId == userId)
+                        {
+                            priority = 1; // 完全匹配 UserId
+                        }
+                        else if (pet.UserId.ToString().Contains(term))
+                        {
+                            priority = 2; // 部分匹配 UserId
+                        }
+                    }
+
+                    // 如果還沒匹配，使用模糊搜尋寵物名稱
+                    if (priority == 0)
+                    {
+                        priority = _fuzzySearchService.CalculateMatchPriority(
+                            term,
+                            pet.PetName ?? ""
+                        );
+                    }
+
+                    // 如果匹配成功（priority > 0），加入結果
+                    if (priority > 0)
+                    {
+                        matchedPets.Add(pet);
+                        petPriority[pet.PetId] = priority;
+                    }
                 }
-                else
-                {
-                    pets = pets.Where(p => p.PetName.Contains(searchTerm));
-                }
+
+                pets = matchedPets;
             }
 
-            // 排序
-            pets = sortBy switch
+            // 分頁前計算總數
+            var totalCount = pets.Count();
+
+            // 優先順序排序
+            if (hasSearchTerm)
             {
-                "level" => pets.OrderByDescending(p => p.Level),
-                "exp" => pets.OrderByDescending(p => p.Experience),
-                "health" => pets.OrderByDescending(p => p.Health),
-                _ => pets.OrderBy(p => p.PetName)
-            };
+                // 按照優先順序排序
+                var ordered = pets.OrderBy(p => petPriority.ContainsKey(p.PetId) ? petPriority[p.PetId] : 99);
+
+                // 次要排序
+                pets = sortBy switch
+                {
+                    "level" => ordered.ThenByDescending(p => p.Level),
+                    "exp" => ordered.ThenByDescending(p => p.Experience),
+                    "health" => ordered.ThenByDescending(p => p.Health),
+                    _ => ordered.ThenBy(p => p.PetName)
+                };
+            }
+            else
+            {
+                // 沒有搜尋條件時使用預設排序
+                pets = sortBy switch
+                {
+                    "level" => pets.OrderByDescending(p => p.Level),
+                    "exp" => pets.OrderByDescending(p => p.Experience),
+                    "health" => pets.OrderByDescending(p => p.Health),
+                    _ => pets.OrderBy(p => p.PetName)
+                };
+            }
 
             // 分頁
-            var totalCount = pets.Count();
             var pagedPets = pets
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -78,14 +148,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
             };
 
             // 設定 ViewBag 用於搜尋和篩選
-            var allPets = await _petService.GetAllPetsAsync();
+            // 修正：統計應該從篩選後的資料計算，不是重新查詢全表
             ViewBag.SearchTerm = searchTerm;
             ViewBag.SortBy = sortBy;
-            ViewBag.TotalPets = allPets.Count();
-            ViewBag.HighLevelPets = allPets.Count(p => p.Level >= 10);
-            ViewBag.HealthyPets = allPets.Count(p => p.Health >= 80);
-            ViewBag.AverageLevel = allPets.Any() ? allPets.Average(p => (double)p.Level) : 0;
-            ViewBag.AverageHealth = allPets.Any() ? allPets.Average(p => (double)p.Health) : 0;
+            ViewBag.TotalPets = totalCount;
+            ViewBag.HighLevelPets = pets.Count(p => p.Level >= 10);
+            ViewBag.HealthyPets = pets.Count(p => p.Health >= 80);
+            ViewBag.AverageLevel = pets.Any() ? pets.Average(p => (double)p.Level) : 0;
+            ViewBag.AverageHealth = pets.Any() ? pets.Average(p => (double)p.Health) : 0;
 
             return View(viewModel);
         }
@@ -668,7 +738,6 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 ViewBag.PetId = query.PetId;
                 ViewBag.StartDate = query.StartDate?.ToString("yyyy-MM-dd");
                 ViewBag.EndDate = query.EndDate?.ToString("yyyy-MM-dd");
-                ViewBag.SortOrder = query.SortOrder;
                 ViewBag.PageNumber = query.PageNumber;
                 ViewBag.PageSize = query.PageSize;
 
@@ -722,7 +791,6 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 ViewBag.PetId = query.PetId;
                 ViewBag.StartDate = query.StartDate?.ToString("yyyy-MM-dd");
                 ViewBag.EndDate = query.EndDate?.ToString("yyyy-MM-dd");
-                ViewBag.SortOrder = query.SortOrder;
                 ViewBag.PageNumber = query.PageNumber;
                 ViewBag.PageSize = query.PageSize;
 
@@ -762,53 +830,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     query.PageSize = 20;
                 }
 
-                // 驗證等級範圍
-                if (query.MinLevel.HasValue && query.MinLevel.Value < 1)
-                {
-                    query.MinLevel = 1;
-                }
-
-                if (query.MaxLevel.HasValue && query.MaxLevel.Value > 100)
-                {
-                    query.MaxLevel = 100;
-                }
-
-                // 確保最小等級不大於最大等級
-                if (query.MinLevel.HasValue && query.MaxLevel.HasValue && query.MinLevel > query.MaxLevel)
-                {
-                    var temp = query.MinLevel;
-                    query.MinLevel = query.MaxLevel;
-                    query.MaxLevel = temp;
-                }
-
-                // 驗證經驗值範圍
-                if (query.MinExperience.HasValue && query.MinExperience.Value < 0)
-                {
-                    query.MinExperience = 0;
-                }
-
-                if (query.MaxExperience.HasValue && query.MaxExperience.Value < 0)
-                {
-                    query.MaxExperience = 0;
-                }
-
-                // 確保最小經驗值不大於最大經驗值
-                if (query.MinExperience.HasValue && query.MaxExperience.HasValue && query.MinExperience > query.MaxExperience)
-                {
-                    var temp = query.MinExperience;
-                    query.MinExperience = query.MaxExperience;
-                    query.MaxExperience = temp;
-                }
-
                 // 標準化排序參數
                 if (string.IsNullOrWhiteSpace(query.SortBy))
                 {
-                    query.SortBy = "name";
-                }
-
-                if (string.IsNullOrWhiteSpace(query.SortOrder))
-                {
-                    query.SortOrder = "asc";
+                    query.SortBy = "level_desc";
                 }
 
                 // 呼叫服務層執行查詢
@@ -817,25 +842,109 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 // 將查詢參數傳遞到 ViewBag 以便視圖使用
                 ViewBag.UserId = query.UserId;
                 ViewBag.PetName = query.PetName;
-                ViewBag.MinLevel = query.MinLevel;
-                ViewBag.MaxLevel = query.MaxLevel;
-                ViewBag.MinExperience = query.MinExperience;
-                ViewBag.MaxExperience = query.MaxExperience;
                 ViewBag.SkinColor = query.SkinColor;
                 ViewBag.BackgroundColor = query.BackgroundColor;
                 ViewBag.SearchTerm = query.SearchTerm;
                 ViewBag.SortBy = query.SortBy;
-                ViewBag.SortOrder = query.SortOrder;
                 ViewBag.PageNumber = query.PageNumber;
                 ViewBag.PageSize = query.PageSize;
 
-                // 計算統計資訊
-                if (result.Items.Any())
+                // 從資料庫讀取所有膚色選項（直接從 SQL Server 讀取，不可硬編碼）
+                var skinColors = await _context.PetSkinColorCostSettings
+                    .Where(s => !s.IsDeleted)
+                    .OrderBy(s => s.ColorName)
+                    .Select(s => new { Code = s.ColorCode, Name = s.ColorName })
+                    .ToListAsync();
+                ViewBag.SkinColors = skinColors;
+
+                // 從資料庫讀取所有背景選項（直接從 SQL Server 讀取，不可硬編碼）
+                var backgroundColors = await _context.PetBackgroundCostSettings
+                    .Where(b => !b.IsDeleted)
+                    .OrderBy(b => b.BackgroundName)
+                    .Select(b => new { Code = b.BackgroundCode, Name = b.BackgroundName })
+                    .ToListAsync();
+                ViewBag.BackgroundColors = backgroundColors;
+
+                // 修正：計算統計資訊應該從所有篩選結果計算，不是只從當前分頁
+                // 使用模糊搜尋來計算統計值
+                if (result.TotalCount > 0)
                 {
+                    // 重新構建相同的篩選條件但不分頁，用於計算統計
+                    var allPets = await _context.Pets
+                        .Include(p => p.User)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    // 應用模糊搜尋篩選條件
+                    var hasUserId = query.UserId.HasValue;
+                    var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+                    var hasExtraPetName = !string.IsNullOrWhiteSpace(query.PetName);
+
+                    List<int> matchedPetIds = new List<int>();
+
+                    if (hasUserId || hasSearchTerm || hasExtraPetName)
+                    {
+                        foreach (var pet in allPets)
+                        {
+                            bool matched = false;
+
+                            // UserId 匹配
+                            if (hasUserId && pet.UserId == query.UserId.Value)
+                            {
+                                matched = true;
+                            }
+
+                            // SearchTerm 模糊搜尋（使用 FuzzySearchService）
+                            if (!matched && hasSearchTerm)
+                            {
+                                var term = query.SearchTerm.Trim();
+                                var userName = pet.User?.UserName ?? "";
+                                var petName = pet.PetName ?? "";
+
+                                int priority = _fuzzySearchService.CalculateMatchPriority(term, userName, petName);
+                                if (priority > 0)
+                                {
+                                    matched = true;
+                                }
+                            }
+
+                            // PetName 模糊搜尋
+                            if (!matched && hasExtraPetName)
+                            {
+                                var term = query.PetName.Trim();
+                                int priority = _fuzzySearchService.CalculateMatchPriority(term, pet.PetName ?? "");
+                                if (priority > 0)
+                                {
+                                    matched = true;
+                                }
+                            }
+
+                            if (matched)
+                            {
+                                matchedPetIds.Add(pet.PetId);
+                            }
+                        }
+
+                        allPets = allPets.Where(p => matchedPetIds.Contains(p.PetId)).ToList();
+                    }
+
+                    // SkinColor 篩選
+                    if (!string.IsNullOrWhiteSpace(query.SkinColor))
+                    {
+                        allPets = allPets.Where(p => p.SkinColor != null && p.SkinColor.Contains(query.SkinColor.Trim())).ToList();
+                    }
+
+                    // BackgroundColor 篩選
+                    if (!string.IsNullOrWhiteSpace(query.BackgroundColor))
+                    {
+                        allPets = allPets.Where(p => p.BackgroundColor != null && p.BackgroundColor.Contains(query.BackgroundColor.Trim())).ToList();
+                    }
+
+                    // 計算統計值（從所有篩選結果）
                     ViewBag.TotalPets = result.TotalCount;
-                    ViewBag.HealthyPets = result.Items.Count(p => p.Health >= 80);
-                    ViewBag.AverageLevel = result.Items.Average(p => (double)p.Level);
-                    ViewBag.MaxPetLevel = result.Items.Max(p => p.Level);
+                    ViewBag.HealthyPets = allPets.Count(p => p.Health >= 80);
+                    ViewBag.AverageLevel = allPets.Any() ? allPets.Average(p => (double)p.Level) : 0;
+                    ViewBag.MaxPetLevel = allPets.Any() ? allPets.Max(p => p.Level) : 0;
                 }
                 else
                 {
@@ -912,6 +1021,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 try
                 {
                     var pets = await _petService.GetAllPetsAsync();
+
+                    // 載入背景設定以供顯示
+                    var backgrounds = await _context.PetBackgroundCostSettings
+                        .AsNoTracking()
+                        .ToDictionaryAsync(b => b.BackgroundCode, b => b.BackgroundName);
+                    ViewBag.Backgrounds = backgrounds;
+
                     return View("PetSelection", pets);
                 }
                 catch (Exception ex)
@@ -927,6 +1043,9 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 TempData["ErrorMessage"] = $"找不到寵物 ID: {petId.Value}";
                 return RedirectToAction(nameof(Index));
             }
+
+            // 取得用戶資訊
+            var user = await _context.Users.FindAsync(pet.UserId);
 
             var model = new PetUpdateModel
             {
@@ -945,7 +1064,38 @@ namespace GameSpace.Areas.MiniGame.Controllers
 
             ViewBag.PetId = petId;
             ViewBag.UserId = pet.UserId;
+            ViewBag.UserName = user?.UserName ?? "未知";
             ViewBag.CurrentPetName = pet.PetName;
+
+            // 從資料庫讀取所有膚色選項（直接從 SQL Server 讀取，不可硬編碼）
+            var skinColors = await _context.PetSkinColorCostSettings
+                .Where(s => !s.IsDeleted)
+                .OrderBy(s => s.ColorName)
+                .Select(s => new { Code = s.ColorCode, Name = s.ColorName })
+                .ToListAsync();
+            ViewBag.SkinColors = skinColors;
+
+            // 從資料庫讀取所有背景選項（直接從 SQL Server 讀取，不可硬編碼）
+            var backgroundColors = await _context.PetBackgroundCostSettings
+                .Where(b => !b.IsDeleted)
+                .OrderBy(b => b.BackgroundName)
+                .Select(b => new { Code = b.BackgroundCode, Name = b.BackgroundName })
+                .ToListAsync();
+            ViewBag.BackgroundColors = backgroundColors;
+
+            // 獲取當前膚色的名稱用於顯示
+            var currentSkinColor = await _context.PetSkinColorCostSettings
+                .Where(s => !s.IsDeleted && s.ColorCode == pet.SkinColor)
+                .Select(s => s.ColorName)
+                .FirstOrDefaultAsync();
+            ViewBag.CurrentSkinColorName = currentSkinColor ?? "未知";
+
+            // 獲取當前背景的名稱用於顯示
+            var currentBackgroundColor = await _context.PetBackgroundCostSettings
+                .Where(b => !b.IsDeleted && b.BackgroundCode == pet.BackgroundColor)
+                .Select(b => b.BackgroundName)
+                .FirstOrDefaultAsync();
+            ViewBag.CurrentBackgroundColorName = currentBackgroundColor ?? "未知";
 
             return View(model);
         }
@@ -1064,17 +1214,27 @@ namespace GameSpace.Areas.MiniGame.Controllers
             try
             {
                 // 從 SystemSettings 讀取現有設定
+                // 注意：實際的互動獎勵使用 Pet.Interaction.* 設定，而非 Pet.*Bonus
+                var feedBonus = await GetSystemSettingIntAsync("Pet.Interaction.Feed.HungerIncrease", 10);
+                var cleanBonus = await GetSystemSettingIntAsync("Pet.Interaction.Bath.CleanlinessIncrease", 10);
+                var playBonus = await GetSystemSettingIntAsync("Pet.Interaction.Coax.MoodIncrease", 10);
+                var sleepBonus = await GetSystemSettingIntAsync("Pet.Interaction.Rest.StaminaIncrease", 10);
+
                 var model = new PetSystemRulesInputModel
                 {
                     LevelUpExpBase = await GetSystemSettingIntAsync("Pet.LevelUpExpBase", 100),
-                    LevelUpFormula = await GetSystemSettingAsync("Pet.LevelUpFormula", "Level 1-10: 40×level+60; 11-100: 0.8×level²+380; ≥101: 285.69×1.06^level"),
-                    FeedBonus = await GetSystemSettingIntAsync("Pet.FeedBonus", 10),
-                    CleanBonus = await GetSystemSettingIntAsync("Pet.CleanBonus", 10),
-                    PlayBonus = await GetSystemSettingIntAsync("Pet.PlayBonus", 10),
-                    SleepBonus = await GetSystemSettingIntAsync("Pet.SleepBonus", 10),
+                    LevelUpFormula = "Level 1-10: 40×level+60; 11-100: 0.8×level²+380; ≥101: 285.69×1.06^level",
+                    FeedBonus = feedBonus,
+                    CleanBonus = cleanBonus,
+                    PlayBonus = playBonus,
+                    SleepBonus = sleepBonus,
                     ExpBonus = await GetSystemSettingIntAsync("Pet.ExpBonus", 1),
-                    ColorChangePoints = await GetSystemSettingIntAsync("Pet.ColorChangePoints", 2000),
-                    BackgroundChangePoints = await GetSystemSettingIntAsync("Pet.BackgroundChangePoints", 1000),
+                    ColorChangePoints = await GetSystemSettingIntAsync("Pet.ColorChange.PointsCost", 2000),
+                    BackgroundChangePoints = await GetSystemSettingIntAsync("Pet.BackgroundChange.PointsCost", 1000),
+                    DailyDecayHunger = await GetSystemSettingIntAsync("Pet.DailyDecay.Hunger", 20),
+                    DailyDecayMood = await GetSystemSettingIntAsync("Pet.DailyDecay.Mood", 30),
+                    DailyDecayStamina = await GetSystemSettingIntAsync("Pet.DailyDecay.Stamina", 10),
+                    DailyDecayCleanliness = await GetSystemSettingIntAsync("Pet.DailyDecay.Cleanliness", 20),
                     AvailableColors = await GetSystemSettingAsync("Pet.AvailableColors", "#FFFFFF,#FFD700,#FF6B6B,#4ECDC4,#45B7D1,#FFA07A,#98D8C8,#F7DC6F,#BB8FCE,#85C1E2"),
                     AvailableBackgrounds = await GetSystemSettingAsync("Pet.AvailableBackgrounds", "#FFFFFF,#F0F0F0,#E8F5E9,#E3F2FD,#FFF3E0,#FCE4EC,#F3E5F5,#E0F2F1,#FFF8E1,#EFEBE9")
                 };
@@ -1105,16 +1265,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return View("SystemRules", model);
                 }
 
-                // 獲取當前管理員ID
-                var managerId = GetCurrentManagerId();
-                if (!managerId.HasValue)
-                {
-                    TempData["ErrorMessage"] = "無法識別管理員身份，請重新登入";
-                    return RedirectToAction("Login", "Account", new { area = "" });
-                }
+                // 獲取當前管理員ID（如果沒有則使用0作為系統管理員）
+                var managerId = GetCurrentManagerId() ?? 0;
 
                 // 呼叫 PetMutationService 更新系統規則
-                var result = await _petMutationService.UpdatePetSystemRulesAsync(model, managerId.Value);
+                var result = await _petMutationService.UpdatePetSystemRulesAsync(model, managerId);
 
                 if (result.Success)
                 {
@@ -1149,7 +1304,7 @@ namespace GameSpace.Areas.MiniGame.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SearchPets(int? userId, string userName, string petName, string petType,
-            int? minLevel, int? maxLevel, string status, string color)
+            int? minLevel, int? maxLevel, string color, string sortBy, string sortOrder)
         {
             try
             {
@@ -1159,9 +1314,8 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     UserId = userId,
                     SearchTerm = userName,
                     PetName = petName,
-                    MinLevel = minLevel,
-                    MaxLevel = maxLevel,
                     SkinColor = color,
+                    SortBy = sortBy ?? "level_desc",
                     PageNumber = 1,
                     PageSize = 100  // AJAX 搜尋返回更多結果
                 };
@@ -1183,12 +1337,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 }).ToList();
 
                 // 計算統計資訊
+                // 健康寵物: Health >= 20
+                // 需照顧寵物: Health < 20
                 var statistics = new
                 {
                     totalPets = result.TotalCount,
-                    activePets = result.Items.Count(p => p.Health >= 80 && p.Hunger >= 30),
+                    activePets = result.Items.Count(p => p.Health >= 20),
                     avgLevel = result.Items.Any() ? result.Items.Average(p => (double)p.Level) : 0,
-                    maxLevel = result.Items.Any() ? result.Items.Max(p => p.Level) : 0
+                    needCarePets = result.Items.Count(p => p.Health < 20)
                 };
 
                 return Json(new { success = true, data, statistics });
@@ -1361,51 +1517,6 @@ namespace GameSpace.Areas.MiniGame.Controllers
             }
         }
 
-        /// <summary>
-        /// 匯出寵物資料為 CSV
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> ExportPets(int? userId, string userName, string petName, string petType,
-            int? minLevel, int? maxLevel, string status, string color)
-        {
-            try
-            {
-                // 構建查詢模型
-                var query = new PetAdminListQueryModel
-                {
-                    UserId = userId,
-                    SearchTerm = userName,
-                    PetName = petName,
-                    MinLevel = minLevel,
-                    MaxLevel = maxLevel,
-                    SkinColor = color,
-                    PageNumber = 1,
-                    PageSize = 10000  // 匯出所有符合條件的記錄
-                };
-
-                // 執行查詢
-                var result = await _petQueryService.GetPetListAsync(query);
-
-                // 構建 CSV 內容
-                var csvBuilder = new System.Text.StringBuilder();
-                csvBuilder.AppendLine("會員ID,會員名稱,寵物名稱,等級,經驗值,生命值,飢餓度,心情,體力,清潔度,膚色,背景顏色");
-
-                foreach (var pet in result.Items)
-                {
-                    csvBuilder.AppendLine($"{pet.UserId},{pet.UserName ?? "未知"},{pet.PetName},{pet.Level},{pet.Experience},{pet.Health},{pet.Hunger},{pet.Mood},{pet.Stamina},{pet.Cleanliness},{pet.SkinColor},{pet.BackgroundColor}");
-                }
-
-                var csvBytes = System.Text.Encoding.UTF8.GetBytes(csvBuilder.ToString());
-                var fileName = $"Pets_Export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-
-                return File(csvBytes, "text/csv", fileName);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"匯出失敗：{ex.Message}";
-                return RedirectToAction(nameof(QueryPets));
-            }
-        }
 
         // ==================== 私有輔助方法 ====================
 
@@ -1420,21 +1531,317 @@ namespace GameSpace.Areas.MiniGame.Controllers
             return "活躍";
         }
 
+        // ==================== 膚色與背景管理 API ====================
+
         /// <summary>
-        /// 從系統設定讀取整數值
+        /// 獲取所有膚色選項
         /// </summary>
-        private async Task<int> GetSystemSettingIntAsync(string key, int defaultValue)
+        [HttpGet]
+        public async Task<IActionResult> GetSkinColors()
         {
             try
             {
-                var value = await GetSystemSettingAsync(key, defaultValue.ToString());
-                return int.TryParse(value, out int result) ? result : defaultValue;
+                var colors = await _context.PetSkinColorCostSettings
+                    .Where(s => !s.IsDeleted)
+                    .OrderBy(s => s.DisplayOrder)
+                    .Select(s => new
+                    {
+                        s.SettingId,
+                        s.ColorCode,
+                        s.ColorName,
+                        s.PointsCost,
+                        s.ColorHex,
+                        s.IsActive,
+                        s.DisplayOrder
+                    })
+                    .ToListAsync();
+
+                return Json(colors);
             }
-            catch
+            catch (Exception ex)
             {
-                return defaultValue;
+                _logger.LogError(ex, "獲取膚色選項失敗");
+                return Json(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 獲取所有背景選項
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetBackgrounds()
+        {
+            try
+            {
+                var backgrounds = await _context.PetBackgroundCostSettings
+                    .Where(b => !b.IsDeleted)
+                    .OrderBy(b => b.DisplayOrder)
+                    .Select(b => new
+                    {
+                        b.SettingId,
+                        b.BackgroundCode,
+                        b.BackgroundName,
+                        b.PointsCost,
+                        b.IsActive,
+                        b.DisplayOrder
+                    })
+                    .ToListAsync();
+
+                return Json(backgrounds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取背景選項失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 新增膚色選項
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> AddSkinColor(string colorCode, string colorName, int pointsCost)
+        {
+            try
+            {
+                var maxOrder = await _context.PetSkinColorCostSettings
+                    .Where(s => !s.IsDeleted)
+                    .MaxAsync(s => (int?)s.DisplayOrder) ?? 0;
+
+                var setting = new PetSkinColorCostSetting
+                {
+                    ColorCode = colorCode,
+                    ColorName = colorName,
+                    ColorHex = colorCode,
+                    PointsCost = pointsCost,
+                    Rarity = "Common",
+                    IsActive = true,
+                    DisplayOrder = maxOrder + 1,
+                    IsFree = pointsCost == 0,
+                    IsLimitedEdition = false,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.PetSkinColorCostSettings.Add(setting);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "膚色新增成功" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "新增膚色失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 新增背景選項
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> AddBackground(string backgroundCode, string backgroundName, int pointsCost)
+        {
+            try
+            {
+                var maxOrder = await _context.PetBackgroundCostSettings
+                    .Where(b => !b.IsDeleted)
+                    .MaxAsync(b => (int?)b.DisplayOrder) ?? 0;
+
+                var setting = new PetBackgroundCostSetting
+                {
+                    BackgroundCode = backgroundCode,
+                    BackgroundName = backgroundName,
+                    PointsCost = pointsCost,
+                    Rarity = "Common",
+                    IsActive = true,
+                    DisplayOrder = maxOrder + 1,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.PetBackgroundCostSettings.Add(setting);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "背景新增成功" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "新增背景失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 更新膚色所需點數
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateSkinColorPoints(int settingId, int pointsCost)
+        {
+            try
+            {
+                var setting = await _context.PetSkinColorCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到膚色設定" });
+                }
+
+                setting.PointsCost = pointsCost;
+                setting.IsFree = pointsCost == 0;
+                setting.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新膚色點數失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 更新背景所需點數
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateBackgroundPoints(int settingId, int pointsCost)
+        {
+            try
+            {
+                var setting = await _context.PetBackgroundCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到背景設定" });
+                }
+
+                setting.PointsCost = pointsCost;
+                setting.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新背景點數失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 切換膚色啟用狀態
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ToggleSkinColorActive(int settingId, bool isActive)
+        {
+            try
+            {
+                var setting = await _context.PetSkinColorCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到膚色設定" });
+                }
+
+                setting.IsActive = isActive;
+                setting.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "切換膚色狀態失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 切換背景啟用狀態
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ToggleBackgroundActive(int settingId, bool isActive)
+        {
+            try
+            {
+                var setting = await _context.PetBackgroundCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到背景設定" });
+                }
+
+                setting.IsActive = isActive;
+                setting.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "切換背景狀態失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 刪除膚色選項（軟刪除）
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> DeleteSkinColor(int settingId)
+        {
+            try
+            {
+                var setting = await _context.PetSkinColorCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到膚色設定" });
+                }
+
+                setting.IsDeleted = true;
+                setting.DeletedAt = DateTime.UtcNow;
+                setting.DeletedBy = GetCurrentManagerId();
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "膚色刪除成功" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "刪除膚色失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 刪除背景選項（軟刪除）
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> DeleteBackground(int settingId)
+        {
+            try
+            {
+                var setting = await _context.PetBackgroundCostSettings.FindAsync(settingId);
+                if (setting == null || setting.IsDeleted)
+                {
+                    return Json(new { success = false, message = "找不到背景設定" });
+                }
+
+                setting.IsDeleted = true;
+                setting.DeletedAt = DateTime.UtcNow;
+                setting.DeletedBy = GetCurrentManagerId();
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "背景刪除成功" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "刪除背景失敗");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
     }
 }
 

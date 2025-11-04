@@ -1,25 +1,101 @@
-﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.SignInRecordsViewModel
+﻿@using GameSpace.Areas.MiniGame.Helpers
+@model GameSpace.Areas.MiniGame.Models.ViewModels.SignInRecordsViewModel
 @{
     ViewData["Title"] = "查看會員簽到紀錄";
 }
 
 @await Html.PartialAsync("_MiniGameAdminTabs")
 
+<!-- 查詢條件表單 -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-search me-2"></i>查詢條件</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Records">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="userId" class="form-label">會員 ID</label>
+                    <input type="number" class="form-control" id="userId" name="userId" value="@Model.Query.UserId" placeholder="請輸入會員 ID">
+                </div>
+                <div class="col-md-3">
+                    <label for="userAccount" class="form-label">會員帳號</label>
+                    <input type="text" class="form-control" id="userAccount" name="userAccount" value="@Model.Query.UserAccount" placeholder="請輸入會員帳號">
+                </div>
+                <div class="col-md-3">
+                    <label for="userName" class="form-label">會員名稱</label>
+                    <input type="text" class="form-control" id="userName" name="userName" value="@Model.Query.UserName" placeholder="請輸入會員名稱">
+                </div>
+                <div class="col-md-3">
+                    <label for="searchTerm" class="form-label">模糊搜尋</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" value="@Model.Query.SearchTerm" placeholder="搜尋會員ID/帳號/名稱/優惠券">
+                    <small class="text-muted">支援模糊搜尋，多關鍵字用空格分隔</small>
+                </div>
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">開始日期</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" value="@(Model.Query.StartDate.ToUtc8String("yyyy-MM-dd"))">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">結束日期</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" value="@(Model.Query.EndDate.ToUtc8String("yyyy-MM-dd"))">
+                </div>
+                <div class="col-md-3">
+                    <label for="minConsecutiveDays" class="form-label">最小連續天數</label>
+                    <input type="number" class="form-control" id="minConsecutiveDays" name="minConsecutiveDays" value="@Model.Query.MinConsecutiveDays" min="1" placeholder="例如: 3">
+                </div>
+                <div class="col-md-3">
+                    <label for="maxConsecutiveDays" class="form-label">最大連續天數</label>
+                    <input type="number" class="form-control" id="maxConsecutiveDays" name="maxConsecutiveDays" value="@Model.Query.MaxConsecutiveDays" min="1" placeholder="例如: 30">
+                </div>
+                <div class="col-md-3">
+                    <label for="sortBy" class="form-label">排序欄位</label>
+                    <select class="form-select" id="sortBy" name="sortBy">
+                        <option value="SignTime" selected="@(Model.Query.SortBy == "SignTime")">簽到時間</option>
+                        <option value="SignInDate" selected="@(Model.Query.SortBy == "SignInDate")">簽到日期</option>
+                        <option value="ConsecutiveDays" selected="@(Model.Query.SortBy == "ConsecutiveDays")">連續天數</option>
+                        <option value="PointsGained" selected="@(Model.Query.SortBy == "PointsGained")">獎勵點數</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="descending" class="form-label">排序方向</label>
+                    <select class="form-select" id="descending" name="descending">
+                        <option value="true" selected="@(Model.Query.Descending)">遞減（新到舊）</option>
+                        <option value="false" selected="@(!Model.Query.Descending)">遞增（舊到新）</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="pageSize" class="form-label">每頁筆數</label>
+                    <select class="form-select" id="pageSize" name="pageSize">
+                        <option value="10" selected="@(Model.Query.PageSize == 10)">10</option>
+                        <option value="20" selected="@(Model.Query.PageSize == 20)">20</option>
+                        <option value="50" selected="@(Model.Query.PageSize == 50)">50</option>
+                        <option value="100" selected="@(Model.Query.PageSize == 100)">100</option>
+                    </select>
+                </div>
+                <div class="col-md-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>查詢
+                    </button>
+                    <a href="@Url.Action("Records")" class="btn btn-secondary">
+                        <i class="fas fa-redo me-1"></i>重置
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- 統計卡片區 -->
 @if (Model.Records.TotalCount > 0)
 {
-    var totalPoints = Model.Records.Items.Sum(x => x.PointsGained);
-    var totalExp = Model.Records.Items.Sum(x => x.ExpGained);
-    var withCouponCount = Model.Records.Items.Count(x => !string.IsNullOrEmpty(x.CouponCode));
-
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-start border-secondary border-4 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-xs fw-bold text-secondary text-uppercase mb-1">簽到記錄總數</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.Records.TotalCount 筆</div>
+                            <div class="text-xs fw-bold text-secondary text-uppercase mb-1">查詢簽到紀錄數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.FilteredRecordCount 筆</div>
                         </div>
                         <div class="text-secondary opacity-50">
                             <i class="fas fa-calendar-check fa-2x"></i>
@@ -33,8 +109,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總獎勵點數</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@totalPoints.ToString("N0")</div>
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總獎勵會員點數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalRewardedPoints.ToString("N0")</div>
                         </div>
                         <div class="text-primary opacity-50">
                             <i class="fas fa-coins fa-2x"></i>
@@ -48,8 +124,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">總獎勵經驗</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@totalExp.ToString("N0")</div>
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">總獎勵寵物經驗</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalRewardedExp.ToString("N0")</div>
                         </div>
                         <div class="text-success opacity-50">
                             <i class="fas fa-star fa-2x"></i>
@@ -63,8 +139,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">獲得優惠券</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@withCouponCount 筆</div>
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">獲得商城優惠券總數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalCouponsGranted 筆</div>
                         </div>
                         <div class="text-warning opacity-50">
                             <i class="fas fa-ticket-alt fa-2x"></i>
@@ -101,12 +177,13 @@
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4"><i class="fas fa-hashtag me-1"></i>記錄ID</th>
-                            <th><i class="fas fa-user me-1"></i>會員ID</th>
-                            <th><i class="fas fa-id-card me-1"></i>會員帳號</th>
+                            <th><i class="fas fa-user me-1"></i>會員</th>
                             <th><i class="fas fa-clock me-1"></i>簽到時間</th>
+                            <th class="text-center"><i class="fas fa-calendar-day me-1"></i>連續天數</th>
                             <th class="text-end"><i class="fas fa-coins me-1"></i>點數獎勵</th>
                             <th class="text-end"><i class="fas fa-star me-1"></i>經驗獎勵</th>
-                            <th class="pe-4"><i class="fas fa-ticket-alt me-1"></i>優惠券代碼</th>
+                            <th><i class="fas fa-barcode me-1"></i>優惠券代碼</th>
+                            <th class="pe-4"><i class="fas fa-ticket-alt me-1"></i>優惠券種類</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -115,25 +192,54 @@
                             var hasCoupon = !string.IsNullOrEmpty(record.CouponCode);
                             <tr>
                                 <td class="ps-4"><span class="badge bg-secondary">@record.LogId</span></td>
-                                <td><span class="badge bg-info">@record.UserId</span></td>
-                                <td><strong>@record.UserAccount</strong></td>
-                                <td><small class="text-muted">@record.SignTime.ToString("yyyy/MM/dd HH:mm")</small></td>
-                                <td class="text-end">
-                                    <span class="badge bg-primary">+@record.PointsGained 點</span>
+                                <td>
+                                    <div><strong>@record.UserName</strong></div>
+                                    <small class="text-muted">@record.UserAccount (ID: @record.UserId)</small>
+                                </td>
+                                <td><small class="text-muted">@record.SignTime.ToUtc8String("yyyy/MM/dd HH:mm")</small></td>
+                                <td class="text-center">
+                                    <span class="badge bg-info fs-6">第 @record.ConsecutiveDays 天</span>
                                 </td>
                                 <td class="text-end">
-                                    <span class="badge bg-success">+@record.ExpGained EXP</span>
-                                </td>
-                                <td class="pe-4">
-                                    @if (hasCoupon)
+                                    @if (record.PointsGained > 0)
                                     {
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="fas fa-gift me-1"></i>@record.CouponCode
-                                        </span>
+                                        <span class="badge bg-primary">+@record.PointsGained.ToString("N0") 點</span>
                                     }
                                     else
                                     {
                                         <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (record.ExpGained > 0)
+                                    {
+                                        <span class="badge bg-success">+@record.ExpGained.ToString("N0") EXP</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (hasCoupon)
+                                    {
+                                        <code class="text-dark">@record.CouponCode</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="pe-4">
+                                    @if (!string.IsNullOrEmpty(record.CouponTypeName))
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-gift me-1"></i>@record.CouponTypeName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">無</span>
                                     }
                                 </td>
                             </tr>
@@ -152,14 +258,34 @@
                     <div class="btn-group shadow-sm">
                         <a class="btn btn-outline-secondary @(Model.Records.HasPreviousPage ? string.Empty : "disabled")"
                            asp-action="Records"
+                           asp-route-userId="@Model.Query.UserId"
+                           asp-route-userAccount="@Model.Query.UserAccount"
+                           asp-route-userName="@Model.Query.UserName"
+                           asp-route-searchTerm="@Model.Query.SearchTerm"
+                           asp-route-startDate="@Model.Query.StartDate.ToUtc8String("yyyy-MM-dd")"
+                           asp-route-endDate="@Model.Query.EndDate.ToUtc8String("yyyy-MM-dd")"
+                           asp-route-minConsecutiveDays="@Model.Query.MinConsecutiveDays"
+                           asp-route-maxConsecutiveDays="@Model.Query.MaxConsecutiveDays"
+                           asp-route-sortBy="@Model.Query.SortBy"
+                           asp-route-descending="@Model.Query.Descending"
                            asp-route-page="@(Model.Records.CurrentPage - 1)"
-                           asp-route-pageSize="@(Model.Records.PageSize)">
+                           asp-route-pageSize="@Model.Query.PageSize">
                             <i class="fas fa-chevron-left me-1"></i>上一頁
                         </a>
                         <a class="btn btn-outline-secondary @(Model.Records.HasNextPage ? string.Empty : "disabled")"
                            asp-action="Records"
+                           asp-route-userId="@Model.Query.UserId"
+                           asp-route-userAccount="@Model.Query.UserAccount"
+                           asp-route-userName="@Model.Query.UserName"
+                           asp-route-searchTerm="@Model.Query.SearchTerm"
+                           asp-route-startDate="@Model.Query.StartDate.ToUtc8String("yyyy-MM-dd")"
+                           asp-route-endDate="@Model.Query.EndDate.ToUtc8String("yyyy-MM-dd")"
+                           asp-route-minConsecutiveDays="@Model.Query.MinConsecutiveDays"
+                           asp-route-maxConsecutiveDays="@Model.Query.MaxConsecutiveDays"
+                           asp-route-sortBy="@Model.Query.SortBy"
+                           asp-route-descending="@Model.Query.Descending"
                            asp-route-page="@(Model.Records.CurrentPage + 1)"
-                           asp-route-pageSize="@(Model.Records.PageSize)">
+                           asp-route-pageSize="@Model.Query.PageSize">
                             下一頁<i class="fas fa-chevron-right ms-1"></i>
                         </a>
                     </div>

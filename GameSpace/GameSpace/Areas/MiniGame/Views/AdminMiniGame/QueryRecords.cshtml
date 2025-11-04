@@ -11,11 +11,6 @@
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fas fa-gamepad mr-2"></i>查詢小遊戲記錄
         </h1>
-        <div class="d-flex">
-            <a href="@Url.Action("Index")" class="btn btn-secondary mr-2">
-                <i class="fas fa-arrow-left"></i> 返回
-            </a>
-        </div>
     </div>
 
     <!-- 搜尋區域 -->
@@ -38,20 +33,6 @@
                                 <label for="userName" class="form-label">會員名稱</label>
                                 <input type="text" class="form-control" id="userName" name="userName" placeholder="輸入會員名稱">
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="gameType" class="form-label">遊戲類型</label>
-                                <select class="form-control" id="gameType" name="gameType">
-                                    <option value="">全部類型</option>
-                                    <option value="adventure">冒險遊戲</option>
-                                    <option value="puzzle">益智遊戲</option>
-                                    <option value="action">動作遊戲</option>
-                                    <option value="strategy">策略遊戲</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="gameName" class="form-label">遊戲名稱</label>
-                                <input type="text" class="form-control" id="gameName" name="gameName" placeholder="輸入遊戲名稱">
-                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-3 mb-3">
@@ -63,12 +44,11 @@
                                 <input type="date" class="form-control" id="endDate" name="endDate">
                             </div>
                             <div class="col-md-3 mb-3">
-                                <label for="minScore" class="form-label">最小分數</label>
-                                <input type="number" class="form-control" id="minScore" name="minScore" placeholder="0">
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="maxScore" class="form-label">最大分數</label>
-                                <input type="number" class="form-control" id="maxScore" name="maxScore" placeholder="999999">
+                                <label for="sortBy" class="form-label">排序方式</label>
+                                <select class="form-control" id="sortBy" name="sortBy">
+                                    <option value="score_desc">分數（高 → 低）</option>
+                                    <option value="score_asc">分數（低 → 高）</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row">
@@ -108,9 +88,6 @@
                                 </button>
                                 <button type="button" class="btn btn-secondary" id="resetBtn">
                                     <i class="fas fa-undo"></i> 重置
-                                </button>
-                                <button type="button" class="btn btn-success" id="exportBtn">
-                                    <i class="fas fa-download"></i> 匯出
                                 </button>
                             </div>
                         </div>
@@ -204,8 +181,6 @@
                                 <tr>
                                     <th>會員ID</th>
                                     <th>會員名稱</th>
-                                    <th>遊戲名稱</th>
-                                    <th>遊戲類型</th>
                                     <th>分數</th>
                                     <th>狀態</th>
                                     <th>難度</th>
@@ -241,8 +216,6 @@
                         <table class="table table-sm">
                             <tr><td>會員ID:</td><td id="detailUserId"></td></tr>
                             <tr><td>會員名稱:</td><td id="detailUserName"></td></tr>
-                            <tr><td>遊戲名稱:</td><td id="detailGameName"></td></tr>
-                            <tr><td>遊戲類型:</td><td id="detailGameType"></td></tr>
                             <tr><td>難度等級:</td><td id="detailDifficulty"></td></tr>
                         </table>
                     </div>
@@ -293,14 +266,14 @@
                 "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese-traditional.json"
             },
             "pageLength": 25,
-            "order": [[ 7, "desc" ]],
+            "order": [[ 5, "desc" ]],  // Fixed: column index for game time
             "columnDefs": [
-                { "orderable": false, "targets": 8 }
+                { "orderable": false, "targets": 6 }  // Fixed: last column index for actions
             ]
         });
 
         // 搜尋功能
-        $("#searchBtn").click(function() {
+        function performSearch() {
             var formData = $("#searchForm").serialize();
             $.ajax({
                 url: "@Url.Action("SearchGameRecords", "AdminMiniGame")",
@@ -318,6 +291,11 @@
                     alert("搜尋請求失敗，請稍後再試");
                 }
             });
+        }
+
+        // 搜尋按鈕點擊事件
+        $("#searchBtn").click(function() {
+            performSearch();
         });
 
         // 重置功能
@@ -328,13 +306,7 @@
             updateStatistics({ totalGames: 0, completedGames: 0, avgScore: 0, maxScore: 0 });
         });
 
-        // 匯出功能
-        $("#exportBtn").click(function() {
-            var formData = $("#searchForm").serialize();
-            window.open("@Url.Action("ExportGameRecords", "AdminMiniGame")?" + formData, "_blank");
-        });
-
-        // 載入數據到表格
+// 載入數據到表格
         function loadDataToTable(data) {
             table.clear();
             data.forEach(function(row) {
@@ -346,16 +318,12 @@
                     case "放棄": statusClass = "badge-warning"; break;
                 }
                 
-                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(\
- + row.recordId + 
-\)\">查看</button> " +
-                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustScore(\ + row.recordId + \)\">調整</button>";
+                var actionButtons = "<button class=\"btn btn-sm btn-info\" onclick=\"viewDetail(" + row.recordId + ")\">查看</button> " +
+                                   "<button class=\"btn btn-sm btn-warning\" onclick=\"adjustScore(" + row.recordId + ")\">調整</button>";
                 
                 table.row.add([
                     row.userId,
                     row.userName,
-                    row.gameName,
-                    row.gameType,
                     row.score.toLocaleString(),
                     "<span class=\"badge " + statusClass + "\">" + row.status + "</span>",
                     row.difficulty,
@@ -385,8 +353,6 @@
                     if (response.success) {
                         $("#detailUserId").text(response.data.userId);
                         $("#detailUserName").text(response.data.userName);
-                        $("#detailGameName").text(response.data.gameName);
-                        $("#detailGameType").text(response.data.gameType);
                         $("#detailDifficulty").text(response.data.difficulty);
                         $("#detailScore").text(response.data.score.toLocaleString());
                         $("#detailStatus").text(response.data.status);
@@ -471,7 +437,7 @@
                         if (response.success) {
                             alert("遊戲記錄刪除成功");
                             $("#detailModal").modal("hide");
-                            $("#searchBtn").click(); // 重新搜尋
+                            performSearch(); // 重新搜尋
                         } else {
                             alert("遊戲記錄刪除失敗: " + response.message);
                         }
@@ -482,6 +448,9 @@
                 });
             }
         });
+
+        // 頁面載入時自動執行搜尋，顯示所有記錄
+        performSearch();
     });
 </script>
 

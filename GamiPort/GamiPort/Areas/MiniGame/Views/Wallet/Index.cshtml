@@ -1,111 +1,498 @@
+@using GamiPort.Areas.MiniGame.Helpers
 @{
     ViewData["Title"] = "我的錢包";
+    var userWallet = ViewBag.UserWallet as dynamic;
+    var coupons = ViewBag.Coupons as List<dynamic> ?? new List<dynamic>();
+    var eVouchers = ViewBag.EVouchers as List<dynamic> ?? new List<dynamic>();
+    var walletHistory = ViewBag.WalletHistory as List<dynamic> ?? new List<dynamic>();
+
+    var points = userWallet?.Points ?? 0;
+    var couponCount = coupons?.Count ?? 0;
+    var eVoucherCount = eVouchers?.Count ?? 0;
+    var lastUpdated = (DateTime)(userWallet?.UpdatedAt ?? DateTime.UtcNow);
 }
 
-@* Nick鐘新增：模仿 _Layout.cshtml 的邏輯，只有登入後才載入錢包功能 UI *@
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <div class="container py-4">
-    <div class="d-flex align-items-center mb-4">
-        <i class="bi bi-wallet fs-2 me-3 text-primary"></i>
-        <div>
-            <h2 class="mb-0">我的錢包</h2>
-            <p class="text-muted mb-0">管理您的點數、優惠券與電子禮券</p>
+    <div class="wallet-page">
+        <!-- 頁面標題 -->
+        <div class="page-header">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-wallet-fill fs-2 me-3 text-teal"></i>
+                <div>
+                    <h2 class="mb-0">我的錢包</h2>
+                    <p class="text-muted mb-0">管理您的點數、優惠券與電子禮券</p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="alert alert-info d-flex align-items-center" role="alert">
-        <i class="bi bi-info-circle fs-5 me-2"></i>
-        <div>此功能開發中，敬請期待...</div>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <!-- 點數餘額 -->
-        <div class="col-md-4">
-            <div class="card border-primary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0"><i class="bi bi-coin"></i> 點數餘額</h5>
+        <div class="container-fluid py-4">
+            <!-- 統計卡片區 -->
+            <div class="row g-4 mb-4">
+                <!-- 點數餘額卡片 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="stat-icon mb-3">
+                                <i class="bi bi-coin text-orange"></i>
+                            </div>
+                            <h5 class="text-muted mb-2 stat-label">我的點數</h5>
+                            <h2 class="stat-number mb-1">@points</h2>
+                            <p class="text-muted mb-0">點</p>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-clock"></i> 更新於 @lastUpdated.ToUtc8String("MM-dd HH:mm")
+                            </small>
+                        </div>
                     </div>
-                    <p class="display-6 text-primary mb-0">-- 點</p>
-                    <small class="text-muted">上次更新：--</small>
                 </div>
-            </div>
-        </div>
 
-        <!-- 商城優惠券 -->
-        <div class="col-md-4">
-            <div class="card border-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0"><i class="bi bi-ticket-perforated"></i> 商城優惠券</h5>
+                <!-- 商城優惠券卡片 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="stat-icon mb-3">
+                                <i class="bi bi-ticket-perforated text-primary"></i>
+                            </div>
+                            <h5 class="text-muted mb-2 stat-label">商城優惠券</h5>
+                            <h2 class="stat-number mb-1">@couponCount</h2>
+                            <p class="text-muted mb-0">張可用</p>
+                            <a href="@Url.Action("Coupons", "Wallet", new { Area = "MiniGame" })" class="btn btn-sm btn-outline-primary mt-3">
+                                <i class="bi bi-arrow-right"></i> 查看詳情
+                            </a>
+                        </div>
                     </div>
-                    <p class="display-6 text-success mb-0">-- 張</p>
-                    <small class="text-muted">可用優惠券</small>
                 </div>
-            </div>
-        </div>
 
-        <!-- 電子禮券 -->
-        <div class="col-md-4">
-            <div class="card border-warning">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0"><i class="bi bi-gift"></i> 電子禮券</h5>
+                <!-- 電子禮券卡片 -->
+                <div class="col-md-12 col-lg-4">
+                    <div class="stat-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="stat-icon mb-3">
+                                <i class="bi bi-gift text-danger"></i>
+                            </div>
+                            <h5 class="text-muted mb-2 stat-label">電子禮券</h5>
+                            <h2 class="stat-number mb-1">@eVoucherCount</h2>
+                            <p class="text-muted mb-0">張可用</p>
+                            <a href="@Url.Action("EVouchers", "Wallet", new { Area = "MiniGame" })" class="btn btn-sm btn-outline-danger mt-3">
+                                <i class="bi bi-arrow-right"></i> 查看詳情
+                            </a>
+                        </div>
                     </div>
-                    <p class="display-6 text-warning mb-0">-- 張</p>
-                    <small class="text-muted">可用禮券</small>
+                </div>
+            </div>
+
+            <!-- 功能操作區 -->
+            <div class="row g-4 mb-4">
+                <!-- 兌換優惠券功能區 -->
+                <div class="col-md-6">
+                    <div class="action-card border-0 shadow-sm h-100">
+                        <div class="card-header bg-gradient-teal text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shop"></i> 兌換優惠券
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-muted mb-3">使用您的點數兌換商城優惠券或電子禮券</p>
+                            <div class="d-flex gap-2">
+                                <a href="@Url.Action("Exchange", "Wallet", new { Area = "MiniGame" })" class="btn btn-teal btn-sm px-4">
+                                    <i class="bi bi-arrow-right-circle"></i> 開始兌換
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-toggle="modal" data-bs-target="#exchangeHelpModal">
+                                    <i class="bi bi-question-circle"></i> 規則說明
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 收支明細功能區 -->
+                <div class="col-md-6">
+                    <div class="action-card border-0 shadow-sm h-100">
+                        <div class="card-header bg-gradient-teal-reverse text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-ul"></i> 收支明細
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-muted mb-3">查看點數、優惠券、禮券的收支記錄</p>
+                            <div class="d-flex gap-2">
+                                <a href="@Url.Action("History", "Wallet", new { Area = "MiniGame" })" class="btn btn-teal btn-sm px-4">
+                                    <i class="bi bi-clock-history"></i> 查看明細
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-toggle="modal" data-bs-target="#historyHelpModal">
+                                    <i class="bi bi-question-circle"></i> 說明
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近交易記錄 -->
+            @if (walletHistory != null && walletHistory.Count > 0)
+            {
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light border-bottom">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-hourglass-split"></i> 最近10筆交易記錄
+                                </h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-4">交易時間</th>
+                                                <th>交易類型</th>
+                                                <th class="text-end">交易金額</th>
+                                                <th class="text-center">餘額</th>
+                                                <th class="pe-4">說明</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var record in walletHistory.Take(10))
+                                            {
+                                                var isIncome = record.Amount > 0;
+                                                <tr>
+                                                    <td class="ps-4">
+                                                        @((DateTime)record.CreatedAt).ToUtc8String("MM-dd HH:mm")
+                                                    </td>
+                                                    <td>
+                                                        @if (record.TransactionType == "SignIn")
+                                                        {
+                                                            <span class="badge bg-success">簽到</span>
+                                                        }
+                                                        else if (record.TransactionType == "GameReward")
+                                                        {
+                                                            <span class="badge bg-primary">遊戲獎勵</span>
+                                                        }
+                                                        else if (record.TransactionType == "CouponRedeem")
+                                                        {
+                                                            <span class="badge bg-warning">優惠券兌換</span>
+                                                        }
+                                                        else if (record.TransactionType == "EVoucherRedeem")
+                                                        {
+                                                            <span class="badge bg-danger">禮券兌換</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">@record.TransactionType</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="@(isIncome ? "text-success fw-bold" : "text-danger fw-bold")">
+                                                            @(isIncome ? "+" : "")@record.Amount
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">@record.BalanceAfter</td>
+                                                    <td class="pe-4">@record.Description</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 幫助模態框 -->
+    <div class="modal fade" id="exchangeHelpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 rounded-3">
+                <div class="modal-header bg-teal text-white border-0">
+                    <h5 class="modal-title"><i class="bi bi-lightbulb"></i> 兌換規則說明</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-teal">什麼是優惠券？</h6>
+                        <p class="text-muted">優惠券是在商城購物時可使用的折扣工具，用點數兌換即可獲得。</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-teal">什麼是電子禮券？</h6>
+                        <p class="text-muted">電子禮券可在實體店面消費時使用，兌換後可以掃描QR Code進行核銷。</p>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-teal">兌換流程</h6>
+                        <ol class="text-muted mb-0">
+                            <li>點擊「開始兌換」按鈕</li>
+                            <li>選擇要兌換的優惠券或禮券</li>
+                            <li>確認要消耗的點數</li>
+                            <li>完成兌換</li>
+                        </ol>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 功能區塊 -->
-    <div class="row g-4">
-        <!-- 兌換優惠券 -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-shop"></i> 兌換優惠券
+    <div class="modal fade" id="historyHelpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 rounded-3">
+                <div class="modal-header bg-teal text-white border-0">
+                    <h5 class="modal-title"><i class="bi bi-book"></i> 交易明細說明</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="card-body">
-                    <p>使用會員點數兌換商城優惠券或電子禮券</p>
-                    <button class="btn btn-primary" disabled>前往兌換</button>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-teal">交易類型說明</h6>
+                        <ul class="text-muted mb-0">
+                            <li><span class="badge bg-success">簽到</span> - 每日簽到獲得的點數</li>
+                            <li><span class="badge bg-primary">遊戲獎勵</span> - 玩小遊戲贏得的點數</li>
+                            <li><span class="badge bg-warning">優惠券兌換</span> - 兌換優惠券消耗的點數</li>
+                            <li><span class="badge bg-danger">禮券兌換</span> - 兌換電子禮券消耗的點數</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-teal">提示</h6>
+                        <p class="text-muted mb-0">您可以在此查看最近的交易記錄，完整的交易明細請點擊「查看明細」進入詳細頁面。</p>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+}
+else
+{
+    <div class="container py-5 text-center">
+        <i class="bi bi-lock-fill fs-1 text-muted mb-3 d-block"></i>
+        <h4 class="text-muted">請先登入</h4>
+        <p class="text-muted">登入後即可查看您的錢包</p>
+        <a href="/Login" class="btn btn-teal">前往登入</a>
+    </div>
+}
 
-        <!-- 收支明細 -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-info text-white">
-                    <i class="bi bi-list-ul"></i> 收支明細
-                </div>
-                <div class="card-body">
-                    <p>查看點數、優惠券、禮券的收支記錄</p>
-                    <button class="btn btn-info" disabled>查看明細</button>
-                </div>
-            </div>
-        </div>
-    </div>
+@section Styles {
+    <style>
+        /* Teal 主題顏色變數 */
+        :root {
+            --teal-primary: #0d9488;
+            --teal-secondary: #17a2b8;
+            --teal-light: #e0f2f1;
+            --teal-lighter: #f0f9f8;
+            --orange-accent: #ff9f43;
+            --bg-light: #f0f4f8;
+        }
 
-    <!-- TODO 清單 -->
-    <div class="mt-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-list-check"></i> 待開發功能清單
-            </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li>查看當前會員點數餘額</li>
-                    <li>使用會員點數兌換商城優惠券及電子優惠券</li>
-                    <li>查看目前擁有商城優惠券</li>
-                    <li>查看目前擁有電子優惠券</li>
-                    <li>使用電子優惠券（以 QRCode/Barcode 顯示予店員核銷）</li>
-                    <li>查看收支明細（點數得到/花費、商城優惠券得到/使用、電子優惠券得到/使用）</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    </div>
+        /* 通用樣式 */
+        .wallet-page {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .page-header {
+            padding: 2rem 0;
+            background: linear-gradient(135deg, var(--teal-primary) 0%, var(--teal-secondary) 100%);
+            color: white;
+            margin: -2rem 0 0 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 24px 24px;
+        }
+
+        .page-header h2 {
+            color: white;
+        }
+
+        .page-header .text-muted {
+            color: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .text-teal {
+            color: var(--teal-primary) !important;
+        }
+
+        .bg-teal {
+            background-color: var(--teal-primary) !important;
+        }
+
+        .bg-teal-light {
+            background-color: var(--teal-light) !important;
+        }
+
+        .bg-gradient-teal {
+            background: linear-gradient(135deg, var(--teal-primary) 0%, var(--teal-secondary) 100%) !important;
+        }
+
+        .bg-gradient-teal-reverse {
+            background: linear-gradient(135deg, var(--teal-secondary) 0%, var(--teal-primary) 100%) !important;
+        }
+
+        .text-orange {
+            color: var(--orange-accent) !important;
+        }
+
+        /* 按鈕樣式 */
+        .btn-teal {
+            background-color: var(--teal-primary);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-teal:hover {
+            background-color: var(--teal-secondary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        }
+
+        /* 統計卡片 */
+        .stat-card {
+            border-radius: 20px;
+            background: white;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .stat-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background-color: var(--teal-lighter);
+            margin: 0 auto 1rem;
+        }
+
+        .stat-icon i {
+            font-size: 2.5rem;
+        }
+
+        .stat-label {
+            color: #2c3e50;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--teal-primary);
+            line-height: 1;
+        }
+
+        /* 操作卡片 */
+        .action-card {
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .action-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+            transform: translateY(-2px);
+        }
+
+        .action-card .card-header {
+            border-radius: 20px 20px 0 0;
+            padding: 1.25rem 1.5rem;
+            border: none;
+        }
+
+        /* 表格樣式 */
+        .table-hover tbody tr:hover {
+            background-color: var(--teal-lighter);
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #2c3e50;
+            padding: 1rem;
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+        }
+
+        /* Badge 樣式 */
+        .badge {
+            padding: 6px 12px;
+            font-weight: 500;
+            border-radius: 12px;
+        }
+
+        /* 模態框樣式 */
+        .modal-content {
+            border: none;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        /* 響應式設計 */
+        @@media (max-width: 768px) {
+            .page-header {
+                padding: 1.5rem;
+            }
+
+            .stat-number {
+                font-size: 2.5rem;
+            }
+
+            .stat-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .stat-icon i {
+                font-size: 2rem;
+            }
+
+            .container-fluid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .table {
+                font-size: 0.875rem;
+            }
+
+            .table thead th,
+            .table tbody td {
+                padding: 0.75rem;
+            }
+        }
+
+        /* 卡片陰影 */
+        .shadow-sm {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // 初始化 Bootstrap 模態框
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化 Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
 }

@@ -9,11 +9,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<GameRulesService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
-        public GameRulesService(GameSpacedatabaseContext context, ILogger<GameRulesService> logger)
+        public GameRulesService(GameSpacedatabaseContext context, ILogger<GameRulesService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         // 每日遊戲限制
@@ -41,7 +43,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetUserGameCountTodayAsync(int userId)
         {
-            var today = DateTime.UtcNow.Date;
+            var today = _appClock.ToAppTime(_appClock.UtcNow).Date;
 
             // 使用簽到次數作為遊戲次數的簡化版
             var count = await _context.UserSignInStats
@@ -73,7 +75,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 CouponRewardEnabled = true,
                 MinPointsReward = 5,
                 MaxPointsReward = 50,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = _appClock.UtcNow
             });
         }
 
@@ -81,7 +83,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                settings.UpdatedAt = DateTime.UtcNow;
+                settings.UpdatedAt = _appClock.UtcNow;
                 // 實際需要儲存到設定表
                 await Task.CompletedTask;
                 return true;
@@ -192,7 +194,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                rule.CreatedAt = DateTime.UtcNow;
+                rule.CreatedAt = _appClock.UtcNow;
                 rule.IsActive = true;
                 _context.Set<GameRule>().Add(rule);
                 await _context.SaveChangesAsync();
@@ -209,7 +211,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                rule.UpdatedAt = DateTime.UtcNow;
+                rule.UpdatedAt = _appClock.UtcNow;
                 _context.Set<GameRule>().Update(rule);
                 await _context.SaveChangesAsync();
                 return true;
@@ -256,7 +258,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 rule.IsActive = !rule.IsActive;
-                rule.UpdatedAt = DateTime.UtcNow;
+                rule.UpdatedAt = _appClock.UtcNow;
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("切換遊戲規則狀態成功: RuleId={RuleId}, NewState={NewState}", ruleId, rule.IsActive);
                 return true;
@@ -271,7 +273,7 @@ namespace GameSpace.Areas.MiniGame.Services
         // 特殊事件規則
         public async Task<IEnumerable<GameEventRule>> GetActiveGameEventsAsync()
         {
-            var now = DateTime.UtcNow;
+            var now = _appClock.UtcNow;
             return await _context.Set<GameEventRule>()
                 .AsNoTracking()
                 .Where(e => e.IsActive && e.StartDate <= now && e.EndDate >= now)
@@ -323,7 +325,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 eventRule.IsActive = false;
-                eventRule.EndDate = DateTime.UtcNow;
+                eventRule.EndDate = _appClock.UtcNow;
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("結束遊戲事件成功: EventId={EventId}", eventId);
                 return true;

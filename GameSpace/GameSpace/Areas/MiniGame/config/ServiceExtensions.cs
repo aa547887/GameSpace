@@ -13,6 +13,16 @@ namespace GameSpace.Areas.MiniGame.config
             // MiniGame Area 使用共享的 GameSpacedatabaseContext (已在 Program.cs 註冊)
             // 不需要在此註冊 DbContext
 
+            // ==================== 2025-11-03: SystemSettings 統一讀取服務 ====================
+            // 註冊 SystemSettings 讀取服務（Scoped，避免 DI lifetime 違規）
+            services.AddScoped<ISystemSettingsService, SystemSettingsService>();
+            // =========================================================================
+
+            // ==================== 2025-11-04: 模糊搜尋服務 ====================
+            // 註冊模糊搜尋服務（支援全面模糊搜尋、OR 邏輯、5 級優先順序排序）
+            services.AddScoped<IFuzzySearchService, FuzzySearchService>();
+            // =========================================================================
+
             // 註冊核心管理服務
             services.AddScoped<IMiniGameAdminService, MiniGameAdminService>();
             services.AddScoped<IMiniGameAdminAuthService, MiniGameAdminAuthService>();
@@ -100,6 +110,12 @@ namespace GameSpace.Areas.MiniGame.config
 
             // 註冊遊戲規則管理服務
             services.AddScoped<IGameRulesService, GameRulesService>();
+
+            // 註冊遊戲規則配置服務（讀取 SystemSettings）
+            services.AddScoped<IGameRulesConfigService, GameRulesConfigService>();
+
+            // 註冊系統設定變更服務（寫入 SystemSettings）
+            services.AddScoped<ISystemSettingsMutationService, SystemSettingsMutationService>();
             // =========================================================================
 
             // ==================== Phase 2: 新增額外服務 ====================
@@ -152,6 +168,11 @@ namespace GameSpace.Areas.MiniGame.config
 
             // 註冊寵物每日衰減服務（排程任務使用）
             services.AddScoped<IPetDailyDecayService, PetDailyDecayService>();
+            // =========================================================================
+
+            // ==================== 2025-11-03: 寵物每日屬性衰減背景服務 ====================
+            // 註冊寵物每日屬性衰減背景服務（HostedService，每日 UTC 00:00 自動執行）
+            services.AddHostedService<PetDailyDecayBackgroundService>();
             // =========================================================================
 
             return services;

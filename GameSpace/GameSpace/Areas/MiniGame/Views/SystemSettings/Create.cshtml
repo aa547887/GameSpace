@@ -1,0 +1,206 @@
+@model GameSpace.Models.SystemSetting
+
+@{
+    ViewData["Title"] = "新增系統設定";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-plus-circle"></i> 新增系統設定
+        </h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 錯誤訊息 -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- 表單卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-edit"></i> 設定資料
+            </h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!-- 設定鍵 -->
+                <div class="form-group row">
+                    <label asp-for="SettingKey" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 設定鍵 (SettingKey)
+                    </label>
+                    <div class="col-md-9">
+                        <input asp-for="SettingKey" class="form-control" placeholder="例如: Pet.Interaction.Feed.HungerIncrease" />
+                        <span asp-validation-for="SettingKey" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            唯一識別碼，建議使用點號分隔的命名空間格式，例如：Category.SubCategory.KeyName
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 設定值 -->
+                <div class="form-group row">
+                    <label asp-for="SettingValue" class="col-md-3 col-form-label text-md-right">
+                        設定值 (SettingValue)
+                    </label>
+                    <div class="col-md-9">
+                        <textarea asp-for="SettingValue" class="form-control" rows="3" placeholder="輸入設定值..."></textarea>
+                        <span asp-validation-for="SettingValue" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            根據設定類型輸入對應的值，JSON 類型請確保格式正確
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 描述 -->
+                <div class="form-group row">
+                    <label asp-for="Description" class="col-md-3 col-form-label text-md-right">
+                        描述 (Description)
+                    </label>
+                    <div class="col-md-9">
+                        <textarea asp-for="Description" class="form-control" rows="2" placeholder="輸入此設定的說明..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            說明此設定的用途和注意事項
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 類別 -->
+                <div class="form-group row">
+                    <label asp-for="Category" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 類別 (Category)
+                    </label>
+                    <div class="col-md-9">
+                        <select asp-for="Category" class="form-control">
+                            <option value="General">General (一般)</option>
+                            <option value="Game">Game (遊戲)</option>
+                            <option value="Pet">Pet (寵物)</option>
+                            <option value="SignIn">SignIn (簽到)</option>
+                            <option value="Wallet">Wallet (錢包)</option>
+                            <option value="Coupon">Coupon (優惠券)</option>
+                            <option value="EVoucher">EVoucher (電子禮券)</option>
+                            <option value="System">System (系統)</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            將設定歸類以便管理
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 設定類型 -->
+                <div class="form-group row">
+                    <label asp-for="SettingType" class="col-md-3 col-form-label text-md-right">
+                        <span class="text-danger">*</span> 設定類型 (SettingType)
+                    </label>
+                    <div class="col-md-9">
+                        <select asp-for="SettingType" class="form-control">
+                            <option value="String">String (字串)</option>
+                            <option value="Number">Number (數字)</option>
+                            <option value="Boolean">Boolean (布林值)</option>
+                            <option value="JSON">JSON (JSON 物件)</option>
+                        </select>
+                        <span asp-validation-for="SettingType" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            設定值的資料類型
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 唯讀 -->
+                <div class="form-group row">
+                    <label asp-for="IsReadOnly" class="col-md-3 col-form-label text-md-right">
+                        唯讀 (IsReadOnly)
+                    </label>
+                    <div class="col-md-9">
+                        <div class="custom-control custom-checkbox">
+                            <input asp-for="IsReadOnly" class="custom-control-input" type="checkbox" id="isReadOnlyCheck" />
+                            <label class="custom-control-label" for="isReadOnlyCheck">
+                                標記為唯讀（唯讀設定無法刪除）
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            勾選後此設定將無法透過後台刪除，適用於核心設定
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 啟用 -->
+                <div class="form-group row">
+                    <label asp-for="IsActive" class="col-md-3 col-form-label text-md-right">
+                        啟用 (IsActive)
+                    </label>
+                    <div class="col-md-9">
+                        <div class="custom-control custom-checkbox">
+                            <input asp-for="IsActive" class="custom-control-input" type="checkbox" id="isActiveCheck" checked="checked" />
+                            <label class="custom-control-label" for="isActiveCheck">
+                                啟用此設定
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            停用的設定不會被程式讀取
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 按鈕 -->
+                <div class="form-group row">
+                    <div class="col-md-9 offset-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 儲存設定
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 範例說明 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-info">
+                <i class="fas fa-lightbulb"></i> 設定範例
+            </h6>
+        </div>
+        <div class="card-body">
+            <h6>數字類型範例：</h6>
+            <pre class="bg-light p-3">SettingKey: Pet.Interaction.Feed.HungerIncrease
+SettingValue: 10
+SettingType: Number
+Category: Pet</pre>
+
+            <h6>JSON 類型範例：</h6>
+            <pre class="bg-light p-3">SettingKey: Pet.LevelUp.Formula
+SettingValue: {"tier1": {"minLevel": 1, "maxLevel": 10, "formula": "linear"}}
+SettingType: JSON
+Category: Pet</pre>
+
+            <h6>布林值範例：</h6>
+            <pre class="bg-light p-3">SettingKey: SignIn.Streak7Days.HasCoupon
+SettingValue: true
+SettingType: Boolean
+Category: SignIn</pre>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

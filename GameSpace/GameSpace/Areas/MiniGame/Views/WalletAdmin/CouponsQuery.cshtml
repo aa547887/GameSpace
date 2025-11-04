@@ -1,4 +1,5 @@
-﻿@model GameSpace.Areas.MiniGame.Models.ViewModels.WalletCouponsQueryViewModel
+﻿@using GameSpace.Areas.MiniGame.Helpers
+@model GameSpace.Areas.MiniGame.Models.ViewModels.WalletCouponsQueryViewModel
 @{
     ViewData["Title"] = "查詢會員優惠券";
 }
@@ -6,80 +7,73 @@
 @await Html.PartialAsync("_MiniGameAdminTabs")
 
 <!-- 統計卡片區 -->
-@if (Model.Results.TotalCount > 0)
-{
-    var unusedCount = Model.Results.Items.Count(x => x.Status == "未使用");
-    var usedCount = Model.Results.Items.Count(x => x.Status == "已使用");
-    var expiredCount = Model.Results.Items.Count(x => x.Status == "已過期");
-
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">查詢結果</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.Results.TotalCount 筆</div>
-                        </div>
-                        <div class="text-success opacity-50">
-                            <i class="fas fa-ticket-alt fa-2x"></i>
-                        </div>
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-success border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">優惠券總數</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalCoupons 筆</div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-info border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">未使用</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@unusedCount</div>
-                        </div>
-                        <div class="text-info opacity-50">
-                            <i class="fas fa-check-circle fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">已使用</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@usedCount</div>
-                        </div>
-                        <div class="text-primary opacity-50">
-                            <i class="fas fa-shopping-cart fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-danger border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">已過期</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@expiredCount</div>
-                        </div>
-                        <div class="text-danger opacity-50">
-                            <i class="fas fa-times-circle fa-2x"></i>
-                        </div>
+                    <div class="text-success opacity-50">
+                        <i class="fas fa-ticket-alt fa-2x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-}
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-info border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">未使用</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.UnusedCount</div>
+                    </div>
+                    <div class="text-info opacity-50">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-primary border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">已使用</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.UsedCount</div>
+                    </div>
+                    <div class="text-primary opacity-50">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">已過期</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.ExpiredCount</div>
+                    </div>
+                    <div class="text-danger opacity-50">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- 搜尋表單卡片 -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-gradient-success text-white">
-        <h4 class="mb-0"><i class="fas fa-search me-2"></i>會員優惠券查詢</h4>
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0 fw-bold"><i class="fas fa-search me-2"></i>會員優惠券查詢</h4>
     </div>
     <div class="card-body p-4">
         <form method="get" class="row g-3">
@@ -91,8 +85,14 @@
             </div>
             <div class="col-md-3">
                 <div class="form-floating">
-                    <input class="form-control rounded" id="Query_CouponTypeId" name="CouponTypeId" type="number" min="0" value="@(Model.Query.CouponTypeId ?? null)" placeholder="類型 ID" />
-                    <label for="Query_CouponTypeId"><i class="fas fa-tag me-1"></i>優惠券類型 ID</label>
+                    <select class="form-select rounded" id="Query_CouponTypeId" name="CouponTypeId">
+                        <option value="">全部類型</option>
+                        @foreach (var couponType in Model.CouponTypeList)
+                        {
+                            <option value="@couponType.CouponTypeId" selected="@(Model.Query.CouponTypeId == couponType.CouponTypeId)">@couponType.DisplayText</option>
+                        }
+                    </select>
+                    <label for="Query_CouponTypeId"><i class="fas fa-tag me-1"></i>優惠券類型</label>
                 </div>
             </div>
             <div class="col-md-3">
@@ -178,16 +178,9 @@
                                 <td><span class="badge bg-info">@record.UserId</span></td>
                                 <td><strong>@record.UserName</strong></td>
                                 <td><span class="badge bg-light text-dark">@record.CouponTypeName</span></td>
-                                <td><small class="text-muted">@record.AcquiredTime.ToString("yyyy/MM/dd HH:mm")</small></td>
+                                <td><small class="text-muted">@record.AcquiredTime.ToUtc8String("yyyy/MM/dd HH:mm")</small></td>
                                 <td>
-                                    @if (record.UsedTime.HasValue)
-                                    {
-                                        <small class="text-muted">@record.UsedTime.Value.ToString("yyyy/MM/dd HH:mm")</small>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    <small class="text-muted">@record.UsedTime.ToUtc8String("yyyy/MM/dd HH:mm")</small>
                                 </td>
                                 <td class="pe-4"><span class="@statusBadge">@record.Status</span></td>
                             </tr>
