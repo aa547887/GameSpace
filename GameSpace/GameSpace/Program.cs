@@ -1,258 +1,285 @@
-﻿// ---- 服務命名空間（一般 using）----
-// ---- MiniGame Area ----
-using GameSpace.Areas.MiniGame.config;
+﻿// =======================
+// Program.cs（純 Cookie 版；不使用 Identity，不會建立 AspNetUsers）
+// 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
+// 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
+//
+// 【本次關鍵說明】
+// 1) 穢語遮蔽服務 IProfanityFilter 為 Singleton，但「不直接吃 DbContext（Scoped）」：
+//    → 改在服務內使用 IServiceScopeFactory.CreateScope() 取得短命 DbContext（GameSpacedatabaseContext）。
+//    → 因此本檔「不需要」註冊 AddDbContextFactory / AddPooledDbContextFactory。
+// 2) 客訴採「單一前台 Hub」：映射 SupportHub 為 /hubs/support，後台頁也連線到這個端點；並正確啟用 CORS。
+// 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
+// =======================
 
-// ---- 社群 Hub / 過濾器 / 共用登入 ----
-using GameSpace.Areas.social_hub.Auth;          // ★ IUserContextReader, AuthConstants
-using GameSpace.Areas.social_hub.Hubs;
-using GameSpace.Areas.social_hub.Permissions;
-using GameSpace.Areas.social_hub.Services.Abstractions;
-using GameSpace.Areas.social_hub.Services.Application;
-using GameSpace.Data;
-using GameSpace.Infrastructure.Login;
-using GameSpace.Infrastructure.Time;
-using GameSpace.Models;
+using GamiPort.Areas.Forum.Services.Adminpost;
+using GamiPort.Areas.Forum.Services.Leaderboard;
+using GamiPort.Areas.Forum.Services.Me;
+using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
+// ★ 新增：ECPay 服務命名空間
+using GamiPort.Areas.OnlineStore.Payments;
+// 購物車
+using GamiPort.Areas.OnlineStore.Services;
+using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
+using GamiPort.Areas.social_hub.Services.Abstractions;
+using GamiPort.Areas.social_hub.Services.Application;
+
+// === 新增/確認的 using（本檔有用到的服務/端點） ===
+using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
+using GamiPort.Infrastructure.Time;        // ★ IAppClock / AppClock（時間轉換）
+using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http.Connections; // for HttpTransportType
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-
-// ---- ASP.NET Core 路由/DI（為路由列印診斷用）----
+using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
 
-// ---- 型別別名（避免撞名）----
-using IMuteFilterAlias = GameSpace.Areas.social_hub.Services.IMuteFilter;
-using INotificationServiceAlias = GameSpace.Areas.social_hub.Services.INotificationService;
-using ManagerPermissionServiceAlias = GameSpace.Areas.social_hub.Permissions.ManagerPermissionService;
-using MuteFilterAlias = GameSpace.Areas.social_hub.Services.MuteFilter;
-using NotificationServiceAlias = GameSpace.Areas.social_hub.Services.NotificationService;
-
-namespace GameSpace
+namespace GamiPort
 {
-	public class Program
-	{
-		public static async Task Main(string[] args)
-		{
-			var builder = WebApplication.CreateBuilder(args);
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-			// ========== 1) 組態與連線字串 ==========
-			var identityConn = builder.Configuration.GetConnectionString("DefaultConnection")
-				?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-			var gameSpaceConn =
-				builder.Configuration.GetConnectionString("GameSpace")
-				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+            // 連線字串
+            var gameSpaceConn =
+                Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+                Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+                Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+                throw new InvalidOperationException("No valid DB connection string found.");
 
-			// ========== 2) DbContexts ==========
-			builder.Services.AddDbContext<ApplicationDbContext>(opt => opt.UseSqlServer(identityConn));
-			builder.Services.AddDbContext<GameSpacedatabaseContext>(opt => opt.UseSqlServer(gameSpaceConn));
-			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+            // ------------------------------------------------------------
+            // DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
+            // ------------------------------------------------------------
+            builder.Services.AddDbContext<GameSpacedatabaseContext>(options =>
+            {
+                options.UseSqlServer(gameSpaceConn);
+            });
 
-			// ========== 3) Identity ==========
-			builder.Services
-				.AddDefaultIdentity<IdentityUser>(opt => opt.SignIn.RequireConfirmedAccount = true)
-				.AddEntityFrameworkStores<ApplicationDbContext>();
+            // 1) CORS：允許後台的網域/連接埠跨站連線到本服務的 Hub（客訴採單一前台 Hub）
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("SupportCors", policy =>
+                {
+                    policy
+                        .WithOrigins(
+                            "https://localhost:7042", // GameSpace 後台 HTTPS
+                            "http://localhost:5211"   // GameSpace 後台 HTTP
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials(); // Hub 連線需要
+                });
+            });
 
-			// MVC 預設會加這行
-			builder.Services.AddControllersWithViews();
+            // EF 開發者例外頁（顯示完整 EF 例外、/migrations 端點）
+            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+            // 驗證：Cookie
+            builder.Services
+                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(opts =>
+                {
+                    opts.LoginPath = "/Login/Login/Login";
+                    opts.LogoutPath = "/Login/Login/Logout";
+                    opts.AccessDeniedPath = "/Login/Login/Denied";
 
-			// ========== 4) MVC / Razor ==========
-			builder.Services.AddControllersWithViews(o =>
-			{
-				o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
-				// 防止瀏覽器回放舊頁（切帳號時 Sidebar 不會回放舊 HTML）
-				o.Filters.Add(new ResponseCacheAttribute { NoStore = true, Location = ResponseCacheLocation.None });
-			});
-			builder.Services.AddRazorPages();
+                    // Cookie 屬性
+                    opts.Cookie.Name = "GamiPort.User";   // 與後台 Cookie 不同名，避免互蓋
+                    opts.Cookie.HttpOnly = true;
+                    opts.Cookie.SameSite = SameSiteMode.Lax; // Step1 Hub 允許匿名連線，先用 Lax 即可
+                    opts.ExpireTimeSpan = TimeSpan.FromDays(7);
+                    opts.SlidingExpiration = true;
+                });
 
-			// ========== 5) SignalR ==========
-			builder.Services.AddSignalR();
+            // 授權（有 [Authorize] / Policy 時會用到；本案先走預設）
+            builder.Services.AddAuthorization();
 
-			// ========== 6) MiniGame Area 服務 ==========
-			builder.Services.AddMiniGameServices(builder.Configuration);
+            // ------------------------------------------------------------
+            // 專案服務（通知、好友關係等）
+            // ------------------------------------------------------------
+            builder.Services.AddMemoryCache();
+            builder.Services.AddScoped<INotificationStore, NotificationStore>();
+            builder.Services.AddScoped<IRelationService, RelationService>();
 
-			// ========== 7) social_hub 相關服務 ==========
-			builder.Services.AddMemoryCache();
+            // === Chat / 廣播服務（DM 與訊號通知） ===
+            // IChatService：與資料庫互動（寫訊息、計算未讀…）→ 建議 Scoped
+            builder.Services.AddScoped<IChatService, ChatService>();
 
-			builder.Services.Configure<GameSpace.Areas.social_hub.Services.MuteFilterOptions>(o =>
-			{
-				o.MaskStyle = GameSpace.Areas.social_hub.Services.MaskStyle.Asterisks;
-				o.FixedLabel = "【封鎖】";
-				o.FuzzyBetweenCjkChars = true;
-				o.MaskExactLength = false;
-				o.CacheTtlSeconds = 30;
-				o.UsePerWordReplacement = true;
-			});
+            // === 客訴服務 ===
+            builder.Services.AddScoped<ISupportService, SupportService>();
+            builder.Services.AddSingleton<ISupportNotifier, SignalRSupportNotifier>();
 
-			// 時鐘（App 時區）
-			builder.Services.AddSingleton<IAppClock>(sp => new AppClock(TimeZones.Taipei));
+            // IChatNotifier：透過 IHubContext<ChatHub> 對用戶/群組廣播 → 可 Singleton（IHubContext 執行緒安全）
+            builder.Services.AddSingleton<IChatNotifier, SignalRChatNotifier>();
 
-			// 穢語過濾 / 通知
-			builder.Services.AddScoped<IMuteFilterAlias, MuteFilterAlias>();
-			builder.Services.AddScoped<INotificationServiceAlias, NotificationServiceAlias>();
+            // ===== 穢語遮蔽 =====
+            // ProfanityFilter 為 Singleton，但不直接吃 DbContext（Scoped）：
+            // → 服務內部以 IServiceScopeFactory.CreateScope() 取得「短命」DbContext，避免 DI 生命週期衝突。
+            builder.Services.AddSingleton<IProfanityFilter, ProfanityFilter>();
 
-			// 後台 SignalR 支援通知（Singleton）
-			builder.Services.AddSingleton<ISupportNotifier, BackendSignalRSupportNotifier>();
-			// ★ 必須：HttpContext
-			builder.Services.AddHttpContextAccessor();
+            // (D) Forum 模組 Services
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Forums.IForumsService,
+                                       GamiPort.Areas.Forum.Services.Forums.ForumsService>();
+            builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
+                                       GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
+            builder.Services.AddScoped<IMeContentService, MeContentService>();
+            builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+            builder.Services.AddScoped<IPostsService, PostsService>();
 
-			// ★ 這裡改成 Scoped（或 Transient），絕對不要 Singleton
-			builder.Services.AddScoped<IUserContextReader, UserContextReader>();
+            // ------------------------------------------------------------
+            // MVC / RazorPages / JSON 命名策略 & Anti-forgery
+            // ------------------------------------------------------------
+            builder.Services.AddControllersWithViews()
+                // JSON 保留原本的屬性大小寫（不轉 camelCase）
+                .AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
-			// 權限服務（Gate + 細權限）
-			builder.Services.AddScoped<IManagerPermissionService, ManagerPermissionServiceAlias>();
+            builder.Services.AddRazorPages();
 
-			// ========== 8) CORS（可選） ==========
-			var corsOrigins = builder.Configuration.GetSection("Cors:Chat:Origins").Get<string[]>();
-			if (corsOrigins is { Length: > 0 })
-			{
-				builder.Services.AddCors(opt =>
-				{
-					opt.AddPolicy("chat", p => p
-						.WithOrigins(corsOrigins)
-						.AllowAnyHeader()
-						.AllowAnyMethod()
-						.AllowCredentials());
-				});
-			}
+            // AJAX 的防偽 Token（前端請以 header "RequestVerificationToken" 帶入）
+            builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-			// ========== 9) Session ==========
-			builder.Services.AddSession(opt =>
-			{
-				opt.IdleTimeout = TimeSpan.FromMinutes(30);
-				opt.Cookie.HttpOnly = true;
-				opt.Cookie.IsEssential = true;
-				opt.Cookie.SameSite = SameSiteMode.Lax;
-			});
+            // ------------------------------------------------------------
+            // 其他輔助服務（不走 Identity 但仍可用的雜湊、Email、取用 HttpContext）
+            // ------------------------------------------------------------
+            builder.Services.AddHttpContextAccessor();
 
-			// ========== 10) 共用登入介面 ==========
-			builder.Services.AddScoped<ILoginIdentity, CookieAndAdminCookieLoginIdentity>();
+            // 保留原本的服務（不要動）：它自己的 ICurrentUserService
+            // 我們不覆蓋它，以免影響原先依賴；我們另走自己的 IAppCurrentUser。
+            builder.Services.AddScoped<GamiPort.Services.ICurrentUserService, GamiPort.Services.CurrentUserService>();
 
-			// ========== 11) 後台 Cookie 方案（AdminCookie） ==========
-			builder.Services.AddAuthentication(options => { /* 保留 Identity 預設 */ })
-			.AddCookie(AuthConstants.AdminCookieScheme, opt =>
-			{
-				opt.LoginPath = "/Login";
-				opt.LogoutPath = "/Login/Logout";
-				opt.AccessDeniedPath = "/Login/Denied";
-				opt.Cookie.Name = "GameSpace.Admin";
-				opt.SlidingExpiration = true;
-				opt.ExpireTimeSpan = TimeSpan.FromHours(4);
+            // 雜湊服務（升級舊明文密碼用）：IPasswordHasher<User>
+            builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-				// AJAX 401/403 不重導
-				opt.Events = new CookieAuthenticationEvents
-				{
-					OnRedirectToLogin = ctx =>
-					{
-						var isAjax =
-							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
-							|| ctx.Request.Path.StartsWithSegments("/Login/Me", StringComparison.OrdinalIgnoreCase);
+            // 郵件發送（若尚未設定 SMTP，先改成 NullEmailSender 比較保險）
+            builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
-						if (isAjax)
-						{
-							ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-							return Task.CompletedTask;
-						}
-						ctx.Response.Redirect(ctx.RedirectUri);
-						return Task.CompletedTask;
-					},
-					OnRedirectToAccessDenied = ctx =>
-					{
-						var isAjax =
-							string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
-							|| ctx.Request.Headers["Accept"].Any(v => v?.Contains("json", StringComparison.OrdinalIgnoreCase) == true);
-
-						if (isAjax)
-						{
-							ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-							return Task.CompletedTask;
-						}
-						ctx.Response.Redirect(ctx.RedirectUri);
-						return Task.CompletedTask;
-					}
-				};
-			});
+            // ------------------------------------------------------------
+            // ★ 我方統一介面：IAppCurrentUser（集中讀取當前登入者資訊）
+            //   讀取順序：AppUserId Claim -> NameIdentifier（純數字或 "U:<id>" 可解析）
+            //            -> 備援直接查詢資料庫
+            //   並使用 HttpContext.Items 做「同一請求快取」避免多次查詢。
+            // ------------------------------------------------------------
+            builder.Services.AddScoped<IAppCurrentUser, AppCurrentUser>();
 
 
+            // ------------------------------------------------------------
+            // ★ 時間轉換服務：UTC ↔ UTC+8（台灣時間）
+            // 使用 Taipei Standard Time（Asia/Taipei 時區）
+            builder.Services.AddSingleton<IAppClock>(sp =>
+            {
+                var taiwanTz = TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time");
+                return new AppClock(taiwanTz);
+            });
+            // ------------------------------------------------------------
 
-			// ========== 12) 授權政策（需要就用） ==========
-			builder.Services.AddAuthorization(options =>
-			{
-				// MiniGame Area 管理員政策（所有管理控制器必備）
-				options.AddPolicy("AdminOnly", p => p.RequireClaim("IsManager", "true"));
 
-				// Granular permission policies
-				options.AddPolicy("CanManageShopping", p => p.RequireClaim("perm:Shopping", "true"));
-				options.AddPolicy("CanAdmin", p => p.RequireClaim("perm:Admin", "true"));
-				options.AddPolicy("CanMessage", p => p.RequireClaim("perm:Message", "true"));
-				options.AddPolicy("CanUserStatus", p => p.RequireClaim("perm:UserStat", "true"));
-				options.AddPolicy("CanPet", p => p.RequireClaim("perm:Pet", "true"));
-				options.AddPolicy("CanCS", p => p.RequireClaim("perm:CS", "true"));
-			});
+            // ------------------------------------------------------------
+            // MiniGame Area 服務（簽到、寵物、遊戲、錢包等）
+            builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.ISignInService, GamiPort.Areas.MiniGame.Services.SignInService>();
+            builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IPetService, GamiPort.Areas.MiniGame.Services.PetService>();
+            builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IWalletService, GamiPort.Areas.MiniGame.Services.WalletService>();
+            builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IFuzzySearchService, GamiPort.Areas.MiniGame.Services.FuzzySearchService>();
+            builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IGamePlayService, GamiPort.Areas.MiniGame.Services.GamePlayService>();
+            // ------------------------------------------------------------
 
-			// ========== 13) Anti-Forgery 設定 ==========
-			builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
-			var app = builder.Build();
+            // ------------------------------------------------------------
+            // SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
+            // ------------------------------------------------------------
+            builder.Services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;                      // 讓前端拿到更清楚的錯誤
+                options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
+                options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
+            });
 
-			// ========== 14) Middleware 管線 ==========
-			if (app.Environment.IsDevelopment())
-			{
-				app.UseDeveloperExceptionPage();
-			}
-			else
-			{
-				app.UseExceptionHandler("/Home/Maintenance");
-				// app.UseHsts();
-			}
 
-			app.UseStatusCodePagesWithReExecute("/Home/Http{0}");
-			app.UseHttpsRedirection();
-			app.UseStaticFiles();
+            // 購物車＋Session
+            builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddScoped<ICartService, SqlCartService>();
+            builder.Services.AddSession(options =>
+            {
+                options.Cookie.Name = ".GamiPort.Cart.Session";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+                options.IdleTimeout = TimeSpan.FromHours(2);
+            });
+            builder.Services.AddScoped<ILookupService, SqlLookupService>();
 
-			app.UseRouting();
+            // ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
+            builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
+            builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
 
-			if (corsOrigins is { Length: > 0 })
-				app.UseCors("chat");
+            // ------------------------------------------------------------
+            // 建立 App
+            // ------------------------------------------------------------
+            var app = builder.Build();
 
-			app.UseCookiePolicy(new CookiePolicyOptions
-			{
-				MinimumSameSitePolicy = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-				Secure = app.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always
-			});
+            // ------------------------------------------------------------
+            // HTTP Pipeline
+            // ------------------------------------------------------------
+            if (app.Environment.IsDevelopment())
+            {
+                // 顯示 EF 相關的開發頁、/migrations 端點
+                app.UseMigrationsEndPoint();
 
-			// ★ Session 要在 Authentication 之前
-			app.UseSession();
+                // 啟動時快速檢查 DB 連線（提早發現連線字串或權限問題）
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<GameSpacedatabaseContext>();
+                _ = db.Database.CanConnect(); // 回傳 bool；此處只為提早觸發連線測試
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+                app.UseHsts();
+            }
 
-			app.UseAuthentication();
-			app.UseAuthorization();
+            // ------------------------------------------------------------
+            // 啟動時先載入一次穢語規則（建議保留）
+            // 讓 IProfanityFilter 有最新規則可用；之後前端每次進聊天會再帶 nocache=1 強制刷新。
+            // ------------------------------------------------------------
+            using (var scope = app.Services.CreateScope())
+            {
+                var filter = scope.ServiceProvider.GetRequiredService<IProfanityFilter>();
+                filter.ReloadAsync().GetAwaiter().GetResult();
+            }
 
-			// ========== 15) 路由 ==========
-			app.MapControllers();
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+            app.UseRouting();
 
-			app.MapControllerRoute(
-				name: "areas",
-				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+            // ✅ CORS 要在 Routing 後、Auth 前
+            app.UseCors("SupportCors");
 
-			app.MapControllerRoute(
-				name: "default",
-				pattern: "{controller=Home}/{action=Index}/{id?}");
+            // 訂單組使用
+            app.UseSession();     // 必須在 Auth 之前
 
-			app.MapRazorPages();
+            // 驗證一定在授權之前
+            app.UseAuthentication();
+            app.UseAuthorization();
 
-			// ========== 16) SignalR ==========
-			app.MapHub<ChatHub>("/social_hub/chatHub", opts =>
-			{
-				opts.Transports =
-					HttpTransportType.WebSockets |
-					HttpTransportType.ServerSentEvents |
-					HttpTransportType.LongPolling;
-			});
+            // MVC Controllers（含 Attribute Routing）
+            app.MapControllers();
 
-			// ========== 17) 啟動 ==========
-			await app.RunAsync();
-		}
-	}
+            // 傳統路由（先 Areas 再 default）
+            app.MapControllerRoute(
+                name: "areas",
+                pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            // Razor Pages（若你有使用）
+            app.MapRazorPages();
+
+            // ★ DM 的 ChatHub（保留，與客訴無衝突）
+            app.MapHub<ChatHub>("/social_hub/chathub");
+
+            // 客訴 Hub（建議加 RequireCors 指定同一政策）
+            app.MapHub<SupportHub>("/hubs/support").RequireCors("SupportCors");
+
+            app.Run();
+        }
+    }
 }
