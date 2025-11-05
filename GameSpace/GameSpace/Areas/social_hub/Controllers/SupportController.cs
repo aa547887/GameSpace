@@ -355,6 +355,67 @@ namespace GameSpace.Areas.social_hub.Controllers
 		}
 		#endregion
 
+		#region Assignment conversation
+		[HttpGet]
+		public async Task<IActionResult> AssignmentConversation(int id, int aid, int page = 1)
+		{
+			var meId = ResolveManagerId();
+			if (!meId.HasValue) return Unauthorized();
+
+			var t = await _db.SupportTickets.AsNoTracking().FirstOrDefaultAsync(x => x.TicketId == id);
+			if (t == null) return NotFound();
+
+			var (segStart, segEnd, rec) = await GetAssignmentBoundsAsync(id, aid);
+			if (rec == null) return NotFound();
+
+			if (page <= 0) page = 1;
+
+			var baseQ = _db.SupportTicketMessages.AsNoTracking().Where(m => m.TicketId == id);
+			if (segStart != null) baseQ = baseQ.Where(m => m.SentAt >= segStart.Value);
+			if (segEnd != null) baseQ = baseQ.Where(m => m.SentAt < segEnd.Value);
+			baseQ = baseQ.OrderByDescending(m => m.SentAt);
+
+			var total = await baseQ.CountAsync();
+			var pageItems = await baseQ.Skip((page - 1) * MessagePageSize).Take(MessagePageSize).ToListAsync();
+
+			var messagesAsc = pageItems
+				.OrderBy(m => m.SentAt)
+				.Select(m => new SupportMessageVM
+				{
+					MessageId = m.MessageId,
+					TicketId = m.TicketId,
+					SenderUserId = m.SenderUserId,
+					SenderManagerId = m.SenderManagerId,
+					MessageText = m.MessageText ?? string.Empty,
+					SentAt = m.SentAt,
+					ReadByUserAt = m.ReadByUserAt,
+					ReadByManagerAt = m.ReadByManagerAt,
+					IsMine = (m.SenderManagerId != null && m.SenderManagerId.Value == meId.Value)
+				})
+				.ToList();
+
+			var vm = new AssignmentConversationVM
+			{
+				TicketId = t.TicketId,
+				AssignmentId = rec.AssignmentId,
+				UserId = t.UserId,
+				Subject = t.Subject ?? string.Empty,
+				AssignedByManagerId = rec.AssignedByManagerId,
+				FromManagerId = rec.FromManagerId,
+				ToManagerId = rec.ToManagerId,
+				AssignedAt = rec.AssignedAt,
+				NextAssignedAt = segEnd,
+				Note = rec.Note,
+				Messages = messagesAsc,
+				Page = page,
+				PageSize = MessagePageSize,
+				TotalMessages = total
+			};
+
+			return View("AssignmentConversation", vm);
+		}
+		#endregion
+
 		#region Ticket details / Chat
 		        [HttpGet]
 		        public async Task<IActionResult> Ticket(int id, int page = 1)
