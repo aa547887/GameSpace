@@ -90,8 +90,8 @@
                             <div class="cell head">付款方式</div>
 
                             <!-- 列 2：值（＋ 在左、編號在右，同一行） -->
-                            <div class="cell val">
-                                <span class="fw-semibold text-monospace valtext">@oc</span>
+                            <div class="cell val d-flex align-items-center justify-content-between">
+                                @* ★ 新增 d-flex... *@
                                 <button class="btn btn-sm btn-outline-dark btn-toggle me-2"
                                         type="button"
                                         data-bs-toggle="collapse"
@@ -100,10 +100,13 @@
                                         aria-controls="items-@oc">
                                     ＋
                                 </button>
+                                <span class="fw-semibold text-monospace valtext">@oc</span>
                             </div>
+
                             <div class="cell val"><span class="valtext">@created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
                             <div class="cell val"><span class="valtext">@payStatus</span></div>
-                            <div class="cell val text-end">
+                            <div class="cell val text-start">
+                                <!-- ★ 改成靠左 -->
                                 <span class="valtext">@grand.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</span>
                             </div>
                             <div class="cell val"><span class="valtext">@payMethod</span></div>
