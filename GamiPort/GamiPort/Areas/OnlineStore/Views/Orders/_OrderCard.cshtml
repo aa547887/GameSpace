@@ -37,7 +37,7 @@
                 <div class="dot" data-step="2"></div><div class="bar"></div>
                 <div class="dot" data-step="3"></div><div class="bar"></div>
                 <div class="dot" data-step="4"></div>
-            </div>
+            </div>  
             <div class="d-flex justify-content-between">
                 <div class="label">下單</div>
                 <div class="label">已付款</div>
@@ -47,7 +47,10 @@
         </div>
         <div>@(Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</div>
         <div>@(string.IsNullOrEmpty(Model.PayStatus) ? "—" : Model.PayStatus)</div>
-        <div class="fw-bold">NT$ @Model.GrandTotal.ToString("N0")</div>
+        <!-- 金額：★ 左對齊 + 垂直置中（其餘不動） -->
+        <div class="col-12 col-md-2 d-flex align-items-center text-md-start">
+            NT$ @Model.GrandTotal.ToString("N0")
+        </div>
         <div>@(string.IsNullOrEmpty(Model.PayMethod) ? "—" : Model.PayMethod)</div>
         <div class="text-end">
             <button class="btn btn-outline-secondary btn-sm"
@@ -67,8 +70,8 @@
 
     <!-- 展開：明細 + 物流/發票…（先放明細表；你之後可再塞付款/物流紀錄） -->
     <div id="@domId" class="collapse">
-        <div class="px-3 pb-3">
-            <div class="border rounded p-3" id="@domId-items">
+        <div class="px-3 pb-3 ">
+            <div class="rounded p-3 order-items" id="@domId-items">
                 <div class="text-muted">載入中…</div>
             </div>
         </div>

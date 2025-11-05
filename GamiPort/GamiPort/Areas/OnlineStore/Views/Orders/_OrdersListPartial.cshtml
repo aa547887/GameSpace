@@ -16,7 +16,7 @@ else
                         <div class="fw-semibold">@o.OrderCode</div>
                         <div class="small text-muted">@(o.CreatedAt?.ToString("yyyy/MM/dd HH:mm"))</div>
                         <div><span class="badge rounded-pill bg-light text-dark">@o.PayStatus</span></div>
-                        <div class="fs-6 text-end">NT$ @o.GrandTotal.ToString("N0")</div>
+                        <div class="fs-6 text-start">NT$ @o.GrandTotal.ToString("N0")</div>
                         <div>@(string.IsNullOrEmpty(o.PayMethod) ? "—" : o.PayMethod)</div>
                     </div>
 
@@ -29,7 +29,7 @@ else
                             style="position:absolute;top:.5rem;right:.5rem;">
                         <i class="bi bi-plus-lg me-1"></i> 商品明細
                     </button>
-                </div>
+                </div>zz
 
                 <div id="@collapseId" class="collapse" data-bs-parent="#orders-list">
                     <div class="card-body">
@@ -42,29 +42,28 @@ else
 }
 
 
-    <!-- 分頁列（無刷新：a 上掛 data-page，外層 Index 的 JS 會攔截） -->
-    <nav class="mt-3" aria-label="Orders pagination">
-        <ul class="pagination justify-content-center mb-0">
-            @{
-                int p = Model.Page, tp = Math.Max(Model.TotalPages, 1);
-                int prev = Math.Max(1, p - 1);
-                int next = Math.Min(tp, p + 1);
-            }
-            <li class="page-item @(p == 1 ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="@prev">上一頁</a>
+<!-- 分頁列（無刷新：a 上掛 data-page，外層 Index 的 JS 會攔截） -->
+<nav class="mt-3" aria-label="Orders pagination">
+    <ul class="pagination justify-content-center mb-0">
+        @{
+            int p = Model.Page, tp = Math.Max(Model.TotalPages, 1);
+            int prev = Math.Max(1, p - 1);
+            int next = Math.Min(tp, p + 1);
+        }
+        <li class="page-item @(p == 1 ? "disabled" : "")">
+            <a class="page-link" href="#" data-page="@prev">上一頁</a>
+        </li>
+
+        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+        {
+            <li class="page-item @(i == Model.Page ? "active" : "")">
+                <a class="page-link" href="#" data-page="@i">@i</a>
             </li>
+        }
 
-            @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
-            {
-                <li class="page-item @(i == Model.Page ? "active" : "")">
-                    <a class="page-link" href="#" data-page="@i">@i</a>
-                </li>
-            }
-
-            <li class="page-item @(p == tp ? "disabled" : "")">
-                <a class="page-link" href="#" data-page="@next">下一頁</a>
-            </li>
-        </ul>
-    </nav>
-
+        <li class="page-item @(p == tp ? "disabled" : "")">
+            <a class="page-link" href="#" data-page="@next">下一頁</a>
+        </li>
+    </ul>
+</nav>
 
