@@ -37,6 +37,7 @@ namespace GamiPort.Areas.Forum.ApiControllers
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<ForumListItemDto>>> List()
             // 直接把 Service 資料丟回去 → 200 OK + JSON
+
             => Ok(await _svc.GetForumsAsync());
 
         // 2) 取得單一論壇詳情
