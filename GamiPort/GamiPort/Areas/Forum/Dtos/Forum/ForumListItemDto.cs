@@ -4,8 +4,7 @@
       int ForumId,
       int GameId,
       string Name,
-      string? Description
-      
-
+      string? Description,
+      string? ImageUrl = null
   );
 }

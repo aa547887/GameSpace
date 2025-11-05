@@ -20,15 +20,19 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
         public async Task<IReadOnlyList<ForumListItemDto>> GetForumsAsync()
         {
-            return await _db.Forums.AsNoTracking()
-                .OrderBy(f => f.ForumId)//排序
-                .Select(f => new ForumListItemDto(
+            var forumsFromDb = await _db.Forums.AsNoTracking()
+                .OrderBy(f => f.ForumId)
+                .Select(f => new { f.ForumId, f.GameId, f.Name, f.Description })
+                .ToListAsync();
+
+            return forumsFromDb.Select(f => new ForumListItemDto(
                     f.ForumId,
                     f.GameId ?? 0,
                     f.Name,
-                    f.Description
+                    f.Description,
+                    ImageUrl: $"/images/forum/{f.ForumId:D2}{f.Name.Replace("論壇", "").Trim()}.jpg"
                 ))
-                .ToListAsync();
+                .ToList();
         }
 
         public async Task<ForumDetailDto?> GetForumAsync(int forumId)
@@ -197,7 +201,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 select new { f, g };
 
             // 打分排序：精確命中>開頭命中>一般包含
-            var rows = await q
+            var forumsFromDb = await q
                 .Select(x => new
                 {
                     x.f,
@@ -207,15 +211,17 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 })
                 .OrderByDescending(x => x.score)
                 .ThenBy(x => x.f.Name)
-                .Select(x => new ForumListItemDto(
-                    x.f.ForumId,
-                    x.f.GameId ?? 0,
-                    x.f.Name,
-                    x.f.Description
-                ))
+                .Select(x => new { x.f.ForumId, x.f.GameId, x.f.Name, x.f.Description })
                 .ToListAsync(ct);
 
-            return rows;
+            return forumsFromDb.Select(f => new ForumListItemDto(
+                    f.ForumId,
+                    f.GameId ?? 0,
+                    f.Name,
+                    f.Description,
+                    ImageUrl: $"/images/forum/{f.ForumId:D2}{f.Name.Replace("論壇", "").Trim()}.jpg"
+                ))
+                .ToList();
         }
 
         public async Task<ForumDetailDto?> GetForumByGameNameAsync(
