@@ -31,8 +31,11 @@
             box-shadow: 0 12px 32px rgba(13,110,253,.35);
             cursor: pointer;
             font-size: 22px;
-            cursor: pointer;
-            box-shadow: 0 12px 32px rgba(13,110,253,.35);
+            transition: transform 0.3s cubic-bezier(.25, .8, .25, 1);
+        }
+
+        .gp-fab.open .fab-main {
+            transform: rotate(135deg);
         }
 
         /* 展開容器 */
@@ -110,6 +113,7 @@
         }
 
         .gp-fab .gp-mini-fab:hover {
+            background-color: #f0f0f0;
             transform: translateY(0) scale(1.05);
         }
 
@@ -201,18 +205,18 @@
 
 <div class="gp-fab" id="QuickFab" aria-hidden="false">
     <!-- 主「＋」 -->
-    <button class="fab-main" id="fabMain" aria-expanded="false" title="快速動作">＋</button>
+    <button class="fab-main" id="fabMain" aria-expanded="false" title="快速動作"><i class="bi bi-plus-lg"></i></button>
 
     <div class="fab-actions" aria-hidden="true">
         <!-- 動作1：好友清單 -->
         <div class="fab-wrap">
-            <button class="gp-mini-fab" id="fabFriends" aria-label="好友清單">💬</button>
+            <button class="gp-mini-fab" id="fabFriends" aria-label="好友清單"><i class="bi bi-people-fill"></i></button>
             <div class="fab-tip">好友清單</div>
         </div>
 
         <!-- 動作3：通知 -->
         <div class="fab-wrap">
-            <button class="gp-mini-fab" id="fabNotifications" aria-label="通知">🔔</button>
+            <button class="gp-mini-fab" id="fabNotifications" aria-label="通知"><i class="bi bi-bell-fill"></i></button>
             <div class="fab-tip">通知</div>
         </div>
 
