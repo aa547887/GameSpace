@@ -2,128 +2,118 @@
 @using GamiPort.Services
 @{
     ViewData["Title"] = "編輯個人資料";
+    var defaultAvatar = Url.Content("~/images/預設人物.png"); // 預設頭像
+    string? imgSrc = null;
+
+    if (Model?.UserPicture != null && Model.UserPicture.Length > 0)
+    {
+        var b64 = Convert.ToBase64String(Model.UserPicture);
+        imgSrc = $"data:image/*;base64,{b64}";
+    }
 }
 
 <div class="container py-4" style="max-width: 980px;">
+
+    <!-- 頁首：與 Details 對齊 -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">@ViewData["Title"]</h3>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">返回檢視</a>
+            <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">
+                返回檢視
+            </a>
         </div>
     </div>
 
+    @* 成功訊息 *@
     @if (TempData["Success"] is string ok)
     {
         <div class="alert alert-success">@ok</div>
     }
 
-    <form asp-area="Login" asp-controller="Introduce" asp-action="Edit" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
-        @Html.AntiForgeryToken()
-
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
-
-        <div class="row g-4">
-            <!-- 左：可編輯 -->
-            <div class="col-12 col-lg-8">
-                <div class="mb-3">
-                    <label class="form-label" asp-for="UserNickName">暱稱</label>
-                    <input class="form-control" asp-for="UserNickName" maxlength="30" />
-                    <span class="text-danger" asp-validation-for="UserNickName"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label d-block">性別</label>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" asp-for="Gender" id="genderM" value="M" />
-                        <label class="form-check-label" for="genderM">男 </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" asp-for="Gender" id="genderF" value="F" />
-                        <label class="form-check-label" for="genderF">女 </label>
-                    </div>
-                    <span class="text-danger" asp-validation-for="Gender"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" asp-for="Cellphone">手機</label>
-                    <input class="form-control" asp-for="Cellphone" maxlength="20" />
-                    <span class="text-danger" asp-validation-for="Cellphone"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" asp-for="Address">地址</label>
-                    <input class="form-control" asp-for="Address" maxlength="200" />
-                    <span class="text-danger" asp-validation-for="Address"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" asp-for="UserIntroduce1">自我介紹</label>
-                    <textarea class="form-control" asp-for="UserIntroduce1" rows="5"></textarea>
-                    <span class="text-danger" asp-validation-for="UserIntroduce1"></span>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label">大頭貼(非必填)</label>
-                    <input type="file" name="userPictureFile" class="form-control" accept="image/*" />
-                </div>
-            </div>
-
-            <!-- 右：不可編輯（唯讀） -->
-            <div class="col-12 col-lg-4">
-                <div class="mb-3 text-center">
-                    @{
-                        // 預設頭像（共用常數）
-                        var defaultAvatar = Url.Content("~/images/預設人物.png"); ;
-
-                        // 若資料庫有頭像位元組就顯示 base64，否則使用預設頭像
-                        string? imgSrc = null;
-                        if (Model?.UserPicture != null && Model.UserPicture.Length > 0)
-                        {
-                            var b64 = Convert.ToBase64String(Model.UserPicture);
-                            imgSrc = $"data:image/*;base64,{b64}";
-                        }
-                        else
-                        {
-                            imgSrc = defaultAvatar; // ← 使用你宣告的預設圖
-                        }
-                    }
-                    <img src="@imgSrc"
-                         alt="頭像預覽" class="rounded-circle mb-2" style="width: 120px; height: 120px; object-fit: cover;" />
-                    <div class="text-muted small">目前頭像</div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">使用者編號</label>
-                    <input class="form-control" value="@Model.UserId" readonly />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">身分證/識別碼</label>
-                    <input class="form-control" value="@Model.IdNumber" readonly />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input class="form-control" value="@Model.Email" readonly />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">生日</label>
-                    <input class="form-control" value="@Model.DateOfBirth.ToString("yyyy-MM-dd")" readonly />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">建立時間</label>
-                    <input class="form-control" value="@Model.CreateAccount.ToString("yyyy-MM-dd HH:mm:ss")" readonly />
+    @* 主要卡片（與 Details 同風格外框） *@
+    <div class="card shadow-sm overflow-hidden">
+        <!-- 頭像區（與 Details 視覺一致：左下角頭像、右側基本資訊） -->
+        <div class="position-relative bg-light" style="min-height: 140px;">
+            <div class="position-absolute bottom-0 start-0 p-3 d-flex align-items-center gap-3 w-100">
+                <img src="@(imgSrc ?? defaultAvatar)" alt="頭像"
+                     class="rounded-circle border bg-white"
+                     style="width:96px;height:96px;object-fit:cover;" />
+                <div class="pb-2">
+                    <div class="fw-semibold fs-5">@Model.UserNickName</div>
                 </div>
             </div>
         </div>
 
-        <div class="d-flex gap-2 justify-content-end mt-2">
-            <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">取消</a>
-            <button type="submit" class="btn btn-primary">儲存變更</button>
+        <div class="card-body">
+            @Html.AntiForgeryToken()
+            <form asp-area="Login" asp-controller="Introduce" asp-action="Edit" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                @* 驗證摘要 *@
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+                <div class="row g-3">
+                    <!-- 暱稱 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">暱稱</label>
+                        <input asp-for="UserNickName" class="form-control" />
+                        <span asp-validation-for="UserNickName" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 性別 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label d-block">性別</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Gender" id="gM" value="M" @(Model.Gender == "M" ? "checked" : "")>
+                                <label class="form-check-label" for="gM">男性</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Gender" id="gF" value="F" @(Model.Gender == "F" ? "checked" : "")>
+                                <label class="form-check-label" for="gF">女性</label>
+                            </div>
+                        </div>
+                        <span class="text-danger small" data-valmsg-for="Gender"></span>
+                    </div>
+
+                    <!-- 手機 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">手機</label>
+                        <input asp-for="Cellphone" class="form-control" />
+                        <span asp-validation-for="Cellphone" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 地址 -->
+                    <div class="col-12">
+                        <label class="form-label">地址</label>
+                        <input asp-for="Address" class="form-control" />
+                        <span asp-validation-for="Address" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 自我介紹 -->
+                    <div class="col-12">
+                        <label class="form-label">自我介紹</label>
+                        <textarea asp-for="UserIntroduce1" class="form-control" rows="4" placeholder="寫點關於你的事…"></textarea>
+                        <span asp-validation-for="UserIntroduce1" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 頭像上傳 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">更新頭像（選填）</label>
+                        <input class="form-control" type="file" name="userPictureFile" accept="image/*" />
+                        <div class="form-text">建議 1:1 比例，大小 2MB 以內。</div>
+                    </div>
+                </div>
+
+                @* ❗下列欄位在 Edit 中完全不顯示：UserId、IdNumber、Email、DateOfBirth、CreateAccount *@
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">儲存變更</button>
+                    <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">取消</a>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 
 @section Scripts {

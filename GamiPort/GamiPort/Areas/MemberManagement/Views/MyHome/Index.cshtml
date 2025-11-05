@@ -25,7 +25,7 @@
 
 <div class="container" style="max-width: 1000px;">
     <!-- 頁首：暱稱＋造訪次數 -->
-    <div class="position-relative mb-2 py-2">
+    <div class="position-relative  py-4" style="height: 85px;" right: 0px;">
         <!-- 中間置中的標題 -->
         <h5 class="fw-semibold text-center m-0">@Model.UserNickName 的小屋</h5>
 
@@ -40,6 +40,7 @@
     @Html.AntiForgeryToken()
 
     <!-- 頭像＋背景區塊 -->
+    
     <div class="position-relative border rounded overflow-hidden mb-3">
         <!-- 背景主題圖：填滿寬度，固定高度 200px，溢出裁切 -->
         <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 200px; object-fit: cover;" />
@@ -50,6 +51,7 @@
                  style="width: 150px; height: 150px; object-fit: cover;" />
         </div>
     </div>
+    
 
     <!-- 關係狀態即時訊息（除錯/提示用）(先不顯示) -->
     @* <div id="rel-status" class="mt-2 small text-muted"></div> *@
