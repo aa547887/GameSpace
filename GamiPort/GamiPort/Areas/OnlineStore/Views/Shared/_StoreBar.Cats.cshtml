@@ -1,7 +1,7 @@
 @using GamiPort.Models
 @using Microsoft.EntityFrameworkCore;
 @inject GameSpacedatabaseContext db
-10111101
+
 
 <nav id="storeCats" class="store-cats sticky-top bg-white border-top border-bottom">
     <div class="container-xxl position-relative">
@@ -16,17 +16,17 @@
             </li>
 
             <!-- Quick Filters (你給的固定項目) -->
-            <li class="ms-2 me-1 text-muted small d-none d-lg-inline">快速：</li>
+            @* <li class="ms-2 me-1 text-muted small d-none d-lg-inline">快速：</li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=NS">NS</a></li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=PS5">PS5</a></li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=PC">PC</a></li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&genre=RPG">RPG</a></li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&genre=ACT">ACT</a></li>
-            <li class="vr d-none d-lg-inline mx-1"></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame">全部周邊</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=figure">公仔</a></li>
+            <li class="vr d-none d-lg-inline mx-1"></li> *@
+            @* <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame">全部周邊</a></li> *@
+            @* <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=figure">公仔</a></li>
             <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=apparel">服飾</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=card">點數卡</a></li>
+            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=card">點數卡</a></li> *@
 
             <li class="ms-auto"></li>
 
@@ -107,15 +107,15 @@
         transition: transform .25s ease, box-shadow .2s ease;
     }
 
-    #storeCats.sc-hide {
-        transform: translateY(-100%);
-        box-shadow: none;
-    }
+        #storeCats.sc-hide {
+            transform: translateY(-100%);
+            box-shadow: none;
+        }
 
-    #storeCats.sc-show {
-        transform: translateY(0);
-        box-shadow: 0 6px 22px rgba(0,0,0,.08);
-    }
+        #storeCats.sc-show {
+            transform: translateY(0);
+            box-shadow: 0 6px 22px rgba(0,0,0,.08);
+        }
 
     .store-cats-list {
         list-style: none;
@@ -187,10 +187,30 @@
     }
 
     /* Other existing styles... */
-    .hover-dd { position: relative; }
-    .hover-dd .dropdown-menu { display: none; position: absolute; top: calc(100% + .5rem); left: 0; border-radius: 14px; padding: .5rem; z-index: 1060; background: #fff; }
-    .store-cats, .container-xxl { overflow: visible !important; }
-    .suppliers-menu { max-height: 50vh; overflow-y: auto; min-width: 260px; }
+    .hover-dd {
+        position: relative;
+    }
+
+        .hover-dd .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + .5rem);
+            left: 0;
+            border-radius: 14px;
+            padding: .5rem;
+            z-index: 1060;
+            background: #fff;
+        }
+
+    .store-cats, .container-xxl {
+        overflow: visible !important;
+    }
+
+    .suppliers-menu {
+        max-height: 50vh;
+        overflow-y: auto;
+        min-width: 260px;
+    }
 
     @@media (max-width: 992px) {
         .store-cats-list {
@@ -199,6 +219,41 @@
             padding: .4rem .5rem;
         }
     }
+
+    /* Jelly / 果凍感：圓角 + 玻璃感 + 微陰影 */
+    .cats-jellybar {
+        display: flex;
+        justify-content: center;
+        gap: .5rem;
+    }
+
+    .cats-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .425rem .9rem;
+        border-radius: 999px;
+        backdrop-filter: blur(6px);
+        background: rgba(255,255,255,.6);
+        border: 1px solid rgba(255,255,255,.65);
+        box-shadow: 0 4px 14px rgba(0,0,0,.08);
+        transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+        text-decoration: none;
+        color: #111;
+    }
+
+        .cats-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(0,0,0,.12);
+        }
+
+        .cats-pill:active {
+            transform: translateY(0);
+        }
+
+        .cats-pill .bi {
+            font-size: 1rem;
+        }
 </style>
 
 <script>
@@ -223,12 +278,12 @@
             const goingUp = y < lastY - 10;
 
             if (y > (topBar.offsetHeight + catBar.offsetHeight)) { // Start hiding only after scrolling past both bars
-                if(goingDown){ 
-                    catBar.classList.remove('sc-show'); 
-                    catBar.classList.add('sc-hide'); 
-                } else if(goingUp){ 
-                    catBar.classList.remove('sc-hide'); 
-                    catBar.classList.add('sc-show'); 
+                if(goingDown){
+                    catBar.classList.remove('sc-show');
+                    catBar.classList.add('sc-hide');
+                } else if(goingUp){
+                    catBar.classList.remove('sc-hide');
+                    catBar.classList.add('sc-show');
                 }
             } else {
                 // Keep it shown when near the top
@@ -256,5 +311,27 @@
             // Re-calculate on window resize
             window.addEventListener('resize', setTopPosition);
         });
+
+          // 共用導頁：把條件轉成 /OnlineStore/Browse 的 querystring
+    function goToBrowse(params){
+      const url = new URL('/OnlineStore/Browse', location.origin);
+      // 只帶我們想帶的參數（與你的 GetProducts 對齊）
+      const allow = ['q','type','platformId','merchTypeId','priceMin','priceMax','sort','tag'];
+      Object.entries(params||{}).forEach(([k,v])=>{
+        if(v!==undefined && v!==null && v!==''){
+          if(allow.includes(k)) url.searchParams.set(k, v);
+        }
+      });
+      location.href = url.toString();
+    }
+
+    // 綁定：新品 / 折扣
+    document.addEventListener('click', (e)=>{
+      const a = e.target.closest('[data-cmd="go-browse"]');
+      if(!a) return;
+      const sort = a.getAttribute('data-sort') || undefined;
+      const tag  = a.getAttribute('data-tag')  || undefined;
+      goToBrowse({ sort, tag });
+    });
     })();
 </script>

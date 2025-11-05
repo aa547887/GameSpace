@@ -1,22 +1,35 @@
 ﻿using System;
 
-namespace GameSpace.Areas.OnlineStore.ViewModels
+// Areas/OnlineStore/ViewModels/ProductCardVM.cs
+namespace GamiPort.Areas.OnlineStore.ViewModels
 {
     public class ProductCardVM
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
-        public string ProductType { get; set; } = "";        // 你的 S_ProductInfos.ProductType
+        public string ProductType { get; set; } = ""; // "Game" / "Other"
+        public string? PlatformName { get; set; }     // 遊戲平台
+        public string? PeripheralTypeName { get; set; } // 周邊類別
         public decimal Price { get; set; }
         public string CurrencyCode { get; set; } = "TWD";
-        public string CoverUrl { get; set; } = "";
-        public bool IsPreorder { get; set; }                  // S_ProductInfos.IsPreorderEnabled
+        public string? CoverUrl { get; set; }
+        public string? ProductCode { get; set; }
+        public DateTime? PublishAt { get; set; }
+    }
 
-        // 額外標籤（遊戲）
-        public string? PlatformName { get; set; }             // 例如：NS / PS5 / PC 等（從 S_GameProductDetails or 關聯表）
-        public string? GenreName { get; set; }                // 例如：RPG / ACT
-        // 周邊
-        public string? PeripheralTypeName { get; set; }       // 例如：公仔 / 服飾 / 週邊分類
+    public class ProductQuery // [FromQuery]用這個吃
+    {
+        public string? Q { get; set; } = "";
+        public string Sort { get; set; } = "newest"; // newest | price_asc | price_desc | random
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 40;
+
+        // 類別篩選（預留）
+        public int? PlatformId { get; set; }
+        public int? GenreId { get; set; }
+        public int? MerchTypeId { get; set; }
+        public bool? NewOnly { get; set; } // 新品（最近 N 天）
+        public bool? DiscountOnly { get; set; } // 折扣（未來你加上價格/折扣表即可）
     }
 
     public class ProductDetailVM
@@ -47,7 +60,9 @@ namespace GameSpace.Areas.OnlineStore.ViewModels
 
     public class PagedResult<T>
     {
+        public IReadOnlyList<T> Items { get; set; } = Array.Empty<T>();
+        public int Page { get; set; }
+        public int PageSize { get; set; }
         public int TotalCount { get; set; }
-        public T[] Items { get; set; } = Array.Empty<T>();
     }
 }

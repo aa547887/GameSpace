@@ -15,7 +15,7 @@
 //}
 using Microsoft.AspNetCore.Mvc;
 
-namespace GameSpace.Areas.OnlineStore.Controllers
+namespace Gamiports.OnlineStore.Controllers
 {
     [Area("OnlineStore")]
     public class BrowseController : Controller

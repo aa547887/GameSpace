@@ -1,7 +1,7 @@
-﻿using GameSpace.Areas.OnlineStore.ViewModels;
+﻿using GamiPort.Areas.OnlineStore.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GameSpace.Areas.OnlineStore.Controllers
+namespace GamiPort.OnlineStore.Controllers
 {
     [Area("OnlineStore")]
     public class ProductController : Controller

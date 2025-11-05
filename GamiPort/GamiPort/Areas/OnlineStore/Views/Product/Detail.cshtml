@@ -45,7 +45,7 @@
 @section Scripts {
     <script>
         const pid = document.getElementById('app').dataset.pid;
-        const api = `/OnlineStore/api/StoreApi/product-detail/${pid}`;
+        const api = `/OnlineStore/api/StoreApi/${pid}`;
 
         function money(v){
           return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);

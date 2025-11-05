@@ -1,0 +1,80 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "我的收藏";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // 依你專案實際路徑調整
+}
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">我的收藏</h2>
+        <div>
+            <select id="fav-sort" class="form-select form-select-sm">
+                <option value="newest">最新加入</option>
+                <option value="price_asc">價格低到高</option>
+                <option value="price_desc">價格高到低</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="fav-list" class="row g-3"></div>
+    <div id="fav-empty" class="text-center text-muted py-5 d-none">尚無收藏。</div>
+</div>
+
+@section Scripts {
+    <script>
+        const FAV_LIST_API = "/OnlineStore/api/StoreApi/favorites";
+        const DEMO_USER_ID = 10000002; // 報告可改成 10000200
+
+        function renderCard(x){
+          return `
+            <div class="col-6 col-md-4 col-lg-3">
+              <div class="card h-100 shadow-sm">
+                <div class="position-relative">
+                  <img src="${x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg'}" class="card-img-top" alt="${x.productName}">
+                  <a class="position-absolute top-0 end-0 m-2 text-danger">
+                    <i class="bi bi-heart-fill"></i>
+                  </a>
+                </div>
+                <div class="card-body">
+                  <div class="small text-muted">${x.platformName ?? x.peripheralTypeName ?? ''}</div>
+                  <h6 class="card-title mb-2 text-truncate">${x.productName}</h6>
+                  <div class="fw-bold">${new Intl.NumberFormat('zh-TW',{style:'currency',currency:x.currencyCode||'TWD',minimumFractionDigits:0}).format(x.price||0)}</div>
+                </div>
+                <div class="card-footer bg-white border-0 pt-0">
+                  <a class="btn btn-sm btn-dark w-100" href="/OnlineStore/Browse/Detail/${x.productId}">查看商品</a>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        function sortItems(items, key){
+          if(key==='price_asc') return items.sort((a,b)=>(a.price??0)-(b.price??0));
+          if(key==='price_desc') return items.sort((a,b)=>(b.price??0)-(a.price??0));
+          return items; // newest：先不做時間排序，保持 API 原順序
+        }
+
+        async function loadFavorites(){
+          const res = await fetch(`${FAV_LIST_API}?userId=${DEMO_USER_ID}`);
+          if(!res.ok){ document.getElementById('fav-empty').classList.remove('d-none'); return; }
+          const data = await res.json();
+
+          const sortKey = document.getElementById('fav-sort').value;
+          const items = sortItems(data, sortKey);
+
+          const list = document.getElementById('fav-list');
+          const empty = document.getElementById('fav-empty');
+          if(!items || items.length===0){
+            list.innerHTML = '';
+            empty.classList.remove('d-none');
+            return;
+          }
+          empty.classList.add('d-none');
+          list.innerHTML = items.map(renderCard).join('');
+        }
+
+        document.getElementById('fav-sort').addEventListener('change', loadFavorites);
+        loadFavorites();
+    </script>
+}
+
