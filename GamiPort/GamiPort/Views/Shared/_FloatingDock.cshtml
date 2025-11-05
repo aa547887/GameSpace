@@ -290,6 +290,17 @@
       const scrollToBottom= ()=>{ bodyEl.scrollTop = bodyEl.scrollHeight; };
       const gpCensor      = (s)=> (window.__gpProfanity?.censor?.(s) ?? s);
 
+      function appendSystemMessage(text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.style.textAlign = 'center';
+        msgDiv.style.padding = '10px';
+        msgDiv.style.color = '#6c757d';
+        msgDiv.style.fontSize = '0.9rem';
+        msgDiv.textContent = text;
+        bodyEl.appendChild(msgDiv);
+        scrollToBottom();
+      }
+
       function toArraySafe(raw){
         try{ if(typeof raw==='string' && raw.trim()!=='') raw=JSON.parse(raw); }catch{ return []; }
         if(Array.isArray(raw)) return raw;
@@ -481,6 +492,16 @@
                   // 通知好友清單更新預覽/時間置頂
                   window.dispatchEvent(new CustomEvent('gp-chat-latest',{ detail:{peerId, content, iso} }));
                 });
+
+                // ★ 關係變更時鎖定輸入
+                _conn.on("FriendRemoved", friendId => {
+                    if (String(friendId) !== String(peerId)) return;
+
+                    input.disabled = true;
+                    btnSend.disabled = true;
+                    input.placeholder = '您與此使用者已不再是好友，無法傳送訊息';
+                    appendSystemMessage('您與此使用者已不再是好友或已被封鎖。');
+                });
       
                 // 對方讀到（把我方泡泡 stamp 改「已讀」）
                 _conn.on("ReadReceipt", payload=>{
@@ -563,9 +584,14 @@
 
       /* ---------- 對外 API：開窗（先刷新規則 → 再載入歷史） ---------- */
       async function openDock(uid, name){
+        // Reset lock state
+        input.disabled = false;
+        btnSend.disabled = false;
+        input.placeholder = '輸入訊息...';
+
         peerId  = String(uid||'').trim();
         peerName= name || ('朋友 #'+peerId);
-        title.textContent = `朋友 #${peerId}`;
+        title.textContent = peerName;
 
         showDock();
 

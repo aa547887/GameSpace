@@ -9,8 +9,6 @@ using System.Drawing;
 
 namespace GamiPort.Areas.Forum.ApiControllers
 {
-
-
     // 把這支 Controller 放到 "Forum" Area（路由/檔案歸位）
     [Area("Forum")]
 

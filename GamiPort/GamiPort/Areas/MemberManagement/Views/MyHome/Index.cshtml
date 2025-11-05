@@ -23,12 +23,16 @@
     var targetUserId = Model.OwnerUserId;
 }
 
-<div class="container py-3" style="max-width: 1000px;">
+<div class="container" style="max-width: 1000px;">
     <!-- 頁首：暱稱＋造訪次數 -->
-    <div class="mb-2 d-flex align-items-center justify-content-center text-center">
-        <div class="fs-5 fw-semibold">
-            <span class="me-2 fw-semibold">@Model.UserNickName 的小屋</span>
-            <small class="text-muted">被造訪次數：@Model.VisitCount</small>
+    <div class="position-relative mb-2 py-2">
+        <!-- 中間置中的標題 -->
+        <h5 class="fw-semibold text-center m-0">@Model.UserNickName 的小屋</h5>
+
+        <!-- 右下角的造訪次數 -->
+        <div class="position-absolute text-muted small"
+             style="right: 16px; bottom: 0;">
+            被造訪次數：@Model.VisitCount
         </div>
     </div>
 
@@ -40,10 +44,10 @@
         <!-- 背景主題圖：填滿寬度，固定高度 200px，溢出裁切 -->
         <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 200px; object-fit: cover;" />
         <!-- 使用者頭像：固定大小 96x96，圓形，疊在左下角 -->
-        <div class="position-absolute" style="left: 16px; bottom: -32px;">
+        <div class="position-absolute" style="left: 30px; top: 30px;">
             <img src="@Model.UserPictureSrc" alt="UserPicture"
                  class="rounded-circle border bg-white"
-                 style="width: 96px; height: 96px; object-fit: cover;" />
+                 style="width: 150px; height: 150px; object-fit: cover;" />
         </div>
     </div>
 
@@ -270,28 +274,38 @@
                 });
 
                 bind('rejectFriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'reject' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('reject'); refreshRelation(); });
+                    if (confirm('您確定要拒絕此好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'reject' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('reject'); refreshRelation(); });
+                    }
                 });
 
                 bind('cancelFriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'cancel_request' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('cancel_request'); refreshRelation(); });
+                    if (confirm('您確定要取消已送出的好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'cancel_request' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('cancel_request'); refreshRelation(); });
+                    }
                 });
 
                 bind('unfriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unfriend' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unfriend'); refreshRelation(); });
+                    if (confirm('您確定要解除好友關係嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unfriend' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unfriend'); refreshRelation(); });
+                    }
                 });
 
                 bind('blockUserBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'block' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('block'); refreshRelation(); });
+                    if (confirm('您確定要封鎖此使用者嗎？封鎖後將無法再收到對方的訊息。')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'block' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('block'); refreshRelation(); });
+                    }
                 });
 
                 bind('unblockUserBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unblock' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unblock'); refreshRelation(); });
+                    if (confirm('您確定要解除封鎖此使用者嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unblock' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unblock'); refreshRelation(); });
+                    }
                 });
             }
 

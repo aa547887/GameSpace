@@ -297,8 +297,8 @@
 
       /* ---------------- 生成一列 ---------------- */
       function makeRow(friend){
-        const id   = String(friend.FriendUserId ?? friend.userId ?? '').trim(); // Changed to FriendUserId
-        const base = (friend.FriendName || friend.fullName || friend.displayName || ('朋友 #'+id)).trim(); // Changed to FriendName
+        const id   = String(friend.friendUserId || friend.FriendUserId || friend.userId || '').trim();
+        const base = (friend.friendName || friend.FriendName || friend.fullName || friend.displayName || ('朋友 #'+id)).trim();
         const nick = (friend.nickname || friend.remark || '').trim();
 
         const row=document.createElement('div');
@@ -339,6 +339,10 @@
 
       /* ---------------- 初始化載入 ---------------- */
       async function loadFriends(){
+        if (body.querySelector('.fd-row')) {
+            console.log('Friend list already populated, skipping full load.');
+            return;
+        }
         body.innerHTML='<div class="fd-empty">讀取中…</div>';
         const friends = await fetchFriends();
         console.log('Friends data received:', friends); // Added console.log
@@ -385,6 +389,33 @@
             const tEl=findTimeEl(pid); if(tEl && iso) tEl.textContent = GPTime.hm(iso);
             if(prev !== '') setPreview(pid, prev);
           });
+
+          // ★ 即時新增好友
+          conn.on("FriendAdded", friendData => {
+            if (!friendData) return;
+            const friendId = String(friendData.friendUserId || '');
+            if (!friendId || findRow(friendId)) return; // 如果沒有 ID 或好友已在列表中，則不處理
+
+            const emptyMsg = body.querySelector('.fd-empty');
+            if (emptyMsg) emptyMsg.remove(); // 如果有「尚無好友」的訊息，先移除
+
+            const newRow = makeRow(friendData);
+            body.insertBefore(newRow, body.firstChild); // 將新好友加到列表頂端
+          });
+
+          // ★ 即時移除好友
+          conn.on("FriendRemoved", friendId => {
+            const friendIdStr = String(friendId || '');
+            if (!friendIdStr) return;
+            const rowToRemove = findRow(friendIdStr);
+            if (rowToRemove) {
+              rowToRemove.remove();
+            }
+            if (body.children.length === 0) {
+              body.innerHTML = '<div class="fd-empty">尚無好友</div>';
+            }
+          });
+
         }catch(e){ console.warn('[FriendDock] Hub bind fail:', e); }
       })();
 
@@ -424,7 +455,11 @@
         },
         hide: ()=> dock.classList.remove('open'),
         toggle: ()=> (dock.classList.contains('open')? api.hide(): api.show()),
-        refresh: async ()=>{ dock.dataset.loaded=''; await api.show(); }
+        refresh: async ()=>{ 
+            body.innerHTML = ''; // Force clear
+            dock.dataset.loaded=''; 
+            await api.show(); 
+        }
       };
       window.FriendDock = api;
       window.dispatchEvent(new Event('gp-friend-ready'));

@@ -198,6 +198,14 @@ createApp({
             }
         }, // 👈 這裡一定要有逗號！！！
 
+        formatDateTime(isoString) {
+            if (!isoString) return '';
+            const dateKey = GPTime.dateKey(isoString);
+            const hm = GPTime.hm(isoString);
+            const prettyDate = GPTime.prettyKey(dateKey);
+            return `${prettyDate} ${hm}`;
+        },
+
         async onTogglePostLike(p) {
             try {
                 const r = await fetch(`/api/forum/posts/${p.postId}/like`, { method: 'POST' });
@@ -233,8 +241,8 @@ createApp({
     <div v-if="state.thread" class="mb-3">
       <h3 class="mb-1">{{ state.thread.title }}</h3>
       <div class="text-muted small">
-        建立 {{ state.thread.createdAt }}
-        · 最後回覆 {{ state.thread.lastReplyAt || state.thread.updatedAt || state.thread.createdAt }}
+        建立 {{ formatDateTime(state.thread.createdAt) }}
+        · 最後回覆 {{ formatDateTime(state.thread.lastReplyAt || state.thread.updatedAt || state.thread.createdAt) }}
         · 回覆 {{ state.thread.replyCount }}
         · 讚 {{ state.likeStatus.likeCount }}
       </div>
@@ -267,7 +275,7 @@ createApp({
               {{ p.authorName || ('user_' + p.authorId) }}
             </a>
           </div>
-          <small class="text-muted">{{ new Date(p.createdAt).toLocaleString() }}</small>
+          <small class="text-muted">{{ formatDateTime(p.createdAt) }}</small>
         </div>
 
         <div class="mt-2" v-html="p.contentHtml || p.contentMd"></div>
