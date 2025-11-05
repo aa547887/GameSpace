@@ -21,7 +21,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
         public async Task<IReadOnlyList<ForumListItemDto>> GetForumsAsync()
         {
             return await _db.Forums.AsNoTracking()
-                .OrderBy(f => f.Name)
+                .OrderBy(f => f.ForumId)//排序
                 .Select(f => new ForumListItemDto(
                     f.ForumId,
                     f.GameId ?? 0,
