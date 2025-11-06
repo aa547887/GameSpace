@@ -1,4 +1,15 @@
 ﻿@{
+    
+   
+    ViewBag.HideForumTopbar = true;
+    ViewBag.HideRightRail = true;
+    // ViewBag.HideFooter = true; // 要連 footer 也關再加
+}
+
+
+
+
+@{
     ViewData["Title"] = "主題內容";
     var threadId = (long)ViewData["ThreadId"];
 }

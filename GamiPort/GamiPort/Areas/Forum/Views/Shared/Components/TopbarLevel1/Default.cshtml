@@ -3,58 +3,61 @@
 @inject ICurrentUserService CurrentUser
 
 <header class="topbar1 navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
-    <div class="container-fluid">
-        <button class="navbar-toggler d-lg-none me-2" type="button"
+    <div class="container-fluid d-flex align-items-center gap-2">
+
+        <!-- 漢堡（小螢幕） -->
+        <button class="navbar-toggler d-lg-none" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas"
-                aria-controls="mainOffcanvas" aria-label="Open menu">
+                aria-controls="mainOffcanvas" aria-label="開啟選單">
             <span class="navbar-toggler-icon"></span>
         </button>
 
+        <!-- 品牌 -->
         <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="~/">
             <img src="~/picture/Gamiport.png" alt="Logo" height="24" />
             GamiPort
         </a>
-        <!-- ✅ 搜尋區，放中間 -->
+
+        <!-- 搜尋：置中 + 限寬 -->
         <form id="global-search-form"
-              class="d-none d-md-flex flex-grow-1 mx-3"
-              role="search"
-              method="get">
-            <input id="global-search-input"
-                   class="form-control"
-                   style="max-width:600px;"
-                   type="search"
-                   placeholder="搜尋遊戲 / 論壇"
-                   aria-label="Search"
-                   name="q" />
-            <button class="btn btn-outline-secondary ms-2" type="submit">
-                <i class="bi bi-search"></i>
-            </button>
+              class="d-none d-md-flex flex-grow-1 justify-content-center px-2"
+              role="search" method="get">
+            <div class="input-group w-100" style="max-width:600px;">
+                <input id="global-search-input" class="form-control"
+                       type="search" name="q"
+                       placeholder="搜尋遊戲 / 論壇" aria-label="Search" />
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
         </form>
 
-
-        <ul class="navbar-nav ms-auto align-items-lg-center">
-            <!-- ✅ 搜尋欄 -->
+        <!-- 右側：桌機導覽 + 使用者 -->
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <!-- 這三個只在 >= md 顯示；手機改放 offcanvas -->
             
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="Forum" asp-controller="Me" asp-action="Threads">我的貼文 </a>
+            </li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="Forum" asp-controller="Me" asp-action="Posts">我的回覆</a>
+            </li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="Forum" asp-controller="Me" asp-action="Likes">我的按讚</a>
+            </li>
 
-            <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">我的主題</a></li>
-            <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">我的回覆</a></li>
-            <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">我的案讚</a></li>
-            @* ✅ 改成用 CurrentUser.IsAuthenticated 讀取 HttpContext *@
             @if (CurrentUser.IsAuthenticated)
             {
-                <li class="nav-item dropdown ms-2">
+                <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userMenu"
                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle me-1"></i>
                         <span>@(CurrentUser.NickName ?? "使用者")</span>
                     </a>
-
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                         <li class="dropdown-header text-secondary small">
                             已登入：@(CurrentUser.NickName ?? "使用者")
                         </li>
-
-                        <!-- ✅ 新增：檢視 / 編輯個人資料 -->
                         <li>
                             <a class="dropdown-item" asp-area="Login" asp-controller="Introduce" asp-action="Details">
                                 <i class="bi bi-person-badge me-2"></i> 檢視個人資料
@@ -65,10 +68,7 @@
                                 <i class="bi bi-pencil-square me-2"></i> 編輯個人資料
                             </a>
                         </li>
-
                         <li><hr class="dropdown-divider" /></li>
-
-                        <!-- 🚪 登出 -->
                         <li>
                             <form asp-area="Login" asp-controller="Login" asp-action="Logout" method="post" class="px-2 py-1 mb-0">
                                 @Html.AntiForgeryToken()
@@ -82,7 +82,7 @@
             }
             else
             {
-                <li class="nav-item ms-2">
+                <li class="nav-item">
                     <a class="btn btn-primary" asp-area="Login" asp-controller="Login" asp-action="Login">
                         <i class="bi bi-box-arrow-in-right me-1"></i> 登入
                     </a>
@@ -92,12 +92,27 @@
     </div>
 </header>
 
+<!-- 手機側邊選單（含那三個功能 + 搜尋備用） -->
 <div class="offcanvas offcanvas-start offcanvas-main" tabindex="-1" id="mainOffcanvas" aria-labelledby="mainOffcanvasLabel">
     <div class="offcanvas-header">
         <h6 class="offcanvas-title" id="mainOffcanvasLabel">主選單</h6>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-0">
+        <!-- 手機版補一個簡易搜尋（桌機已在上方） -->
+        <form class="p-3 border-bottom" method="get" role="search" action="">
+            <div class="input-group">
+                <input class="form-control" type="search" name="q" placeholder="搜尋遊戲 / 論壇" aria-label="Search" />
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="text-decoration-none" href="#">我的主題</a></li>
+            <li class="list-group-item"><a class="text-decoration-none" href="#">我的回覆</a></li>
+            <li class="list-group-item"><a class="text-decoration-none" href="#">我的按讚</a></li>
+        </ul>
+
         @await Html.PartialAsync("_Sidebar")
     </div>
 </div>

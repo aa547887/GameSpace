@@ -31,38 +31,63 @@
 
     @RenderSection("Styles", required: false)
 </head>
+@* 多加開關 *@
 <body>
-    @await Component.InvokeAsync("TopbarLevel1")
+    @{
+        // 🔧 per-page 開關（預設都顯示）
+        var hideTopbar1 = (ViewBag.HideTopbar1 as bool?) ?? false; // 全站上方 Topbar
+        var hideSidebar = (ViewBag.HideSidebar as bool?) ?? false; // 左側欄
+        var hideForumTopbar = (ViewBag.HideForumTopbar as bool?) ?? false; // Forum 內頁導覽列
+        var hideRightRail = (ViewBag.HideRightRail as bool?) ?? false; // 右側欄
+        var hideFooter = (ViewBag.HideFooter as bool?) ?? false; // 頁腳
+    }
+
+    @if (!hideTopbar1)
+    {
+        @await Component.InvokeAsync("TopbarLevel1")
+    }
 
     <div class="layout-wrap">
         <aside class="layout-sidebar d-none d-lg-block">
-            @await Html.PartialAsync("_Sidebar")
+            @if (!hideSidebar)
+            {
+                @await Html.PartialAsync("_Sidebar")
+            }
         </aside>
 
         <main class="layout-main">
-            @await Html.PartialAsync("_ForumTopbar")
+            @if (!hideForumTopbar)
+            {
+                @await Html.PartialAsync("_ForumTopbar")
+            }
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
-                    <div class="col-12 col-xxl-9">
+                    <div class="@(hideRightRail ? "col-12" : "col-12 col-xxl-9")">
                         @RenderBody()
                     </div>
-                    <aside class="col-xl-3 d-none d-xl-block">
-                        <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
-                        </div>
-                    </aside>
+
+                    @if (!hideRightRail)
+                    {
+                        <aside class="col-xl-3 d-none d-xl-block">
+                            <div class="right-rail">
+                                @await Html.PartialAsync("_RightRailAds")
+                            </div>
+                        </aside>
+                    }
                 </div>
             </div>
         </main>
     </div>
 
-    <footer class="layout-footer border-top">
-        @await Html.PartialAsync("_Footer")
-    </footer>
-   
+    @if (!hideFooter)
+    {
+        <footer class="layout-footer border-top">
+            @await Html.PartialAsync("_Footer")
+        </footer>
+    }
 
-    <!-- ✅ 先載入 jQuery（正確 SRI 值） -->
+    <!-- ✅ 先載入 jQuery（正確 SRI 可加可不加） -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 
     <!-- Bootstrap（含 Popper） -->
@@ -87,4 +112,5 @@
     <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
+
 </html>
