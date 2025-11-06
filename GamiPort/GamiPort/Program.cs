@@ -3,12 +3,6 @@
 // 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
 // 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
 //
-// 【本次關鍵說明】
-// 1) 穢語遮蔽服務 IProfanityFilter 為 Singleton，但「不直接吃 DbContext（Scoped）」：
-//    → 改在服務內使用 IServiceScopeFactory.CreateScope() 取得短命 DbContext（GameSpacedatabaseContext）。
-//    → 因此本檔「不需要」註冊 AddDbContextFactory / AddPooledDbContextFactory。
-// 2) 客訴採「單一前台 Hub」：映射 SupportHub 為 /hubs/support，後台頁也連線到這個端點；並正確啟用 CORS。
-// 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
 using GamiPort.Areas.Forum.Services.Adminpost;
@@ -22,7 +16,6 @@ using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
-using GamiPort.Areas.OnlineStore.Utils;   // AnonCookie
 
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
@@ -240,7 +233,6 @@ namespace GamiPort
 				app.UseExceptionHandler("/Home/Error");
 				app.UseHsts();
 			}
-
 
 			// ------------------------------------------------------------
 			// 啟動時先載入一次穢語規則（建議保留）
