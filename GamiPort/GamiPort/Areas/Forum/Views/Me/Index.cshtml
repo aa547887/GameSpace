@@ -1,0 +1,22 @@
+﻿@model string  
+@* <!-- 傳入 api endpoint --> *@
+
+@{
+    ViewData["Title"] = "我的內容";
+}
+
+<div class="container py-4">
+    <h3 class="mb-3" id="me-page-title"></h3>
+    <div id="me-list-app" data-endpoint="@Model"></div>
+</div>
+
+@section Scripts {
+<script type="module">
+import MeList from '/js/forum/me-list.js';
+
+const root = document.getElementById('me-list-app');
+const endpoint = root.dataset.endpoint;
+
+MeList(endpoint).mount('#me-list-app');
+</script>
+}

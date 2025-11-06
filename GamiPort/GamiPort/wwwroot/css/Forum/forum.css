@@ -1,6 +1,56 @@
-﻿/* 卡片容器 */
+﻿/* ========= Leaderboard Card 基礎設計 Token ========= */
+:root {
+    --lb-radius: 12px;
+    --lb-gap: .75rem;
+    --lb-pad: .5rem .25rem;
+    --lb-bg: #fff;
+    --lb-bg-2: #fafafa;
+    --lb-border: rgba(0,0,0,.06);
+    --lb-shadow: 0 4px 14px rgba(0,0,0,.06);
+    --lb-text: #222;
+    --lb-text-muted: #6c757d;
+    --lb-pill-up-bg: #e8f7ee;
+    --lb-pill-up-bd: #c6f0d4;
+    --lb-pill-up-tx: #128c52;
+    --lb-pill-down-bg: #fdeaea;
+    --lb-pill-down-bd: #fac5c5;
+    --lb-pill-down-tx: #c22;
+    --lb-pill-same-bg: #f2f2f2;
+    --lb-pill-same-bd: #e5e5e5;
+    --lb-pill-same-tx: #666;
+    --lb-pill-new-bg: #e8f0fe;
+    --lb-pill-new-bd: #cbd9ff;
+    --lb-pill-new-tx: #2b5dd1;
+    --lb-meter-bg: #f1f3f5;
+    --lb-meter-grad-a: #00c6ff;
+    --lb-meter-grad-b: #0072ff;
+}
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --lb-bg: #151618;
+        --lb-bg-2: #0f1113;
+        --lb-border: rgba(255,255,255,.06);
+        --lb-shadow: 0 4px 14px rgba(0,0,0,.35);
+        --lb-text: #e7e9ec;
+        --lb-text-muted: #a3adb7;
+        --lb-meter-bg: #1f2326;
+    }
+}
+
+/* 減少動效（系統偏好） */
+@media (prefers-reduced-motion: reduce) {
+    .lb-item, .lb-item:hover {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
+/* ========= 版型 ========= */
 .lb-card {
-    padding: .25rem .5rem
+    padding: .25rem .5rem;
+    color: var(--lb-text);
 }
 
 .lb-list {
@@ -9,114 +59,118 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: .25rem
+    gap: .25rem;
 }
 
 .lb-item {
     display: flex;
-    gap: .75rem;
+    gap: var(--lb-gap);
     align-items: flex-start;
-    padding: .5rem .25rem;
-    border-radius: .75rem;
-    border: 1px solid rgba(0,0,0,.06);
-    background: linear-gradient(180deg,#fff, #fafafa)
+    padding: var(--lb-pad);
+    border-radius: var(--lb-radius);
+    border: 1px solid var(--lb-border);
+    background: linear-gradient(180deg, var(--lb-bg), var(--lb-bg-2));
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    will-change: transform;
 }
 
     .lb-item:hover {
-        box-shadow: 0 4px 14px rgba(0,0,0,.06);
+        box-shadow: var(--lb-shadow);
         transform: translateY(-1px);
-        transition: all .15s ease
     }
 
-/* 名次徽章 */
+/* ========= 名次徽章 ========= */
 .lb-rank {
     width: 2.2rem;
     height: 2.2rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
     font-weight: 700;
     background: #eceff4;
     color: #333;
-    border: 1px solid rgba(0,0,0,.08)
+    border: 1px solid var(--lb-border);
+    flex: 0 0 2.2rem;
 }
 
     .lb-rank.gold {
         background: linear-gradient(135deg,#ffd54f,#ffca28);
-        color: #4e3b00
+        color: #4e3b00;
     }
 
     .lb-rank.silver {
         background: linear-gradient(135deg,#e0e0e0,#cfd8dc);
-        color: #2f3336
+        color: #2f3336;
     }
 
     .lb-rank.bronze {
         background: linear-gradient(135deg,#ffb74d,#ff8a65);
-        color: #3a1f00
+        color: #3a1f00;
     }
 
-/* 文字區 */
+/* ========= 文字區 ========= */
 .lb-main {
     flex: 1;
-    min-width: 0
+    min-width: 0;
 }
 
 .lb-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: .5rem
+    gap: .5rem;
 }
 
 .lb-name {
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis
+    text-overflow: ellipsis;
 }
 
-/* 漲跌膠囊 */
+/* ========= 膠囊（共用樣式 + 色票） ========= */
 .pill {
     font-size: .75rem;
-    padding: .15rem .5rem;
+    line-height: 1;
+    padding: .2rem .55rem;
     border-radius: 999px;
-    border: 1px solid transparent
+    border: 1px solid transparent;
+    white-space: nowrap;
 }
 
     .pill.up {
-        background: #e8f7ee;
-        border-color: #c6f0d4;
-        color: #128c52
+        background: var(--lb-pill-up-bg);
+        border-color: var(--lb-pill-up-bd);
+        color: var(--lb-pill-up-tx);
     }
 
     .pill.down {
-        background: #fdeaea;
-        border-color: #fac5c5;
-        color: #c22
+        background: var(--lb-pill-down-bg);
+        border-color: var(--lb-pill-down-bd);
+        color: var(--lb-pill-down-tx);
     }
 
     .pill.same {
-        background: #f2f2f2;
-        border-color: #e5e5e5;
-        color: #666
+        background: var(--lb-pill-same-bg);
+        border-color: var(--lb-pill-same-bd);
+        color: var(--lb-pill-same-tx);
     }
 
     .pill.new {
-        background: #e8f0fe;
-        border-color: #cbd9ff;
-        color: #2b5dd1
+        background: var(--lb-pill-new-bg);
+        border-color: var(--lb-pill-new-bd);
+        color: var(--lb-pill-new-tx);
     }
 
-/* 指數條 */
+/* ========= 指數條（用 transform 吃 GPU，比 width 更順） ========= */
 .lb-meter {
     position: relative;
     height: .6rem;
-    background: #f1f3f5;
+    background: var(--lb-meter-bg);
     border-radius: 999px;
     overflow: hidden;
-    margin-top: .4rem
+    margin-top: .4rem;
 }
 
 .lb-bar {
@@ -124,7 +178,8 @@
     left: 0;
     top: 0;
     bottom: 0;
-    background: linear-gradient(90deg,#00c6ff,#0072ff)
+    background: linear-gradient(90deg,#00c6ff,#0072ff);
+    width: var(--width, 0);
 }
 
 .lb-index {
@@ -132,10 +187,231 @@
     right: .4rem;
     top: -1.2rem;
     font-size: .75rem;
-    color: #6c757d
+    color: var(--lb-text-muted);
 }
 
-/* footer */
+/* ========= 底部補充區 ========= */
 .lb-foot {
-    margin-top: .25rem
+    margin-top: .25rem;
+    color: var(--lb-text-muted);
+}
+
+/* ========= 響應式 ========= */
+@media (max-width: 576px) {
+    .lb-rank {
+        width: 2rem;
+        height: 2rem;
+        flex-basis: 2rem;
+    }
+
+    .lb-name {
+        max-width: 70vw;
+    }
+}
+/* === Forum list card === */   /*主頁面*/
+.forum-card {
+    display: block;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: #fff;
+    transition: transform .25s ease, box-shadow .25s ease;
+    border: 1px solid #222;
+}
+
+    .forum-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 8px 18px rgba(0,0,0,.5);
+        border-color: #5c9eff;
+    }
+
+.forum-cover {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+.forum-info {
+    padding: 12px;
+}
+
+.forum-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.forum-desc {
+    font-size: .85rem;
+    color: #bbb;
+    max-height: 40px;
+    overflow: hidden;
+}
+
+/* ===== Rank List 卡片 ===== */
+.rank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.rank-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 320px 1fr; /* 排名數字 / 圖 / 文 */
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    cursor: pointer;
+}
+
+    .rank-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.08);
+        border-color: rgba(0,0,0,.12);
+    }
+
+.rank-num {
+    width: 40px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1;
+    color: #7a8a9a;
+}
+
+    .rank-num.top1 {
+        color: #e8a600;
+    }
+
+    .rank-num.top2 {
+        color: #9aa3ad;
+    }
+
+    .rank-num.top3 {
+        color: #c58a5c;
+    }
+
+.rank-cover {
+    width: 100%;
+    max-width: 320px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #f3f4f6;
+    border: 1px solid rgba(0,0,0,.06);
+}
+
+.rank-body {
+    min-width: 0; /* 讓 ellipsis 生效 */
+}
+
+.rank-title {
+    margin: 0 0 6px 0;
+    font-weight: 800;
+    font-size: 20px;
+}
+
+    .rank-title a {
+        color: #1f2328;
+        text-decoration: none;
+    }
+
+        .rank-title a:hover {
+            text-decoration: underline;
+        }
+
+.rank-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+    .rank-meta .dot::after {
+        content: "·";
+        margin-left: 10px;
+    }
+
+.rank-desc {
+    margin: 0;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 兩行截斷 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 淡淡皇冠水印（hover 會更明顯） */
+.rank-watermark {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    width: 120px;
+    height: 120px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgba(254,204,106,.25), rgba(254,204,106,0)) center/70% 70% no-repeat;
+    opacity: .35;
+    filter: blur(.2px);
+}
+
+.rank-item:hover .rank-watermark {
+    opacity: .5;
+}
+
+/* 手機 RWD：縮小圖片、改為兩欄 */
+@media (max-width: 768px) {
+    .rank-item {
+        grid-template-columns: auto 180px 1fr;
+        padding: 12px;
+    }
+
+    .rank-cover {
+        max-width: 180px;
+        height: 100px;
+    }
+
+    .rank-title {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 576px) {
+    .rank-item {
+        grid-template-columns: auto 1fr; /* 排名 + 文；圖片改滿行 */
+        grid-template-areas:
+            "num body"
+            ".   cover";
+        gap: 10px;
+    }
+
+    .rank-num {
+        grid-area: num;
+    }
+
+    .rank-cover {
+        grid-area: cover;
+        max-width: 100%;
+        width: 100%;
+        height: 140px;
+    }
+
+    .rank-body {
+        grid-area: body;
+    }
+
+    .rank-watermark {
+        display: none;
+    }
 }
