@@ -1,12 +1,84 @@
-﻿@* Views/Shared/_RightRailAds.cshtml *@
-@* <div class="right-rail-ads">
-    <!-- 上：滑過才掃光 + 呼吸 -->
-    <div class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4"></div>
+﻿<div class="right-rail-ads">
+    <!-- 上：300x250（呼吸 + 掃光） -->
+    <a class="ad-box ad-300x250 ad-hover-sheen ad-breathe mb-4" href="#">
+        <img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="">
+    </a>
 
-    <div class="ad-box ad-300x600 ad-shine"></div>
-</div> *@
+    <!-- 中：300x600 大幅 -->
+    <a class="ad-box ad-300x600 ad-shine mb-4" href="#">
+        <img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="">
+    </a>
 
-<div class="right-rail-ads">
-    <img src="https://picsum.photos/300/250?ad1" alt="ad" class="mb-3" />
-    <img src="https://picsum.photos/300/600?ad2" alt="ad" />
+    <!-- 下：三個方形 300x250 -->
+    <a class="ad-box ad-300x250 ad-hover-sheen mb-4" href="#"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></a>
+    <a class="ad-box ad-300x250 ad-hover-sheen mb-4" href="#"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt=""></a>
+    <a class="ad-box ad-300x250 ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt=""></a>
 </div>
+
+<style>
+    .right-rail-ads .ad-box {
+        display: block;
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f3f4f6;
+        box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+
+    .ad-300x250 {
+        aspect-ratio: 300 / 250;
+    }
+
+    .ad-300x600 {
+        aspect-ratio: 300 / 600;
+    }
+
+    .right-rail-ads img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .25s ease;
+    }
+
+    .right-rail-ads .ad-box:hover img {
+        transform: scale(1.03);
+    }
+
+    .ad-hover-sheen {
+        position: relative;
+    }
+
+        .ad-hover-sheen::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 50%, transparent 100%);
+            transform: skewX(-20deg);
+            transition: left .55s ease;
+            pointer-events: none;
+        }
+
+        .ad-hover-sheen:hover::after {
+            left: 130%;
+        }
+
+    .ad-breathe {
+        animation: breathe 2.8s ease-in-out infinite;
+    }
+    @@keyframes breathe {
+        0%,100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.015);
+    }
+
+    }
+</style>

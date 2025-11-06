@@ -34,8 +34,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;  // ★ PhysicalFileProvider（Area 靜態檔案支援）
-// Program.cs 最上面加（若尚未有）
-
+										   // Program.cs 最上面加（若尚未有）
+using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
+using GamiPort.Areas.OnlineStore.Services.store.Application;
 
 
 namespace GamiPort
@@ -198,6 +199,11 @@ namespace GamiPort
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
 
+			//=============ImgBB商城圖片上傳服務===========
+			builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
+			builder.Services.AddHttpClient<ImgBbService>();
+			builder.Services.AddEndpointsApiExplorer();
+
 
 			// 購物車＋Session
 			builder.Services.AddDistributedMemoryCache();
@@ -209,6 +215,7 @@ namespace GamiPort
 				options.Cookie.IsEssential = true;
 				options.IdleTimeout = TimeSpan.FromHours(2);
 			});
+			builder.Services.AddScoped<IStoreService, StoreService>();
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
 
 			// services
