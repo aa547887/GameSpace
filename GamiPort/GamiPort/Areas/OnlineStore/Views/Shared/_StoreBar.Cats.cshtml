@@ -9,38 +9,43 @@
 
             <!-- Direct Links -->
             <li>
-                <a class="cats-pill no-dd" href="/OnlineStore/Browse/Index?type=game" title="遊戲商品">遊戲商品</a>
+                <a class="cats-pill no-dd" href="/OnlineStore/Browse/Index?type=game" title="�C���ӫ~">�ڷQ��C��</a>
             </li>
             <li>
-                <a class="cats-pill no-dd" href="/OnlineStore/Browse/Index?type=notgame" title="周邊商品">周邊商品</a>
+                <a class="cats-pill no-dd" href="/OnlineStore/Browse/Index?type=notgame" title="�P��ӫ~">�ڷQ�ݩP��</a>
             </li>
 
-            <!-- Quick Filters (你給的固定項目) -->
-            @* <li class="ms-2 me-1 text-muted small d-none d-lg-inline">快速：</li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=NS">NS</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=PS5">PS5</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platform=PC">PC</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&genre=RPG">RPG</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&genre=ACT">ACT</a></li>
-            <li class="vr d-none d-lg-inline mx-1"></li> *@
-            @* <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame">全部周邊</a></li> *@
-            @* <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=figure">公仔</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=apparel">服飾</a></li>
-            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=card">點數卡</a></li> *@
+            @* <!-- Quick Filters -->
+            <li class="ms-2 me-1 text-muted small d-none d-lg-inline">����</li>
+            @{ var quickPlatforms = db.SPlatforms.AsNoTracking().OrderBy(x => x.PlatformId).Take(3).ToList(); }
+            @{ var quickGenres = db.SGameGenres.AsNoTracking().OrderBy(x => x.GenreId).Take(2).ToList(); }
+            @foreach (var p in quickPlatforms)
+            {
+                <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&platformId=@p.PlatformId">@p.PlatformName</a></li>
+            }
+            @foreach (var g in quickGenres)
+            {
+                <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=game&genreId=@g.GenreId">@g.GenreName</a></li>
+            }
+            <li class="vr d-none d-lg-inline mx-1"></li>
+            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame">?�部?��?</a></li>
+            <!-- REMOVED -->?��?</a></li>
+            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=apparel">?�飾</a></li>
+            <li><a class="cats-pill quick" href="/OnlineStore/Browse/Index?type=notgame&peripheral=card">點數??/a></li>
 
-            <li class="ms-auto"></li>
+            <li class="ms-auto"></li> *@
 
             <!-- Platforms Dropdown -->
             <li class="dropdown hover-dd">
-                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">平台分類</a>
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">�C�����x</a>
                 <ul class="dropdown-menu show-on-hover shadow-lg">
-                    <li class="dropdown-header small text-secondary px-3">平台分類</li>
-                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game">全部平台</a></li>
+                    <li class="dropdown-header small text-secondary px-3"></li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game">�Ҧ����x</a></li>
                     <li><hr class="dropdown-divider" /></li>
                     @foreach (var platform in db.SPlatforms.AsNoTracking().OrderBy(x => x.PlatformName).ThenBy(x => x.PlatformName).ToList())
                     {
                         <li>
-                            @* 你的 API 若吃 platformId，這裡用 platformId；若改成吃平台代碼名稱，可以把參數改為 &platform=@platform.PlatformCode *@
+                            @* &platform=@platform.PlatformCode *@
                             <a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game&platformId=@platform.PlatformId">@platform.PlatformName</a>
                         </li>
                     }
@@ -49,15 +54,15 @@
 
             <!-- Genres Dropdown -->
             <li class="dropdown hover-dd">
-                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">遊戲類型</a>
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">�C������</a>
                 <ul class="dropdown-menu show-on-hover shadow-lg">
-                    <li class="dropdown-header small text-secondary px-3">遊戲類型</li>
-                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game">全部類型</a></li>
+                    <li class="dropdown-header small text-secondary px-3"></li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game">��������</a></li>
                     <li><hr class="dropdown-divider" /></li>
                     @foreach (var genre in db.SGameGenres.AsNoTracking().OrderBy(x => x.GenreName).ToList())
                     {
                         <li>
-                            @* 若前端改吃文字參數，可改為 &genre=@genre.GenreCode *@
+                            @* &genre=@genre.GenreCode *@
                             <a class="dropdown-item" href="/OnlineStore/Browse/Index?type=game&genreId=@genre.GenreId">@genre.GenreName</a>
                         </li>
                     }
@@ -66,10 +71,10 @@
 
             <!-- Merchandise Types Dropdown -->
             <li class="dropdown hover-dd">
-                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">周邊分類</a>
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">�P�����</a>
                 <ul class="dropdown-menu show-on-hover shadow-lg">
-                    <li class="dropdown-header small text-secondary px-3">周邊分類</li>
-                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=notgame">全部周邊</a></li>
+                    <li class="dropdown-header small text-secondary px-3"></li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?type=notgame">�����P��</a></li>
                     <li><hr class="dropdown-divider" /></li>
                     @foreach (var merchType in db.SMerchTypes.AsNoTracking().OrderBy(x => x.MerchTypeName).ToList())
                     {
@@ -82,9 +87,9 @@
 
             <!-- Suppliers Dropdown -->
             <li class="dropdown hover-dd">
-                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">供應商</a>
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">������</a>
                 <ul class="dropdown-menu show-on-hover shadow-lg suppliers-menu">
-                    <li class="dropdown-header small text-secondary px-3">品牌 / 發行商</li>
+                    @* <li class="dropdown-header small text-secondary px-3">����������</li> *@
                     @foreach (var supplier in db.SSuppliers.AsNoTracking().Where(s => s.IsActive == 1).OrderBy(s => s.SupplierName).ToList())
                     {
                         <li><a class="dropdown-item" href="/OnlineStore/Browse/Index?supplierId=@supplier.SupplierId">@supplier.SupplierName</a></li>
@@ -107,15 +112,15 @@
         transition: transform .25s ease, box-shadow .2s ease;
     }
 
-        #storeCats.sc-hide {
-            transform: translateY(-100%);
-            box-shadow: none;
-        }
+    #storeCats.sc-hide {
+        transform: translateY(-100%);
+        box-shadow: none;
+    }
 
-        #storeCats.sc-show {
-            transform: translateY(0);
-            box-shadow: 0 6px 22px rgba(0,0,0,.08);
-        }
+    #storeCats.sc-show {
+        transform: translateY(0);
+        box-shadow: 0 6px 22px rgba(0,0,0,.08);
+    }
 
     .store-cats-list {
         list-style: none;
@@ -127,7 +132,7 @@
         flex-wrap: wrap;
     }
 
-    /* pill 外觀（沿用你原本風格，可微調） */
+    /* pill 外�?（沿?��??�本風格，可微調�?*/
     .store-cats .cats-pill {
         display: inline-block;
         padding: .5rem .9rem;
@@ -144,26 +149,26 @@
             border-color: #eee;
         }
 
-        /* 懸浮騰空＋陰影 */
+        /* ?�浮騰空＋陰�?*/
         .store-cats .cats-pill:hover,
         .store-cats .dropdown-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 18px rgba(0,0,0,.12);
         }
 
-        /* 快速篩選 pill 視覺淡一點 */
+        /* 快速篩??pill 視覺淡�?�?*/
         .store-cats .cats-pill.quick {
             background: #fff;
             border-color: #eee;
         }
 
-    /* dropdown hover（滑過父項即可顯示，下拉仍可用 Bootstrap 的 data-bs-toggle） */
+    /* dropdown hover（�??�父?�即?�顯示�?下�?仍可??Bootstrap ??data-bs-toggle�?*/
     .hover-dd:hover > .dropdown-menu {
         display: block;
         margin-top: .5rem;
     }
 
-    /* 下拉選單樣式微調 */
+    /* 下�??�單�??微調 */
     .store-cats .dropdown-menu {
         border-radius: .75rem;
         overflow: hidden;
@@ -187,30 +192,10 @@
     }
 
     /* Other existing styles... */
-    .hover-dd {
-        position: relative;
-    }
-
-        .hover-dd .dropdown-menu {
-            display: none;
-            position: absolute;
-            top: calc(100% + .5rem);
-            left: 0;
-            border-radius: 14px;
-            padding: .5rem;
-            z-index: 1060;
-            background: #fff;
-        }
-
-    .store-cats, .container-xxl {
-        overflow: visible !important;
-    }
-
-    .suppliers-menu {
-        max-height: 50vh;
-        overflow-y: auto;
-        min-width: 260px;
-    }
+    .hover-dd { position: relative; }
+    .hover-dd .dropdown-menu { display: none; position: absolute; top: calc(100% + .5rem); left: 0; border-radius: 14px; padding: .5rem; z-index: 1060; background: #fff; }
+    .store-cats, .container-xxl { overflow: visible !important; }
+    .suppliers-menu { max-height: 50vh; overflow-y: auto; min-width: 260px; }
 
     @@media (max-width: 992px) {
         .store-cats-list {
@@ -219,41 +204,6 @@
             padding: .4rem .5rem;
         }
     }
-
-    /* Jelly / 果凍感：圓角 + 玻璃感 + 微陰影 */
-    .cats-jellybar {
-        display: flex;
-        justify-content: center;
-        gap: .5rem;
-    }
-
-    .cats-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: .35rem;
-        padding: .425rem .9rem;
-        border-radius: 999px;
-        backdrop-filter: blur(6px);
-        background: rgba(255,255,255,.6);
-        border: 1px solid rgba(255,255,255,.65);
-        box-shadow: 0 4px 14px rgba(0,0,0,.08);
-        transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
-        text-decoration: none;
-        color: #111;
-    }
-
-        .cats-pill:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(0,0,0,.12);
-        }
-
-        .cats-pill:active {
-            transform: translateY(0);
-        }
-
-        .cats-pill .bi {
-            font-size: 1rem;
-        }
 </style>
 
 <script>
@@ -278,12 +228,12 @@
             const goingUp = y < lastY - 10;
 
             if (y > (topBar.offsetHeight + catBar.offsetHeight)) { // Start hiding only after scrolling past both bars
-                if(goingDown){
-                    catBar.classList.remove('sc-show');
-                    catBar.classList.add('sc-hide');
-                } else if(goingUp){
-                    catBar.classList.remove('sc-hide');
-                    catBar.classList.add('sc-show');
+                if(goingDown){ 
+                    catBar.classList.remove('sc-show'); 
+                    catBar.classList.add('sc-hide'); 
+                } else if(goingUp){ 
+                    catBar.classList.remove('sc-hide'); 
+                    catBar.classList.add('sc-show'); 
                 }
             } else {
                 // Keep it shown when near the top
@@ -311,27 +261,6 @@
             // Re-calculate on window resize
             window.addEventListener('resize', setTopPosition);
         });
-
-          // 共用導頁：把條件轉成 /OnlineStore/Browse 的 querystring
-    function goToBrowse(params){
-      const url = new URL('/OnlineStore/Browse', location.origin);
-      // 只帶我們想帶的參數（與你的 GetProducts 對齊）
-      const allow = ['q','type','platformId','merchTypeId','priceMin','priceMax','sort','tag'];
-      Object.entries(params||{}).forEach(([k,v])=>{
-        if(v!==undefined && v!==null && v!==''){
-          if(allow.includes(k)) url.searchParams.set(k, v);
-        }
-      });
-      location.href = url.toString();
-    }
-
-    // 綁定：新品 / 折扣
-    document.addEventListener('click', (e)=>{
-      const a = e.target.closest('[data-cmd="go-browse"]');
-      if(!a) return;
-      const sort = a.getAttribute('data-sort') || undefined;
-      const tag  = a.getAttribute('data-tag')  || undefined;
-      goToBrowse({ sort, tag });
-    });
     })();
 </script>
+

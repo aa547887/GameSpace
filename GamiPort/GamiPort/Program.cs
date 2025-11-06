@@ -29,6 +29,9 @@ using GamiPort.Areas.OnlineStore.Services;
 
 // ★ 新增：ECPay 服務命名空間
 using GamiPort.Areas.OnlineStore.Payments;
+using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
+using GamiPort.Areas.OnlineStore.Services.store.Application;
+using Microsoft.OpenApi.Models;
 
 namespace GamiPort
 {
@@ -119,7 +122,12 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			builder.Services.AddControllersWithViews()
 				// JSON 保留原本的屬性大小寫（不轉 camelCase）
-				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
+				.AddJsonOptions(opt =>
+				{
+					opt.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+					opt.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+					opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+				});
 
 			builder.Services.AddRazorPages();
 
@@ -176,6 +184,7 @@ namespace GamiPort
 				options.IdleTimeout = TimeSpan.FromHours(2);
 			});
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+			builder.Services.AddScoped<IStoreService, StoreService>();
 
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
@@ -185,6 +194,12 @@ namespace GamiPort
             builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
             builder.Services.AddHttpClient<ImgBbService>();
 
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "GamiPort API", Version = "v1" });
+            });
+
             // ------------------------------------------------------------
             // 建立 App
             // ------------------------------------------------------------
@@ -193,6 +208,12 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			// HTTP Pipeline
 			// ------------------------------------------------------------
+			app.UseSwagger();
+			app.UseSwaggerUI(c =>
+			{
+				c.SwaggerEndpoint("/swagger/v1/swagger.json", "GamiPort API V1");
+			});
+
 			if (app.Environment.IsDevelopment())
 			{
 				// 顯示 EF 相關的開發頁、/migrations 端點

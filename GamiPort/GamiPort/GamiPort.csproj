@@ -42,6 +42,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.20" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.20" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,6 +51,7 @@
     <Folder Include="Areas\MiniGame\Data\" />
     <Folder Include="Areas\MiniGame\Models\" />
     <Folder Include="Areas\OnlineStore\Data\" />
+    <Folder Include="Areas\OnlineStore\DTO\store\" />
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="Areas\social_hub\Models\" />

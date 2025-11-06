@@ -1,15 +1,16 @@
-﻿@{
-    ViewData["Title"] = "商品詳細";
+@model GamiPort.Areas.OnlineStore.ViewModels.ProductDetailVM
+@{
+    ViewData["Title"] = Model.ProductName;
     Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
-    var pid = (int)ViewData["ProductId"];
 }
-<section class="container py-4" id="app" data-pid="@pid">
+<section class="container py-4" id="app" data-pid="@Model.ProductId">
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm bg-light">
                 <img id="cover" src="/images/placeholder-cover.png" class="w-100 h-100" style="object-fit:cover;">
             </div>
             <div id="thumbs" class="d-flex flex-wrap gap-2 mt-2"></div>
+            <div id="video" class="mt-3"></div>
         </div>
 
         <div class="col-12 col-lg-6">
@@ -29,14 +30,19 @@
             </div>
 
             <div class="d-flex gap-2 mb-4">
-                <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 直接下單</button>
+                <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 立即購買</button>
                 <button class="btn btn-lg btn-outline-dark flex-fill" data-action="add-cart"><i class="bi bi-cart-plus me-1"></i> 加入購物車</button>
                 <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的最愛"><i class="bi bi-heart"></i></button>
             </div>
 
-            <div>
+            <div class="mb-3">
                 <h5 class="fw-bold">商品介紹</h5>
                 <p id="desc" class="text-secondary"></p>
+            </div>
+
+            <div class="mb-3">
+                <h5 class="fw-bold">商品規格</h5>
+                <div id="specs" class="small text-secondary"></div>
             </div>
         </div>
     </div>
@@ -44,47 +50,92 @@
 
 @section Scripts {
     <script>
-        const pid = document.getElementById('app').dataset.pid;
-        const api = `/OnlineStore/api/StoreApi/${pid}`;
+        const initialData = @Json.Serialize(Model);
 
         function money(v){
           return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);
         }
 
-        (async function(){
-          const res = await fetch(api);
-          if(!res.ok){ document.getElementById('name').textContent = '找不到商品'; return; }
-          const x = await res.json();
+        function renderSpecs(x){
+          const host = document.getElementById('specs');
+          const isGame = (x.productType || '').toLowerCase() === 'game';
+          if(isGame){
+            host.innerHTML = `
+              <ul class="list-unstyled mb-0">
+                ${x.platformName ? `<li>平台：${x.platformName}</li>` : ''}
+                ${x.genreName ? `<li>類型：${x.genreName}</li>` : ''}
+                ${x.publishAt ? `<li>發售日：${new Date(x.publishAt).toLocaleDateString('zh-TW')}</li>` : ''}
+                ${x.supplierName ? `<li>供應商：${x.supplierName}</li>` : ''}
+                ${x.downloadLink ? `<li>下載連結：<a href="${x.downloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
+              </ul>`;
+          } else {
+            host.innerHTML = `
+              <ul class="list-unstyled mb-0">
+                ${x.peripheralTypeName ? `<li>周邊分類：${x.peripheralTypeName}</li>` : ''}
+                ${x.supplierName ? `<li>供應商：${x.supplierName}</li>` : ''}
+                ${x.size ? `<li>尺寸：${x.size}</li>` : ''}
+                ${x.color ? `<li>顏色：${x.color}</li>` : ''}
+                ${x.weight ? `<li>重量：${x.weight}</li>` : ''}
+                ${x.dimensions ? `<li>外觀尺寸：${x.dimensions}</li>` : ''}
+                ${x.material ? `<li>材質：${x.material}</li>` : ''}
+                ${x.digitalCode ? `<li>型號/序號：${x.digitalCode}</li>` : ''}
+              </ul>`;
+          }
+        }
 
-          document.getElementById('name').textContent = x.productName;
-          document.getElementById('ptype').textContent = x.productType || '';
-          document.getElementById('price').textContent = `\$${money(x.price)}`;
-          document.getElementById('cc').textContent = x.currencyCode || 'TWD';
-          document.getElementById('desc').textContent = x.productDescription || '—';
-          document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
-          document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
+        function tryRenderYoutube(url){
+          if(!url) return;
+          try{
+            const m = String(url).match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+            const vid = m?.[1];
+            if(!vid) return;
+            document.getElementById('video').innerHTML = `
+              <div class="ratio ratio-16x9">
+                <iframe src="https://www.youtube.com/embed/${vid}" title="YouTube video" allowfullscreen class="rounded shadow-sm"></iframe>
+              </div>`;
+          }catch{}
+        }
 
-          const cover = x.coverUrl || "/images/placeholder-cover.png";
-          document.getElementById('cover').src = cover;
+        function renderProduct(x) {
+            if (!x) {
+                document.getElementById('name').textContent = '查無此商品';
+                return;
+            }
 
-          const thumbs = x.gallery?.length ? x.gallery : [cover];
-          document.getElementById('thumbs').innerHTML = thumbs.map(url =>
-            `<img src="${url}" class="rounded" style="width:72px;height:72px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
-          ).join('');
+            document.getElementById('name').textContent = x.productName;
+            document.getElementById('ptype').textContent = x.productType || '';
+            document.getElementById('price').textContent = `NT ${money(x.price)}`;
+            document.getElementById('cc').textContent = x.currencyCode || 'TWD';
+            document.getElementById('desc').textContent = x.productDescription || '';
+            document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
+            document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
 
-          document.getElementById('thumbs').addEventListener('click', (e)=>{
-            if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
-          });
+            const cover = x.coverUrl || "/images/placeholder-cover.png";
+            document.getElementById('cover').src = cover;
 
-          // 按鈕事件（之後串接你的後端）
+            const thumbs = x.gallery?.length ? x.gallery : [cover];
+            document.getElementById('thumbs').innerHTML = thumbs.map(url =>
+                `<img src="${url}" class="rounded" style="width:72px;height:72px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
+            ).join('');
+            document.getElementById('thumbs').addEventListener('click', (e)=>{
+                if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
+            });
+
+            renderSpecs(x);
+            tryRenderYoutube(x.youtubeUrl);
+        }
+
+        (function(){
+          renderProduct(initialData);
+
           document.addEventListener('click', (e)=>{
             const btn = e.target.closest('button[data-action]');
             if(!btn) return;
             const act = btn.getAttribute('data-action');
             if(act==='add-cart'){
-              alert(`已加入購物車（商品ID: ${x.productId}）`);
+              alert(`已加入購物車（商品ID: ${initialData.productId}）`);
             }else if(act==='buy-now'){
-              location.href = `/OnlineStore/Checkout/CreateOrder?productId=${x.productId}`;
+              location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.productId}`;
             }else if(act==='fav'){
               btn.classList.toggle('text-danger');
             }

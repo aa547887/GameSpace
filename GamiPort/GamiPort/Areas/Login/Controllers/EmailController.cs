@@ -162,8 +162,11 @@ namespace GamiPort.Areas.Login.Controllers
 			return View("Success", model: user.UserAccount);
 		}
 
+		[HttpGet]
 		public IActionResult Success(string id) => View(model: id);
+		[HttpGet]
 		public IActionResult Invalid() => View();
+		[HttpGet]
 		public IActionResult Expired() => View();
 	}
 }
