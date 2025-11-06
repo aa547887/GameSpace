@@ -16,11 +16,13 @@ namespace GamiPort.Areas.MiniGame.Services
 	{
 		private readonly GameSpacedatabaseContext _context;
 		private readonly IAppClock _appClock;
+		private readonly IPetService _petService;
 
-		public SignInService(GameSpacedatabaseContext context, IAppClock appClock)
+		public SignInService(GameSpacedatabaseContext context, IAppClock appClock, IPetService petService)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
+			_petService = petService ?? throw new ArgumentNullException(nameof(petService));
 		}
 
 		/// <summary>
@@ -46,6 +48,11 @@ namespace GamiPort.Areas.MiniGame.Services
 			// 檢查今天是否已簽到
 			var isSignedInToday = userSignIns.Any(x =>
 				x.SignTime >= utcTodayStart && x.SignTime <= utcTodayEnd);
+
+			// 如果今天已簽到，取得今日簽到記錄（用於顯示實際獲得的獎勵）
+			var todaySignInRecord = isSignedInToday
+				? userSignIns.FirstOrDefault(x => x.SignTime >= utcTodayStart && x.SignTime <= utcTodayEnd)
+				: null;
 
 			// 計算總簽到天數
 			int totalSignInDays = userSignIns.Count;
@@ -75,6 +82,9 @@ namespace GamiPort.Areas.MiniGame.Services
 				TodayPoints = todayPoints,
 				TodayExperience = todayExperience,
 				TodayHasCoupon = todayHasCoupon,
+				ActualPointsGained = todaySignInRecord?.PointsGained,
+				ActualExpGained = todaySignInRecord?.ExpGained,
+				ActualCouponGained = todaySignInRecord?.CouponGained,
 				LastSignInTime = lastSignInTime,
 				UpdatedAt = appNow.ToUtc8()
 			};
@@ -164,6 +174,26 @@ namespace GamiPort.Areas.MiniGame.Services
 				}
 
 				await transaction.CommitAsync();
+
+				// 更新寵物經驗值並觸發升級檢查（在事務外執行）
+				if (signInRule.Experience > 0)
+				{
+					try
+					{
+						var pet = await _context.Pets
+							.AsNoTracking()
+							.FirstOrDefaultAsync(p => p.UserId == userId && !p.IsDeleted);
+
+						if (pet != null)
+						{
+							await _petService.AddExperienceAsync(pet.PetId, signInRule.Experience);
+						}
+					}
+					catch (Exception)
+					{
+						// 不影響簽到結果，僅記錄失敗（可選擇性加入日誌）
+					}
+				}
 
 				return new SignInResultDto
 				{
@@ -358,5 +388,33 @@ namespace GamiPort.Areas.MiniGame.Services
 
 			return (currentConsecutive, maxConsecutive);
 		}
+
+	/// <summary>
+	/// 取得所有活動的簽到規則（供使用者查看獎勵表）
+	/// </summary>
+	/// <returns>所有活動簽到規則列表（按日序號排序）</returns>
+	public async Task<List<SignInRuleDto>> GetAllActiveRulesAsync()
+	{
+		// 查詢所有活動且未刪除的簽到規則
+		var rules = await _context.SignInRules
+			.AsNoTracking()
+			.Where(r => r.IsActive && !r.IsDeleted)
+			.OrderBy(r => r.SignInDay)
+			.ToListAsync();
+
+		// 轉換為 DTO
+		var dtos = rules.Select(r => new SignInRuleDto
+		{
+			Id = r.Id,
+			SignInDay = r.SignInDay,
+			Points = r.Points,
+			Experience = r.Experience,
+			HasCoupon = r.HasCoupon,
+			CouponTypeCode = r.CouponTypeCode,
+			Description = r.Description
+		}).ToList();
+
+		return dtos;
+	}
 	}
 }

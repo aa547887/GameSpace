@@ -552,12 +552,12 @@
                     <!-- 遊戲標題卡片 -->
                     <div class="game-title-card">
                         <h3>
-                            <i class="bi bi-star-fill game-icon"></i>
-                            迷宮冒險
+                            <i class="bi bi-lightning-charge-fill game-icon"></i>
+                            恐龍跑酷大冒險
                         </h3>
                         <p>
-                            在神秘迷宮中尋找通路，躲避障礙物，到達終點即可通關！
-                            難度越高，獎勵越豐厚。
+                            靈感來自 Chrome 離線小恐龍！按下空白鍵跳躍，躲避迎面而來的障礙物。
+                            跑得越遠得分越高，難度越高獎勵越豐厚！
                         </p>
                     </div>
 
@@ -572,37 +572,50 @@
 
                             <button type="submit" name="level" value="1" class="difficulty-btn btn-easy @(selectedLevel == 1 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
                                 <i class="bi bi-sun-fill"></i>
-                                <span>簡單</span>
-                                <span class="label">Level 1</span>
+                                <span>輕鬆跑</span>
+                                <span class="label">速度較慢</span>
                             </button>
 
                             <button type="submit" name="level" value="2" class="difficulty-btn btn-normal @(selectedLevel == 2 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
                                 <i class="bi bi-lightning-fill"></i>
-                                <span>普通</span>
-                                <span class="label">Level 2</span>
+                                <span>疾速跑</span>
+                                <span class="label">速度中等</span>
                             </button>
 
                             <button type="submit" name="level" value="3" class="difficulty-btn btn-hard @(selectedLevel == 3 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
                                 <i class="bi bi-fire"></i>
-                                <span>困難</span>
-                                <span class="label">Level 3</span>
+                                <span>極速衝刺</span>
+                                <span class="label">速度飛快</span>
                             </button>
                         </form>
                     </div>
 
                     <!-- 遊戲容器 -->
                     <div class="game-container-section">
-                        <div id="unity-container">
-                            <div style="text-align: center;">
-                                <i class="bi bi-joystick" style="font-size: 3rem; color: var(--teal-primary); margin-bottom: 1rem; display: block;"></i>
-                                <p>Unity WebGL 遊戲容器</p>
+                        <div id="game-canvas-container" style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 360px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #87CEEB 0%, #E0F6FF 100%);">
+                            <canvas id="gameCanvas" style="display: block; width: 100%; height: 100%;"></canvas>
+                            <div id="game-start-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.95); z-index: 10;">
+                                <i class="bi bi-egg-fill" style="font-size: 3.5rem; color: var(--teal-primary); margin-bottom: 1rem; display: block; animation: bounce 1.5s ease-in-out infinite;"></i>
+                                <p style="font-size: 1.1rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem;">寵物跑酷遊戲區</p>
                                 @if (selectedLevel > 0)
                                 {
-                                    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 1rem;">已選擇難度 Level @selectedLevel</p>
+                                    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 1rem;">
+                                        已選擇難度：<strong style="color: var(--teal-primary);">
+                                            @(selectedLevel == 1 ? "輕鬆跑" : selectedLevel == 2 ? "疾速跑" : "極速衝刺")
+                                        </strong>
+                                    </p>
+                                    <p style="font-size: 0.85rem; color: #95a5a6; margin-top: 0.5rem;">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        點擊「開始遊戲」後，使用空白鍵或點擊畫面讓寵物跳躍
+                                    </p>
                                 }
                                 else
                                 {
                                     <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 1rem;">請先選擇難度開始遊戲</p>
+                                    <p style="font-size: 0.85rem; color: #95a5a6; margin-top: 0.5rem;">
+                                        <i class="bi bi-arrow-up me-1"></i>
+                                        上方選擇遊戲難度
+                                    </p>
                                 }
                             </div>
                         </div>
@@ -733,8 +746,8 @@
                             <i class="bi bi-lightbulb-fill"></i>
                             <small>
                                 <strong>遊戲提示：</strong><br>
-                                每天可進行 3 次遊戲，難度越高獎勵越豐厚。
-                                在排行榜上與其他玩家競爭吧！
+                                每天 3 次遊戲機會，難度越高獎勵越豐厚。
+                                掌握跳躍時機，創造高分記錄，在排行榜上與其他玩家一較高下！
                             </small>
                         </div>
                     }
@@ -746,15 +759,16 @@
             {
                 <div style="margin-top: 2rem; padding: 1.5rem; background: var(--teal-lighter); border-radius: 12px; border-left: 4px solid var(--teal-primary);">
                     <h5 style="color: #2c3e50; margin-bottom: 0.75rem;">
-                        <i class="bi bi-info-circle me-2" style="color: var(--teal-primary);"></i>
+                        <i class="bi bi-joystick me-2" style="color: var(--teal-primary);"></i>
                         遊戲說明
                     </h5>
                     <ul style="margin-bottom: 0; padding-left: 1.5rem; color: #2c3e50; font-size: 0.95rem;">
-                        <li>選擇適合的難度開始遊戲</li>
-                        <li>成功通關可獲得點數與寵物經驗值</li>
-                        <li>每天 3 次遊戲機會，隔日重置</li>
-                        <li>難度 Level 1（簡單）、Level 2（普通）、Level 3（困難）</li>
-                        <li>高難度遊戲獎勵更豐厚，失敗可放棄重試</li>
+                        <li><strong>操作方式：</strong>按下 <kbd style="background: #2c3e50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">空白鍵</kbd> 或點擊螢幕讓恐龍跳躍</li>
+                        <li><strong>遊戲目標：</strong>躲避仙人掌和飛鳥，跑得越遠分數越高</li>
+                        <li><strong>難度選擇：</strong>輕鬆跑（速度慢）、疾速跑（速度中）、極速衝刺（速度快）</li>
+                        <li><strong>獎勵機制：</strong>達到目標分數通關可獲得點數與寵物經驗值，難度越高獎勵越豐厚</li>
+                        <li><strong>遊戲次數：</strong>每天 3 次遊戲機會，隔日 00:00 重置</li>
+                        <li><strong>特殊規則：</strong>碰到障礙物即失敗，可選擇中途放棄重新開始</li>
                     </ul>
                 </div>
             }
@@ -777,11 +791,139 @@ else
 }
 
 @section Scripts {
+    <script src="~/Areas/MiniGame/wwwroot/js/pet-runner-game.js"></script>
     <script>
+        let petRunnerGame = null;
+        let currentGameSessionId = null;
+        let currentDifficulty = '@selectedLevel';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize game with selected difficulty
+            if (currentDifficulty && currentDifficulty !== '0') {
+                initializeGame(currentDifficulty);
+            }
+
+            // Setup start game button click handler
+            const startGameForm = document.querySelector('form[action*="StartGame"]');
+            if (startGameForm) {
+                startGameForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    startGame();
+                });
+            }
+        });
+
+        function initializeGame(difficulty) {
+            const difficultyMap = {
+                '1': 'easy',
+                '2': 'normal',
+                '3': 'hard'
+            };
+
+            if (petRunnerGame) {
+                petRunnerGame.destroy();
+            }
+
+            petRunnerGame = new PetRunnerGame('gameCanvas', {
+                difficulty: difficultyMap[difficulty] || 'normal',
+                petColor: '@(ViewBag.PetSkinColor ?? "#ff6b6b")',
+                onGameEnd: handleGameEnd
+            });
+        }
+
+        async function startGame() {
+            try {
+                // Call backend API to start game session
+                const response = await fetch('/MiniGame/Game/StartGame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `level=${currentDifficulty}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentGameSessionId = result.sessionId;
+
+                    // Hide overlay and start game
+                    const overlay = document.getElementById('game-start-overlay');
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                    }
+
+                    // Start the actual game
+                    if (petRunnerGame) {
+                        petRunnerGame.start();
+                    }
+                } else {
+                    alert(result.message || '遊戲啟動失敗，請重試');
+                }
+            } catch (error) {
+                console.error('Start game error:', error);
+                alert('遊戲啟動失敗，請重試');
+            }
+        }
+
+        async function handleGameEnd(gameData) {
+            if (!currentGameSessionId) {
+                console.error('No game session ID');
+                return;
+            }
+
+            try {
+                // Call backend API to end game and get rewards
+                const response = await fetch('/MiniGame/Game/EndGame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `sessionId=${currentGameSessionId}&result=${gameData.result}&score=${gameData.score}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show overlay with result
+                    const overlay = document.getElementById('game-start-overlay');
+                    if (overlay) {
+                        overlay.innerHTML = `
+                            <div style="text-align: center; padding: 2rem;">
+                                <i class="bi bi-${gameData.result === 'win' ? 'check-circle-fill' : 'x-circle-fill'}"
+                                   style="font-size: 4rem; color: ${gameData.result === 'win' ? '#28a745' : '#e74c3c'}; margin-bottom: 1rem;"></i>
+                                <h3 style="color: #2c3e50; margin-bottom: 1rem;">${gameData.result === 'win' ? '恭喜通關！' : '未能通關'}</h3>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: var(--teal-primary); margin-bottom: 0.5rem;">得分：${gameData.score}</p>
+                                ${result.rewardPoints > 0 ? `<p style="color: #28a745; font-size: 1.1rem; margin-bottom: 0.5rem;">💰 獲得點數: +${result.rewardPoints}</p>` : ''}
+                                ${result.rewardExperience > 0 ? `<p style="color: #ffa500; font-size: 1.1rem; margin-bottom: 1rem;">⭐ 獲得經驗: +${result.rewardExperience}</p>` : ''}
+                                <button onclick="location.reload()" class="btn" style="background: var(--teal-primary); color: white; border-radius: 12px; padding: 0.75rem 1.5rem; border: none; cursor: pointer; font-weight: 600;">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>
+                                    再玩一次
+                                </button>
+                            </div>
+                        `;
+                        overlay.style.display = 'flex';
+                    }
+                } else {
+                    alert(result.message || '遊戲結算失敗');
+                }
+            } catch (error) {
+                console.error('End game error:', error);
+                alert('遊戲結算失敗');
+            }
+        }
+
         function abortGame() {
             if (confirm('確定要放棄本局遊戲嗎？')) {
-                // TODO: 提交放棄表單或調用 API
-                console.log('遊戲已放棄');
+                if (petRunnerGame) {
+                    petRunnerGame.pause();
+                }
+
+                if (currentGameSessionId) {
+                    handleGameEnd({ result: 'abort', score: 0 });
+                }
             }
         }
 

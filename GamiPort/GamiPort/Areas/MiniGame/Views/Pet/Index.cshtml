@@ -7,6 +7,7 @@
 
 @if (User.Identity?.IsAuthenticated == true)
 {
+    @Html.AntiForgeryToken()
     <style>
         .pet-card {
             border-radius: 24px;
@@ -101,6 +102,17 @@
         .btn-teal:hover {
             background: linear-gradient(135deg, #0d9488 0%, #0a7d72 100%);
             color: white;
+        }
+
+        .btn-outline-teal {
+            color: #17a2b8;
+            border-color: #17a2b8;
+        }
+
+        .btn-outline-teal:hover {
+            background-color: #17a2b8;
+            color: white;
+            border-color: #17a2b8;
         }
 
         .info-card {
@@ -236,6 +248,93 @@
             color: #0d9488;
             text-decoration: underline;
         }
+
+        /* Start Adventure Button - Fixed Bottom Right */
+        .start-adventure-btn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff9f43 0%, #ffa500 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 24px rgba(255, 159, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.125rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .start-adventure-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 32px rgba(255, 159, 67, 0.6);
+            background: linear-gradient(135deg, #ffa500 0%, #ff8c00 100%);
+            color: white;
+            text-decoration: none;
+        }
+
+        .start-adventure-btn:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .start-adventure-btn .adventure-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            animation: bounce 1.5s ease-in-out infinite;
+        }
+
+        .start-adventure-btn .adventure-text {
+            font-size: 1rem;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 8px 24px rgba(255, 159, 67, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(255, 159, 67, 0.6);
+            }
+        }
+
+        @@keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .start-adventure-btn {
+                width: 100px;
+                height: 100px;
+                bottom: 24px;
+                right: 24px;
+                font-size: 0.875rem;
+            }
+
+            .start-adventure-btn .adventure-icon {
+                font-size: 1.75rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .start-adventure-btn .adventure-text {
+                font-size: 0.75rem;
+            }
+        }
     </style>
 
     <div class="page-background">
@@ -248,10 +347,6 @@
                         <h2 class="mb-0">我的寵物</h2>
                         <p class="text-muted mb-0">與您的寵物互動，一起成長冒險吧！</p>
                     </div>
-                </div>
-                <div class="text-end">
-                    <small class="text-muted d-block">您的點數</small>
-                    <h4 class="mb-0 text-teal fw-bold">@userPoints</h4>
                 </div>
             </div>
 
@@ -268,33 +363,44 @@
                                     <span class="level-badge">LV. @Model.Level</span>
                                 </div>
                             </div>
-                            <div class="card-body text-center p-4" style="background-color: @Model.BackgroundColor">
-                                <!-- Pet Avatar -->
-                                <div class="pet-avatar" style="background-color: @Model.SkinColor; border: 4px solid white;">
-                                    <i class="bi bi-heart-fill text-white"></i>
+                            <div class="card-body text-center p-4" style="background-image: url('/MiniGame/backgrounds/@(Model.BackgroundColor).png'); background-size: cover; background-position: center;">
+                                <!-- Pet Avatar - SVG Rendered -->
+                                <div id="petAvatarContainer" class="pet-avatar-container" style="position: relative; margin: 0 auto;">
+                                    <!-- SVG Pet will be rendered here by pet-avatar.js -->
                                 </div>
 
-                                <h3 class="mb-3 fw-bold">@Model.PetName</h3>
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                    <h3 class="mb-0 fw-bold">@Model.PetName</h3>
+                                    <button class="btn btn-sm btn-outline-teal" data-bs-toggle="modal" data-bs-target="#updateNameModal" title="修改寵物名稱">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
 
                                 <!-- Experience Bar -->
                                 <div class="mb-4">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <small class="text-muted">經驗值</small>
-                                        <small class="text-muted">@Model.Experience / @(Model.ExperienceToNextLevel ?? 0)</small>
-                                    </div>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar"
-                                             style="width: @((Model.ExperienceToNextLevel > 0 ? (Model.Experience * 100.0 / Model.ExperienceToNextLevel.Value) : 0).ToString("F2"))%; background: linear-gradient(90deg, #17a2b8 0%, #0d9488 100%);"
-                                             role="progressbar">
-                                            @((Model.ExperienceToNextLevel > 0 ? (Model.Experience * 100.0 / Model.ExperienceToNextLevel.Value) : 0).ToString("F1"))%
+                                    <div class="stat-card">
+                                        <div class="stat-label">
+                                            <i class="bi bi-star-fill me-2"></i>經驗值
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar"
+                                                 style="width: @((Model.ExperienceToNextLevel > 0 ? (Model.Experience * 100.0 / Model.ExperienceToNextLevel.Value) : 0).ToString("F2"))%; background: linear-gradient(90deg, #17a2b8 0%, #0d9488 100%);"
+                                                 role="progressbar">
+                                                @((Model.ExperienceToNextLevel > 0 ? (Model.Experience * 100.0 / Model.ExperienceToNextLevel.Value) : 0).ToString("F0"))%
+                                            </div>
+                                        </div>
+                                        <div class="text-center mt-1">
+                                            <small class="stat-description">
+                                                @Model.Experience / @(Model.ExperienceToNextLevel ?? 0)
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Last Interaction Time -->
+                                <!-- Last Level Up Time -->
                                 <div class="info-card">
                                     <i class="bi bi-clock-history me-2"></i>
-                                    <small>最後互動時間：@Model.LevelUpTime.ToUtc8String("yyyy-MM-dd HH:mm")</small>
+                                    <small>最後升級時間：@Model.LevelUpTime.ToUtc8String("yyyy/MM/dd")</small>
                                 </div>
                             </div>
                         </div>
@@ -326,9 +432,15 @@
                                             <div class="progress">
                                                 <div class="progress-bar @(Model.Hunger < 20 ? "bg-danger" : Model.Hunger < 50 ? "bg-warning" : "bg-success")"
                                                      role="progressbar"
-                                                     style="width: @Model.Hunger%">
+                                                     style="width: @Model.Hunger%"
+                                                     id="hunger-bar">
                                                     @Model.Hunger%
                                                 </div>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <small class="stat-description" id="hunger-status">
+                                                    @(Model.Hunger < 20 ? "飢餓" : "飽食")
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -342,9 +454,15 @@
                                             <div class="progress">
                                                 <div class="progress-bar @(Model.Mood < 20 ? "bg-danger" : Model.Mood < 50 ? "bg-warning" : "bg-success")"
                                                      role="progressbar"
-                                                     style="width: @Model.Mood%">
+                                                     style="width: @Model.Mood%"
+                                                     id="mood-bar">
                                                     @Model.Mood%
                                                 </div>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <small class="stat-description" id="mood-status">
+                                                    @(Model.Mood < 20 ? "難過" : "開心")
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -358,9 +476,15 @@
                                             <div class="progress">
                                                 <div class="progress-bar @(Model.Stamina < 20 ? "bg-danger" : Model.Stamina < 50 ? "bg-warning" : "bg-success")"
                                                      role="progressbar"
-                                                     style="width: @Model.Stamina%">
+                                                     style="width: @Model.Stamina%"
+                                                     id="stamina-bar">
                                                     @Model.Stamina%
                                                 </div>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <small class="stat-description" id="stamina-status">
+                                                    @(Model.Stamina < 20 ? "很累" : "充分休息")
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -374,9 +498,15 @@
                                             <div class="progress">
                                                 <div class="progress-bar @(Model.Cleanliness < 20 ? "bg-danger" : Model.Cleanliness < 50 ? "bg-warning" : "bg-success")"
                                                      role="progressbar"
-                                                     style="width: @Model.Cleanliness%">
+                                                     style="width: @Model.Cleanliness%"
+                                                     id="cleanliness-bar">
                                                     @Model.Cleanliness%
                                                 </div>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <small class="stat-description" id="cleanliness-status">
+                                                    @(Model.Cleanliness < 20 ? "身體很臭" : "身體乾淨")
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -390,9 +520,15 @@
                                             <div class="progress">
                                                 <div class="progress-bar @(Model.Health < 20 ? "bg-danger" : Model.Health < 50 ? "bg-warning" : "bg-success")"
                                                      role="progressbar"
-                                                     style="width: @Model.Health%">
+                                                     style="width: @Model.Health%"
+                                                     id="health-bar">
                                                     @Model.Health%
                                                 </div>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <small class="stat-description" id="health-status">
+                                                    @(Model.Health < 20 ? "生病" : "很健康")
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -421,7 +557,7 @@
                                             <small class="btn-cost" style="display: none;">冷卻中...</small>
                                         </button>
                                         <button class="btn btn-action btn-outline-primary pet-action-btn" id="sleepBtn" onclick="interactWithPet('sleep', this)">
-                                            <span class="btn-text"><i class="bi bi-moon-stars"></i> 睡眠</span>
+                                            <span class="btn-text"><i class="bi bi-moon-stars"></i> 睡覺</span>
                                             <span class="loading-spinner"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
                                             <small class="btn-cost" style="display: none;">冷卻中...</small>
                                         </button>
@@ -454,8 +590,8 @@
                                         <span class="fw-bold text-teal">@(Model.ExperienceToNextLevel ?? 0)</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <span class="stat-label">升級時間</span>
-                                        <span class="fw-bold">@Model.LevelUpTime.ToUtc8String("MM/dd")</span>
+                                        <span class="stat-label">最後升級時間</span>
+                                        <span class="fw-bold">@Model.LevelUpTime.ToUtc8String("yyyy/MM/dd")</span>
                                     </div>
                                 </div>
                                 @if (Model.PointsGainedLevelUp > 0)
@@ -479,7 +615,7 @@
                                         <i class="bi bi-palette-fill me-2"></i>當前膚色
                                     </label>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div style="width: 40px; height: 40px; background-color: @Model.SkinColor; border-radius: 50%; border: 3px solid #ddd;"></div>
+                                        <div style="width: 40px; height: 40px; background-color: @Model.SkinColor; border-radius: 50%; border: 3px solid #F0F0F0;"></div>
                                         <span class="text-muted">@Model.SkinColor</span>
                                     </div>
                                     <small class="text-muted d-block mt-2">
@@ -492,7 +628,7 @@
                                         <i class="bi bi-image me-2"></i>當前背景
                                     </label>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div style="width: 40px; height: 40px; background-color: @Model.BackgroundColor; border-radius: 8px; border: 3px solid #ddd;"></div>
+                                        <div style="width: 80px; height: 60px; background-image: url('/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/@(Model.BackgroundColor).png'); background-size: cover; background-position: center; border-radius: 8px; border: 3px solid #ddd;"></div>
                                         <span class="text-muted">@Model.BackgroundColor</span>
                                     </div>
                                     <small class="text-muted d-block mt-2">
@@ -533,49 +669,144 @@
                     </div>
                 </div>
             }
+
+            <!-- Start Adventure Button (Fixed Position) -->
+            @if (Model != null)
+            {
+                <a href="/MiniGame/Game/Index" class="start-adventure-btn" title="開始冒險遊戲">
+                    <i class="bi bi-controller adventure-icon"></i>
+                    <span class="adventure-text">出發冒險</span>
+                </a>
+            }
         </div>
     </div>
+
+    <!-- Update Name Modal -->
+    @if (Model != null)
+    {
+        <div class="modal fade" id="updateNameModal" tabindex="-1" aria-labelledby="updateNameModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%); color: white;">
+                        <h5 class="modal-title" id="updateNameModalLabel">
+                            <i class="bi bi-pencil-square me-2"></i>修改寵物名稱
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newPetName" class="form-label fw-bold">新名稱</label>
+                            <input type="text" class="form-control" id="newPetName" placeholder="請輸入新的寵物名稱" maxlength="20" value="@Model.PetName">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                寵物名稱長度限制為 1-20 字元
+                            </div>
+                        </div>
+                        <div id="updateNameAlert" class="alert d-none" role="alert"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-teal" id="confirmUpdateNameBtn" onclick="updatePetName()">
+                            <i class="bi bi-check-circle me-1"></i>確認修改
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
+
+    <!-- 引入可愛寵物 SVG 渲染器 -->
+    <script src="/MiniGame/js/pet-avatar.js"></script>
+
     <script>
-        // Interaction configuration
+        // 全局變量：寵物實例
+        let petAvatar = null;
+
+        // 頁面加載時初始化寵物
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('petAvatarContainer')) {
+                // 根據當前寵物數據創建 SVG 寵物
+                petAvatar = new PetAvatar('petAvatarContainer', {
+                    skinColor: '@Model.SkinColor',
+                    backgroundColor: '@Model.BackgroundColor',
+                    size: 180,
+                    animated: true,
+                    enableEyeTracking: true,
+                    enableBreathing: true,
+                    hunger: @Model.Hunger,
+                    mood: @Model.Mood,
+                    stamina: @Model.Stamina,
+                    cleanliness: @Model.Cleanliness,
+                    health: @Model.Health,
+                    level: @Model.Level
+                });
+            }
+        });
+
+        // 互動配置（僅用於前端提示）
         const interactionConfig = {
-            feed: { icon: 'bi-cup-straw', message: '您給寵物餵食了！', statChanges: { hunger: -20, experience: 10 }, cooldown: 60 },
-            bath: { icon: 'bi-droplet', message: '您給寵物洗澡了！', statChanges: { cleanliness: +20, stamina: -10, experience: 15 }, cooldown: 120 },
-            play: { icon: 'bi-dice-5', message: '您和寵物一起玩耍了！', statChanges: { mood: +20, stamina: -20, hunger: +10, experience: 20 }, cooldown: 90 },
-            sleep: { icon: 'bi-moon-stars', message: '寵物睡覺了，狀態恢復中...', statChanges: { stamina: +30, hunger: -10, health: +10, experience: 5 }, cooldown: 180 }
+            feed: { icon: 'bi-cup-straw', message: '您給寵物餵食了！', type: 'feed' },
+            bath: { icon: 'bi-droplet', message: '您給寵物洗澡了！', type: 'bath' },
+            play: { icon: 'bi-dice-5', message: '您和寵物一起玩耍了！', type: 'play' },
+            sleep: { icon: 'bi-moon-stars', message: '寵物睡覺了，狀態恢復中...', type: 'sleep' }
         };
 
         const interactionCooldowns = {};
 
         async function interactWithPet(action, button) {
-            // Check cooldown
-            if (interactionCooldowns[action]) {
-                showResult(false, `${action}互動冷卻中，請稍候 ${interactionCooldowns[action]} 秒`);
-                return;
-            }
-
             // Disable button and show loading
             button.disabled = true;
             button.classList.add('loading');
 
             try {
-                // TODO: Call actual API endpoint
-                // const response = await fetch('/MiniGame/Pet/Interact', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify({ action: action, petId: @Model.PetId })
-                // });
+                // 獲取 anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 
-                // For demo purposes, simulate API call
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // 調用實際 API
+                const response = await fetch('/MiniGame/Pet/Interact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token || ''
+                    },
+                    body: `action=${encodeURIComponent(action)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                });
 
-                // Simulate success
-                const config = interactionConfig[action];
-                showResult(true, config.message, config.statChanges);
-                setInteractionCooldown(action, config.cooldown);
+                const result = await response.json();
 
-                // TODO: Update pet stats in real-time
-                // Update UI with new stats from API response
+                if (result.success) {
+                    // 播放互動動畫
+                    if (petAvatar) {
+                        petAvatar.playInteraction(action);
+                    }
+
+                    // 顯示成功消息
+                    showResult(true, result.message, null);
+
+                    // 更新寵物狀態（檢查pet對象是否存在且有有效數據）
+                    if (result.pet && typeof result.pet.hunger === 'number') {
+                        updatePetStats(result.pet);
+
+                        // 更新寵物 SVG
+                        if (petAvatar) {
+                            petAvatar.updateStats({
+                                hunger: result.pet.hunger,
+                                mood: result.pet.mood,
+                                stamina: result.pet.stamina,
+                                cleanliness: result.pet.cleanliness,
+                                health: result.pet.health
+                            });
+                        }
+                    } else {
+                        // 如果後端沒有返回pet數據，重新加載頁面以獲取最新狀態
+                        console.log('Pet data not returned, reloading page...');
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
+
+                } else {
+                    showResult(false, result.message);
+                }
 
             } catch (error) {
                 showResult(false, '互動失敗，請重試');
@@ -584,6 +815,100 @@
                 button.disabled = false;
                 button.classList.remove('loading');
             }
+        }
+
+        // 更新寵物狀態 UI
+        function updatePetStats(pet) {
+            // 更新進度條
+            updateProgressBar('Hunger', pet.hunger);
+            updateProgressBar('Mood', pet.mood);
+            updateProgressBar('Stamina', pet.stamina);
+            updateProgressBar('Cleanliness', pet.cleanliness);
+            updateProgressBar('Health', pet.health);
+
+            // 更新狀態描述
+            updateStatusDescription('hunger', pet.hunger);
+            updateStatusDescription('mood', pet.mood);
+            updateStatusDescription('stamina', pet.stamina);
+            updateStatusDescription('cleanliness', pet.cleanliness);
+            updateStatusDescription('health', pet.health);
+
+            // 更新健康狀態文字
+            if (pet.healthStatus) {
+                const healthStatusElement = document.querySelector('.pet-health-status');
+                if (healthStatusElement) {
+                    healthStatusElement.textContent = pet.healthStatus;
+                }
+            }
+        }
+
+        // 更新狀態描述
+        function updateStatusDescription(attrName, attrValue) {
+            const statusElement = document.getElementById(`${attrName}-status`);
+            if (!statusElement) return;
+
+            const description = getStatusDescription(attrName, attrValue);
+            statusElement.textContent = description;
+        }
+
+        // 獲取狀態描述文字
+        // 商業規則：屬性值 < 20 顯示負面狀態，否則顯示正面狀態
+        function getStatusDescription(attrName, attrValue) {
+            const statusMap = {
+                hunger: { low: '飢餓', high: '飽食' },
+                mood: { low: '難過', high: '開心' },
+                stamina: { low: '很累', high: '充分休息' },
+                cleanliness: { low: '身體很臭', high: '身體乾淨' },
+                health: { low: '生病', high: '很健康' }
+            };
+
+            const threshold = 20;
+            const status = statusMap[attrName];
+
+            if (!status) return '';
+
+            return attrValue < threshold ? status.low : status.high;
+        }
+
+        // 更新進度條
+        function updateProgressBar(statName, value) {
+            const progressBar = document.querySelector(`.progress-bar:has(~ div:contains("${statName}"))`);
+            if (!progressBar) return;
+
+            // 尋找對應的進度條 - 使用更精確的選擇器
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                const label = card.querySelector('.stat-label');
+                if (label && label.textContent.includes(getStatLabelText(statName))) {
+                    const bar = card.querySelector('.progress-bar');
+                    if (bar) {
+                        bar.style.width = value + '%';
+                        bar.textContent = value + '%';
+
+                        // 更新顏色
+                        bar.className = 'progress-bar';
+                        if (value < 20) {
+                            bar.classList.add('bg-danger');
+                        } else if (value < 50) {
+                            bar.classList.add('bg-warning');
+                        } else {
+                            bar.classList.add('bg-success');
+                        }
+                    }
+                }
+            });
+        }
+
+        // 獲取狀態中文標籤
+        function getStatLabelText(statName) {
+            const labels = {
+                'Hunger': '飢餓度',
+                'Mood': '心情',
+                'Stamina': '體力',
+                'Cleanliness': '清潔度',
+                'Health': '健康值'
+            };
+            return labels[statName] || statName;
         }
 
         function showResult(success, message, statChanges) {
@@ -667,6 +992,78 @@
         document.addEventListener('DOMContentLoaded', function () {
             // TODO: Fetch cooldown status from server
             // /MiniGame/Pet/GetCooldownStatus
+        });
+
+        // Update pet name function
+        async function updatePetName() {
+            const newName = document.getElementById('newPetName').value.trim();
+            const alertDiv = document.getElementById('updateNameAlert');
+            const confirmBtn = document.getElementById('confirmUpdateNameBtn');
+
+            // Validate name
+            if (!newName) {
+                showNameUpdateAlert('danger', '寵物名稱不能為空');
+                return;
+            }
+
+            if (newName.length < 1 || newName.length > 20) {
+                showNameUpdateAlert('danger', '寵物名稱長度必須為 1-20 字元');
+                return;
+            }
+
+            // Disable button and show loading
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>更新中...';
+
+            try {
+                const response = await fetch('/MiniGame/Pet/UpdateName', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `newName=${encodeURIComponent(newName)}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update UI - find the h3 with pet name
+                    const petNameElement = document.querySelector('.pet-card-header + .card-body .d-flex.align-items-center h3');
+                    if (petNameElement) {
+                        petNameElement.textContent = result.pet.petName;
+                    }
+
+                    // Show success message
+                    showNameUpdateAlert('success', result.message);
+
+                    // Close modal after 1.5 seconds
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('updateNameModal'));
+                        modal.hide();
+                        alertDiv.classList.add('d-none');
+                    }, 1500);
+                } else {
+                    showNameUpdateAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Update name error:', error);
+                showNameUpdateAlert('danger', '名稱更新失敗，請重試');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>確認修改';
+            }
+        }
+
+        function showNameUpdateAlert(type, message) {
+            const alertDiv = document.getElementById('updateNameAlert');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.classList.remove('d-none');
+        }
+
+        // Clear alert when modal is opened
+        document.getElementById('updateNameModal')?.addEventListener('show.bs.modal', function () {
+            document.getElementById('updateNameAlert').classList.add('d-none');
         });
     </script>
 }

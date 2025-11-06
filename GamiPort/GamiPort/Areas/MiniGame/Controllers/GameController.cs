@@ -29,7 +29,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		/// <summary>
 		/// 遊戲首頁 - 顯示難度選擇與今日剩餘次數
 		/// </summary>
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(int? selectedLevel = null, string? gameResult = null, int? rewardPoints = null, int? rewardExperience = null)
 		{
 			// 檢查登入狀態
 			if (User.Identity?.IsAuthenticated != true)
@@ -55,8 +55,17 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				int remainingPlays = await _gamePlayService.GetUserRemainingPlaysAsync(userId);
 
 				// 傳遞資料到視圖
-				ViewBag.RemainingPlays = remainingPlays;
+				ViewBag.TodayRemainingPlays = remainingPlays;
 				ViewBag.UserId = userId;
+				ViewBag.SelectedLevel = selectedLevel ?? 0;
+				ViewBag.GameResult = gameResult;
+				ViewBag.RewardPoints = rewardPoints ?? 0;
+				ViewBag.RewardExperience = rewardExperience ?? 0;
+
+				// TODO: 獲取統計數據
+				ViewBag.MonthlyWins = 0; // await _gamePlayService.GetMonthlyWinsAsync(userId);
+				ViewBag.MonthlyPoints = 0; // await _gamePlayService.GetMonthlyPointsAsync(userId);
+				ViewBag.WinRate = "0"; // await _gamePlayService.GetWinRateAsync(userId);
 
 				return View();
 			}
@@ -68,10 +77,32 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		}
 
 		/// <summary>
-		/// 選擇難度並啟動遊戲
+		/// 選擇難度 - 重定向到 Index 並顯示所選難度
 		/// </summary>
 		[HttpPost]
-		public async Task<IActionResult> SelectDifficulty(int level)
+		public IActionResult SelectDifficulty(int level)
+		{
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Unauthorized();
+			}
+
+			// 驗證難度等級
+			if (level < 1 || level > 3)
+			{
+				return RedirectToAction("Index");
+			}
+
+			// 重定向到 Index 並傳遞選擇的難度
+			return RedirectToAction("Index", new { selectedLevel = level });
+		}
+
+		/// <summary>
+		/// 開始遊戲 - 實際啟動遊戲並扣除次數
+		/// 自動根據難度進程機制決定關卡等級
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> StartGame()
 		{
 			if (User.Identity?.IsAuthenticated != true)
 			{
@@ -88,31 +119,32 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 				if (userId == 0)
 				{
-					return Json(new { success = false, message = "未授權的用戶" });
+					TempData["ErrorMessage"] = "未授權的用戶";
+					return RedirectToAction("Index");
 				}
 
-				// 驗證難度等級
-				if (level < 1 || level > 3)
-				{
-					return Json(new { success = false, message = "無效的難度等級" });
-				}
-
-				// 啟動遊戲
-				var (success, message, playId) = await _gamePlayService.StartGameAsync(userId, level);
+				// 啟動遊戲（自動計算關卡、扣除遊戲次數、創建遊戲記錄）
+				var (success, message, playId, level) = await _gamePlayService.StartGameAsync(userId);
 
 				if (success)
 				{
-					return Json(new { success = true, message = message, playId = playId, level = level });
+					// 儲存遊戲 ID 和關卡到 TempData 供遊戲結束時使用
+					TempData["CurrentPlayId"] = playId;
+					TempData["CurrentLevel"] = level;
+					TempData["SuccessMessage"] = message;
+					return RedirectToAction("Index", new { selectedLevel = level });
 				}
 				else
 				{
-					return Json(new { success = false, message = message });
+					TempData["ErrorMessage"] = message;
+					return RedirectToAction("Index");
 				}
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "選擇難度時發生錯誤");
-				return Json(new { success = false, message = "啟動遊戲失敗，請稍後重試" });
+				_logger.LogError(ex, "啟動遊戲時發生錯誤");
+				TempData["ErrorMessage"] = "啟動遊戲失敗，請稍後重試";
+				return RedirectToAction("Index");
 			}
 		}
 

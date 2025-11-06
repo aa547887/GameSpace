@@ -64,11 +64,23 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		}
 
 		/// <summary>
+		/// 簽到頁面 - GET 方法，重定向到主頁面
+		/// </summary>
+		[HttpGet]
+		public IActionResult CheckIn()
+		{
+			// GET 請求重定向到簽到主頁
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			return RedirectToAction(nameof(Index), new { year = appNow.Year, month = appNow.Month });
+		}
+
+		/// <summary>
 		/// 執行簽到 - POST 方法，處理簽到邏輯
 		/// </summary>
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> CheckIn()
+		[ActionName("CheckIn")]
+		public async Task<IActionResult> CheckInPost()
 		{
 			// 檢查登入狀態
 			if (User.Identity?.IsAuthenticated != true)
@@ -139,6 +151,23 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 			return View(viewModel);
 		}
+
+		/// <summary>
+		/// 簽到規則 - 顯示所有活動簽到規則的獎勵表
+		/// </summary>
+		public async Task<IActionResult> Rules()
+		{
+			// 取得所有活動簽到規則（不需要登入）
+			var rules = await _signInService.GetAllActiveRulesAsync();
+
+			// 準備 ViewModel
+			var viewModel = new SignInRulesViewModel
+			{
+				Rules = rules
+			};
+
+			return View(viewModel);
+		}
 	}
 
 	/// <summary>
@@ -172,5 +201,14 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 		/// <summary>篩選月份（可選）</summary>
 		public int? FilterMonth { get; set; }
+	}
+
+	/// <summary>
+	/// 簽到規則 ViewModel
+	/// </summary>
+	public class SignInRulesViewModel
+	{
+		/// <summary>所有活動簽到規則列表</summary>
+		public List<SignInRuleDto> Rules { get; set; } = new();
 	}
 }

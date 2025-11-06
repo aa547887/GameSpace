@@ -1,15 +1,13 @@
+@model Dictionary<string, object>
 @using GamiPort.Areas.MiniGame.Helpers
 @{
     ViewData["Title"] = "我的錢包";
-    var userWallet = ViewBag.UserWallet as dynamic;
-    var coupons = ViewBag.Coupons as List<dynamic> ?? new List<dynamic>();
-    var eVouchers = ViewBag.EVouchers as List<dynamic> ?? new List<dynamic>();
-    var walletHistory = ViewBag.WalletHistory as List<dynamic> ?? new List<dynamic>();
 
-    var points = userWallet?.Points ?? 0;
-    var couponCount = coupons?.Count ?? 0;
-    var eVoucherCount = eVouchers?.Count ?? 0;
-    var lastUpdated = (DateTime)(userWallet?.UpdatedAt ?? DateTime.UtcNow);
+    // 從 Model 獲取數據
+    var points = Model.ContainsKey("CurrentPoints") ? Convert.ToInt32(Model["CurrentPoints"]) : 0;
+    var couponCount = Model.ContainsKey("UnusedCouponCount") ? Convert.ToInt32(Model["UnusedCouponCount"]) : 0;
+    var eVoucherCount = Model.ContainsKey("UnusedEVoucherCount") ? Convert.ToInt32(Model["UnusedEVoucherCount"]) : 0;
+    var lastUpdated = DateTime.UtcNow;
 }
 
 @if (User.Identity?.IsAuthenticated == true)
@@ -128,76 +126,7 @@
                 </div>
             </div>
 
-            <!-- 最近交易記錄 -->
-            @if (walletHistory != null && walletHistory.Count > 0)
-            {
-                <div class="row g-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-light border-bottom">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-hourglass-split"></i> 最近10筆交易記錄
-                                </h5>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="ps-4">交易時間</th>
-                                                <th>交易類型</th>
-                                                <th class="text-end">交易金額</th>
-                                                <th class="text-center">餘額</th>
-                                                <th class="pe-4">說明</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var record in walletHistory.Take(10))
-                                            {
-                                                var isIncome = record.Amount > 0;
-                                                <tr>
-                                                    <td class="ps-4">
-                                                        @((DateTime)record.CreatedAt).ToUtc8String("MM-dd HH:mm")
-                                                    </td>
-                                                    <td>
-                                                        @if (record.TransactionType == "SignIn")
-                                                        {
-                                                            <span class="badge bg-success">簽到</span>
-                                                        }
-                                                        else if (record.TransactionType == "GameReward")
-                                                        {
-                                                            <span class="badge bg-primary">遊戲獎勵</span>
-                                                        }
-                                                        else if (record.TransactionType == "CouponRedeem")
-                                                        {
-                                                            <span class="badge bg-warning">優惠券兌換</span>
-                                                        }
-                                                        else if (record.TransactionType == "EVoucherRedeem")
-                                                        {
-                                                            <span class="badge bg-danger">禮券兌換</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary">@record.TransactionType</span>
-                                                        }
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span class="@(isIncome ? "text-success fw-bold" : "text-danger fw-bold")">
-                                                            @(isIncome ? "+" : "")@record.Amount
-                                                        </span>
-                                                    </td>
-                                                    <td class="text-center">@record.BalanceAfter</td>
-                                                    <td class="pe-4">@record.Description</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
+            @* 交易歷史功能已移至 /MiniGame/Wallet/History *@
         </div>
     </div>
 
@@ -242,11 +171,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <h6 class="fw-bold text-teal">交易類型說明</h6>
+                        <p class="text-muted mb-2">錢包記錄三種類型的交易明細：</p>
                         <ul class="text-muted mb-0">
-                            <li><span class="badge bg-success">簽到</span> - 每日簽到獲得的點數</li>
-                            <li><span class="badge bg-primary">遊戲獎勵</span> - 玩小遊戲贏得的點數</li>
-                            <li><span class="badge bg-warning">優惠券兌換</span> - 兌換優惠券消耗的點數</li>
-                            <li><span class="badge bg-danger">禮券兌換</span> - 兌換電子禮券消耗的點數</li>
+                            <li><span class="badge bg-success">點數交易</span> - 包含簽到獲得、遊戲獎勵、兌換消耗等點數變動</li>
+                            <li><span class="badge bg-warning">優惠券交易</span> - 使用點數兌換商城優惠券的記錄</li>
+                            <li><span class="badge bg-danger">電子禮券交易</span> - 使用點數兌換電子禮券的記錄</li>
                         </ul>
                     </div>
                     <div>
