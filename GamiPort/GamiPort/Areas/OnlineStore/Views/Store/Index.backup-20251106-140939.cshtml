@@ -45,7 +45,7 @@
                 </div>
                 <div class="row g-3">
                     <div class="col-lg-8"><div class="row g-3" id="triTop3"></div></div>
-                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="triList" start="4" style="--bs-list-group-border-color:transparent;"></ol></div>
+                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="triList" style="--bs-list-group-border-color:transparent;"></ol></div>
                 </div>
             </section>
 
@@ -64,7 +64,7 @@
                 <input type="date" id="rank-date" class="form-control form-control-sm" style="width: auto;">
                 <div class="row g-3 mt-3">
                     <div class="col-lg-8"><div class="row g-3" id="salesTop3"></div></div>
-                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="salesList" start="4" style="--bs-list-group-border-color:transparent;"></ol></div>
+                    <div class="col-lg-4"><ol class="list-group list-group-numbered" id="salesList" style="--bs-list-group-border-color:transparent;"></ol></div>
                 </div>
             </section>
 
@@ -146,10 +146,9 @@
         #storeHero .carousel-item img { width: 100%; height: 100%; object-fit: contain; }
         #storeHero .carousel-control-prev, #storeHero .carousel-control-next { width: 5%; background: rgba(0,0,0,0.1); border-radius: 12px; margin: 0 1rem; transition: background-color 0.2s ease; }
         #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover { background: rgba(0,0,0,0.3); }
-        /* Carousel progress segments (FA) */
-        #storeHero .hero-indicators { position: absolute; left: 0; right: 0; bottom: -36px; display: flex; gap: 10px; padding: 0 24px; }
-        .hero-seg { flex: 1 1 0; height: 6px; background: #e6ebf2; border-radius: 999px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
-        .hero-seg-bar { display: block; height: 100%; width: 0%; background: #0d6efd; transition: width 5s linear; }
+        #storeHero .carousel-indicators { bottom: -50px; gap: 8px; }
+        #storeHero .carousel-indicators button { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; border: 0; opacity: 0.7; transition: width .3s ease, border-radius .3s ease; }
+        #storeHero .carousel-indicators .active { width: 30px; border-radius: 5px; background-color: #0d6efd; }
 
         .home-row .card {
             border: none;
@@ -197,13 +196,12 @@
                 const top3 = items.slice(0,3);
                 const rest = items.slice(3,10);
                 $(top3Sel).innerHTML = top3.map((p,i)=>`
-                    <div class="col-12 col-md-4">
                         <a href="/OnlineStore/Product/Detail/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
-                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:contain; background-position:center;"></div>
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
                             <div class="card-body">
-                                <span class="badge bg-dark me-2">No.${i+1}</span>
+                                <span class="badge bg-dark me-2">${i+1}</span>
                                 <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
-                                <h6 class="card-title mt-1" title="${p.productName}">${p.productName}</h6>
+                                <h6 class="card-title mt-1 text-truncate" title="${p.productName}">${p.productName}</h6>
                                 <div class="fw-semibold">${fmtCurrency(p.price)}</div>
                             </div>
                         </a>
@@ -369,43 +367,23 @@
                 });
             }
 
-            const interval = parseInt(carousel.getAttribute('data-bs-interval')) || 5000;
             const indicatorContainer = carousel.querySelector('.hero-indicators');
-            indicatorContainer.innerHTML = ''; // build progress segments
-            const segBars = items.map(() => {
-                const seg = document.createElement('div');
-                seg.className = 'hero-seg';
-                const bar = document.createElement('span');
-                bar.className = 'hero-seg-bar';
-                seg.appendChild(bar);
-                indicatorContainer.appendChild(seg);
-                return bar;
+            indicatorContainer.innerHTML = ''; // Clear existing indicators
+            items.forEach((_, i) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.dataset.bsTarget = '#storeHero';
+                button.dataset.bsSlideTo = i;
+                if (i === 0) button.classList.add('active');
+                indicatorContainer.appendChild(button);
             });
-            function startProgress(idx){
-                segBars.forEach(b => { b.style.transition = 'none'; b.style.width = '0%'; });
-                void segBars[idx].offsetWidth; // reflow
-                segBars[idx].style.transition = `width ${interval}ms linear`;
-                segBars[idx].style.width = '100%';
-            }
 
             carousel.addEventListener('slide.bs.carousel', function (e) {
                 updateCarouselClasses(e.to);
             });
-            carousel.addEventListener('slid.bs.carousel', function (e) { startProgress(e.to); });
 
             const initialActiveIndex = items.findIndex(item => item.classList.contains('active'));
             updateCarouselClasses(initialActiveIndex > -1 ? initialActiveIndex : 0);
-            startProgress(initialActiveIndex > -1 ? initialActiveIndex : 0);
-            // Home hero search routes to Browse
-            const heroInput = document.getElementById('heroQ');
-            const heroBtn = document.getElementById('heroGo');
-            function goBrowse(){
-                const q = (heroInput?.value || '').trim();
-                const url = q ? `/OnlineStore/Store/Browse?q=${encodeURIComponent(q)}` : '/OnlineStore/Store/Browse';
-                location.href = url;
-            }
-            heroBtn?.addEventListener('click', goBrowse);
-            heroInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ goBrowse(); }});
         });
     </script>
 }

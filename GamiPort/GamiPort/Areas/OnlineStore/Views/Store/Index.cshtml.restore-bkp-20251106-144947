@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "GamiStore";
 }
 
@@ -8,11 +8,11 @@
     <div class="carousel-wrapper">
         <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
         <div class="carousel-inner hero-inner">
-            <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt="GamiStore Birthday"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="卡比"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="NINJA"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt="絕對摩拳"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt="無雙戰技"></div>
+            <div class="carousel-item active"><img src="~/images/onlinestoreCM/01撱??嚗amiStoreBirth.png" alt="GamiStore Birthday"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/02撱??嚗瘥?jpg" alt="?⊥?"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/03撱??嚗INJA.jpg" alt="NINJA"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/04撱??嚗?撠??jpg" alt="蝯??拇"></div>
+            <div class="carousel-item"><img src="~/images/onlinestoreCM/05撱??嚗??.jpg" alt="?⊿??唳?"></div>
         </div>
         <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev"><i class="bi bi-chevron-left"></i></button>
         <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next"><i class="bi bi-chevron-right"></i></button>
@@ -24,7 +24,7 @@
     <div class="hero-search-wrapper">
          <div class="hero-search">
             <i class="bi bi-search"></i>
-            <input id="heroQ" placeholder="搜尋遊戲、周邊、點數卡…" />
+            <input id="heroQ" placeholder="???????詨?? />
             <button class="btn btn-primary btn-sm" id="heroGo"><i class="bi bi-search"></i></button>
         </div>
     </div>
@@ -33,15 +33,16 @@
     <div class="row g-4">
         <!-- Main Content Column -->
         <div class="col-lg-9">
-            <!-- ✳️ 區塊 A：『最新 / 收藏 / 點擊』三切換排行榜 -->
+            <!-- ?喉? ?憛?A嚗???/ ?嗉? / 暺???????璁?-->
             <section class="my-5 content-block" id="triRank">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h4 class="mb-0">排行榜</h4>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-dark active" data-tri="latest">最新上架</button>
-                        <button class="btn btn-outline-dark" data-tri="favorite">收藏排行</button>
+                <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+                    <h4 class="mb-0 me-2">排行榜</h4>
+                    <div class="btn-group glass-toggle mx-auto">
+                        <button class="btn btn-outline-dark active" data-tri="favorite">收藏排行</button>
                         <button class="btn btn-outline-dark" data-tri="click">點擊排行</button>
                     </div>
+                    <div class="ms-auto text-muted update-at" id="triUpdateAt"></div>
+                </div>
                 </div>
                 <div class="row g-3">
                     <div class="col-lg-8"><div class="row g-3" id="triTop3"></div></div>
@@ -49,49 +50,46 @@
                 </div>
             </section>
 
-            <!-- ✳️ 區塊 B：『熱銷排行』五切換 -->
+            <!-- ?喉? ?憛?B嚗?瑟?銵??? -->
             <section class="my-5 content-block" id="salesRank">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h4 class="mb-0">熱銷排行</h4>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-primary active" data-sales="daily">日</button>
-                        <button class="btn btn-outline-primary" data-sales="weekly">週</button>
-                        <button class="btn btn-outline-primary" data-sales="monthly">月</button>
-                        <button class="btn btn-outline-primary" data-sales="quarterly">季</button>
-                        <button class="btn btn-outline-primary" data-sales="yearly">年</button>
+                <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+                    <h4 class="mb-0 me-2">熱銷排行</h4>
+                    <div class="btn-group glass-toggle mx-auto">
+                        <button class="btn btn-outline-primary active" data-sales="daily">日熱銷</button>
+                        <button class="btn btn-outline-primary" data-sales="weekly">週熱銷</button>
                     </div>
+                    <div class="ms-auto text-muted update-at" id="salesUpdateAt"></div>
                 </div>
-                <input type="date" id="rank-date" class="form-control form-control-sm" style="width: auto;">
                 <div class="row g-3 mt-3">
                     <div class="col-lg-8"><div class="row g-3" id="salesTop3"></div></div>
                     <div class="col-lg-4"><ol class="list-group list-group-numbered" id="salesList" start="4" style="--bs-list-group-border-color:transparent;"></ol></div>
                 </div>
             </section>
 
-            <!-- ✳️ 區塊 C：『最新上架』 -->
+            <!-- ?喉? ?憛?C嚗??唬??嗚?-->
             <section class="my-5" id="latest5">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h4 class="mb-0">最新上架</h4>
-                    <a class="small" href="/OnlineStore/Store/Browse?sort=newest">更多…</a>
+                    <h4 class="mb-0">??唬???/h4>
+                    <a class="small" href="/OnlineStore/Store/Browse?sort=newest">?游???/a>
                 </div>
                 <div class="row g-3" id="latestRow"></div>
             </section>
 
-            <!-- ✳️ 區塊 D：『三顆分類 + 5×3 隨機小卡』 -->
+            <!-- ?喉? ?憛?D嚗?憿?憿?+ 5?3 ?冽?撠??-->
             <section class="my-5" id="categoryRandom">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h4 class="mb-0">探索更多</h4>
+                    <h4 class="mb-0">?Ｙ揣?游?</h4>
                     <div class="btn-group">
-                        <button class="btn btn-outline-secondary active" data-cat="game">遊戲商品</button>
-                        <button class="btn btn-outline-secondary" data-cat="notgame">周邊商品</button>
-                        <button class="btn btn-outline-secondary" data-cat="pointcard">點數卡</button>
+                        <button class="btn btn-outline-secondary active" data-cat="game">???</button>
+                        <button class="btn btn-outline-secondary" data-cat="notgame">?券???</button>
+                        <button class="btn btn-outline-secondary" data-cat="pointcard">暺??/button>
                     </div>
                 </div>
                 <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3" id="catGrid"></div>
                  <div class="text-end mt-3">
-                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=game">更多遊戲…</a>
-                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=notgame">更多周邊…</a>
-                    <a class="small" href="/OnlineStore/Store/Browse?merchTypeId=3">更多點數卡…</a>
+                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=game">?游????/a>
+                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=notgame">?游??券???/a>
+                    <a class="small" href="/OnlineStore/Store/Browse?merchTypeId=3">?游?暺?﹦?/a>
                 </div>
             </section>
         </div>
@@ -192,6 +190,44 @@
             const tagLine = (p) => (p.productType?.toLowerCase() === 'game') ? (p.platformName ?? '') : (p.merchTypeName ?? '');
             const apiBase = '/OnlineStore/api/StoreApi';
 
+                  // ===== Height Sync: rank blocks vs ad rail (desktop only) =====
+        function equalizeRankHeight() {
+          const isLgUp = window.matchMedia('(min-width: 992px)').matches;
+          const tri = document.getElementById('triRank');
+          const sales = document.getElementById('salesRank');
+          const ad = document.querySelector('.ad-rail');
+          if (!tri || !ad) return;
+
+          // 銵???撠?嚗???min-height
+          if (!isLgUp) {
+            tri.style.minHeight = '';
+            if (sales) sales.style.minHeight = '';
+            return;
+          }
+
+          // 隞亙?游誨??摨衣?箸?嚗?憛頨急擃?銝?雿?
+          const adH = ad.getBoundingClientRect().height || 0;
+          const triH = tri.getBoundingClientRect().height || 0;
+          const salesH = sales ? (sales.getBoundingClientRect().height || 0) : 0;
+
+          tri.style.minHeight = Math.max(triH, adH) + 'px';
+          if (sales) sales.style.minHeight = Math.max(salesH, adH) + 'px';
+        }
+
+        // debounce resize
+        (function () {
+          let t;
+          window.addEventListener('resize', () => {
+            clearTimeout(t);
+            t = setTimeout(equalizeRankHeight, 150);
+          });
+        })();
+
+        // IMG 頛摰?敺?撠?嚗????頛?擃漲頝喳?嚗?
+        document.addEventListener('load', function (e) {
+          if (e.target?.tagName === 'IMG') equalizeRankHeight();
+        }, true);
+
             // ===== Ranking & Product Loading Logic =====
             function renderTop3AndList(items, top3Sel, listSel){
                 const top3 = items.slice(0,3);
@@ -209,24 +245,22 @@
                         </a>
                     </div>`).join('');
                 $(listSel).innerHTML = rest.map((p,i)=>`
+                    equalizeRankHeight();
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <a class="text-decoration-none text-dark" href="/OnlineStore/Product/Detail/${p.productCode}">${p.productName}</a>
                         <span class="small text-muted">${tagLine(p) || ''}</span>
                     </li>`).join('');
             }
 
-            const triState = { tab: 'latest' };
+            const triState = { tab: 'favorite' };
             async function loadTri(){
-                let list = [];
-                if (triState.tab === 'latest') {
-                    const data = await fetch(`${apiBase}/products?sort=newest&pageSize=10`).then(r=>r.json());
-                    list = data.items;
-                } else {
-                    const type = triState.tab;
-                    const url  = `${apiBase}/rankings?type=${type}&period=daily&take=10`;
-                    list = await fetch(url).then(r=>r.json());
-                }
+                const type = triState.tab; // favorite | click
+                const url  = `${apiBase}/rankings?type=${type}&period=daily&take=10`;
+                const list = await fetch(url).then(r=>r.json());
                 renderTop3AndList(list, '#triTop3', '#triList');
+                const triTs = document.getElementById('triUpdateAt');
+                if (triTs) triTs.textContent = formatUpdateNow();
+                equalizeRankHeight();
             }
             $('#triRank .btn-group').addEventListener('click', (e)=>{
                 const btn = e.target.closest('button[data-tri]'); if (!btn) return;
@@ -241,6 +275,7 @@
                 const url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
                 const list = await fetch(url).then(r=>r.json());
                 renderTop3AndList(list, '#salesTop3', '#salesList');
+                equalizeRankHeight();
             }
             $('#salesRank .btn-group').addEventListener('click', (e)=>{
                 const btn = e.target.closest('button[data-sales]'); if (!btn) return;
@@ -265,6 +300,7 @@
                             </div>
                         </a>
                     </div>`).join('');
+                     equalizeRankHeight();
             }
 
             const catState = { tab: 'game' };
@@ -284,7 +320,8 @@
                         console.log('[Debug] No items found. Displaying empty message.');
                         const grid = $('#catGrid');
                         if (!grid) { console.warn('[Warn] #catGrid not found'); return; }
-                        grid.innerHTML = '<p class="text-muted">此分類暫無商品。</p>';
+                        grid.innerHTML = '<p class="text-muted">甇文?憿?∪???/p>';
+                        equalizeRankHeight();
                         return;
                     }
 
@@ -302,11 +339,12 @@
                                 </div>
                             </a>
                         </div>`).join('');
+                    equalizeRankHeight();
                     console.log('[Debug] Card rendering complete.');
                 } catch (error) {
                     console.error('[Debug] Error in loadCategoryRandom:', error);
                     const grid = $('#catGrid');
-                    if (grid) grid.innerHTML = '<p class="text-danger">載入商品時發生錯誤。</p>';
+                    if (grid) grid.innerHTML = '<p class="text-danger">頛????隤扎?/p>';
                 }
             }
             $('#categoryRandom .btn-group').addEventListener('click', (e)=>{
@@ -391,7 +429,9 @@
             carousel.addEventListener('slide.bs.carousel', function (e) {
                 updateCarouselClasses(e.to);
             });
-            carousel.addEventListener('slid.bs.carousel', function (e) { startProgress(e.to); });
+            carousel.addEventListener('slid.bs.carousel', function (e) {
+                startProgress(e.to);
+            });
 
             const initialActiveIndex = items.findIndex(item => item.classList.contains('active'));
             updateCarouselClasses(initialActiveIndex > -1 ? initialActiveIndex : 0);
@@ -409,3 +449,7 @@
         });
     </script>
 }
+
+
+
+
