@@ -61,6 +61,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				.FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
 
 				ViewBag.Wallet = wallet;
+			ViewBag.UserPoints = wallet?.UserPoint ?? 0;  // 添加用戶點數供View使用
 			ViewBag.PetHealthStatus = GetHealthStatus(pet);
 
 			return View(pet);
@@ -90,10 +91,10 @@ namespace GamiPort.Areas.MiniGame.Controllers
 			if (pet == null)
 			{
 				ViewBag.ErrorMessage = "未找到寵物信息";
-				return View("Customize");
+				return View();
 			}
 
-			// 獲取可用的膚色和背景
+			// 獲取可用的膚色和背景（所有11種，包括限時活動限定已失效的）
 			var skins = await _petService.GetAvailableSkinsAsync();
 			var backgrounds = await _petService.GetAvailableBackgroundsAsync();
 
@@ -102,7 +103,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				.AsNoTracking()
 				.FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
 
-				ViewBag.Skins = skins;
+			ViewBag.Skins = skins;
 			ViewBag.Backgrounds = backgrounds;
 			ViewBag.Wallet = wallet;
 
@@ -200,6 +201,44 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				wallet = new
 				{
 					userPoint = wallet?.UserPoint ?? 0
+				}
+			});
+		}
+
+		/// <summary>
+		/// POST: 更新寵物名稱
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> UpdateName(string newName)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 執行名稱更新
+			var result = await _petService.UpdatePetNameAsync(userId, newName);
+
+			if (!result.Success)
+			{
+				return Json(new { success = false, message = result.Message });
+			}
+
+			return Json(new
+			{
+				success = true,
+				message = result.Message,
+				pet = new
+				{
+					petId = result.Pet?.PetId,
+					petName = result.Pet?.PetName
 				}
 			});
 		}

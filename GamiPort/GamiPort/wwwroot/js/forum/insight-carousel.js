@@ -35,7 +35,7 @@ export async function InsightCarousel() {
             String(s)
                 .replace(/```[\s\S]*?```/g, '')   // 移除 code block
                 .replace(/`([^`]+)`/g, '$1')      // 移除 inline code `text`
-                .replace(/[#*_>\-\+\[\]\(\)!]/g, ' ') // 移除常見 markdown 符號
+                .replace(/[#*_>\-\+\[\]\(\)!]/g, ' ') // 移除常見 markdown 標記符號
                 .replace(/\s+/g, ' ')             // 壓縮多餘空白
                 .trim();
 
@@ -44,27 +44,22 @@ export async function InsightCarousel() {
                 x.bodyPreview ?? x.BodyPreview ??
                 x.tldr ?? x.Tldr ??
                 x.bodyMd ?? x.BodyMd ?? '';
+
             const clean = stripMarkdown(raw);
             return clean.length > 180 ? clean.slice(0, 180) + '…' : clean;
         };
 
-        const getId = x => x.postId ?? x.PostId;
-        const getTitle = x => x.title ?? x.Title ?? '';
-        const getPublishedAt = x => x.publishedAt ?? x.PublishedAt ?? '';
-
-        // 先把 pinned 存著，點擊時若沒有詳細 API 就用這份列表當 fallback
-        const pinnedById = new Map(pinned.map(x => [String(getId(x)), x]));
-
-        // 建立 HTML slides（改：不用 inline onclick，改用 data-*）
+        // 建立 HTML slides
         wrapper.innerHTML = pinned.map(x => {
-            const title = esc(getTitle(x));
+            const title = esc(x.title ?? x.Title ?? '');
             const excerpt = esc(pickExcerpt(x));
-            const id = getId(x);
-            const date = fmt(getPublishedAt(x));
+            const id = x.postId ?? x.PostId;
+            const date = fmt(x.publishedAt ?? x.PublishedAt);
 
             return `
         <div class="swiper-slide">
-          <article class="news-card" style="cursor:pointer" data-post-id="${id}">
+          <article class="news-card" style="cursor:pointer"
+                   onclick="location.href='/Forum/Insights/Detail?postId=${id}'">
             <div class="news-tags">
               <span class="tag tag-insight">洞察</span>
               <span class="tag tag-pin">置頂</span>
@@ -91,94 +86,13 @@ export async function InsightCarousel() {
             speed: 550
         });
 
-        // 事件委派：點卡片開 Modal
-        wrapper.addEventListener('click', async (e) => {
-            const card = e.target.closest('.news-card');
-            if (!card) return;
-            const postId = card.getAttribute('data-post-id');
-            await openInsightModal(postId, pinnedById);
-        });
-
     } catch (err) {
         console.error('Carousel error:', err);
         root?.remove?.(); // 壞就不要顯示
     }
 }
 
-// —————— Modal 開啟邏輯 ——————
-async function openInsightModal(postId, pinnedById) {
-    const $title = document.getElementById('insightModalTitle');
-    const $meta = document.getElementById('insightModalMeta');
-    const $body = document.getElementById('insightModalBody');
-    if (!$title || !$meta || !$body) return;
-
-    // 先清空
-    $title.textContent = '讀取中…';
-    $meta.textContent = '';
-    $body.textContent = '載入中…';
-
-    // 嘗試打「單筆 API」，沒有就用 pinned 列表當後備
-    let item = null;
-    try {
-        // 你若有 /api/posts/{id} 就會成功；沒有會丟錯，下面會 fallback
-        const res = await fetch(`/api/posts/${postId}`, { headers: { accept: 'application/json' } });
-        if (!res.ok) throw new Error('detail not found');
-        item = await res.json();
-    } catch {
-        // 後備：用一開始的 pinned 資料
-        item = pinnedById.get(String(postId)) ?? null;
-    }
-    if (!item) {
-        $title.textContent = '找不到這篇文章';
-        $body.textContent = '可能已被移除或權限不足。';
-        showModal();
-        return;
-    }
-
-    // 取欄位（大小寫雙軌）
-    const title = item.title ?? item.Title ?? '';
-    const publishedAt = item.publishedAt ?? item.PublishedAt ?? '';
-    const author = item.authorName ?? item.AuthorName ?? 'Admin';
-    const bodyMd = item.bodyMd ?? item.BodyMd ?? item.body ?? item.Body ?? '';
-
-    // 超保守的 Markdown → HTML（不引第三方，避免 XSS）
-    const safeHtml = mdToSafeHtml(bodyMd);
-
-    // 填入
-    $title.textContent = title;
-    $meta.textContent = `${fmt(publishedAt)} · ${author}`;
-    $body.innerHTML = safeHtml;
-
-    // 開
-    showModal();
-}
-
-function showModal() {
-    // 需要 Bootstrap 5 的 JS：<script src=".../bootstrap.bundle.min.js"></script>
-    const modalEl = document.getElementById('insightModal');
-    if (!modalEl) return;
-    // eslint-disable-next-line no-undef
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-}
-
-// —————— 小工具：極簡 Markdown → 安全 HTML（保留段落與連結） ——————
-function mdToSafeHtml(src = '') {
-    // 逃逸所有 HTML，避免 XSS
-    let s = esc(String(src));
-
-    // 換行 → <br>
-    s = s.replace(/\n{2,}/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-
-    // 極簡網址偵測 [text](url) → <a>
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-
-    // 包成段落
-    return `<p>${s}</p>`;
-}
-
-// —————— 其他工具 ——————
+// —————— 工具函式 ——————
 function esc(s = '') {
     return s.replace(/[&<>"']/g, m => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": "&#39;" }[m]

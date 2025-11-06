@@ -3,6 +3,12 @@
 // 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
 // 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
 //
+// 【本次關鍵說明】
+// 1) 穢語遮蔽服務 IProfanityFilter 為 Singleton，但「不直接吃 DbContext（Scoped）」：
+//    → 改在服務內使用 IServiceScopeFactory.CreateScope() 取得短命 DbContext（GameSpacedatabaseContext）。
+//    → 因此本檔「不需要」註冊 AddDbContextFactory / AddPooledDbContextFactory。
+// 2) 客訴採「單一前台 Hub」：映射 SupportHub 為 /hubs/support，後台頁也連線到這個端點；並正確啟用 CORS。
+// 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
 using GamiPort.Areas.Forum.Services.Adminpost;
@@ -16,14 +22,18 @@ using GamiPort.Areas.OnlineStore.Services;
 using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using GamiPort.Areas.social_hub.Services.Application;
+using GamiPort.Areas.OnlineStore.Utils;   // AnonCookie
 
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
+using GamiPort.Areas.MiniGame.config;      // ★ MiniGame Area 服務擴展方法
+using GamiPort.Infrastructure.BackgroundServices; // ★ 背景服務（寵物每日衰減）
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Infrastructure.Time;
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;  // ★ PhysicalFileProvider（Area 靜態檔案支援）
 // Program.cs 最上面加（若尚未有）
 
 
@@ -166,12 +176,11 @@ namespace GamiPort
 				return new AppClock(taiwanTz);
 			});
 			// ------------------------------------------------------------
-			// MiniGame Area 服務（簽到、寵物、遊戲、錢包等）
-			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.ISignInService, GamiPort.Areas.MiniGame.Services.SignInService>();
-			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IPetService, GamiPort.Areas.MiniGame.Services.PetService>();
-			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IWalletService, GamiPort.Areas.MiniGame.Services.WalletService>();
-			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IFuzzySearchService, GamiPort.Areas.MiniGame.Services.FuzzySearchService>();
-			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IGamePlayService, GamiPort.Areas.MiniGame.Services.GamePlayService>();
+			// MiniGame Area 服務（集中註冊：簽到、寵物、遊戲、錢包、Filters）
+			builder.Services.AddMiniGameServices(builder.Configuration);
+
+		// ★ 背景服務：寵物每日衰減（每日 UTC+8 00:00 自動執行）
+		builder.Services.AddHostedService<PetDailyDecayService>();
 			// ------------------------------------------------------------
 			// SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
 			// ------------------------------------------------------------
@@ -194,17 +203,6 @@ namespace GamiPort
 				options.IdleTimeout = TimeSpan.FromHours(2);
 			});
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
-
-			// services
-			builder.Services.AddCors(options =>
-			{
-				options.AddPolicy("ViteDev",
-					p => p.WithOrigins("http://localhost:5173")
-						  .AllowAnyHeader()
-						  .AllowAnyMethod()
-						  .AllowCredentials());
-			});
-
 
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
@@ -245,12 +243,25 @@ namespace GamiPort
 			}
 
 			app.UseHttpsRedirection();
-			app.UseStaticFiles();
+			app.UseStaticFiles();  // 預設根目錄 wwwroot
+
+			// ============================================================
+			// ★ MiniGame Area 靜態檔案支援
+			// 目的：讓 /MiniGame/stamps/*.png、/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/*.png 等能正確載入
+			// 映射：/MiniGame/* → Areas/MiniGame/wwwroot/*
+			// 範例：/MiniGame/stamps/SIGNIN-STAMP.png → Areas/MiniGame/wwwroot/stamps/SIGNIN-STAMP.png
+			// ============================================================
+			app.UseStaticFiles(new StaticFileOptions
+			{
+				FileProvider = new PhysicalFileProvider(
+					Path.Combine(builder.Environment.ContentRootPath, "Areas", "MiniGame", "wwwroot")),
+				RequestPath = "/MiniGame"
+			});
+
 			app.UseRouting();
 
 			// ✅ CORS 要在 Routing 後、Auth 前
 			app.UseCors("SupportCors");
-			app.UseCors("ViteDev");
 
 			// 訂單組使用
 			app.UseSession();     // 必須在 Auth 之前

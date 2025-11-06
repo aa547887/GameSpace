@@ -14,9 +14,9 @@
     <form asp-action="Edit" method="post" class="card p-4 shadow-sm">
         @Html.AntiForgeryToken()
 
-        <div class="mb-3 d-flex align-items-center" style="height:60px">
-            <label class="form-label mb-0 me-2" style="width: 80px;">帳號：</label>
-            <span class="form-control-plaintext">@ViewData["UserAccount"]</span>
+        <div class="mb-3">
+            <label class="form-label">帳號</label>
+            <input type="text" class="form-control" value="@ViewData["UserAccount"]" readonly />
         </div>
 
         <div class="mb-3">

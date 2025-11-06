@@ -1,0 +1,373 @@
+@{
+	ViewData["Title"] = "點數兌換";
+	var userPoints = (int)((Dictionary<string, object>)Model)["UserPoints"];
+	var couponTypes = (IEnumerable<GamiPort.Models.CouponType>)((Dictionary<string, object>)Model)["CouponTypes"];
+	var evoucherTypes = (IEnumerable<GamiPort.Models.EvoucherType>)((Dictionary<string, object>)Model)["EVoucherTypes"];
+}
+
+<div class="container-fluid px-4">
+	<!-- Anti-Forgery Token -->
+	<form id="antiForgeryForm" style="display:none;">
+		@Html.AntiForgeryToken()
+	</form>
+
+	<h1 class="mt-4 text-info">
+		<i class="fas fa-exchange-alt me-2"></i>點數兌換
+	</h1>
+	<ol class="breadcrumb mb-4">
+		<li class="breadcrumb-item"><a asp-action="Index">錢包首頁</a></li>
+		<li class="breadcrumb-item active">點數兌換</li>
+	</ol>
+
+	<!-- 當前點數顯示 -->
+	<div class="row mb-4">
+		<div class="col-lg-4 col-md-6">
+			<div class="card bg-info text-white shadow">
+				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-center">
+						<div>
+							<div class="text-white-50 small">我的點數</div>
+							<div class="h2 mb-0" id="userPointsDisplay">@userPoints.ToString("N0")</div>
+						</div>
+						<div class="fs-1">
+							<i class="fas fa-coins"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 優惠券兌換區 -->
+	<div class="card mb-4">
+		<div class="card-header bg-info text-white">
+			<i class="fas fa-ticket-alt me-2"></i>優惠券兌換
+		</div>
+		<div class="card-body">
+			@if (couponTypes != null && couponTypes.Any())
+			{
+				<div class="row">
+					@foreach (var coupon in couponTypes)
+					{
+						<div class="col-lg-4 col-md-6 mb-3">
+							<div class="card h-100 border-info">
+								<div class="card-body">
+									<h5 class="card-title text-info">@coupon.Name</h5>
+									<div class="mb-2">
+										<span class="badge bg-secondary">@coupon.DiscountType</span>
+									</div>
+									<p class="card-text">
+										<strong>折扣值:</strong> @coupon.DiscountValue<br />
+										<strong>所需點數:</strong> <span class="text-danger fw-bold">@coupon.PointsCost</span> 點<br />
+										<strong>有效期:</strong> @(((DateTime?)coupon.ValidFrom)?.ToString("yyyy/MM/dd") ?? "-") ~ @(((DateTime?)coupon.ValidTo)?.ToString("yyyy/MM/dd") ?? "-")
+									</p>
+									@if (!string.IsNullOrEmpty(coupon.Description))
+									{
+										<p class="card-text small text-muted">@coupon.Description</p>
+									}
+								</div>
+								<div class="card-footer bg-transparent">
+									<div class="input-group input-group-sm mb-2">
+										<span class="input-group-text">數量</span>
+										<input type="number" class="form-control" id="couponQty_@coupon.CouponTypeId"
+											   value="1" min="1" max="100" />
+									</div>
+									<button class="btn btn-info btn-sm w-100 exchange-coupon-btn"
+											data-coupon-id="@coupon.CouponTypeId"
+											data-coupon-name="@coupon.Name"
+											data-points-cost="@coupon.PointsCost">
+										<i class="fas fa-shopping-cart me-1"></i>立即兌換
+									</button>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			}
+			else
+			{
+				<div class="alert alert-warning mb-0">
+					<i class="fas fa-exclamation-triangle me-2"></i>目前暫無可兌換的優惠券
+				</div>
+			}
+		</div>
+	</div>
+
+	<!-- 電子禮券兌換區 -->
+	<div class="card mb-4">
+		<div class="card-header bg-info text-white">
+			<i class="fas fa-gift me-2"></i>電子禮券兌換
+		</div>
+		<div class="card-body">
+			@if (evoucherTypes != null && evoucherTypes.Any())
+			{
+				<div class="row">
+					@foreach (var evoucher in evoucherTypes)
+					{
+						<div class="col-lg-4 col-md-6 mb-3">
+							<div class="card h-100 border-info">
+								<div class="card-body">
+									<h5 class="card-title text-info">@evoucher.Name</h5>
+									<p class="card-text">
+										<strong>面額:</strong> <span class="text-success fw-bold">$@evoucher.ValueAmount</span><br />
+										<strong>所需點數:</strong> <span class="text-danger fw-bold">@evoucher.PointsCost</span> 點<br />
+										<strong>剩餘數量:</strong> @evoucher.TotalAvailable 張<br />
+										<strong>有效期:</strong> @(((DateTime?)evoucher.ValidFrom)?.ToString("yyyy/MM/dd") ?? "-") ~ @(((DateTime?)evoucher.ValidTo)?.ToString("yyyy/MM/dd") ?? "-")
+									</p>
+									@if (!string.IsNullOrEmpty(evoucher.Description))
+									{
+										<p class="card-text small text-muted">@evoucher.Description</p>
+									}
+								</div>
+								<div class="card-footer bg-transparent">
+									<div class="input-group input-group-sm mb-2">
+										<span class="input-group-text">數量</span>
+										<input type="number" class="form-control" id="evoucherQty_@evoucher.EvoucherTypeId"
+											   value="1" min="1" max="@Math.Min(100, evoucher.TotalAvailable)" />
+									</div>
+									<button class="btn btn-info btn-sm w-100 exchange-evoucher-btn"
+											data-evoucher-id="@evoucher.EvoucherTypeId"
+											data-evoucher-name="@evoucher.Name"
+											data-points-cost="@evoucher.PointsCost"
+											@(evoucher.TotalAvailable <= 0 ? "disabled" : "")>
+										<i class="fas fa-shopping-cart me-1"></i>
+										@(evoucher.TotalAvailable > 0 ? "立即兌換" : "已售罄")
+									</button>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			}
+			else
+			{
+				<div class="alert alert-warning mb-0">
+					<i class="fas fa-exclamation-triangle me-2"></i>目前暫無可兌換的電子禮券
+				</div>
+			}
+		</div>
+	</div>
+
+	<!-- 返回按鈕 -->
+	<div class="mb-4">
+		<a asp-action="Index" class="btn btn-secondary">
+			<i class="fas fa-arrow-left me-1"></i>返回錢包首頁
+		</a>
+	</div>
+</div>
+
+<!-- 兌換結果 Modal -->
+<div class="modal fade" id="exchangeResultModal" tabindex="-1" aria-labelledby="exchangeResultModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header" id="modalHeader">
+				<h5 class="modal-title" id="exchangeResultModalLabel">兌換結果</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" id="modalBody">
+				<!-- 動態內容 -->
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+				<a href="@Url.Action("Coupons")" class="btn btn-info" id="viewCouponsBtn" style="display:none;">
+					查看我的優惠券
+				</a>
+				<a href="@Url.Action("EVouchers")" class="btn btn-info" id="viewEVouchersBtn" style="display:none;">
+					查看我的電子禮券
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		// 當前用戶點數
+		let userPoints = @userPoints;
+
+		// 優惠券兌換
+		document.querySelectorAll('.exchange-coupon-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				const couponId = this.getAttribute('data-coupon-id');
+				const couponName = this.getAttribute('data-coupon-name');
+				const pointsCost = parseInt(this.getAttribute('data-points-cost'));
+				const quantityInput = document.getElementById('couponQty_' + couponId);
+				const quantity = parseInt(quantityInput.value);
+
+				// 驗證數量
+				if (quantity < 1 || quantity > 100) {
+					showErrorModal('兌換失敗', '兌換數量必須在 1-100 之間');
+					return;
+				}
+
+				// 檢查點數是否足夠
+				const totalCost = pointsCost * quantity;
+				if (userPoints < totalCost) {
+					showErrorModal('點數不足', `兌換 ${quantity} 張「${couponName}」需要 ${totalCost.toLocaleString()} 點，您目前只有 ${userPoints.toLocaleString()} 點`);
+					return;
+				}
+
+				// 確認兌換
+				if (!confirm(`確定要使用 ${totalCost.toLocaleString()} 點兌換 ${quantity} 張「${couponName}」嗎？`)) {
+					return;
+				}
+
+				// 執行兌換
+				this.disabled = true;
+				this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>兌換中...';
+
+				const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+				fetch('@Url.Action("ExchangeForCoupon", "Wallet")', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded'
+					},
+					body: `couponTypeId=${couponId}&quantity=${quantity}&__RequestVerificationToken=${encodeURIComponent(token)}`
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						// 更新點數顯示
+						userPoints -= totalCost;
+						document.getElementById('userPointsDisplay').textContent = userPoints.toLocaleString();
+
+						// 顯示成功訊息
+						showSuccessModal('兌換成功', data.message, data.couponCodes, 'coupon');
+					} else {
+						showErrorModal('兌換失敗', data.message);
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+					showErrorModal('系統錯誤', '兌換過程發生錯誤，請稍後再試');
+				})
+				.finally(() => {
+					this.disabled = false;
+					this.innerHTML = '<i class="fas fa-shopping-cart me-1"></i>立即兌換';
+				});
+			});
+		});
+
+		// 電子禮券兌換
+		document.querySelectorAll('.exchange-evoucher-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				const evoucherId = this.getAttribute('data-evoucher-id');
+				const evoucherName = this.getAttribute('data-evoucher-name');
+				const pointsCost = parseInt(this.getAttribute('data-points-cost'));
+				const quantityInput = document.getElementById('evoucherQty_' + evoucherId);
+				const quantity = parseInt(quantityInput.value);
+
+				// 驗證數量
+				if (quantity < 1 || quantity > 100) {
+					showErrorModal('兌換失敗', '兌換數量必須在 1-100 之間');
+					return;
+				}
+
+				// 檢查點數是否足夠
+				const totalCost = pointsCost * quantity;
+				if (userPoints < totalCost) {
+					showErrorModal('點數不足', `兌換 ${quantity} 張「${evoucherName}」需要 ${totalCost.toLocaleString()} 點，您目前只有 ${userPoints.toLocaleString()} 點`);
+					return;
+				}
+
+				// 確認兌換
+				if (!confirm(`確定要使用 ${totalCost.toLocaleString()} 點兌換 ${quantity} 張「${evoucherName}」嗎？`)) {
+					return;
+				}
+
+				// 執行兌換
+				this.disabled = true;
+				this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>兌換中...';
+
+				const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+				fetch('@Url.Action("ExchangeForEVoucher", "Wallet")', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded'
+					},
+					body: `evoucherTypeId=${evoucherId}&quantity=${quantity}&__RequestVerificationToken=${encodeURIComponent(token)}`
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						// 更新點數顯示
+						userPoints -= totalCost;
+						document.getElementById('userPointsDisplay').textContent = userPoints.toLocaleString();
+
+						// 顯示成功訊息
+						showSuccessModal('兌換成功', data.message, data.evoucherCodes, 'evoucher');
+					} else {
+						showErrorModal('兌換失敗', data.message);
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+					showErrorModal('系統錯誤', '兌換過程發生錯誤，請稍後再試');
+				})
+				.finally(() => {
+					this.disabled = false;
+					this.innerHTML = '<i class="fas fa-shopping-cart me-1"></i>立即兌換';
+				});
+			});
+		});
+
+		// 顯示成功 Modal
+		function showSuccessModal(title, message, codes, type) {
+			const modal = new bootstrap.Modal(document.getElementById('exchangeResultModal'));
+			const modalHeader = document.getElementById('modalHeader');
+			const modalBody = document.getElementById('modalBody');
+
+			modalHeader.className = 'modal-header bg-success text-white';
+			document.getElementById('exchangeResultModalLabel').textContent = title;
+
+			let codesHtml = '';
+			if (codes && codes.length > 0) {
+				codesHtml = '<div class="mt-3"><strong>兌換代碼：</strong><ul class="mb-0">';
+				codes.forEach(code => {
+					codesHtml += `<li><code class="text-dark">${code}</code></li>`;
+				});
+				codesHtml += '</ul></div>';
+			}
+
+			modalBody.innerHTML = `
+				<div class="alert alert-success mb-0">
+					<i class="fas fa-check-circle me-2"></i>${message}
+				</div>
+				${codesHtml}
+			`;
+
+			// 顯示對應的查看按鈕
+			if (type === 'coupon') {
+				document.getElementById('viewCouponsBtn').style.display = 'inline-block';
+				document.getElementById('viewEVouchersBtn').style.display = 'none';
+			} else {
+				document.getElementById('viewCouponsBtn').style.display = 'none';
+				document.getElementById('viewEVouchersBtn').style.display = 'inline-block';
+			}
+
+			modal.show();
+		}
+
+		// 顯示錯誤 Modal
+		function showErrorModal(title, message) {
+			const modal = new bootstrap.Modal(document.getElementById('exchangeResultModal'));
+			const modalHeader = document.getElementById('modalHeader');
+			const modalBody = document.getElementById('modalBody');
+
+			modalHeader.className = 'modal-header bg-danger text-white';
+			document.getElementById('exchangeResultModalLabel').textContent = title;
+
+			modalBody.innerHTML = `
+				<div class="alert alert-danger mb-0">
+					<i class="fas fa-exclamation-circle me-2"></i>${message}
+				</div>
+			`;
+
+			// 隱藏查看按鈕
+			document.getElementById('viewCouponsBtn').style.display = 'none';
+			document.getElementById('viewEVouchersBtn').style.display = 'none';
+
+			modal.show();
+		}
+	</script>
+}

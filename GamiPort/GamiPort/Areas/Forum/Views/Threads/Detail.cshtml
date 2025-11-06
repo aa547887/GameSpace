@@ -1,15 +1,4 @@
 ﻿@{
-    
-   
-    ViewBag.HideForumTopbar = true;
-    ViewBag.HideRightRail = true;
-    // ViewBag.HideFooter = true; // 要連 footer 也關再加
-}
-
-
-
-
-@{
     ViewData["Title"] = "主題內容";
     var threadId = (long)ViewData["ThreadId"];
 }
@@ -22,14 +11,13 @@
      data-thread-id="@threadId"></div>
 
 @section Scripts {
-    <script src="~/js/social_hub/gp-time.js" asp-append-version="true"></script>
     <script type="module" src="https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"></script>
     <script type="module" src="~/js/forum/thread.detail.js" asp-append-version="true"></script>
 }
 
 <pre class="text-muted small">
-@* area=@Context.GetRouteData().Values["area"]
+area=@Context.GetRouteData().Values["area"]
 controller=@Context.GetRouteData().Values["controller"]
 action=@Context.GetRouteData().Values["action"]
 threadId=@threadId
- *@</pre>
+</pre>

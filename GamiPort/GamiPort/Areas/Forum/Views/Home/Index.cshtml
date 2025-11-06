@@ -4,8 +4,10 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
+    <!-- 你的 forum.css 可留，但別動版面寬度到破版就好 -->
+    @* <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" /> *@
     <style>
+        /* 安全的小樣式，避免拉寬整頁造成溢出 */
         html, body, .container, .container-fluid {
             min-width: 0;
         }
@@ -16,44 +18,33 @@
     </style>
 }
 
-<div class="board-header d-flex align-items-center justify-content-between mb-3">
-    <h2 class="m-0">所有論壇 </h2>
-    @* <!-- 🔻 放這裡：輪播區塊後面、</body> 前 --> *@
-    <div class="modal fade" id="insightModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 id="insightModalTitle" class="modal-title"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="insightModalMeta" class="text-muted small mb-3"></div>
-                    <div id="insightModalBody">載入中…</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔎 全站搜尋（先做論壇關鍵字） -->
-   @*  <form id="global-search-form" class="d-flex ms-3" role="search" style="max-width:420px;">
-        <input id="global-search-input" class="form-control form-control-sm me-2" type="search"
-               placeholder="搜尋論壇名稱或描述…" aria-label="Search">
-        <button class="btn btn-sm btn-outline-primary" type="submit">搜尋</button>
-    </form> *@
+<div class="board-header d-flex align-items-center mb-3">
+    <h2 class="m-0">論壇 / 所有遊戲</h2>
 </div>
 
-<!-- ✅ 預設內容（forums list） -->
-<div id="forums-app" class="mb-3">
+<!-- ✅ 搜尋結果 / 論壇列表的掛載容器 -->
+<div id="home-content">
+    <div id="forums-app">
+        <forum-list></forum-list>
+    </div>
+</div>
+
+<!-- ✅ Vue 掛載點（ID 必須是 #forums-app，和 main.js 對得上） -->
+<div id="forums-app">
     <forum-list></forum-list>
 </div>
 
-<!-- ✅ 搜尋結果掛載點 -->
-<div id="home-content"></div>
+@* @section RightRail {
+    <!-- 可有可無的右欄；沒有 RightRail 的版型可刪這整段 -->
+    <div class="card shadow-sm p-3 mb-3">熱門論壇（示意）</div>
+    <div class="card shadow-sm p-3">公告區（示意）</div>
+} *@
 
 @section Scripts {
-    <!-- Vue 入口：論壇清單 -->
+    <!-- 只載入口檔，讓它自己 import Vue；不要再額外載 Vue CDN，避免重複 -->
     <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
-
-    <!-- ✅ 開啟搜尋腳本 -->
+    <!-- ✅ 把搜尋的 JS 放這裡（只在 Home 頁載入） -->
     <script type="module" src="~/js/forum/home-search.js" asp-append-version="true"></script>
+    <!-- 除錯用，可先留著，看 Console 是否出現這行 -->
+    <script>console.log('[Home/Index] Scripts section loaded ✅');</script>
 }
