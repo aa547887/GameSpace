@@ -33,13 +33,13 @@
     @* 主要卡片（與 Details 同風格外框） *@
     <div class="card shadow-sm overflow-hidden">
         <!-- 頭像區（與 Details 視覺一致：左下角頭像、右側基本資訊） -->
-        <div class="position-relative bg-light" style="min-height: 140px;">
+        <div class="position-relative bg-light" style="min-height: 130px;">
             <div class="position-absolute bottom-0 start-0 p-3 d-flex align-items-center gap-3 w-100">
                 <img src="@(imgSrc ?? defaultAvatar)" alt="頭像"
-                     class="rounded-circle border bg-white"
+                     class="rounded-circle border bg-black"
                      style="width:96px;height:96px;object-fit:cover;" />
                 <div class="pb-2">
-                    <div class="fw-semibold fs-5">@Model.UserNickName</div>
+                    <div class="fw-semibold fs-5" >@Model.UserNickName</div>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@
             @Html.AntiForgeryToken()
             <form asp-area="Login" asp-controller="Introduce" asp-action="Edit" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
-
+                <input type="hidden" asp-for="Gender" />
                 @* 驗證摘要 *@
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
 
@@ -56,25 +56,11 @@
                     <!-- 暱稱 -->
                     <div class="col-12 col-md-6">
                         <label class="form-label">暱稱</label>
-                        <input asp-for="UserNickName" class="form-control" />
+                        <input asp-for="UserNickName" class="form-control"/>
                         <span asp-validation-for="UserNickName" class="text-danger small"></span>
                     </div>
 
-                    <!-- 性別 -->
-                    <div class="col-12 col-md-6">
-                        <label class="form-label d-block">性別</label>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="Gender" id="gM" value="M" @(Model.Gender == "M" ? "checked" : "")>
-                                <label class="form-check-label" for="gM">男性</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="Gender" id="gF" value="F" @(Model.Gender == "F" ? "checked" : "")>
-                                <label class="form-check-label" for="gF">女性</label>
-                            </div>
-                        </div>
-                        <span class="text-danger small" data-valmsg-for="Gender"></span>
-                    </div>
+
 
                     <!-- 手機 -->
                     <div class="col-12 col-md-6">
