@@ -39,7 +39,7 @@
         if (connection.state === "Connected" || connection.state === "Connecting") return;
         try {
             await connection.start();
-            console.info("[support] started →", HUB_URL);
+        //    console.info("[support] started →", HUB_URL);
         } catch (err) {
             console.error("[support] start error:", err);
             // 交給 automatic reconnect 之外，再保險補一個短延遲重試
@@ -57,7 +57,7 @@
                 } else {
                     await connection.invoke("JoinAsManager", tid, meta.managerId, meta.expires, meta.sig);
                 }
-                console.info("[support] re-joined ticket:", tid);
+            //    console.info("[support] re-joined ticket:", tid);
             } catch (err) {
                 console.warn("[support] re-join failed:", tid, err);
             }
@@ -82,7 +82,7 @@
             await startIfNeeded();
             await connection.invoke("Join", ticketId);
             joinedTicketMap.set(ticketId, { mode: "user" });
-            console.info("[support] joined ticket as user:", ticketId);
+        //    console.info("[support] joined ticket as user:", ticketId);
         },
 
         /** 管理員加入（需簽章+有效期；伺服端再做授權判斷） */
@@ -90,7 +90,7 @@
             await startIfNeeded();
             await connection.invoke("JoinAsManager", ticketId, managerId, expires, sig);
             joinedTicketMap.set(ticketId, { mode: "manager", managerId, expires, sig });
-            console.info("[support] joined ticket as manager:", ticketId);
+        //    console.info("[support] joined ticket as manager:", ticketId);
         },
 
         /**
@@ -102,7 +102,7 @@
             try {
                 await startIfNeeded();
                 await connection.invoke("NudgeAsManager", ticketId, managerId, expires, sig);
-                console.info("[support] nudged ticket:", ticketId);
+            //    console.info("[support] nudged ticket:", ticketId);
             } catch (err) {
                 console.warn("[support] nudge failed:", err);
             }
@@ -112,7 +112,7 @@
         async leaveTicket(ticketId) {
             joinedTicketMap.delete(ticketId);
             try { await connection.invoke("Leave", ticketId); } catch { /* ignore */ }
-            console.info("[support] left ticket:", ticketId);
+        //    console.info("[support] left ticket:", ticketId);
         },
 
         /** 事件訂閱（例："msg"、"ticket.message"、"joined"） */
