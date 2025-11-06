@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
@@ -28,15 +29,16 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		}
 
 		// GET + POST（AJAX 分頁/查詢會用 POST 並加 X-Requested-With）
+		// GET + POST（AJAX 分頁/查詢會用 POST 並加 X-Requested-With）
 		[HttpGet("")]
 		[HttpPost("")]
 		public async Task<IActionResult> Index(
-			string? status,
-			string? keyword,
-			DateTime? dateFrom,
-			DateTime? dateTo,
-			int page = 1,
-			int pageSize = 10)
+	string? status,
+	string? keyword,
+	DateTime? dateFrom,
+	DateTime? dateTo,
+	int page = 1,
+	int pageSize = 10)
 		{
 			if (page <= 0) page = 1;
 			if (pageSize <= 0) pageSize = 10;
@@ -51,81 +53,106 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 				PageSize = pageSize
 			};
 
-			// ── 安全模式 SQL：不依賴 DB 中可能不存在的欄位
+			// 只看自己的訂單（沿用你的權限邏輯）
+			var userId = await _me.GetUserIdAsync();
+			if (userId <= 0) return Challenge();
+
+			// 關鍵字（模糊；LIKE 安全轉義）
+			string kw = (keyword ?? "").Trim();
+			bool hasKw = kw.Length > 0;
+			static string EscapeLike(string s) =>
+				s.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
+			string kwLike = hasKw ? $"%{EscapeLike(kw)}%" : "";
+
+			// ★ 日期上界：嚴格日區間（支援只填起日 = 查當天；起迄皆填 = [from, to+1)）
+			DateTime? dateToNext = null;
+			if (dateFrom.HasValue && !dateTo.HasValue)
+				dateToNext = dateFrom.Value.Date.AddDays(1);
+			else if (dateTo.HasValue)
+				dateToNext = dateTo.Value.Date.AddDays(1);
+
+			int rowStart = (page - 1) * pageSize + 1;
+			int rowEnd = page * pageSize;
+
+			await using var conn = (SqlConnection)_db.Database.GetDbConnection();
+			if (conn.State != ConnectionState.Open) await conn.OpenAsync();
+
 			var sql = @"
 IF OBJECT_ID('tempdb..#filtered') IS NOT NULL DROP TABLE #filtered;
 
--- 只投影一定存在的欄位，避免 Invalid column name
+-- 以 order_date 輸出成 created_at（前端不需改欄位）
 SELECT
     oi.order_id,
     oi.order_code,
+    CAST(oi.order_date AS datetime) AS created_at,
     oi.user_id,
     oi.order_status,
     oi.payment_status,
     oi.grand_total
 INTO #filtered
 FROM dbo.SO_OrderInfoes AS oi
-WHERE
-	oi.user_id = @userId AND                                      -- ★ 關鍵守門：只能看自己的
-    (@status  IS NULL OR @status = N'' OR oi.order_status = @status) AND
-    (
-        @keyword IS NULL OR @keyword = N'' OR
-        oi.order_code LIKE N'%' + @keyword + N'%' OR
-        CAST(oi.order_id AS nvarchar(20)) = @keyword
-    );
-    -- 暫不做 created_at 的日期篩選（你的 DB 目前沒有該欄位）
+WHERE 1=1
+  AND oi.user_id = @userId
+  AND (@status IS NULL OR @status = N'' OR oi.order_status = @status)
+  AND (
+        @hasKw = 0
+        OR oi.order_code LIKE @kwLike
+        OR EXISTS (
+            SELECT 1
+            FROM dbo.SO_OrderItems i
+            JOIN dbo.S_ProductInfo p ON p.product_id = i.product_id
+            WHERE i.order_id = oi.order_id
+              AND p.product_name LIKE @kwLike
+        )
+      )
+  AND (@dateFrom  IS NULL OR oi.order_date >= @dateFrom)
+  AND (@dateToNext IS NULL OR oi.order_date <  @dateToNext);
 
--- 結果集 #1：分頁清單（把缺欄位以 NULL 別名補上，前端/Reader 能正常取欄位）
+-- #1 清單（不動你的欄位/順序）
+WITH R AS (
+  SELECT f.*,
+         ROW_NUMBER() OVER (ORDER BY f.order_id DESC) AS rn
+  FROM #filtered f
+)
 SELECT
-    f.order_id,
-    f.order_code,
-    CAST(NULL AS datetime)      AS created_at,        -- 你的 DB 暫無此欄位
-    f.order_status,
-    f.payment_status,
-    CAST(NULL AS nvarchar(50))  AS shipment_status,   -- 暫無：已出貨狀態欄
-    f.grand_total,
-    CAST(NULL AS nvarchar(100)) AS pay_method_name    -- 暫無：付款方式名稱
-FROM #filtered AS f
-ORDER BY f.order_id DESC
-OFFSET (@page - 1) * @pageSize ROWS FETCH NEXT @pageSize ROWS ONLY;
+    r.order_id,
+    r.order_code,
+    r.created_at,
+    r.order_status,
+    r.payment_status,
+    CAST(NULL AS nvarchar(50)) AS shipment_status,
+    r.grand_total,
+    N'信用卡' AS pay_method_name
+FROM R r
+WHERE r.rn BETWEEN @rowStart AND @rowEnd
+ORDER BY r.rn;
 
--- 結果集 #2：總筆數
+-- #2 總筆數
 SELECT COUNT(*) AS total_count FROM #filtered;
 
--- 結果集 #3：五種狀態數量（出貨數先為 0，其餘用現有欄位）
+-- #3 狀態數
 SELECT
     SUM(CASE WHEN f.order_status   = N'未付款' THEN 1 ELSE 0 END) AS cnt_unpaid,
     SUM(CASE WHEN f.payment_status = N'已付款' THEN 1 ELSE 0 END) AS cnt_paid,
     CAST(0 AS int) AS cnt_shipped,
     SUM(CASE WHEN f.order_status   = N'已完成' THEN 1 ELSE 0 END) AS cnt_completed,
     SUM(CASE WHEN f.order_status   = N'已取消' THEN 1 ELSE 0 END) AS cnt_canceled
-FROM #filtered AS f;
+FROM #filtered f;
 ";
 
-			await using var conn = _db.Database.GetDbConnection();
-			if (conn.State != ConnectionState.Open)
-				await conn.OpenAsync();
-
-			await using var cmd = conn.CreateCommand();
-			cmd.CommandText = sql;
-
-			var userId = await _me.GetUserIdAsync();
-			if (userId <= 0) return Challenge();
-			cmd.Parameters.AddRange(new[]
-			{
-				new SqlParameter("@userId",   System.Data.SqlDbType.Int) { Value = userId }, // ★ 新增
-				new SqlParameter("@status",   (object?)status   ?? DBNull.Value),
-				new SqlParameter("@keyword",  (object?)keyword  ?? DBNull.Value),
-				new SqlParameter("@dateFrom", (object?)dateFrom ?? DBNull.Value),
-				new SqlParameter("@dateTo",   (object?)dateTo   ?? DBNull.Value),
-				new SqlParameter("@page",     page),
-				new SqlParameter("@pageSize", pageSize),
-			});
+			await using var cmd = new SqlCommand(sql, conn);
+			cmd.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+			cmd.Parameters.Add(new SqlParameter("@status", SqlDbType.NVarChar, 30) { Value = (object?)vm.Status ?? DBNull.Value });
+			cmd.Parameters.Add(new SqlParameter("@hasKw", SqlDbType.Bit) { Value = hasKw });
+			cmd.Parameters.Add(new SqlParameter("@kwLike", SqlDbType.NVarChar, 200) { Value = hasKw ? (object)kwLike : DBNull.Value });
+			cmd.Parameters.Add(new SqlParameter("@dateFrom", SqlDbType.DateTime2) { Value = (object?)vm.DateFrom?.Date ?? DBNull.Value });
+			cmd.Parameters.Add(new SqlParameter("@dateToNext", SqlDbType.DateTime2) { Value = (object?)dateToNext ?? DBNull.Value });
+			cmd.Parameters.Add(new SqlParameter("@rowStart", SqlDbType.Int) { Value = rowStart });
+			cmd.Parameters.Add(new SqlParameter("@rowEnd", SqlDbType.Int) { Value = rowEnd });
 
 			var items = new List<OrdersListItemVm>();
 			await using var rd = await cmd.ExecuteReaderAsync();
 
-			// #1 清單
 			while (await rd.ReadAsync())
 			{
 				items.Add(new OrdersListItemVm
@@ -136,29 +163,25 @@ FROM #filtered AS f;
 					OrderStatus = rd.IsDBNull(rd.GetOrdinal("order_status")) ? null : rd.GetString(rd.GetOrdinal("order_status")),
 					PaymentStatus = rd.IsDBNull(rd.GetOrdinal("payment_status")) ? null : rd.GetString(rd.GetOrdinal("payment_status")),
 					ShipmentStatus = rd.IsDBNull(rd.GetOrdinal("shipment_status")) ? null : rd.GetString(rd.GetOrdinal("shipment_status")),
-					PayStatus = rd.IsDBNull(rd.GetOrdinal("payment_status")) ? null : rd.GetString(rd.GetOrdinal("payment_status")), // 舊命名相容
+					PayStatus = rd.IsDBNull(rd.GetOrdinal("payment_status")) ? null : rd.GetString(rd.GetOrdinal("payment_status")),
 					PayMethod = rd.IsDBNull(rd.GetOrdinal("pay_method_name")) ? null : rd.GetString(rd.GetOrdinal("pay_method_name")),
 					GrandTotal = rd.IsDBNull(rd.GetOrdinal("grand_total")) ? 0m : rd.GetDecimal(rd.GetOrdinal("grand_total"))
 				});
 			}
 
-			// #2 總筆數
 			await rd.NextResultAsync();
 			if (await rd.ReadAsync())
 				vm.TotalCount = rd.GetInt32(0);
 
-			// #3 狀態數
 			await rd.NextResultAsync();
 			if (await rd.ReadAsync())
 			{
-				// 依照結構：unpaid / paid / shipped(固定0) / completed / canceled
 				vm.CntUnpaid = rd.IsDBNull(0) ? 0 : rd.GetInt32(0);
 				vm.CntPaid = rd.IsDBNull(1) ? 0 : rd.GetInt32(1);
 				vm.CntShipped = rd.IsDBNull(2) ? 0 : rd.GetInt32(2);
 				vm.CntCompleted = rd.IsDBNull(3) ? 0 : rd.GetInt32(3);
 				vm.CntCanceled = rd.IsDBNull(4) ? 0 : rd.GetInt32(4);
 
-				// 若你的 Index.cshtml 用的是 UnpaidCount/PaidCount... 也一併對應
 				vm.UnpaidCount = vm.CntUnpaid;
 				vm.PaidCount = vm.CntPaid;
 				vm.ShippedCount = vm.CntShipped;
@@ -168,11 +191,9 @@ FROM #filtered AS f;
 
 			vm.Items.AddRange(items);
 
-			// AJAX：只回列表部分
+			// 這裡維持你的 AJAX/Partial 行為，不動
 			if (string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
-			{
 				return PartialView("_OrdersListPartial", vm);
-			}
 
 			return View("Index", vm);
 		}

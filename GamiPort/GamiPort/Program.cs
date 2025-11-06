@@ -202,6 +202,17 @@ namespace GamiPort
 			});
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
 
+			// services
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("ViteDev",
+					p => p.WithOrigins("http://localhost:5173")
+						  .AllowAnyHeader()
+						  .AllowAnyMethod()
+						  .AllowCredentials());
+			});
+
+
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
 			builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
@@ -230,6 +241,7 @@ namespace GamiPort
 				app.UseHsts();
 			}
 
+
 			// ------------------------------------------------------------
 			// 啟動時先載入一次穢語規則（建議保留）
 			// 讓 IProfanityFilter 有最新規則可用；之後前端每次進聊天會再帶 nocache=1 強制刷新。
@@ -246,6 +258,7 @@ namespace GamiPort
 
 			// ✅ CORS 要在 Routing 後、Auth 前
 			app.UseCors("SupportCors");
+			app.UseCors("ViteDev");
 
 			// 訂單組使用
 			app.UseSession();     // 必須在 Auth 之前

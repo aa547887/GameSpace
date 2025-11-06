@@ -43,7 +43,9 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.AsNoTracking()
 				.FirstOrDefaultAsync(h => h.UserId == ownerUserId);
 
+			
 			// 頭像 / 背景：處理預設圖
+
 			var userPictureSrc = ToBase64Src(introduce.UserPicture)
 								 ?? Url.Content("~/images/預設人物.png"); // 若你的 ImagePathService 有更好的預設，可改這行
 
@@ -153,7 +155,8 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				FriendPendingCount = friendPendingCount,
 				FriendAcceptedList = friendAcceptedList,
 				FriendPendingList = friendPendingList,
-				CurrentRelationStatus = currentRelationStatus // 設置關係狀態
+				CurrentRelationStatus = currentRelationStatus, // 設置關係狀態
+				IsPublic = home?.IsPublic ?? true
 			};
 
 			return vm;
@@ -168,6 +171,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 
 			int userId = _current.UserId.GetValueOrDefault(); // int? -> int
 			var vm = await BuildHomeVmAsync(userId, isSelf: true);
+
 			if (vm == null) return NotFound();
 
 			return View("Index", vm);
@@ -247,7 +251,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.FirstOrDefaultAsync();
 			if (byNick != 0) return RedirectToAction("User", new { id = byNick });
 
-			TempData["SearchError"] = "找不到符合的小屋。";
+			TempData["SearchError"] = "*找不到符合的小屋";
 			return RedirectToAction(nameof(Index));
 		}
 	}
