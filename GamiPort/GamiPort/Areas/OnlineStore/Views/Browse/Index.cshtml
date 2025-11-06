@@ -107,6 +107,9 @@
             box-shadow: 0 3px 8px rgba(0,0,0,.15);
         }
 
+        /* 預留底部空間，避免浮現按鈕遮住資訊 */
+        #product-list .card .card-body { padding-bottom: 3.25rem; }
+
         .sticky-side {
             position: sticky;
             top: 72px;
@@ -171,6 +174,54 @@
 @section Scripts {
     <script>
         const api = "/OnlineStore/api/StoreApi/products";
+        const API_BASE = "/OnlineStore/api/StoreApi";
+        const favSet = new Set();
+
+        async function syncFavHighlight(){
+          try{
+            const r = await fetch(`${API_BASE}/favorites/ids`);
+            if(!r.ok) return;
+            const ids = await r.json();
+            favSet.clear(); ids.forEach(id=>favSet.add(id));
+            document.querySelectorAll('#product-list [data-action="fav"][data-id]').forEach(a=>{
+              const id = parseInt(a.dataset.id,10);
+              const icon = a.querySelector('i');
+              if(favSet.has(id)){
+                a.classList.add('text-danger');
+                icon?.classList.add('bi-heart-fill');
+                icon?.classList.remove('bi-heart');
+              }else{
+                a.classList.remove('text-danger');
+                icon?.classList.remove('bi-heart-fill');
+                icon?.classList.add('bi-heart');
+              }
+            });
+          }catch{}
+        }
+
+        function ensureLoginPrompt(){
+          if(document.getElementById('loginPromptModal')) return;
+          const el = document.createElement('div');
+          el.innerHTML = `
+            <div class="modal fade" id="loginPromptModal" tabindex="-1">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">請先登入</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-0">您需要登入後才能使用收藏功能。</p>
+                  </div>
+                  <div class="modal-footer">
+                    <a class="btn btn-dark" href="/Login/Login/Login">現在去登入</a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再看看</button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          document.body.appendChild(el.firstElementChild);
+        }
 
         const PLACEHOLDER = "/images/onlinestoreNOPic/nophoto.jpg";
         const params = new URLSearchParams(location.search);
@@ -236,7 +287,7 @@
 
                           const img = x.coverUrl || PLACEHOLDER;
 
-                          return `<div class="col-6 col-md-4 col-lg-3 col-xxl-2">
+                          return `<div class="col-6 col-md-4 col-lg-4 col-xxl-3">
 
                             <div class="card h-100 position-relative">
 
@@ -360,6 +411,8 @@
 
                                             document.getElementById("product-list").innerHTML = (data.items||[]).map(cardCol).join("");
 
+                                            await syncFavHighlight();
+
 
 
                                   pager(data.totalCount||0, state.page, state.pageSize);
@@ -379,8 +432,37 @@
           }else if(act==='buy-now'){
             location.href = `/OnlineStore/Checkout/CreateOrder?productId=${id}`;
           }else if(act==='fav'){
-            btn.classList.toggle('text-danger'); // TODO: 串我的最愛 API
-            btn.querySelector('i')?.classList.toggle('bi-heart-fill');
+            const pid = parseInt(id,10);
+            if(!pid || isNaN(pid)) return;
+            btn.classList.add('disabled');
+            const userId = window.USER_ID ?? 1; // TODO: 使用實際登入使用者 Id
+            fetch(`${API_BASE}/products/${pid}/favorite`, { method: 'POST' })
+            .then(r=>{ if(!r.ok){ const e = new Error(r.statusText); e.status=r.status; throw e; } return r.json(); })
+            .then(({isFavorited})=>{
+              const icon = btn.querySelector('i');
+              if(isFavorited){
+                btn.classList.add('text-danger');
+                icon?.classList.add('bi-heart-fill');
+                icon?.classList.remove('bi-heart');
+                favSet.add(pid);
+              }else{
+                btn.classList.remove('text-danger');
+                icon?.classList.remove('bi-heart-fill');
+                icon?.classList.add('bi-heart');
+                favSet.delete(pid);
+              }
+            })
+            .catch(err=>{ 
+              console.error(err); 
+              if(err?.status===401){
+                ensureLoginPrompt();
+                const modal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+                modal.show();
+              }else{
+                alert('收藏動作失敗，請稍後再試');
+              }
+            })
+            .finally(()=> btn.classList.remove('disabled'));
           }
         });
 
