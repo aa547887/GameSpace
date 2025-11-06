@@ -9,6 +9,10 @@
     border: none;
 }
 
+
+
+
+
 /* ===== 主版：桌機 5 欄、2 列（表頭 + 值） ===== */
 .orders-card .order-grid {
     display: grid;
@@ -70,6 +74,23 @@
             white-space: nowrap;
         }
 
+/* 伸縮的商品明細外框線（展開容器） */
+.orders-card div.order-items {
+    /* 真正的邊框（若未被覆蓋會直接顯示） */
+    border: 1px solid #ffd7e5 !important;
+    border-top: 0 !important;
+    border-radius: 0 0 .5rem .5rem;
+    background: #fff;
+    overflow: hidden;
+    /* 保險：就算有其他樣式把 border 蓋掉，這一條也會畫出 1px 的內框 */
+    box-shadow: inset 0 0 0 1px #ffd7e5;
+}
+
+    /* 讓內部表格不要貼住邊緣，看起來像卡片 */
+    .orders-card div.order-items > .table,
+    .orders-card div.order-items > table {
+        margin-bottom: 0;
+    }
 /* 展開按鈕 */
 .order-block .btn-toggle {
     min-width: 2rem;
@@ -160,4 +181,13 @@
                 white-space: normal;
                 text-align: right;
             }
+            /* 伸縮的商品明細外框線（只在展開區塊加） */
+.orders-card .order-items {
+    border: 1px solid #ffd7e5;    /* 粉色框線 */
+    border-top: 0;                /* 與上方卡片銜接，不重複框線 */
+    border-radius: 0 0 .5rem .5rem;
+    background: #fff;             /* 保持白底 */
+    overflow: hidden;             /* 圓角生效 */
+}
+
 }

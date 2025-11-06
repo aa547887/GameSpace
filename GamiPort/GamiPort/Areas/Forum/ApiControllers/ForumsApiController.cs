@@ -9,8 +9,6 @@ using System.Drawing;
 
 namespace GamiPort.Areas.Forum.ApiControllers
 {
-
-
     // 把這支 Controller 放到 "Forum" Area（路由/檔案歸位）
     [Area("Forum")]
 
@@ -37,6 +35,7 @@ namespace GamiPort.Areas.Forum.ApiControllers
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<ForumListItemDto>>> List()
             // 直接把 Service 資料丟回去 → 200 OK + JSON
+
             => Ok(await _svc.GetForumsAsync());
 
         // 2) 取得單一論壇詳情

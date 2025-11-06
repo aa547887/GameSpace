@@ -276,28 +276,38 @@
                 });
 
                 bind('rejectFriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'reject' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('reject'); refreshRelation(); });
+                    if (confirm('您確定要拒絕此好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'reject' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('reject'); refreshRelation(); });
+                    }
                 });
 
                 bind('cancelFriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'cancel_request' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('cancel_request'); refreshRelation(); });
+                    if (confirm('您確定要取消已送出的好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'cancel_request' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('cancel_request'); refreshRelation(); });
+                    }
                 });
 
                 bind('unfriendBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unfriend' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unfriend'); refreshRelation(); });
+                    if (confirm('您確定要解除好友關係嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unfriend' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unfriend'); refreshRelation(); });
+                    }
                 });
 
                 bind('blockUserBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'block' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('block'); refreshRelation(); });
+                    if (confirm('您確定要封鎖此使用者嗎？封鎖後將無法再收到對方的訊息。')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'block' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('block'); refreshRelation(); });
+                    }
                 });
 
                 bind('unblockUserBtn', function () {
-                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unblock' })
-                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unblock'); refreshRelation(); });
+                    if (confirm('您確定要解除封鎖此使用者嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unblock' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unblock'); refreshRelation(); });
+                    }
                 });
             }
 

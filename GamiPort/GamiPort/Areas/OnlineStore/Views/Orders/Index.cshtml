@@ -20,73 +20,106 @@
     var list = (IEnumerable<dynamic>)(Model?.Items ?? Model?.Orders ?? Model?.Rows ?? Enumerable.Empty<dynamic>());
 }
 
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/OnlineStore/orders.css"
+          asp-append-version="true" />
+    <style>
+        /* 金額欄位靠左（不影響其他欄位與排版） */
+        .orders-card .col-amount,
+        .orders-card td.col-amount {
+            text-align: left !important;
+        }
+        /* 查詢/清除：橫向長方形 */
+        .btn-wide {
+            min-width: 90px;
+            height: 36px;
+            border-radius: .5rem;
+        }
+    </style>
+}
+
 <link rel="stylesheet" href="~/css/OnlineStore/orders.css" />
 
-<h2 class="mb-3">我的訂單</h2>
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <!-- ★ 版心 7/12，置中；其餘不動 -->
+        <div class="col-12 col-lg-9">
 
-<div class="d-flex gap-2 mb-3" id="status-bar">
-    <button class="btn btn-outline-secondary @Active("")" data-status="">全部 (@totalCount)</button>
-    <button class="btn btn-outline-warning  @Active("Unpaid")" data-status="Unpaid">未付款 (@unpaidCount)</button>
-    <button class="btn btn-outline-primary  @Active("Paid")" data-status="Paid">已付款 (@paidCount)</button>
-    <button class="btn btn-outline-info     @Active("Shipped")" data-status="Shipped">已出貨 (@shippedCount)</button>
-    <button class="btn btn-outline-success  @Active("Completed")" data-status="Completed">已完成 (@completedCount)</button>
-    <button class="btn btn-outline-secondary @Active("Canceled")" data-status="Canceled">已取消 (@canceledCount)</button>
-</div>
+            <h2 class="mb-3">我的訂單</h2>
 
-<div class="row g-2 mb-3">
-    <div class="col-md-5"><input id="q" class="form-control" placeholder="單號 / 品名" value="@qVal" /></div>
-    <div class="col-md-3"><input id="dateFrom" type="date" class="form-control" value="@dfVal" /></div>
-    <div class="col-md-3"><input id="dateTo" type="date" class="form-control" value="@dtVal" /></div>
-    <div class="col-md-1 d-grid"><button id="btnSearch" class="btn btn-dark">查詢</button></div>
-</div>
-
-<div class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-6">
-        <div class="orders-card">
-            @foreach (var o in list)
-            {
-                string oc = (string)(o?.OrderCode ?? "");
-                DateTime created = (DateTime)(o?.CreatedAt ?? DateTime.UtcNow);
-                string payStatus = (string)(o?.PaymentStatus ?? o?.PayStatus ?? "");
-                decimal grand = (decimal)(o?.GrandTotal ?? 0m);
-                string payMethod = (string)(o?.PayMethod ?? "");
-
-                <div class="order-block mb-3" data-oc="@oc">
-                    <!-- 單一 Grid：2 列 × 5 欄 -->
-                    <div class="order-grid">
-                        <!-- 列 1：表頭 -->
-                        <div class="cell head">訂單編號</div>
-                        <div class="cell head">日期</div>
-                        <div class="cell head">付款狀態</div>
-                        <div class="cell head">金額</div>
-                        <div class="cell head">付款方式</div>
-
-                        <!-- 列 2：值 -->
-                        <div class="cell val">
-                            <button class="btn btn-sm btn-outline-dark btn-toggle me-2"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#items-@oc"
-                                    aria-expanded="false"
-                                    aria-controls="items-@oc">
-                                ＋
-                            </button>
-                            <span class="fw-semibold text-monospace valtext">@oc</span>
-                        </div>
-                        <div class="cell val"><span class="valtext">@created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
-                        <div class="cell val"><span class="valtext">@payStatus</span></div>
-                        <div class="cell val text-end">
-                            <span class="valtext">@grand.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</span>
-                        </div>
-                        <div class="cell val"><span class="valtext">@payMethod</span></div>
-                    </div>
-
-                    <!-- 伸縮內容（照舊） -->
-                    <div id="items-@oc" class="collapse row-body">
-                        <div class="p-3"><div class="loading small text-muted">讀取中...</div></div>
-                    </div>
+            <!-- ★ 搜尋表單：保留你原本 name；加上清除按鈕與 id，供 AJAX 使用 -->
+            <form id="searchForm" method="get" action="@Url.Action("Index","Orders", new { area="OnlineStore" })" class="row g-2 align-items-end mb-3">
+                <div class="col-sm-5 col-md-6 col-lg-6">
+                    <label class="form-label">單號 / 商品名稱</label>
+                    <input name="keyword" value="@Model?.Keyword" class="form-control" placeholder="輸入單號或商品名稱（支援模糊）" />
                 </div>
-            }
+                <div class="col-6 col-sm-3 col-md-3 col-lg-3">
+                    <label class="form-label">年/月/日（起）</label>
+                    <input type="date" class="form-control" name="dateFrom" value="@(Model?.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-6 col-sm-3 col-md-3 col-lg-3">
+                    <label class="form-label">年/月/日（迄）</label>
+                    <input type="date" class="form-control" name="dateTo" value="@(Model?.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <input type="hidden" name="status" value="@Model?.Status" />
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark btn-wide">查詢</button>
+                    <button type="button" id="btnClear" class="btn btn-outline-secondary btn-wide">清除</button>
+                </div>
+            </form>
+
+            <!-- ★ 清單區：維持你的卡片寫法，只把外層寬度固定在 7/12 -->
+            <div id="ordersList" class="orders-card">
+                @foreach (var o in list)
+                {
+                    string oc = (string)(o?.OrderCode ?? "");
+                    DateTime created = (DateTime)(o?.CreatedAt ?? DateTime.UtcNow);
+                    string payStatus = (string)(o?.PaymentStatus ?? o?.PayStatus ?? "");
+                    decimal grand = (decimal)(o?.GrandTotal ?? 0m);
+                    string payMethod = (string)(o?.PayMethod ?? "");
+
+                    <div class="order-block mb-3" data-oc="@oc">
+                        <!-- 單一 Grid：2 列 × 5 欄 -->
+                        <div class="order-grid">
+                            <!-- 列 1：表頭 -->
+                            <div class="cell head">訂單編號</div>
+                            <div class="cell head">日期</div>
+                            <div class="cell head">付款狀態</div>
+                            <div class="cell head">金額</div>
+                            <div class="cell head">付款方式</div>
+
+                            <!-- 列 2：值（＋ 在左、編號在右，同一行） -->
+                            <div class="cell val d-flex align-items-center justify-content-between">
+                                @* ★ 新增 d-flex... *@
+                                <button class="btn btn-sm btn-outline-dark btn-toggle me-2"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#items-@oc"
+                                        aria-expanded="false"
+                                        aria-controls="items-@oc">
+                                    ＋
+                                </button>
+                                <span class="fw-semibold text-monospace valtext">@oc</span>
+                            </div>
+
+                            <div class="cell val"><span class="valtext">@created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
+                            <div class="cell val"><span class="valtext">@payStatus</span></div>
+                            <div class="cell val text-start">
+                                <!-- ★ 改成靠左 -->
+                                <span class="valtext">@grand.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</span>
+                            </div>
+                            <div class="cell val"><span class="valtext">@payMethod</span></div>
+                        </div>
+
+                        <!-- 伸縮內容（照舊） -->
+                        <div id="items-@oc" class="collapse row-body">
+                            <div class="p-3"><div class="loading small text-muted">讀取中...</div></div>
+                        </div>
+                    </div>
+                }
+            </div>
+
         </div>
     </div>
 </div>
@@ -94,44 +127,81 @@
 @section Scripts {
     <script>
         (() => {
-          document.querySelectorAll('.order-block .btn-toggle').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-              const block = e.currentTarget.closest('.order-block');
-              const oc = block.getAttribute('data-oc');
-              const body = block.querySelector('#items-' + oc);
-              const iconNow = e.currentTarget;
 
-              setTimeout(()=>{ iconNow.textContent = body.classList.contains('show') ? '＋' : '−'; }, 200);
+          // ===== 綁定／重綁：伸縮載入明細 =====
+          function bindToggleEvents(scope) {
+            (scope || document).querySelectorAll('.order-block .btn-toggle').forEach(btn => {
+              btn.addEventListener('click', async (e) => {
+                const block = e.currentTarget.closest('.order-block');
+                const oc = block.getAttribute('data-oc');
+                const body = block.querySelector('#items-' + oc);
+                const iconNow = e.currentTarget;
 
-              if (!body.dataset.loaded) {
-                try {
-                  const res = await fetch(`@Url.Action("Items", "Orders", new { area = "OnlineStore" })?orderCode=${encodeURIComponent(oc)}`,
-                    { headers:{'X-Requested-With':'XMLHttpRequest'} });
-                  body.innerHTML = await res.text();
-                  body.dataset.loaded = "1";
-                } catch { body.innerHTML = `<div class="p-3 text-danger">讀取失敗，請稍後再試。</div>`; }
+                // 切換符號（等 Bootstrap 動畫後）
+                setTimeout(()=>{ iconNow.textContent = body.classList.contains('show') ? '＋' : '−'; }, 200);
+
+                if (!body.dataset.loaded) {
+                  try {
+                    const url = '@Url.Action("Items", "Orders", new { area = "OnlineStore" })' + '?orderCode=' + encodeURIComponent(oc);
+                    const res = await fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest' }});
+                    body.innerHTML = await res.text();
+                    body.dataset.loaded = "1";
+                  } catch {
+                    body.innerHTML = '<div class="p-3 text-danger">讀取失敗，請稍後再試。</div>';
+                  }
+                }
+              }, { once:false });
+            });
+          }
+          bindToggleEvents(document);
+
+          // ===== AJAX 查詢（GET，不刷新頁面） =====
+          const $form = document.getElementById('searchForm');
+          const $list = document.getElementById('ordersList');
+
+          async function runSearch(qs) {
+            // 顯示 Loading
+            const bak = $list.innerHTML;
+            $list.innerHTML = '<div class="p-3 text-muted">讀取中…</div>';
+
+            try {
+              const url = $form.action + (qs ? ('?' + qs.toString()) : '');
+              // 取得整頁 HTML，抽出 ordersList 區塊，避免改動你的後端
+              const html = await (await fetch(url, { method:'GET' })).text();
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              const newList = doc.querySelector('#ordersList');
+              if (newList) {
+                $list.innerHTML = newList.innerHTML;
+                // 置換 DOM 後，要重新綁定展開事件
+                bindToggleEvents($list);
+              } else {
+                // 找不到就還原，避免整頁空掉
+                $list.innerHTML = bak;
               }
-            });
+            } catch (err) {
+              console.error(err);
+              $list.innerHTML = bak;
+            }
+          }
+
+          // submit → AJAX（GET）
+          $form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const qs = new URLSearchParams(new FormData($form));
+            runSearch(qs);
           });
 
-          document.getElementById('btnSearch')?.addEventListener('click', () => {
-            const qs = new URLSearchParams({
-              q: document.getElementById('q').value || '',
-              dateFrom: document.getElementById('dateFrom').value || '',
-              dateTo: document.getElementById('dateTo').value || '',
-              status: document.querySelector('#status-bar .active')?.dataset.status || ''
-            });
-            location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
+          // 清除按鈕 → 清空欄位並 AJAX 重新載入
+          document.getElementById('btnClear').addEventListener('click', function(){
+            $form.querySelector('input[name="keyword"]').value = '';
+            $form.querySelector('input[name="dateFrom"]').value = '';
+            $form.querySelector('input[name="dateTo"]').value = '';
+            // status 保持目前隱藏欄位的值；若要同時清空，把下一行取消註解
+            // $form.querySelector('input[name="status"]').value = '';
+            const qs = new URLSearchParams(new FormData($form));
+            runSearch(qs);
           });
 
-          document.querySelectorAll('#status-bar button').forEach(b=>{
-            b.addEventListener('click', ()=>{
-              const s = b.dataset.status || '';
-              const qs = new URLSearchParams(window.location.search);
-              qs.set('status', s);
-              location.href = `@Url.Action("Index", "Orders", new { area = "OnlineStore" })?` + qs.toString();
-            });
-          });
         })();
     </script>
 }
