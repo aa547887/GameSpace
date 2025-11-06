@@ -6,71 +6,85 @@
 @await Html.PartialAsync("_MiniGameAdminTabs")
 
 <!-- 統計卡片區 -->
-@if (Model.Results.TotalCount > 0)
-{
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">查詢結果</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.Results.TotalCount 筆</div>
-                        </div>
-                        <div class="text-primary opacity-50">
-                            <i class="fas fa-database fa-2x"></i>
-                        </div>
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-primary border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">查詢會員數</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.QueryMemberCount 筆</div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">總點數</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.Results.Items.Sum(x => x.Points).ToString("N0")</div>
-                        </div>
-                        <div class="text-success opacity-50">
-                            <i class="fas fa-coins fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-info border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">平均點數</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@((Model.Results.TotalCount > 0 ? Model.Results.Items.Average(x => x.Points) : 0).ToString("N0"))</div>
-                        </div>
-                        <div class="text-info opacity-50">
-                            <i class="fas fa-chart-line fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-warning border-4 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">最高點數</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@((Model.Results.Items.Any() ? Model.Results.Items.Max(x => x.Points) : 0).ToString("N0"))</div>
-                        </div>
-                        <div class="text-warning opacity-50">
-                            <i class="fas fa-trophy fa-2x"></i>
-                        </div>
+                    <div class="text-primary opacity-50">
+                        <i class="fas fa-users fa-2x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-}
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-success border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">總餘額</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalPoints.ToString("N0")</div>
+                    </div>
+                    <div class="text-success opacity-50">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-info border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">平均點數</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.AveragePoints.ToString("N0")</div>
+                    </div>
+                    <div class="text-info opacity-50">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-warning border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">最高點數</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.HighestPoints.ToString("N0")</div>
+                    </div>
+                    <div class="text-warning opacity-50">
+                        <i class="fas fa-trophy fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">最低點數</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.LowestPoints.ToString("N0")</div>
+                    </div>
+                    <div class="text-danger opacity-50">
+                        <i class="fas fa-arrow-down fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- 搜尋表單卡片 -->
 <div class="card shadow-sm mb-4">
@@ -85,16 +99,10 @@
                     <label for="Query_UserId"><i class="fas fa-user me-1"></i>會員 ID</label>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-6">
                 <div class="form-floating">
-                    <input class="form-control rounded" id="Query_MinAmount" name="MinAmount" type="number" min="0" value="@(Model.Query.MinAmount ?? null)" placeholder="最少點數" />
-                    <label for="Query_MinAmount"><i class="fas fa-arrow-up me-1"></i>最少點數</label>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-floating">
-                    <input class="form-control rounded" id="Query_MaxAmount" name="MaxAmount" type="number" min="0" value="@(Model.Query.MaxAmount ?? null)" placeholder="最多點數" />
-                    <label for="Query_MaxAmount"><i class="fas fa-arrow-down me-1"></i>最多點數</label>
+                    <input class="form-control rounded" id="Query_SearchTerm" name="SearchTerm" value="@(Model.Query.SearchTerm ?? string.Empty)" placeholder="會員名稱" />
+                    <label for="Query_SearchTerm"><i class="fas fa-id-card me-1"></i>會員名稱</label>
                 </div>
             </div>
             <div class="col-md-3">
@@ -105,16 +113,10 @@
                         <option value="userid_desc" selected="@(Model.Query.SortBy?.Equals("userid_desc", StringComparison.OrdinalIgnoreCase) == true)">會員ID（高 → 低）</option>
                         <option value="userid_asc" selected="@(Model.Query.SortBy?.Equals("userid_asc", StringComparison.OrdinalIgnoreCase) == true)">會員ID（低 → 高）</option>
                     </select>
-                    <label for="Query_SortBy"><i class="fas fa-sort me-1"></i>排序方式</label>
+                    <label for="Query_SortBy"><i class="fas fa-sort me-1"></i>點數（高 → 低）</label>
                 </div>
             </div>
-            <div class="col-md-9">
-                <div class="form-floating">
-                    <input class="form-control rounded" id="Query_SearchTerm" name="SearchTerm" value="@(Model.Query.SearchTerm ?? string.Empty)" placeholder="搜尋關鍵字" />
-                    <label for="Query_SearchTerm"><i class="fas fa-search me-1"></i>搜尋關鍵字（帳號 / 姓名 / Email）</label>
-                </div>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-12">
                 <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">
                     <i class="fas fa-search me-2"></i>開始搜尋
                 </button>

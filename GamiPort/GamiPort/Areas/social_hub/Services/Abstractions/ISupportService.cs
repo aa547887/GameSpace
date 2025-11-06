@@ -22,10 +22,4 @@ namespace GamiPort.Areas.social_hub.Services.Abstractions
 		Task<(bool ok, string? error, SupportMessageDto? msg)> SendAsync(
 			int ticketId, int actorUserId, int? actorManagerId, string text, CancellationToken ct = default);
 	}
-
-	/// <summary>把訊息廣播到 ticket 群組</summary>
-	public interface ISupportNotifier
-	{
-		Task BroadcastMessageAsync(SupportMessageDto msg, CancellationToken ct = default);
-	}
 }

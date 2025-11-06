@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "論壇 - 主題列表";
+    var forumId = (int)(ViewBag.ForumId ?? 0);
+    var forumName = (string)(ViewBag.ForumName ?? "");
+}
+
+<div class="container py-3">
+    <!-- 掛 Vue 的容器，帶 forumId 給前端 -->
+    <div id="threads-index-app"
+         data-forum-id="@forumId"
+         data-forum-name="@forumName"></div>
+</div>
+
+<!-- 用 ES Module 直接匯入 Vue + 你的元件 -->
+<script type="module">
+    import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js';
+    // ⚠️ 路徑要跟你實際檔案對齊（大小寫也要對）
+    import { ThreadList } from '/js/forum/thread-list.js';
+
+    const root = document.getElementById('threads-index-app');
+    const fid = Number(root?.dataset?.forumId ?? 0);
+    const fname = root?.dataset?.forumName ?? '';   // ★ 讀取 forumName
+
+
+    // 這段只是保險，之後出事你看 console 會比較快定位
+    // console.debug('[Threads/Index] forumId=', fid, 'forumName=', fname);
+
+        createApp({
+      template: `<ThreadList :forum-id="forumId" :forum-name="forumName" />`, // ★ 傳給元件
+      components: { ThreadList },
+      data: () => ({ forumId: fid, forumName: fname })                         // ★ 放進 data
+    }).mount('#threads-index-app');
+</script>

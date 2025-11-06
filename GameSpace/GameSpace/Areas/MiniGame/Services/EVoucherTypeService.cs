@@ -9,11 +9,13 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<EVoucherTypeService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
-        public EVoucherTypeService(GameSpacedatabaseContext context, ILogger<EVoucherTypeService> logger)
+        public EVoucherTypeService(GameSpacedatabaseContext context, ILogger<EVoucherTypeService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         // EvoucherType 基本 CRUD
@@ -36,7 +38,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                evoucherType.ValidFrom = DateTime.UtcNow;
+                evoucherType.ValidFrom = _appClock.UtcNow;
                 // IsActive property does not exist in EvoucherType
                 _context.EvoucherTypes.Add(evoucherType);
                 await _context.SaveChangesAsync();
@@ -127,7 +129,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 // Set ValidTo to current time to deactivate
-                evoucherType.ValidTo = DateTime.UtcNow;
+                evoucherType.ValidTo = _appClock.UtcNow;
                 // UpdatedAt property does not exist in EvoucherType
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("停用電子憑證類型成功: EVoucherTypeId={EVoucherTypeId}", evoucherTypeId);
@@ -145,7 +147,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.EvoucherTypes
                 .AsNoTracking()
-                .Where(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow)
+                .Where(evt => evt.ValidFrom <= _appClock.UtcNow && evt.ValidTo >= _appClock.UtcNow)
                 .OrderBy(evt => evt.Name)
                 .ToListAsync();
         }
@@ -163,7 +165,7 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             return await _context.EvoucherTypes
                 .AsNoTracking()
-                .Where(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow && evt.TotalAvailable > 0)
+                .Where(evt => evt.ValidFrom <= _appClock.UtcNow && evt.ValidTo >= _appClock.UtcNow && evt.TotalAvailable > 0)
                 .OrderBy(evt => evt.ValueAmount)
                 .ToListAsync();
         }
@@ -234,7 +236,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public async Task<bool> IsStockAvailableAsync(int evoucherTypeId)
         {
             var evoucherType = await GetEVoucherTypeByIdAsync(evoucherTypeId);
-            return evoucherType != null && evoucherType.ValidFrom <= DateTime.UtcNow && evoucherType.ValidTo >= DateTime.UtcNow && evoucherType.TotalAvailable > 0;
+            return evoucherType != null && evoucherType.ValidFrom <= _appClock.UtcNow && evoucherType.ValidTo >= _appClock.UtcNow && evoucherType.TotalAvailable > 0;
         }
 
         // EvoucherType 統計
@@ -245,7 +247,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
         public async Task<int> GetActiveEVoucherTypesCountAsync()
         {
-            return await _context.EvoucherTypes.AsNoTracking().CountAsync(evt => evt.ValidFrom <= DateTime.UtcNow && evt.ValidTo >= DateTime.UtcNow);
+            return await _context.EvoucherTypes.AsNoTracking().CountAsync(evt => evt.ValidFrom <= _appClock.UtcNow && evt.ValidTo >= _appClock.UtcNow);
         }
 
         public async Task<Dictionary<string, int>> GetEVoucherTypesDistributionAsync()

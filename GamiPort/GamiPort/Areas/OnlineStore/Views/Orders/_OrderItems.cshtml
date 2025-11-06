@@ -1,0 +1,26 @@
+﻿@model IEnumerable<GamiPort.Areas.OnlineStore.ViewModels.OrderItemRowVm>
+
+@* 下列是白底伸縮框內容；顯示商品明細 *@
+<table class="table table-sm align-middle mb-0 order-items-table">
+    <thead>
+        <tr>
+            <th style="width: 18%">商品編號</th>
+            <th>品名</th>
+            <th class="text-end" style="width: 12%">單價</th>
+            <th class="text-end" style="width: 10%">數量</th>
+            <th class="text-end" style="width: 14%">小計</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var it in Model)
+    {
+        <tr>
+            <td class="text-monospace">@it.ProductCode</td>
+            <td>@it.ProductName</td>
+            <td class="text-end">@it.UnitPrice.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</td>
+            <td class="text-end">@it.Quantity</td>
+            <td class="text-end fw-semibold">@it.Subtotal.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("zh-TW"))</td>
+        </tr>
+    }
+    </tbody>
+</table>

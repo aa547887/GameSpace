@@ -1,21 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using GamiPort.Areas.social_hub.Services.Abstractions; // ★ IProfanityFilter（輸出前遮蔽）
+﻿using GamiPort.Areas.social_hub.Services.Abstractions; // ★ IProfanityFilter（輸出前遮蔽）
 using GamiPort.Infrastructure.Security;                 // IAppCurrentUser（吃登入）
 using GamiPort.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-// ✅ 改：改用我們自己的統一介面來「吃登入」；不再依賴 ILoginIdentity
-using GamiPort.Infrastructure.Security; // IAppCurrentUser
 
 namespace GamiPort.Areas.social_hub.Controllers
 {
 	/// <summary>
 	/// 一對一聊天：歷史查詢 / 好友最新預覽 + 未讀
+	/// （即時傳送、已讀回報放在 SignalR Hub）
+	/// 【重點】本版改為注入 IAppCurrentUser 來讀取目前登入者：
+	///   - 快速路徑：直接讀取 Claims("AppUserId") -> _me.UserId（無 DB）
+	///   - 備援路徑：_me.GetUserIdAsync()（解析 NameIdentifier 或內部呼叫 ILoginIdentity 做 DB 對應）
 	/// 注意：DB 仍存原文；本 Controller 在輸出給前端前會透過 IProfanityFilter 進行遮蔽。
 	/// </summary>
 	[Area("social_hub")]

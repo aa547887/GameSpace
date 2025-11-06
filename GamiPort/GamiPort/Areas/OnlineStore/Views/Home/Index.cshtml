@@ -1,296 +1,68 @@
-<!--這是舊檔案不會用到了-->
-@* @{
+﻿@{
     ViewData["Title"] = "GamiStore 首頁";
 }
 
-<div class="container-xxl py-3">
-    <div class="row g-4">
-
-        <!-- 左主欄 -->
-        <div class="col-12 col-xxl-9">
-
-            <!-- ========== B) 旋轉木馬 + 果凍搜尋條（貼在 _StoreBar.Cats 正下方） ========== -->
-            <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
-                <div class="carousel-inner hero-inner">
-                    <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt="GamiStore Birthday"></div>
-                    <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="卡比"></div>
-                    <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="NINJA"></div>
-                    <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt="絕對摩拳"></div>
-                    <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt="無雙戰技"></div>
-                </div>
-
-                <!-- 透明感左右切換 -->
-                <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev">
-                    <i class="bi bi-chevron-left"></i><span class="visually-hidden">Prev</span>
-                </button>
-                <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next">
-                    <i class="bi bi-chevron-right"></i><span class="visually-hidden">Next</span>
-                </button>
-
-                <!-- 進度條指示（不會被搜尋條蓋住，貼底） -->
-                <div class="hero-indicators">
-                    <div class="hero-progress"><span></span></div>
-                </div>
-
-                <!-- 果凍搜尋 -->
-                <div class="hero-search">
-                    <i class="bi bi-search"></i>
-                    <input id="heroQ" placeholder="搜尋文章、遊戲、看板…" />
-                    <button class="btn btn-primary btn-sm" id="heroGo">搜尋</button>
-                </div>
-
-                <!-- 左右剪影（視覺：前後廣告的模糊影子） -->
-                <div class="hero-fade hero-fade-left"></div>
-                <div class="hero-fade hero-fade-right"></div>
-            </div>
-
-            <!-- ========== C) 排行榜（玻璃三頁籤，共用 placeholder；固定高度） ========== -->
-            <section class="block">
-                <div class="block-head">
-                    <div class="glass-tabs" id="rank-tabs">
-                        <button class="glass-tab active" data-kind="sales">每日熱銷</button>
-                        <button class="glass-tab" data-kind="views">熱門點擊</button>
-                        <button class="glass-tab" data-kind="fav">收藏飆升</button>
-                    </div>
-                    <div class="block-desc" id="rank-upd">更新於：--</div>
-                </div>
-
-                <div class="grid">
-                    <div id="rank-wrap" class="fix-body">
-                        <div class="top3" id="rank-top3"></div>
-                        <div class="side-list" id="rank-side"></div>
-                        <div class="empty d-none" id="rank-empty">尚無資料</div>
-                    </div>
-
-                    <!-- E 的第一組方形廣告位（不影響 B） -->
-                    <aside class="mini-ads">
-                        <a class="mini-ad ad-hover-sheen ad-breathe" href="#"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt=""></a>
-                        <a class="mini-ad ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt=""></a>
-                        <a class="mini-ad ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></a>
-                    </aside>
-                </div>
-            </section>
-
-            <!-- ========== D) 簡易商品瀏覽（三頁籤；一排5×2；固定高度；右上更多…） ========== -->
-            <section class="block">
-                <div class="block-head">
-                    <div class="glass-tabs" id="browse-tabs">
-                        <button class="glass-tab active" data-kind="game">遊戲商品</button>
-                        <button class="glass-tab" data-kind="notgame">周邊商品</button>
-                        <button class="glass-tab" data-kind="points">點數卡</button>
-                    </div>
-                    <div class="block-desc"><a id="browse-more" class="link-more" href="/OnlineStore/store/browse">更多…</a></div>
-                </div>
-
-                <div class="grid-browse">
-                    <div id="browse-grid" class="cards-rows fix-body"></div>
-
-                    <!-- E 的第二組方形廣告位 -->
-                    <aside class="mini-ads">
-                        <a class="mini-ad ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt=""></a>
-                        <a class="mini-ad ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt=""></a>
-                        <a class="mini-ad ad-hover-sheen" href="#"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt=""></a>
-                    </aside>
-                </div>
-            </section>
-
-        </div>
-
-        <!-- 右欄 -->
-        <aside class="col-xxl-3 d-none d-xxl-block">
-            <div class="right-rail">
-                <!-- 右側廣告條 -->
-                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.cshtml")
-            </div>
-        </aside>
-
-    </div>
-</div>
-
 @section Styles {
     <style>
-        /* 右欄貼齊頂部 */
-        .right-rail {
-            position: sticky;
-            top: var(--dock-top, 68px);
-        }
-
-        /* ---- 卡片容器 & tabs ---- */
-        .block {
+        /* ====== 卡片與排行榜視覺（Bahamut 風） ====== */
+        .rank-wrap {
             background: #fff;
             border-radius: 16px;
             padding: 12px 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,.08);
         }
-        .block + .block {
-            margin-top: 24px;
-        }
 
-        .block-head {
+        /* 標籤列 */
+        .rank-tabs {
             display: flex;
-            align-items: center;
             gap: 16px;
-            margin-bottom: 12px;
+            align-items: center;
         }
 
-        .block-desc {
+        .rank-tab {
+            border: 0;
+            background: #eef3ff;
+            color: #1f3b8f;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+        }
+
+            .rank-tab:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 18px rgba(31,59,143,.18);
+            }
+
+            .rank-tab.active {
+                background: #3b82f6;
+                color: #fff;
+                box-shadow: 0 10px 24px rgba(59,130,246,.35);
+            }
+
+        .rank-updated {
             margin-left: auto;
             color: #7c8591;
+            font-size: .92rem
         }
 
-        .link-more {
-            text-decoration: none;
-            font-weight: 700;
-        }
-
-        .glass-tabs {
-            display: flex;
-            gap: 10px;
-        }
-
-        .glass-tab {
-            border: 0;
-            padding: .45rem .9rem;
-            border-radius: 999px;
-            background: rgba(255,255,255,.6);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 6px 18px rgba(0,0,0,.08);
-            color: #111;
-            font-weight: 700;
-            transition: transform .15s, box-shadow .15s, background-color .15s;
-        }
-
-        .glass-tab:hover {
-            transform: translateY(-1.5px);
-            box-shadow: 0 12px 26px rgba(0,0,0,.12);
-        }
-
-        .glass-tab.active {
-            background: #0d6efd;
-            color: #fff;
-        }
-
-        /* ===== B：輪播固定高度（不吃圖高），超出以留白顯示 ===== */
-        :root {
-            --hero-h: 420px;
-        }
-
-        #storeHero .hero-inner {
-            height: var(--hero-h);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 14px 36px rgba(0,0,0,.12);
-            background: #f2f3f5;
-        }
-
-        #storeHero .carousel-item,
-        #storeHero .carousel-item img {
-            height: 100%;
-        }
-
-        #storeHero .carousel-item img {
-            width: 100%;
-            object-fit: contain; /* 固定高度，必要時左右補留白 */
-            background: #f2f3f5; /* 留白色 */
-        }
-
-        /* 輪播左右剪影若要保留，可加：*/
-        #storeHero::before,#storeHero::after{content:"";position:absolute;top:0;bottom:0;width:12%;pointer-events:none;}
-        #storeHero::before{left:0;background:linear-gradient(90deg,rgba(255,255,255,.85),transparent);}
-        #storeHero::after{right:0;background:linear-gradient(270deg,rgba(255,255,255,.85),transparent);}
-
-        /* 輪播左右控制鈕（透明玻璃） */
-        .hero-ctrl {
-            width: 42px;
-            height: 42px;
-            border: 0;
-            border-radius: 999px;
-            background: rgba(255,255,255,.6);
-            backdrop-filter: blur(6px);
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .hero-ctrl i {
-            font-size: 18px;
-            color: #222;
-        }
-
-        .hero-ctrl:hover {
-            background: rgba(255,255,255,.85);
-        }
-
-        /* 進度條（獨立在下方） */
-        .hero-indicators {
-            padding: 0 18%;
-        }
-
-        .hero-progress {
-            height: 4px;
-            background: rgba(0,0,0,.08);
-            border-radius: 99px;
-            overflow: hidden;
-        }
-
-        .hero-progress span {
-            display: block;
-            height: 100%;
-            width: 0;
-            background: #0d6efd;
-            transition: width .3s ease;
-        }
-
-        /* 搜尋條（獨立在進度條下方） */
-        .hero-search-outside {
-            display: flex;
-            justify-content: center;
-        }
-
-        .glass {
-            background: rgba(255,255,255,.62);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0,0,0,.08);
-        }
-
-        .hero-search {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: min(980px,94%);
-            padding: 10px 12px;
-            border-radius: 16px;
-        }
-
-        .hero-search input {
-            border: 0;
-            background: transparent;
-            outline: none;
-            width: 100%;
-        }
-
-        .hero-search:hover {
-            background: rgba(255,255,255,.8);
-        }
-
-        /* ---- C) 排行榜布局 ---- */
-        .grid {
+        /* 排列：左(Top1~3 卡片) + 右(4~10 list) */
+        .rank-grid {
             display: grid;
-            grid-template-columns: minmax(520px,1fr) 300px;
+            grid-template-columns: minmax(520px,1fr) 360px;
             gap: 16px;
         }
+        @@media (max-width: 1200px) {
+            .rank-grid
 
-        @@media (max-width:1200px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
+        {
+            grid-template-columns: 1fr;
         }
 
-        /* 固定高度（不跳動） */
-        .fix-body {
-            min-height: 420px;
         }
 
-        /* Top1~3 卡片 + 右側 4~10 列表 （固定高度不跳）*/
+        /* Top 卡片區 */
         .top3 {
             display: grid;
             grid-template-columns: repeat(3, minmax(0,1fr));
@@ -308,35 +80,35 @@
             flex-direction: column;
         }
 
-        .top-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(0,0,0,.12);
-        }
+            .top-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 28px rgba(0,0,0,.12);
+            }
 
-        .top-card .cover {
-            aspect-ratio: 16/10;
-            background: #ddd;
-            background-position: center;
-            background-size: cover;
-        }
+            .top-card .cover {
+                aspect-ratio: 16/10;
+                background: #ddd;
+                background-position: center;
+                background-size: cover;
+            }
 
-        .top-card .body {
-            padding: 10px 12px;
-        }
+            .top-card .body {
+                padding: 10px 12px;
+            }
 
-        .top-card .title {
-            font-weight: 700;
-            line-height: 1.2;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+            .top-card .title {
+                font-weight: 700;
+                line-height: 1.2;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
 
-        .top-card .price {
-            color: #2563eb;
-            font-weight: 800;
-        }
+            .top-card .price {
+                color: #2563eb;
+                font-weight: 800;
+            }
 
         .badge-rank {
             position: absolute;
@@ -351,6 +123,7 @@
             font-size: .85rem;
         }
 
+        /* 右側 4~10 列表 */
         .side-list {
             background: #fff;
             border-radius: 12px;
@@ -366,9 +139,9 @@
             border-bottom: 1px dashed rgba(0,0,0,.06);
         }
 
-        .side-item:last-child {
-            border-bottom: 0;
-        }
+            .side-item:last-child {
+                border-bottom: 0;
+            }
 
         .side-rank {
             width: 36px;
@@ -396,138 +169,201 @@
             font-size: .9rem;
         }
 
-        .side-meta .tag {
-            border: 1px solid rgba(0,0,0,.12);
-            border-radius: 999px;
-            padding: 2px 8px;
-            font-weight: 700;
-        }
+            .side-meta .tag {
+                border: 1px solid rgba(0,0,0,.12);
+                border-radius: 999px;
+                padding: 2px 8px;
+                font-weight: 700;
+            }
 
+        /* 無資料 */
         .empty {
             display: grid;
             place-items: center;
-            height: 240px;
-            color: #96A0AE;
+            height: 220px;
+            color: #96A0AE
         }
 
-        /* ---- D) 簡易瀏覽：5×2 卡片，固定高度 ---- */
-        .grid-browse {
-            display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 16px;
-        }
-
-        @@media (max-width:1200px) {
-            .grid-browse {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .cards-rows {
-            display: grid;
-            grid-template-columns: repeat(5,minmax(0,1fr));
-            gap: 12px;
-        }
-
-        @@media (max-width:1400px) {
-            .cards-rows {
-                grid-template-columns: repeat(4,1fr);
-            }
-        }
-
-        @@media (max-width:992px) {
-            .cards-rows {
-                grid-template-columns: repeat(2,1fr);
-            }
-        }
-
-        .card-mini {
-            background: #fff;
-            border: 1px solid rgba(0,0,0,.06);
-            border-radius: 12px;
+        /* 搜尋條（果凍感）示意，若你已有就忽略 */
+        .hero {
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 6px 18px rgba(0,0,0,.06);
-        }
-
-        .card-mini .thumb {
-            aspect-ratio: 16/10;
-            background: #eee;
-            background-position: center;
-            background-size: cover;
-        }
-
-        .card-mini .body {
-            padding: 10px;
-        }
-
-        .card-mini .name {
-            font-weight: 700;
-            line-height: 1.2;
-            height: 2.4em;
-            overflow: hidden;
-        }
-
-        .card-mini .meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
-        }
-
-        .card-mini .price {
-            color: #2563eb;
-            font-weight: 800;
-        }
-
-        /* ---- 迷你廣告 ---- */
-        .mini-ads {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .mini-ad {
             position: relative;
-            display: block;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 22px rgba(0,0,0,.12);
+            background: #000;
         }
 
-        .mini-ad img {
-            width: 100%;
-            height: auto;
-            display: block;
-            transition: transform .25s ease;
-        }
+            .hero img {
+                width: 100%;
+                height: auto;
+                opacity: .85;
+            }
 
-        .mini-ad:hover img {
-            transform: scale(1.03);
-        }
+            .hero .search-bar {
+                position: absolute;
+                left: 8%;
+                right: 8%;
+                bottom: 16%;
+                background: rgba(255,255,255,.6);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(0,0,0,.08);
+                border-radius: 16px;
+                display: flex;
+                gap: 10px;
+                padding: 10px 12px;
+            }
 
-        .ad-hover-sheen::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -150%;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 50%, transparent 100%);
-            transform: skewX(-20deg);
-            transition: left .55s ease;
-            pointer-events: none;
-        }
-
-        .ad-hover-sheen:hover::after {
-            left: 130%;
-        }
-        .ad-breathe {
-            animation: breathe 3s ease-in-out infinite;
-        }
-        @@keyframes breathe {
-            0%,100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-
-        }
+            .hero input {
+                border: 0;
+                background: transparent;
+                outline: none;
+                width: 100%;
+            }
     </style>
-} *@
+}
+
+<div class="container-xxl">
+
+    <!-- ====== Hero（如已有輪播，這段可移除） ====== -->
+    <section class="mb-4">
+        <div class="hero">
+            <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop" alt="">
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input placeholder="搜尋想要的商品或遊戲…">
+                <button class="btn btn-primary btn-sm">搜尋</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== 商城排行榜 ====== -->
+    <section class="rank-wrap">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="mb-0 fw-bold">商城排行榜</h5>
+        </div>
+
+        <!-- 標籤列 -->
+        <div class="rank-tabs mb-3">
+            <button class="rank-tab active" data-type="sales">每日熱銷</button>
+            <button class="rank-tab" data-type="views">熱門點擊</button>
+            <button class="rank-tab" data-type="fav">收藏飆升</button>
+            <div class="rank-updated" id="rankUpdated">更新於：--</div>
+        </div>
+
+        <!-- 內容 -->
+        <div class="rank-grid" id="rankBoard">
+            <div class="top3" id="rankTop3">
+                <!-- Top1~3 放這裡 -->
+            </div>
+            <div class="side-list" id="rankSide">
+                <!-- 4~10 放這裡 -->
+            </div>
+        </div>
+
+        <div class="empty d-none" id="rankEmpty">尚無資料</div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // ========= 前端設定 =========
+        const API_BASE = '/api/store';
+        const Endpoints = {
+          sales: `${API_BASE}/rankings?type=sales`,
+          views: `${API_BASE}/rankings?type=views`,     // 後端補上後會自動生效
+          fav:   `${API_BASE}/rankings?type=fav`        // 後端補上後會自動生效
+        };
+
+        // ========= UI 元件 =========
+        const $tabs = document.querySelectorAll('.rank-tab');
+        const $updated = document.getElementById('rankUpdated');
+        const $top3 = document.getElementById('rankTop3');
+        const $side = document.getElementById('rankSide');
+        const $empty = document.getElementById('rankEmpty');
+
+        $tabs.forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            $tabs.forEach(x=>x.classList.remove('active'));
+            btn.classList.add('active');
+            loadRanking(btn.dataset.type);
+          });
+        });
+
+        // 初次載入
+        loadRanking('sales');
+
+        async function loadRanking(type){
+          $top3.innerHTML = ''; $side.innerHTML = '';
+          $empty.classList.add('d-none');
+
+          const url = Endpoints[type] || Endpoints.sales;
+          try{
+            const res = await fetch(url, {headers:{'Accept':'application/json'}});
+            if(!res.ok) throw new Error(res.statusText);
+            const data = await res.json();
+            const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+            if(!items || items.length===0){
+              $empty.classList.remove('d-none');
+              $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+              return;
+            }
+
+            // 左側 Top1~3
+            const top3 = items.slice(0,3);
+            $top3.innerHTML = top3.map((p,i)=>topCard(p, i+1)).join('');
+
+            // 右側 4~10
+            const rest = items.slice(3,10);
+            $side.innerHTML = rest.map((p,idx)=>sideItem(p, idx+4)).join('');
+
+            $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+          }catch(err){
+            console.error(err);
+            $empty.classList.remove('d-none');
+            $updated.textContent = `更新於：${new Date().toLocaleString()}`;
+          }
+        }
+
+        // 模板：Top 卡片
+        function topCard(p, rank){
+          const cover = p.coverUrl || 'https://placehold.co/640x360?text=No+Image';
+          const price = priceText(p.price, p.currencyCode);
+          const plat  = p.platformName ? `<span class="badge text-bg-primary fw-bold">${escapeHtml(p.platformName)}</span>` : '';
+          return `
+            <a class="top-card text-decoration-none text-dark" href="/OnlineStore/store/details/${p.productId}" title="${escapeHtml(p.productName)}">
+              <span class="badge-rank">第 ${rank} 名</span>
+              <div class="cover" style="background-image:url('${cover.replace(/'/g,"%27")}')"></div>
+              <div class="body">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  ${plat}
+                  <div class="price">${price}</div>
+                </div>
+                <div class="title">${escapeHtml(p.productName)}</div>
+              </div>
+            </a>
+          `;
+        }
+
+        // 模板：右側列
+        function sideItem(p, rank){
+          const plat = p.platformName ? `<span class="tag">${escapeHtml(p.platformName)}</span>` : '';
+          const price = priceText(p.price, p.currencyCode);
+          return `
+            <a class="side-item text-decoration-none text-dark" href="/OnlineStore/store/details/${p.productId}" title="${escapeHtml(p.productName)}">
+              <div class="side-rank">${rank}</div>
+              <div class="side-title">${escapeHtml(p.productName)}</div>
+              <div class="side-meta">
+                ${plat}
+                <span>${price}</span>
+              </div>
+            </a>
+          `;
+        }
+
+        function priceText(n, cur){
+          if(n==null) return '';
+          const v = Number(n).toLocaleString('zh-TW',{minimumFractionDigits:0, maximumFractionDigits:0});
+          return (cur||'TWD')==='TWD' ? `NT$ ${v}` : `${cur||''} ${v}`;
+        }
+        function escapeHtml(str){ return (str??'').replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+    </script>
+}

@@ -17,12 +17,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
     {
         private readonly IUserService _userService;
         private readonly IWalletService _walletService;
+        private readonly IFuzzySearchService _fuzzySearchService;
 
-        public AdminUserController(GameSpacedatabaseContext context, IUserService userService, IWalletService walletService)
+        public AdminUserController(GameSpacedatabaseContext context, IUserService userService, IWalletService walletService, IFuzzySearchService fuzzySearchService)
             : base(context)
         {
             _userService = userService;
             _walletService = walletService;
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // GET: AdminUser
@@ -45,26 +47,87 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 users = await _userService.GetAllUsersAsync(1, 10000);
             }
 
-            // 搜尋功能
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 模糊搜尋：SearchTerm（聯集OR邏輯，使用 FuzzySearchService）
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(searchTerm);
+            Dictionary<int, int> userPriority = new Dictionary<int, int>();
+
+            if (hasSearchTerm)
             {
-                users = users.Where(u => u.UserName.Contains(searchTerm) ||
-                                        u.UserAccount.Contains(searchTerm) ||
-                                        (u.UserIntroduce != null && u.UserIntroduce.Email.Contains(searchTerm)));
+                var term = searchTerm.Trim();
+
+                // 使用 FuzzySearchService 計算優先順序
+                var matchedUsers = new List<User>();
+
+                foreach (var user in users)
+                {
+                    int priority = 0;
+
+                    // 用戶ID精確匹配優先
+                    if (user.UserId.ToString().Equals(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 1; // 完全匹配 UserId
+                    }
+                    else if (user.UserId.ToString().Contains(term))
+                    {
+                        priority = 2; // 部分匹配 UserId
+                    }
+
+                    // 如果ID沒有匹配，使用模糊搜尋
+                    if (priority == 0)
+                    {
+                        var email = user.UserIntroduce != null ? user.UserIntroduce.Email : "";
+                        priority = _fuzzySearchService.CalculateMatchPriority(
+                            term,
+                            user.UserAccount,
+                            user.UserName,
+                            email
+                        );
+                    }
+
+                    // 如果匹配成功（priority > 0），加入結果
+                    if (priority > 0)
+                    {
+                        matchedUsers.Add(user);
+                        userPriority[user.UserId] = priority;
+                    }
+                }
+
+                users = matchedUsers;
             }
 
-            // 排序
-            users = sortBy switch
+            // 分頁前計算總數
+            var totalCount = users.Count();
+
+            // 優先順序排序
+            if (hasSearchTerm)
             {
-                "account" => users.OrderBy(u => u.UserAccount),
-                "email" => users.OrderBy(u => u.UserIntroduce != null ? u.UserIntroduce.Email : string.Empty),
-                "created" => users.OrderBy(u => u.UserId),
-                "lastLogin" => users.OrderByDescending(u => u.UserLockoutEnd),
-                _ => users.OrderBy(u => u.UserName)
-            };
+                // 按照優先順序排序
+                var ordered = users.OrderBy(u => userPriority.ContainsKey(u.UserId) ? userPriority[u.UserId] : 99);
+
+                // 次要排序
+                users = sortBy switch
+                {
+                    "account" => ordered.ThenBy(u => u.UserAccount),
+                    "email" => ordered.ThenBy(u => u.UserIntroduce != null ? u.UserIntroduce.Email : string.Empty),
+                    "created" => ordered.ThenBy(u => u.UserId),
+                    "lastLogin" => ordered.ThenByDescending(u => u.UserLockoutEnd),
+                    _ => ordered.ThenBy(u => u.UserName)
+                };
+            }
+            else
+            {
+                // 沒有搜尋條件時使用預設排序
+                users = sortBy switch
+                {
+                    "account" => users.OrderBy(u => u.UserAccount),
+                    "email" => users.OrderBy(u => u.UserIntroduce != null ? u.UserIntroduce.Email : string.Empty),
+                    "created" => users.OrderBy(u => u.UserId),
+                    "lastLogin" => users.OrderByDescending(u => u.UserLockoutEnd),
+                    _ => users.OrderBy(u => u.UserName)
+                };
+            }
 
             // 分頁
-            var totalCount = users.Count();
             var pagedUsers = users
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -85,9 +148,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.Status = status;
             ViewBag.SortBy = sortBy;
-            ViewBag.TotalUsers = await _userService.GetTotalUsersCountAsync();
-            ViewBag.ActiveUsers = await _userService.GetActiveUsersCountAsync();
-            ViewBag.InactiveUsers = ViewBag.TotalUsers - ViewBag.ActiveUsers;
+
+            // Calculate statistics from filtered data (before pagination)
+            ViewBag.TotalUsers = totalCount;
+
+            // Count active/inactive from filtered data (use already filtered 'users' collection)
+            ViewBag.ActiveUsers = users.Count(u => u.UserRight?.UserStatus == true);
+            ViewBag.InactiveUsers = users.Count(u => u.UserRight?.UserStatus != true);
 
             return View(viewModel);
         }

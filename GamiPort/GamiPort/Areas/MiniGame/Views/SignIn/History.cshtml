@@ -1,0 +1,186 @@
+@using GamiPort.Areas.MiniGame.Controllers
+@using GamiPort.Areas.MiniGame.Helpers
+@model SignInHistoryViewModel
+
+@{
+	ViewData["Title"] = "簽到歷史";
+}
+
+<div class="container my-5">
+	<div class="card" style="border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none;">
+		<div class="card-body">
+			<h4 class="card-title mb-4">
+				<i class="fas fa-history"></i> 簽到歷史記錄
+			</h4>
+
+			<!-- 篩選面板 -->
+			<div class="row mb-4">
+				<div class="col-md-6">
+					<form method="get" action="@Url.Action("History")" class="form-inline">
+						<div class="form-group mr-2">
+							<label class="mr-2">年份:</label>
+							<select name="year" class="form-control form-control-sm mr-2">
+								<option value="">不指定</option>
+								@for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 5; y--)
+								{
+									<option value="@y" selected="@(Model.FilterYear == y)">@y</option>
+								}
+							</select>
+						</div>
+						<div class="form-group mr-2">
+							<label class="mr-2">月份:</label>
+							<select name="month" class="form-control form-control-sm mr-2">
+								<option value="">不指定</option>
+								@for (int m = 1; m <= 12; m++)
+								{
+									<option value="@m" selected="@(Model.FilterMonth == m)">@m 月</option>
+								}
+							</select>
+						</div>
+						<button type="submit" class="btn btn-sm btn-primary">搜尋</button>
+					</form>
+				</div>
+			</div>
+
+			<!-- 歷史表格 -->
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead style="background-color: #f0f4f8;">
+						<tr>
+							<th>序號</th>
+							<th>簽到時間</th>
+							<th>點數</th>
+							<th>經驗</th>
+							<th>優惠券</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (Model.History.Items.Any())
+						{
+							@foreach (var item in Model.History.Items)
+							{
+								<tr style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0;">
+									<td>
+										<span class="badge badge-primary" style="background-color: #17a2b8;">@item.LogId</span>
+									</td>
+									<td>@item.SignTime.ToUtc8String("yyyy-MM-dd HH:mm")</td>
+									<td><span style="color: #ff9f43; font-weight: bold;">+@item.PointsGained</span></td>
+									<td><span style="color: #28a745;">+@item.ExpGained</span></td>
+									<td>
+										@if (!string.IsNullOrEmpty(item.CouponGained) && !item.CouponGained.StartsWith("AUTO-"))
+										{
+											<span class="badge badge-success">@item.CouponGained</span>
+										}
+										else
+										{
+											<span style="color: #999;">無</span>
+										}
+									</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr>
+								<td colspan="5" class="text-center text-muted py-4">
+									<i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 10px;"></i>
+									<p>暫無簽到記錄</p>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+
+			<!-- 分頁 -->
+			@if (Model.History.TotalPages > 1)
+			{
+				<nav aria-label="Page navigation" class="mt-4">
+					<ul class="pagination justify-content-center">
+						@if (Model.History.CurrentPage > 1)
+						{
+							<li class="page-item">
+								<a class="page-link" href="@Url.Action("History", new { page = Model.History.CurrentPage - 1, year = Model.FilterYear, month = Model.FilterMonth })">
+									上一頁
+								</a>
+							</li>
+						}
+
+						@for (int p = Math.Max(1, Model.History.CurrentPage - 2); p <= Math.Min(Model.History.TotalPages, Model.History.CurrentPage + 2); p++)
+						{
+							@if (p == Model.History.CurrentPage)
+							{
+								<li class="page-item active">
+									<span class="page-link">@p</span>
+								</li>
+							}
+							else
+							{
+								<li class="page-item">
+									<a class="page-link" href="@Url.Action("History", new { page = p, year = Model.FilterYear, month = Model.FilterMonth })">
+										@p
+									</a>
+								</li>
+							}
+						}
+
+						@if (Model.History.CurrentPage < Model.History.TotalPages)
+						{
+							<li class="page-item">
+								<a class="page-link" href="@Url.Action("History", new { page = Model.History.CurrentPage + 1, year = Model.FilterYear, month = Model.FilterMonth })">
+									下一頁
+								</a>
+							</li>
+						}
+					</ul>
+				</nav>
+			}
+
+			<div class="mt-4 text-center">
+				<a href="@Url.Action("Index")" class="btn btn-secondary">
+					<i class="fas fa-calendar"></i> 返回簽到日曆
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.container {
+		max-width: 1000px;
+	}
+
+	.table-hover tbody tr:hover {
+		background-color: #f5f5f5 !important;
+	}
+
+	.badge {
+		padding: 6px 12px;
+		border-radius: 12px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.badge-primary {
+		background-color: #17a2b8 !important;
+	}
+
+	.badge-success {
+		background-color: #28a745 !important;
+	}
+
+	.pagination .page-link {
+		color: #17a2b8;
+		border-color: #17a2b8;
+	}
+
+	.pagination .page-link:hover {
+		color: #fff;
+		background-color: #17a2b8;
+	}
+
+	.pagination .page-item.active .page-link {
+		background-color: #17a2b8;
+		border-color: #17a2b8;
+	}
+</style>

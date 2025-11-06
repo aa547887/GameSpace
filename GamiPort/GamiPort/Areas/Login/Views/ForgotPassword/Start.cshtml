@@ -1,0 +1,58 @@
+﻿@model GamiPort.Areas.Login.Models.ForgotPasswordVM
+@{
+    ViewData["Title"] = "忘記密碼";
+}
+
+<div class="container py-4" style="max-width: 520px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="mb-3">@ViewData["Title"]</h4>
+            <p class="text-muted mb-4">
+                請輸入 <strong>帳號或電子郵件</strong>。若系統內存在相符帳號，我們會寄出重設密碼連結。
+            </p>
+
+            @if (ViewBag.Step1Error is string err && !string.IsNullOrWhiteSpace(err))
+            {
+                <div class="alert alert-danger">@err</div>
+            }
+            @if (ViewBag.Message is string msg && !string.IsNullOrWhiteSpace(msg))
+            {
+                <div class="alert alert-info">@msg</div>
+            }
+
+            <form asp-area="Login" asp-controller="ForgotPassword" asp-action="Start" method="post" class="needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="AccountOrEmail" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        <input asp-for="AccountOrEmail" class="form-control" placeholder="輸入帳號或 Email" />
+                    </div>
+                    <span asp-validation-for="AccountOrEmail" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    寄送重設密碼信
+                </button>
+
+                <div class="d-flex justify-content-between mt-3">
+                    <a asp-area="Login" asp-controller="Login" asp-action="Login">返回登入</a>
+                </div>
+            </form>
+
+            <hr class="my-4" />
+            <small class="text-muted">
+                為了保護您的隱私，我們不會顯示帳號是否存在。若您確實有帳號，請留意收件匣與垃圾郵件匣。
+            </small>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

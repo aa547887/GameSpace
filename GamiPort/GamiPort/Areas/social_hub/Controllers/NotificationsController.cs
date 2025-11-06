@@ -10,8 +10,6 @@
 using GamiPort.Areas.social_hub.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace GamiPort.Areas.social_hub.Controllers
 {

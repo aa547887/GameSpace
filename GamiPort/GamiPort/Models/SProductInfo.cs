@@ -43,8 +43,6 @@ public partial class SProductInfo
 
     public bool IsPhysical { get; set; }
 
-    public virtual ManagerDatum CreatedByNavigation { get; set; } = null!;
-
     public virtual SGameProductDetail? SGameProductDetail { get; set; }
 
     public virtual SProductCode? SProductCode { get; set; }
@@ -56,8 +54,6 @@ public partial class SProductInfo
     public virtual ICollection<SoOrderItem> SoOrderItems { get; set; } = new List<SoOrderItem>();
 
     public virtual ICollection<SoStockMovement> SoStockMovements { get; set; } = new List<SoStockMovement>();
-
-    public virtual ManagerDatum? UpdatedByNavigation { get; set; }
 
     public virtual ICollection<SGameGenre> Genres { get; set; } = new List<SGameGenre>();
 }

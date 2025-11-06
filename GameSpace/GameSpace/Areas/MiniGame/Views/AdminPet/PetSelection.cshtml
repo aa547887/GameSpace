@@ -11,9 +11,6 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">會員個別寵物設定</h1>
-        <a href="@Url.Action("Index", "AdminPet")" class="btn btn-sm btn-secondary">
-            <i class="fas fa-arrow-left"></i> 返回寵物管理
-        </a>
     </div>
 
     <!-- Info Message -->
@@ -67,7 +64,11 @@
                                     <td>
                                         @if (!string.IsNullOrEmpty(pet.BackgroundColor))
                                         {
-                                            <span class="badge" style="background-color: @pet.BackgroundColor; color: white;">@pet.BackgroundColor</span>
+                                            var backgrounds = ViewBag.Backgrounds as Dictionary<string, string>;
+                                            var bgName = backgrounds != null && backgrounds.ContainsKey(pet.BackgroundColor)
+                                                ? backgrounds[pet.BackgroundColor]
+                                                : pet.BackgroundColor;
+                                            <span class="badge badge-info">@bgName</span>
                                         }
                                         else
                                         {

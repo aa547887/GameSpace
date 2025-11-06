@@ -154,15 +154,18 @@ namespace GameSpace.Areas.MiniGame.Services
                     .Include(s => s.User)
                     .AsQueryable();
 
-                // Apply filters
-                if (userId.HasValue)
-                {
-                    query = query.Where(s => s.UserId == userId.Value);
-                }
+                // Apply filters - UserId and UserAccount use OR logic (union)
+                // When both conditions match, priority order: UserId > UserAccount
+                var hasUserId = userId.HasValue;
+                var hasUserAccount = !string.IsNullOrWhiteSpace(userAccount);
 
-                if (!string.IsNullOrWhiteSpace(userAccount))
+                if (hasUserId || hasUserAccount)
                 {
-                    query = query.Where(s => s.User != null && s.User.UserAccount.Contains(userAccount));
+                    // Use OR logic: match either condition
+                    var searchTerm = hasUserAccount ? userAccount.Trim() : "";
+                    query = query.Where(s =>
+                        (hasUserId && s.UserId == userId.Value) ||
+                        (hasUserAccount && s.User != null && s.User.UserAccount.Contains(searchTerm)));
                 }
 
                 if (startDate.HasValue)
@@ -186,27 +189,59 @@ namespace GameSpace.Areas.MiniGame.Services
                     query = query.Where(s => s.PointsGained <= maxPoints.Value);
                 }
 
-                // Apply sorting
-                query = sortBy?.ToLower() switch
-                {
-                    "userid" => sortOrder?.ToLower() == "asc"
-                        ? query.OrderBy(s => s.UserId)
-                        : query.OrderByDescending(s => s.UserId),
-                    "pointsgained" => sortOrder?.ToLower() == "asc"
-                        ? query.OrderBy(s => s.PointsGained)
-                        : query.OrderByDescending(s => s.PointsGained),
-                    "expgained" => sortOrder?.ToLower() == "asc"
-                        ? query.OrderBy(s => s.ExpGained)
-                        : query.OrderByDescending(s => s.ExpGained),
-                    _ => sortOrder?.ToLower() == "asc"
-                        ? query.OrderBy(s => s.SignTime)
-                        : query.OrderByDescending(s => s.SignTime)
-                };
+                // Apply sorting - when UserId or UserAccount conditions exist, apply priority ordering first
+                IOrderedQueryable<UserSignInStat> sortedQuery;
 
-                var totalCount = await query.CountAsync();
+                if (hasUserId || hasUserAccount)
+                {
+                    // Priority ordering: UserId > UserAccount
+                    var searchTerm = hasUserAccount ? userAccount.Trim() : "";
+                    var priorityOrdered = query.OrderBy(s =>
+                        hasUserId && s.UserId == userId.Value ? 1 :
+                        hasUserAccount && s.User != null && s.User.UserAccount.Contains(searchTerm) ? 2 : 3
+                    );
+
+                    // Then apply user-specified sorting as secondary sort
+                    sortedQuery = sortBy?.ToLower() switch
+                    {
+                        "userid" => sortOrder?.ToLower() == "asc"
+                            ? priorityOrdered.ThenBy(s => s.UserId)
+                            : priorityOrdered.ThenByDescending(s => s.UserId),
+                        "pointsgained" => sortOrder?.ToLower() == "asc"
+                            ? priorityOrdered.ThenBy(s => s.PointsGained)
+                            : priorityOrdered.ThenByDescending(s => s.PointsGained),
+                        "expgained" => sortOrder?.ToLower() == "asc"
+                            ? priorityOrdered.ThenBy(s => s.ExpGained)
+                            : priorityOrdered.ThenByDescending(s => s.ExpGained),
+                        _ => sortOrder?.ToLower() == "asc"
+                            ? priorityOrdered.ThenBy(s => s.SignTime)
+                            : priorityOrdered.ThenByDescending(s => s.SignTime)
+                    };
+                }
+                else
+                {
+                    // No search conditions, use regular sorting
+                    sortedQuery = sortBy?.ToLower() switch
+                    {
+                        "userid" => sortOrder?.ToLower() == "asc"
+                            ? query.OrderBy(s => s.UserId)
+                            : query.OrderByDescending(s => s.UserId),
+                        "pointsgained" => sortOrder?.ToLower() == "asc"
+                            ? query.OrderBy(s => s.PointsGained)
+                            : query.OrderByDescending(s => s.PointsGained),
+                        "expgained" => sortOrder?.ToLower() == "asc"
+                            ? query.OrderBy(s => s.ExpGained)
+                            : query.OrderByDescending(s => s.ExpGained),
+                        _ => sortOrder?.ToLower() == "asc"
+                            ? query.OrderBy(s => s.SignTime)
+                            : query.OrderByDescending(s => s.SignTime)
+                    };
+                }
+
+                var totalCount = await sortedQuery.CountAsync();
 
                 // Calculate consecutive days for each user
-                var userIds = await query
+                var userIds = await sortedQuery
                     .Select(s => s.UserId)
                     .Distinct()
                     .ToListAsync();
@@ -218,7 +253,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 // Execute paginated query
-                var records = await query
+                var records = await sortedQuery
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .Select(s => new

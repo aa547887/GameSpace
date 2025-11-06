@@ -14,13 +14,16 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<PetMutationService> _logger;
+        private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
 
         public PetMutationService(
             GameSpacedatabaseContext context,
-            ILogger<PetMutationService> logger)
+            ILogger<PetMutationService> logger,
+            GameSpace.Infrastructure.Time.IAppClock appClock)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
         }
 
         /// <summary>
@@ -30,8 +33,8 @@ namespace GameSpace.Areas.MiniGame.Services
         {
             try
             {
-                // 驗證升級公式
-                if (!ValidateLevelUpFormula(model.LevelUpFormula))
+                // 驗證升級公式（允許為空或為預設公式）
+                if (!string.IsNullOrWhiteSpace(model.LevelUpFormula) && !ValidateLevelUpFormula(model.LevelUpFormula))
                 {
                     return PetMutationResult.Failed("升級公式格式不正確");
                 }
@@ -83,7 +86,10 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 // 更新系統設定（使用 SystemSettings 表）
-                await UpdateSystemSettingAsync("Pet.LevelUpFormula", model.LevelUpFormula);
+                if (!string.IsNullOrWhiteSpace(model.LevelUpFormula))
+                {
+                    await UpdateSystemSettingAsync("Pet.LevelUpFormula", model.LevelUpFormula);
+                }
                 await UpdateSystemSettingAsync("Pet.FeedBonus", model.FeedBonus.ToString());
                 await UpdateSystemSettingAsync("Pet.CleanBonus", model.CleanBonus.ToString());
                 await UpdateSystemSettingAsync("Pet.PlayBonus", model.PlayBonus.ToString());
@@ -91,6 +97,12 @@ namespace GameSpace.Areas.MiniGame.Services
                 await UpdateSystemSettingAsync("Pet.ExpBonus", model.ExpBonus.ToString());
                 await UpdateSystemSettingAsync("Pet.ColorChangePoints", model.ColorChangePoints.ToString());
                 await UpdateSystemSettingAsync("Pet.BackgroundChangePoints", model.BackgroundChangePoints.ToString());
+
+                // 更新每日衰減設定
+                await UpdateSystemSettingAsync("Pet.DailyDecay.Hunger", model.DailyDecayHunger.ToString());
+                await UpdateSystemSettingAsync("Pet.DailyDecay.Mood", model.DailyDecayMood.ToString());
+                await UpdateSystemSettingAsync("Pet.DailyDecay.Stamina", model.DailyDecayStamina.ToString());
+                await UpdateSystemSettingAsync("Pet.DailyDecay.Cleanliness", model.DailyDecayCleanliness.ToString());
 
                 if (!string.IsNullOrWhiteSpace(model.AvailableColors))
                 {
@@ -174,7 +186,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 }
 
                 var changes = new List<string>();
-                var now = DateTime.UtcNow;
+                var now = _appClock.UtcNow;
 
                 // 更新膚色
                 if (!string.IsNullOrWhiteSpace(model.SkinColor))
@@ -284,7 +296,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 {
                     changes.Add($"等級從 {pet.Level} 更新為 {model.Level}");
                     pet.Level = model.Level;
-                    pet.LevelUpTime = DateTime.UtcNow;
+                    pet.LevelUpTime = _appClock.UtcNow;
                 }
 
                 // 更新經驗值
@@ -396,8 +408,9 @@ namespace GameSpace.Areas.MiniGame.Services
             }
 
             // 簡單驗證：公式應包含常見的數學運算符和變數
-            // 例如：level * 100 + 50
-            var pattern = @"^[0-9a-zA-Z\s\+\-\*\/\(\)\.]+$";
+            // 允許中文字符、數字、英文字母、空格、運算符、括號、分號、冒號等
+            // 例如：Level 1-10: 40×level+60; 11-100: 0.8×level²+380; ≥101: 285.69×1.06^level
+            var pattern = @"^[\u4e00-\u9fa5a-zA-Z0-9\s\+\-\*\×\÷\/\(\)\.\;\:\^\²\³\≥\≤\=\,]+$";
             return Regex.IsMatch(formula, pattern);
         }
 
@@ -452,7 +465,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 Description = string.IsNullOrWhiteSpace(additionalInfo)
                     ? description
                     : $"{description}（{additionalInfo}）",
-                ChangeTime = DateTime.UtcNow
+                ChangeTime = _appClock.UtcNow
             };
 
             _context.WalletHistories.Add(history);

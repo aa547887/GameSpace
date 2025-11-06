@@ -44,6 +44,7 @@ namespace GameSpace.Areas.MiniGame.Services
         public int Experience { get; set; }
         public string? CouponCode { get; set; }
         public int ConsecutiveDayBonus { get; set; }
+        public string? Description { get; set; }  // 規則說明（來自 SignInRule.Description）
     }
 
     public class SignInStatistics

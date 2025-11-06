@@ -230,7 +230,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="experience" class="form-label">經驗獎勵 <span class="text-danger">*</span></label>
+                            <label for="experience" class="form-label">寵物經驗獎勵 <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="experience" name="experience" min="0" max="10000" required placeholder="請輸入經驗值獎勵" />
                                 <span class="input-group-text">EXP</span>
@@ -239,9 +239,18 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="couponTypeCode" class="form-label">優惠券代碼</label>
-                        <input type="text" class="form-control" id="couponTypeCode" name="couponTypeCode" maxlength="50" placeholder="選填，例如：WEEK_BONUS" />
-                        <small class="text-muted">若不發放優惠券請留空</small>
+                        <label for="couponTypeId" class="form-label">優惠券類型</label>
+                        <select class="form-select" id="couponTypeId" name="couponTypeId">
+                            <option value="">-- 不發放優惠券 --</option>
+                            @if (ViewBag.CouponTypes != null)
+                            {
+                                foreach (var ct in ViewBag.CouponTypes)
+                                {
+                                    <option value="@ct.CouponTypeId">@ct.CouponTypeId(@ct.Name)</option>
+                                }
+                            }
+                        </select>
+                        <small class="text-muted">選擇要發放的優惠券類型（動態從資料庫讀取）</small>
                     </div>
 
                     <div class="mb-3">
@@ -281,18 +290,26 @@
 
 @section Scripts {
     <script>
+        // CouponTypeCode (Name) → CouponTypeId 映射
+        const couponTypeMapping = @Html.Raw(ViewBag.CouponTypeMapping ?? "{}");
+
         function loadRuleData(id, dayNumber, points, experience, hasCoupon, couponTypeCode, isActive, description) {
             document.getElementById('ruleId').value = id;
             document.getElementById('modalDayNumber').textContent = dayNumber;
             document.getElementById('points').value = points;
             document.getElementById('experience').value = experience;
-            document.getElementById('couponTypeCode').value = couponTypeCode;
             document.getElementById('description').value = description;
             document.getElementById('isActive').checked = isActive;
             document.getElementById('hasCoupon').checked = hasCoupon;
             document.getElementById('hasCouponHidden').value = hasCoupon ? 'true' : 'false';
+
+            // 將 CouponTypeCode (Name) 映射為 CouponTypeId
+            const couponTypeId = couponTypeCode && couponTypeMapping[couponTypeCode]
+                ? couponTypeMapping[couponTypeCode]
+                : '';
+            document.getElementById('couponTypeId').value = couponTypeId;
         }
-        
+
         // 同步 checkbox 狀態到 hidden input
         document.getElementById('hasCoupon').addEventListener('change', function() {
             document.getElementById('hasCouponHidden').value = this.checked ? 'true' : 'false';

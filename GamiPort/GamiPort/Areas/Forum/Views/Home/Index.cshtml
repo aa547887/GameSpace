@@ -1,1 +1,59 @@
-﻿論壇
+﻿@* Areas/Forum/Views/Home/Index.cshtml *@
+@{
+    ViewData["Title"] = "論壇 / 所有遊戲";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/Forum/forum.css" asp-append-version="true" />
+    <style>
+        html, body, .container, .container-fluid {
+            min-width: 0;
+        }
+
+        .board-header h2 {
+            font-weight: 600;
+        }
+    </style>
+}
+
+<div class="board-header d-flex align-items-center justify-content-between mb-3">
+    <h2 class="m-0">所有論壇 </h2>
+    @* <!-- 🔻 放這裡：輪播區塊後面、</body> 前 --> *@
+    <div class="modal fade" id="insightModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="insightModalTitle" class="modal-title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="insightModalMeta" class="text-muted small mb-3"></div>
+                    <div id="insightModalBody">載入中…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔎 全站搜尋（先做論壇關鍵字） -->
+   @*  <form id="global-search-form" class="d-flex ms-3" role="search" style="max-width:420px;">
+        <input id="global-search-input" class="form-control form-control-sm me-2" type="search"
+               placeholder="搜尋論壇名稱或描述…" aria-label="Search">
+        <button class="btn btn-sm btn-outline-primary" type="submit">搜尋</button>
+    </form> *@
+</div>
+
+<!-- ✅ 預設內容（forums list） -->
+<div id="forums-app" class="mb-3">
+    <forum-list></forum-list>
+</div>
+
+<!-- ✅ 搜尋結果掛載點 -->
+<div id="home-content"></div>
+
+@section Scripts {
+    <!-- Vue 入口：論壇清單 -->
+    <script type="module" src="~/js/forum/main.js" asp-append-version="true"></script>
+
+    <!-- ✅ 開啟搜尋腳本 -->
+    <script type="module" src="~/js/forum/home-search.js" asp-append-version="true"></script>
+}

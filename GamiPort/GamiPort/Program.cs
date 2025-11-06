@@ -1,4 +1,4 @@
-﻿// =======================
+// =======================
 // Program.cs（純 Cookie 版；不使用 Identity，不會建立 AspNetUsers）
 // 目的：使用自訂 Cookie 驗證；保留 MVC / RazorPages、Anti-forgery、路由與開發期 EF 偵錯。
 // 並新增：SignalR Hub 映射、我方統一介面 IAppCurrentUser（集中「吃登入」）、ILoginIdentity 備援。
@@ -11,27 +11,33 @@
 // 3) 其他註冊與中介軟體順序維持不變（UseCors 需在 Auth 前、Routing 後）。
 // =======================
 
-using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
-using GamiPort.Areas.social_hub.Services.Abstractions;
-using GamiPort.Areas.social_hub.Services.Application;
-using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using GamiPort.Areas.Forum.Services.Adminpost;
+using GamiPort.Areas.Forum.Services.Leaderboard;
+using GamiPort.Areas.Forum.Services.Me;
 using GamiPort.Areas.Login.Services;       // IEmailSender / SmtpEmailSender（若未設定可換 NullEmailSender）
-
-// === 新增/確認的 using（本檔有用到的服務/端點） ===
-using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
-using GamiPort.Infrastructure.Login;       // ★ 備援解析 ILoginIdentity / ClaimFirstLoginIdentity
-using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
-
+										   // ★ 新增：ECPay 服務命名空間
+using GamiPort.Areas.OnlineStore.Payments;
 // 購物車
 using GamiPort.Areas.OnlineStore.Services;
+using GamiPort.Areas.social_hub.Hubs;      // ★ ChatHub（DM 用）／SupportHub（客訴用）
+using GamiPort.Areas.social_hub.Services.Abstractions;
+using GamiPort.Areas.social_hub.Services.Application;
+using GamiPort.Areas.OnlineStore.Utils;   // AnonCookie
 
-// ★ 新增：ECPay 服務命名空間
-using GamiPort.Areas.OnlineStore.Payments;
+// === 新增/確認的 using（本檔有用到的服務/端點） ===
+using GamiPort.Areas.MiniGame.config;      // ★ MiniGame Area 服務擴展方法
+using GamiPort.Infrastructure.BackgroundServices; // ★ 背景服務（寵物每日衰減）
+using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
+using GamiPort.Infrastructure.Time;
+using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;  // ★ PhysicalFileProvider（Area 靜態檔案支援）
+										   // Program.cs 最上面加（若尚未有）
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.Services.store.Application;
-using Microsoft.OpenApi.Models;
+
 
 namespace GamiPort
 {
@@ -40,12 +46,14 @@ namespace GamiPort
 		public static void Main(string[] args)
 		{
 			var builder = WebApplication.CreateBuilder(args);
+			string? Pick(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
 			// 連線字串
 			var gameSpaceConn =
-				builder.Configuration.GetConnectionString("GameSpace")
-				?? builder.Configuration.GetConnectionString("GameSpacedatabase")
-				?? throw new InvalidOperationException("Connection string 'GameSpace' not found.");
+				Pick(builder.Configuration.GetConnectionString("GameSpace")) ??
+				Pick(builder.Configuration.GetConnectionString("GameSpacedatabase")) ??
+				Pick(builder.Configuration.GetConnectionString("DefaultConnection")) ??
+				throw new InvalidOperationException("No valid DB connection string found.");
 
 			// ------------------------------------------------------------
 			// DbContext 註冊：GameSpacedatabaseContext（業務資料庫）
@@ -117,17 +125,21 @@ namespace GamiPort
 			// → 服務內部以 IServiceScopeFactory.CreateScope() 取得「短命」DbContext，避免 DI 生命週期衝突。
 			builder.Services.AddSingleton<IProfanityFilter, ProfanityFilter>();
 
+			// (D) Forum 模組 Services
+			builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Forums.IForumsService,
+									   GamiPort.Areas.Forum.Services.Forums.ForumsService>();
+			builder.Services.AddScoped<GamiPort.Areas.Forum.Services.Threads.GamiPort.Areas.Forum.Services.Threads.IThreadsService,
+									   GamiPort.Areas.Forum.Services.Threads.ThreadsService>();
+			builder.Services.AddScoped<IMeContentService, MeContentService>();
+			builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+			builder.Services.AddScoped<IPostsService, PostsService>();
+
 			// ------------------------------------------------------------
 			// MVC / RazorPages / JSON 命名策略 & Anti-forgery
 			// ------------------------------------------------------------
 			builder.Services.AddControllersWithViews()
 				// JSON 保留原本的屬性大小寫（不轉 camelCase）
-				.AddJsonOptions(opt =>
-				{
-					opt.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-					opt.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-					opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-				});
+				.AddJsonOptions(opt => { opt.JsonSerializerOptions.PropertyNamingPolicy = null; });
 
 			builder.Services.AddRazorPages();
 
@@ -152,16 +164,31 @@ namespace GamiPort
 			// ------------------------------------------------------------
 			// ★ 我方統一介面：IAppCurrentUser（集中讀取當前登入者資訊）
 			//   讀取順序：AppUserId Claim -> NameIdentifier（純數字或 "U:<id>" 可解析）
-			//            -> 備援呼叫 ILoginIdentity（必要時查一次 DB 對應）
+			//            -> 備援直接查詢資料庫
 			//   並使用 HttpContext.Items 做「同一請求快取」避免多次查詢。
 			// ------------------------------------------------------------
 			builder.Services.AddScoped<IAppCurrentUser, AppCurrentUser>();
 
-			// 備援服務：ILoginIdentity -> ClaimFirstLoginIdentity
-			// 說明：當 Claims 不完整（沒有 AppUserId、或 NameIdentifier 不能直接解析）時，
-			//       AppCurrentUser 會呼叫它做一次較穩健的對應（必要時查 DB）。
-			builder.Services.AddScoped<ILoginIdentity, ClaimFirstLoginIdentity>();
+			// ★ 時間轉換服務：UTC ↔ UTC+8（台灣時間）
+			// 使用 Taipei Standard Time（Asia/Taipei 時區）
+			builder.Services.AddSingleton<IAppClock>(sp =>
+			{
+				var taiwanTz = TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time");
+				return new AppClock(taiwanTz);
+			});
+			// ------------------------------------------------------------
+			// MiniGame Area 服務（集中註冊：簽到、寵物、遊戲、錢包、Filters）
+			builder.Services.AddMiniGameServices(builder.Configuration);
 
+			// MiniGame Area 服務（簽到、寵物、遊戲、錢包等）
+			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.ISignInService, GamiPort.Areas.MiniGame.Services.SignInService>();
+			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IPetService, GamiPort.Areas.MiniGame.Services.PetService>();
+			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IWalletService, GamiPort.Areas.MiniGame.Services.WalletService>();
+			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IFuzzySearchService, GamiPort.Areas.MiniGame.Services.FuzzySearchService>();
+			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IGamePlayService, GamiPort.Areas.MiniGame.Services.GamePlayService>();
+
+			// ★ 背景服務：寵物每日衰減（每日 UTC+8 00:00 自動執行）
+			builder.Services.AddHostedService<PetDailyDecayService>();
 			// ------------------------------------------------------------
 			// SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
 			// ------------------------------------------------------------
@@ -171,6 +198,11 @@ namespace GamiPort
 				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
+
+			//=============ImgBB商城圖片上傳服務===========
+			builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
+			builder.Services.AddHttpClient<ImgBbService>();
+			builder.Services.AddEndpointsApiExplorer();
 
 
 			// 購物車＋Session
@@ -183,37 +215,31 @@ namespace GamiPort
 				options.Cookie.IsEssential = true;
 				options.IdleTimeout = TimeSpan.FromHours(2);
 			});
-			builder.Services.AddScoped<ILookupService, SqlLookupService>();
 			builder.Services.AddScoped<IStoreService, StoreService>();
+			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+
+			// services
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("ViteDev",
+					p => p.WithOrigins("http://localhost:5173")
+						  .AllowAnyHeader()
+						  .AllowAnyMethod()
+						  .AllowCredentials());
+			});
 
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
 			builder.Services.AddScoped<EcpayPaymentService>();                 // 我們的付款服務
 
-            //=============ImgBB商城圖片上傳服務===========
-            builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
-            builder.Services.AddHttpClient<ImgBbService>();
-
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "GamiPort API", Version = "v1" });
-            });
-
-            // ------------------------------------------------------------
-            // 建立 App
-            // ------------------------------------------------------------
-            var app = builder.Build();
+			// ------------------------------------------------------------
+			// 建立 App
+			// ------------------------------------------------------------
+			var app = builder.Build();
 
 			// ------------------------------------------------------------
 			// HTTP Pipeline
 			// ------------------------------------------------------------
-			app.UseSwagger();
-			app.UseSwaggerUI(c =>
-			{
-				c.SwaggerEndpoint("/swagger/v1/swagger.json", "GamiPort API V1");
-			});
-
 			if (app.Environment.IsDevelopment())
 			{
 				// 顯示 EF 相關的開發頁、/migrations 端點
@@ -241,11 +267,26 @@ namespace GamiPort
 			}
 
 			app.UseHttpsRedirection();
-			app.UseStaticFiles();
+			app.UseStaticFiles();  // 預設根目錄 wwwroot
+
+			// ============================================================
+			// ★ MiniGame Area 靜態檔案支援
+			// 目的：讓 /MiniGame/stamps/*.png、/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/*.png 等能正確載入
+			// 映射：/MiniGame/* → Areas/MiniGame/wwwroot/*
+			// 範例：/MiniGame/stamps/SIGNIN-STAMP.png → Areas/MiniGame/wwwroot/stamps/SIGNIN-STAMP.png
+			// ============================================================
+			app.UseStaticFiles(new StaticFileOptions
+			{
+				FileProvider = new PhysicalFileProvider(
+					Path.Combine(builder.Environment.ContentRootPath, "Areas", "MiniGame", "wwwroot")),
+				RequestPath = "/MiniGame"
+			});
+
 			app.UseRouting();
 
 			// ✅ CORS 要在 Routing 後、Auth 前
 			app.UseCors("SupportCors");
+			app.UseCors("ViteDev");
 
 			// 訂單組使用
 			app.UseSession();     // 必須在 Auth 之前
@@ -262,12 +303,9 @@ namespace GamiPort
 				name: "areas",
 				pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-		
 			app.MapControllerRoute(
 				name: "default",
 				pattern: "{controller=Home}/{action=Index}/{id?}");
-
-
 
 			// Razor Pages（若你有使用）
 			app.MapRazorPages();

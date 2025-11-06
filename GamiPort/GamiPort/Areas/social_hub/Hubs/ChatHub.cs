@@ -21,21 +21,18 @@ namespace GamiPort.Areas.social_hub.Hubs
 	/// - NotifyRead：只有資料庫真的有更新（rowsAffected > 0）才廣播回執與未讀更新，避免「假已讀」。
 	/// </summary>
 	[Authorize]
-	public sealed class ChatHub : Hub
+	public sealed class ChatHub : Hub<IChatClient>
 	{
 		private readonly IAppCurrentUser _me;
 		private readonly IChatService _svc;
-		private readonly IChatNotifier _notify;
 		private readonly ILogger<ChatHub> _logger;
 
-		public ChatHub(IAppCurrentUser me, IChatService svc, IChatNotifier notify, ILogger<ChatHub> logger)
+		public ChatHub(IAppCurrentUser me, IChatService svc, ILogger<ChatHub> logger)
 		{
 			_me = me;
 			_svc = svc;
-			_notify = notify;
 			_logger = logger;
 		}
-
 		/// <summary>取得目前使用者 Id；優先讀取 Claims，再必要時做備援解析。</summary>
 		private async Task<int> GetMeAsync()
 		{
@@ -115,14 +112,15 @@ namespace GamiPort.Areas.social_hub.Hubs
 			var payload = await _svc.SendDirectAsync(me, otherId, text);
 
 			// 新訊息推播（雙向）
-			await _notify.BroadcastReceiveDirectAsync(me, otherId, payload);
+			await Clients.Group(GroupNames.User(me)).ReceiveDirect(payload);
+			await Clients.Group(GroupNames.User(otherId)).ReceiveDirect(payload);
 
 			// 未讀更新（雙向）
 			var (totalMe, peerMe) = await _svc.ComputeUnreadAsync(me, otherId);
-			await _notify.BroadcastUnreadAsync(me, new UnreadUpdatePayload { PeerId = otherId, Unread = peerMe, Total = totalMe });
+			await Clients.Group(GroupNames.User(me)).UnreadUpdate(new UnreadUpdatePayload { PeerId = otherId, Unread = peerMe, Total = totalMe });
 
 			var (totalOt, peerOt) = await _svc.ComputeUnreadAsync(otherId, me);
-			await _notify.BroadcastUnreadAsync(otherId, new UnreadUpdatePayload { PeerId = me, Unread = peerOt, Total = totalOt });
+			await Clients.Group(GroupNames.User(otherId)).UnreadUpdate(new UnreadUpdatePayload { PeerId = me, Unread = peerOt, Total = totalOt });
 
 			return payload;
 		}
@@ -160,18 +158,18 @@ namespace GamiPort.Areas.social_hub.Hubs
 			};
 
 			// 已讀回執（雙向）
-			await _notify.BroadcastReadReceiptAsync(me, otherId, receipt);
+			await Clients.Group(GroupNames.User(me)).ReadReceipt(receipt);
+			await Clients.Group(GroupNames.User(otherId)).ReadReceipt(receipt);
 
 			// 未讀更新（雙向）
 			var (totalMe, peerMe) = await _svc.ComputeUnreadAsync(me, otherId);
-			await _notify.BroadcastUnreadAsync(me, new UnreadUpdatePayload { PeerId = otherId, Unread = peerMe, Total = totalMe });
+			await Clients.Group(GroupNames.User(me)).UnreadUpdate(new UnreadUpdatePayload { PeerId = otherId, Unread = peerMe, Total = totalMe });
 
 			var (totalOt, peerOt) = await _svc.ComputeUnreadAsync(otherId, me);
-			await _notify.BroadcastUnreadAsync(otherId, new UnreadUpdatePayload { PeerId = me, Unread = peerOt, Total = totalOt });
+			await Clients.Group(GroupNames.User(otherId)).UnreadUpdate(new UnreadUpdatePayload { PeerId = me, Unread = peerOt, Total = totalOt });
 
 			return receipt;
 		}
-
 		/// <summary>回目前「全站未讀總數」。</summary>
 		public async Task RefreshUnread()
 		{
@@ -179,7 +177,7 @@ namespace GamiPort.Areas.social_hub.Hubs
 			if (me <= 0) throw new HubException(ErrorCodes.NotLoggedIn);
 
 			var total = await _svc.ComputeTotalUnreadAsync(me);
-			await _notify.BroadcastUnreadAsync(me, new UnreadUpdatePayload { PeerId = 0, Unread = 0, Total = total });
+			await Clients.User(me.ToString()).UnreadUpdate(new UnreadUpdatePayload { PeerId = 0, Unread = 0, Total = total });
 		}
 
 		/// <summary>一次回傳多位好友的未讀統計（以及全站總未讀）。</summary>

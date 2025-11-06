@@ -13,12 +13,14 @@ namespace GameSpace.Areas.MiniGame.Services
         private readonly GameSpacedatabaseContext _context;
         private readonly ILogger<DailyGameLimitService> _logger;
         private readonly GameSpace.Infrastructure.Time.IAppClock _appClock;
+        private readonly IFuzzySearchService _fuzzySearchService;
 
-        public DailyGameLimitService(GameSpacedatabaseContext context, ILogger<DailyGameLimitService> logger, GameSpace.Infrastructure.Time.IAppClock appClock)
+        public DailyGameLimitService(GameSpacedatabaseContext context, ILogger<DailyGameLimitService> logger, GameSpace.Infrastructure.Time.IAppClock appClock, IFuzzySearchService fuzzySearchService)
         {
             _context = context;
             _logger = logger;
             _appClock = appClock;
+            _fuzzySearchService = fuzzySearchService;
         }
 
         /// <summary>
@@ -31,38 +33,72 @@ namespace GameSpace.Areas.MiniGame.Services
                 // ✅ 使用 Set<T>() 不需要在 DbContext 定義 DbSet（避免越界）
                 var query = _context.Set<DailyGameLimit>().AsQueryable();
 
-                // 搜尋條件
-                if (!string.IsNullOrEmpty(searchModel.SettingName))
-                {
-                    query = query.Where(x => x.SettingName.Contains(searchModel.SettingName));
-                }
-
+                // 搜尋條件：先套用 IsEnabled 過濾
                 if (searchModel.IsEnabled.HasValue)
                 {
                     query = query.Where(x => x.IsEnabled == searchModel.IsEnabled.Value);
                 }
 
-                // 取得總數
-                var totalCount = await query.CountAsync();
+                // 取得總數（未套用搜尋前）
+                var totalCount = 0;
+                List<DailyGameLimitListViewModel> items;
 
-                // 分頁
-                var items = await query
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Skip((searchModel.Page - 1) * searchModel.PageSize)
-                    .Take(searchModel.PageSize)
-                    .Select(x => new DailyGameLimitListViewModel
-                    {
-                        Id = x.Id,
-                        DailyLimit = x.DailyLimit,
-                        SettingName = x.SettingName,
-                        Description = x.Description,
-                        IsEnabled = x.IsEnabled,
-                        CreatedAt = x.CreatedAt,
-                        UpdatedAt = x.UpdatedAt,
-                        CreatedBy = x.CreatedBy,
-                        UpdatedBy = x.UpdatedBy
-                    })
-                    .ToListAsync();
+                if (!string.IsNullOrEmpty(searchModel.SettingName))
+                {
+                    // Apply fuzzy search with 5-level priority on SettingName and Description
+                    var allSettings = await query.ToListAsync();
+
+                    var settingsWithPriority = allSettings
+                        .Select(x => new
+                        {
+                            Setting = x,
+                            Priority = _fuzzySearchService.CalculateMatchPriority(searchModel.SettingName, x.SettingName ?? "", x.Description ?? "")
+                        })
+                        .Where(x => x.Priority > 0)
+                        .OrderBy(x => x.Priority)
+                        .ThenByDescending(x => x.Setting.CreatedAt)
+                        .Skip((searchModel.Page - 1) * searchModel.PageSize)
+                        .Take(searchModel.PageSize)
+                        .Select(x => new DailyGameLimitListViewModel
+                        {
+                            Id = x.Setting.Id,
+                            DailyLimit = x.Setting.DailyLimit,
+                            SettingName = x.Setting.SettingName,
+                            Description = x.Setting.Description,
+                            IsEnabled = x.Setting.IsEnabled,
+                            CreatedAt = x.Setting.CreatedAt,
+                            UpdatedAt = x.Setting.UpdatedAt,
+                            CreatedBy = x.Setting.CreatedBy,
+                            UpdatedBy = x.Setting.UpdatedBy
+                        })
+                        .ToList();
+
+                    totalCount = settingsWithPriority.Count;
+                    items = settingsWithPriority;
+                }
+                else
+                {
+                    // 無搜尋條件，直接分頁
+                    totalCount = await query.CountAsync();
+
+                    items = await query
+                        .OrderByDescending(x => x.CreatedAt)
+                        .Skip((searchModel.Page - 1) * searchModel.PageSize)
+                        .Take(searchModel.PageSize)
+                        .Select(x => new DailyGameLimitListViewModel
+                        {
+                            Id = x.Id,
+                            DailyLimit = x.DailyLimit,
+                            SettingName = x.SettingName,
+                            Description = x.Description,
+                            IsEnabled = x.IsEnabled,
+                            CreatedAt = x.CreatedAt,
+                            UpdatedAt = x.UpdatedAt,
+                            CreatedBy = x.CreatedBy,
+                            UpdatedBy = x.UpdatedBy
+                        })
+                        .ToListAsync();
+                }
 
                 _logger.LogInformation("成功取得每日遊戲次數限制設定列表，共 {Count} 筆", items.Count);
                 return (items, totalCount);
@@ -142,8 +178,8 @@ namespace GameSpace.Areas.MiniGame.Services
                     Description = model.Description,
                     IsEnabled = model.IsEnabled,
                     CreatedBy = createdBy,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = _appClock.UtcNow,
+                    UpdatedAt = _appClock.UtcNow
                 };
 
                 _context.Set<DailyGameLimit>().Add(setting);
@@ -178,7 +214,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 setting.Description = model.Description;
                 setting.IsEnabled = model.IsEnabled;
                 setting.UpdatedBy = updatedBy;
-                setting.UpdatedAt = DateTime.UtcNow;
+                setting.UpdatedAt = _appClock.UtcNow;
 
                 _context.Set<DailyGameLimit>().Update(setting);
                 await _context.SaveChangesAsync();
@@ -236,7 +272,7 @@ namespace GameSpace.Areas.MiniGame.Services
 
                 setting.IsEnabled = !setting.IsEnabled;
                 setting.UpdatedBy = updatedBy;
-                setting.UpdatedAt = DateTime.UtcNow;
+                setting.UpdatedAt = _appClock.UtcNow;
 
                 _context.Set<DailyGameLimit>().Update(setting);
                 await _context.SaveChangesAsync();

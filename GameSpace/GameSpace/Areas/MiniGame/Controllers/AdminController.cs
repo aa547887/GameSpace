@@ -12,8 +12,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = "AdminCookie", Policy = "AdminOnly")]
     public class AdminController : MiniGameBaseController
     {
-        public AdminController(GameSpacedatabaseContext context, IMiniGameAdminService adminService) : base(context, adminService)
+        private readonly IFuzzySearchService _fuzzySearchService;
+
+        public AdminController(GameSpacedatabaseContext context, IMiniGameAdminService adminService, IFuzzySearchService fuzzySearchService) : base(context, adminService)
         {
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // MiniGame Admin 首頁儀表板
@@ -220,19 +223,28 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 if (string.IsNullOrWhiteSpace(query))
                     return Json(new { success = true, users = new List<object>() });
 
-                var users = await _context.Users
-                    .Where(u => u.UserName.Contains(query) || u.UserAccount.Contains(query))
-                    .Take(10)
+                // Apply fuzzy search with 5-level priority
+                var allUsers = await _context.Users.AsNoTracking().ToListAsync();
+
+                var usersWithPriority = allUsers
                     .Select(u => new
                     {
-                        id = u.UserId,
-                        name = u.UserName,
-                        account = u.UserAccount,
-                        email = u.UserEmailConfirmed ? "已驗證" : "未驗證"
+                        User = u,
+                        Priority = _fuzzySearchService.CalculateMatchPriority(query, u.UserName ?? "", u.UserAccount ?? "")
                     })
-                    .ToListAsync();
+                    .Where(x => x.Priority > 0)
+                    .OrderBy(x => x.Priority)
+                    .Take(10)
+                    .Select(x => new
+                    {
+                        id = x.User.UserId,
+                        name = x.User.UserName,
+                        account = x.User.UserAccount,
+                        email = x.User.UserEmailConfirmed ? "已驗證" : "未驗證"
+                    })
+                    .ToList();
 
-                return Json(new { success = true, users = users });
+                return Json(new { success = true, users = usersWithPriority });
             }
             catch (Exception ex)
             {

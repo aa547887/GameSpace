@@ -27,75 +27,81 @@ namespace GameSpace.Areas.MiniGame.Services
                 .AsNoTracking()
                 .AsQueryable();
 
-            // 篩選條件：會員 ID
-            if (query.UserId.HasValue)
+            // === 修改：會員ID、搜尋關鍵字（用戶名OR寵物名稱）、額外寵物名稱條件採用聯集（OR）查詢 ===
+            // 優先順序：會員ID > 搜尋關鍵字(用戶名/寵物名稱) > 額外寵物名稱條件
+            var hasUserId = query.UserId.HasValue;
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(query.SearchTerm);
+            var hasExtraPetName = !string.IsNullOrWhiteSpace(query.PetName);
+
+            if (hasUserId || hasSearchTerm || hasExtraPetName)
             {
-                dbQuery = dbQuery.Where(p => p.UserId == query.UserId.Value);
+                // 使用 OR 查詢，並透過排序實現優先順序
+                dbQuery = dbQuery.Where(p =>
+                    (hasUserId && p.UserId == query.UserId.Value) ||
+                    (hasSearchTerm && (p.User.UserName.Contains(query.SearchTerm.Trim()) || p.PetName.Contains(query.SearchTerm.Trim()))) ||
+                    (hasExtraPetName && p.PetName.Contains(query.PetName.Trim()))
+                );
             }
 
-            // 篩選條件：寵物名稱
-            if (!string.IsNullOrWhiteSpace(query.PetName))
-            {
-                var nameLower = query.PetName.ToLower().Trim();
-                dbQuery = dbQuery.Where(p => p.PetName.ToLower().Contains(nameLower));
-            }
 
-            // 篩選條件：等級範圍
-            if (query.MinLevel.HasValue)
-            {
-                dbQuery = dbQuery.Where(p => p.Level >= query.MinLevel.Value);
-            }
-
-            if (query.MaxLevel.HasValue)
-            {
-                dbQuery = dbQuery.Where(p => p.Level <= query.MaxLevel.Value);
-            }
-
-            // 篩選條件：經驗值範圍
-            if (query.MinExperience.HasValue)
-            {
-                dbQuery = dbQuery.Where(p => p.Experience >= query.MinExperience.Value);
-            }
-
-            if (query.MaxExperience.HasValue)
-            {
-                dbQuery = dbQuery.Where(p => p.Experience <= query.MaxExperience.Value);
-            }
-
-            // 篩選條件：膚色
+            // 篩選條件：膚色（修改為模糊查詢）
             if (!string.IsNullOrWhiteSpace(query.SkinColor))
             {
-                dbQuery = dbQuery.Where(p => p.SkinColor == query.SkinColor);
+                dbQuery = dbQuery.Where(p => p.SkinColor != null && p.SkinColor.Contains(query.SkinColor.Trim()));
             }
 
-            // 篩選條件：背景
+            // 篩選條件：背景（修改為模糊查詢）
             if (!string.IsNullOrWhiteSpace(query.BackgroundColor))
             {
-                dbQuery = dbQuery.Where(p => p.BackgroundColor == query.BackgroundColor);
+                dbQuery = dbQuery.Where(p => p.BackgroundColor != null && p.BackgroundColor.Contains(query.BackgroundColor.Trim()));
             }
 
-            // 排序
-            dbQuery = (query.SortBy ?? "petid").ToLower() switch
+            // === 排序：實現優先順序（會員ID > 搜尋關鍵字(用戶名/寵物名稱) > 額外寵物名稱條件）===
+            // 支援新的組合型排序方式如 "level_asc", "level_desc" 等
+            // 當有搜尋條件時，優先顯示符合優先順序高的結果
+            if (hasUserId || hasSearchTerm || hasExtraPetName)
             {
-                "petname" => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.PetName)
-                    : dbQuery.OrderBy(p => p.PetName),
-                "level" => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.Level)
-                    : dbQuery.OrderBy(p => p.Level),
-                "experience" => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.Experience)
-                    : dbQuery.OrderBy(p => p.Experience),
-                "health" => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.Health)
-                    : dbQuery.OrderBy(p => p.Health),
-                "userid" => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.UserId)
-                    : dbQuery.OrderBy(p => p.UserId),
-                _ => (query.SortOrder ?? "asc").ToLower() == "desc"
-                    ? dbQuery.OrderByDescending(p => p.PetId)
-                    : dbQuery.OrderBy(p => p.PetId)
-            };
+                // 優先順序排序：先按符合條件的優先級排序
+                IOrderedQueryable<Pet> priorityOrdered = dbQuery.OrderBy(p =>
+                    hasUserId && p.UserId == query.UserId.Value ? 1 :
+                    hasSearchTerm && (p.User.UserName.Contains(query.SearchTerm.Trim()) || p.PetName.Contains(query.SearchTerm.Trim())) ? 2 :
+                    hasExtraPetName && p.PetName.Contains(query.PetName.Trim()) ? 3 : 4
+                );
+
+                // 接著按使用者指定的排序方式進行次要排序（支援組合型格式如 "level_asc"）
+                dbQuery = (query.SortBy ?? "level_desc").ToLower() switch
+                {
+                    "level_asc" => priorityOrdered.ThenBy(p => p.Level),
+                    "level_desc" => priorityOrdered.ThenByDescending(p => p.Level),
+                    "exp_asc" => priorityOrdered.ThenBy(p => p.Experience),
+                    "exp_desc" => priorityOrdered.ThenByDescending(p => p.Experience),
+                    "health_asc" => priorityOrdered.ThenBy(p => p.Health),
+                    "health_desc" => priorityOrdered.ThenByDescending(p => p.Health),
+                    "petname_asc" => priorityOrdered.ThenBy(p => p.PetName),
+                    "petname_desc" => priorityOrdered.ThenByDescending(p => p.PetName),
+                    "userid_asc" => priorityOrdered.ThenBy(p => p.UserId),
+                    "userid_desc" => priorityOrdered.ThenByDescending(p => p.UserId),
+                    _ => priorityOrdered.ThenByDescending(p => p.Level)
+                };
+            }
+            else
+            {
+                // 沒有搜尋條件時，使用一般排序（支援組合型格式如 "level_asc"）
+                dbQuery = (query.SortBy ?? "level_desc").ToLower() switch
+                {
+                    "level_asc" => dbQuery.OrderBy(p => p.Level),
+                    "level_desc" => dbQuery.OrderByDescending(p => p.Level),
+                    "exp_asc" => dbQuery.OrderBy(p => p.Experience),
+                    "exp_desc" => dbQuery.OrderByDescending(p => p.Experience),
+                    "health_asc" => dbQuery.OrderBy(p => p.Health),
+                    "health_desc" => dbQuery.OrderByDescending(p => p.Health),
+                    "petname_asc" => dbQuery.OrderBy(p => p.PetName),
+                    "petname_desc" => dbQuery.OrderByDescending(p => p.PetName),
+                    "userid_asc" => dbQuery.OrderBy(p => p.UserId),
+                    "userid_desc" => dbQuery.OrderByDescending(p => p.UserId),
+                    _ => dbQuery.OrderByDescending(p => p.Level)
+                };
+            }
 
             // 計算總數
             var totalCount = await dbQuery.CountAsync();
@@ -182,17 +188,36 @@ namespace GameSpace.Areas.MiniGame.Services
                 .Where(wh => wh.ChangeType == "PetSkinColorChange")
                 .AsQueryable();
 
-            // 篩選條件：會員 ID
-            if (query.UserId.HasValue)
-            {
-                dbQuery = dbQuery.Where(wh => wh.UserId == query.UserId.Value);
-            }
+            // 查詢條件邏輯：
+            // 1. 當兩個條件都為空時，顯示全部結果（不加篩選）
+            // 2. 當兩個條件都有值時，優先使用會員ID（忽略寵物ID）
+            // 3. 當只有一個條件有值時，使用該條件
+            // 4. 所有查詢都支持模糊查詢
+            bool hasUserId = query.UserId.HasValue;
+            bool hasPetId = query.PetId.HasValue;
 
-            // 篩選條件：寵物 ID（從 ItemCode 中解析）
-            if (query.PetId.HasValue)
+            if (hasUserId || hasPetId)
             {
-                dbQuery = dbQuery.Where(wh => wh.ItemCode != null && wh.ItemCode.Contains($"Pet:{query.PetId.Value}"));
+                if (hasUserId && hasPetId)
+                {
+                    // 兩個都有值：優先會員ID（忽略寵物ID）
+                    var userIdStr = query.UserId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.UserId.ToString().Contains(userIdStr));
+                }
+                else if (hasUserId)
+                {
+                    // 只有會員ID：模糊查詢
+                    var userIdStr = query.UserId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.UserId.ToString().Contains(userIdStr));
+                }
+                else if (hasPetId)
+                {
+                    // 只有寵物ID：模糊查詢（從 ItemCode 中解析）
+                    var petIdStr = query.PetId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.ItemCode != null && wh.ItemCode.Contains(petIdStr));
+                }
             }
+            // 如果兩個條件都為空，不添加任何篩選條件，顯示全部結果
 
             // 篩選條件：日期範圍
             if (query.StartDate.HasValue)
@@ -271,17 +296,36 @@ namespace GameSpace.Areas.MiniGame.Services
                 .Where(wh => wh.ChangeType == "PetBackgroundChange")
                 .AsQueryable();
 
-            // 篩選條件：會員 ID
-            if (query.UserId.HasValue)
-            {
-                dbQuery = dbQuery.Where(wh => wh.UserId == query.UserId.Value);
-            }
+            // 查詢條件邏輯：
+            // 1. 當兩個條件都為空時，顯示全部結果（不加篩選）
+            // 2. 當兩個條件都有值時，優先使用會員ID（忽略寵物ID）
+            // 3. 當只有一個條件有值時，使用該條件
+            // 4. 所有查詢都支持模糊查詢
+            bool hasUserId = query.UserId.HasValue;
+            bool hasPetId = query.PetId.HasValue;
 
-            // 篩選條件：寵物 ID（從 ItemCode 中解析）
-            if (query.PetId.HasValue)
+            if (hasUserId || hasPetId)
             {
-                dbQuery = dbQuery.Where(wh => wh.ItemCode != null && wh.ItemCode.Contains($"Pet:{query.PetId.Value}"));
+                if (hasUserId && hasPetId)
+                {
+                    // 兩個都有值：優先會員ID（忽略寵物ID）
+                    var userIdStr = query.UserId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.UserId.ToString().Contains(userIdStr));
+                }
+                else if (hasUserId)
+                {
+                    // 只有會員ID：模糊查詢
+                    var userIdStr = query.UserId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.UserId.ToString().Contains(userIdStr));
+                }
+                else if (hasPetId)
+                {
+                    // 只有寵物ID：模糊查詢（從 ItemCode 中解析）
+                    var petIdStr = query.PetId.Value.ToString();
+                    dbQuery = dbQuery.Where(wh => wh.ItemCode != null && wh.ItemCode.Contains(petIdStr));
+                }
             }
+            // 如果兩個條件都為空，不添加任何篩選條件，顯示全部結果
 
             // 篩選條件：日期範圍
             if (query.StartDate.HasValue)

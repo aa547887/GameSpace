@@ -182,17 +182,6 @@
         });
       }
 
-      /* SignalR 懶載入（失敗不影響 UI） */
-      if(!window.__gpEnsureSignalR){
-        const cdn="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js";
-        window.__gpEnsureSignalR=new Promise((res,rej)=>{
-          if(window.signalR||window.SignalR||window.signalr) return res();
-          const s=document.createElement('script'); s.src=cdn; s.async=true; s.crossOrigin="anonymous";
-          s.onload=()=>res(); s.onerror=()=>rej(new Error('SignalR 載入失敗'));
-          document.head.appendChild(s);
-        });
-      }
-
       /* 穢語規則（全域） */
       if(!window.__gpProfanity){ window.__gpProfanity={version:0,rules:[],lastLoad:0,censor:(t)=>t}; }
 
@@ -300,6 +289,17 @@
       const isNearBottom  = (offset=60) => (bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight) < offset;
       const scrollToBottom= ()=>{ bodyEl.scrollTop = bodyEl.scrollHeight; };
       const gpCensor      = (s)=> (window.__gpProfanity?.censor?.(s) ?? s);
+
+      function appendSystemMessage(text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.style.textAlign = 'center';
+        msgDiv.style.padding = '10px';
+        msgDiv.style.color = '#6c757d';
+        msgDiv.style.fontSize = '0.9rem';
+        msgDiv.textContent = text;
+        bodyEl.appendChild(msgDiv);
+        scrollToBottom();
+      }
 
       function toArraySafe(raw){
         try{ if(typeof raw==='string' && raw.trim()!=='') raw=JSON.parse(raw); }catch{ return []; }
@@ -438,10 +438,7 @@
         scrollToBottom(); input.value='';
 
         try{
-          await window.__gpEnsureSignalR;
-          const SR=window.signalR||window.SignalR||window.signalr;
-          _conn=_conn||new SR.HubConnectionBuilder().withUrl("/social_hub/chatHub").withAutomaticReconnect().build();
-          if(_conn.state!=='Connected') await _conn.start();
+          _conn = await window.getChatHubConnection();
           await _conn.invoke("SendMessageTo", Number(peerId), txt); // 傳「原文」
         }catch(e){ console.warn('Send fail', e); }
       }
@@ -449,103 +446,111 @@
       input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }});
 
       /* ---------- Hub 連線與事件 ---------- */
-      (async function setupHub(){
-        try{
-          await window.__gpEnsureSignalR;
-          const SR=window.signalR||window.SignalR||window.signalr;
-          _conn=new SR.HubConnectionBuilder().withUrl("/social_hub/chatHub").withAutomaticReconnect().build();
-
-          // 新訊息（我/對方）
-          _conn.on("ReceiveDirect", async p=>{
-            const s=String(p.senderId ?? p.SenderId);
-            const r=String(p.receiverId ?? p.ReceiverId);
-            if(!peerId) return;
-            if(s!==String(peerId) && r!==String(peerId)) return;
-
-            const iso=GPTime.ensureIsoUtc(p.sentAtIso ?? p.SentAtIso ?? p.sent_at ?? p.sentAt);
-            const content=p.content ?? p.Content ?? '';
-            const msgId=p.messageId ?? p.MessageId;
-            const isMine=(s!==String(peerId));
-            const isRead=!!(p.isRead ?? p.IsRead);
-
-            if(msgId!=null) seenIds.add(String(msgId));
-
-            const stick = isMine ? true : isNearBottom();
-
-            if(isMine && lastPending){
-              // Echo 回填暫掛
-              lastPending.dataset.pending='0';
-              lastPending.dataset.msgid = msgId!=null?String(msgId):'';
-              lastPending.dataset.ts    = iso;
-              const stamp=lastPending.querySelector('.stamp');
-              if(stamp){ const hm=GPTime.hm(iso); stamp.textContent = isRead ? `${hm} · 已讀` : hm; }
-              // 同步把暫掛行的 raw 文字也保持為我當時送出的原文（已在 createRow 設定）
-              lastPending=null;
-            }else{
-              ChatDivider.appendMessage(
-                { SenderId:p.SenderId, Content:content, SentAtIso:iso, IsRead:isRead, MessageId:msgId },
-                renderMessageFromModel
-              );
-            }
-            if(stick) scrollToBottom();
-
-            // 視窗開著且收到對方訊息 → 立刻回讀
-            if(!isMine && document.visibilityState==='visible' && dock.classList.contains('open')){
-              try{ await _conn.invoke("NotifyRead", Number(peerId), iso); }catch{}
-            }
-
-            // 通知好友清單更新預覽/時間置頂
-            window.dispatchEvent(new CustomEvent('gp-chat-latest',{ detail:{peerId, content, iso} }));
-          });
-
-          // 對方讀到（把我方泡泡 stamp 改「已讀」）
-          _conn.on("ReadReceipt", payload=>{
-            const fromUserId = String(payload.fromUserId ?? payload.FromUserId);
-            const upToIso    = GPTime.ensureIsoUtc(payload.upToIso ?? payload.UpToIso ?? payload.read_at);
-            if(!peerId || fromUserId!==String(peerId)) return;
-            markMyMsgsReadUpTo(upToIso);
-          });
-
-          // 未讀統計（紅點）
-          _conn.on("UnreadUpdate", data=>{
-            const pid = String(data.peerId ?? data.PeerId ?? '');
-            const unread = Number(data.unread ?? data.Unread ?? 0);
-            if(!pid) return;
-            const badge = document.querySelector(`[data-chat-badge="${pid}"]`);
-            if(badge){ badge.textContent = unread>0 ? unread : ''; badge.style.display = unread>0 ? 'inline-block':'none'; }
-          });
-
-          // 備援：後台若廣播規則更新 → 立刻重抓並重套
-          _conn.on("ProfanityUpdated", async ()=>{
-            try{
-              const url = '/social_hub/profanity/list?ts=' + Date.now();
-              const r   = await fetch(url, { credentials:'same-origin', cache:'no-store' });
-              if(!r.ok) return; const d=await r.json();
-              const ver = Number(d?.version||0);
-              if(ver !== (window.__gpProfanity?.version||0)){
-                window.__gpProfanity.version = ver;
-                (function compile(list){
-                  const compiled=[];
-                  for(const it of (list||[])){
-                    if(!it?.pattern) continue;
-                    try{ compiled.push({ re:new RegExp(it.pattern, it.flags||'gi'), repl:(it.replacement??'**') }); }catch{}
+            (async function setupHub(){
+              try{
+                _conn = await window.getChatHubConnection();
+      
+                // 新訊息（我/對方）
+                _conn.on("ReceiveDirect", async p=>{
+                  const s=String(p.senderId ?? p.SenderId);
+                  const r=String(p.receiverId ?? p.ReceiverId);
+                  if(!peerId) return;
+                  if(s!==String(peerId) && r!==String(peerId)) return;
+      
+                  const iso=GPTime.ensureIsoUtc(p.sentAtIso ?? p.SentAtIso ?? p.sent_at ?? p.sentAt);
+                  const content=p.content ?? p.Content ?? '';
+                  const msgId=p.messageId ?? p.MessageId;
+                  const isMine=(s!==String(peerId));
+                  const isRead=!!(p.isRead ?? p.isRead);
+      
+                  if(msgId!=null) seenIds.add(String(msgId));
+      
+                  const stick = isMine ? true : isNearBottom();
+      
+                  if(isMine && lastPending){
+                    // Echo 回填暫掛
+                    lastPending.dataset.pending='0';
+                    lastPending.dataset.msgid = msgId!=null?String(msgId):'';
+                    lastPending.dataset.ts    = iso;
+                    const stamp=lastPending.querySelector('.stamp');
+                    if(stamp){ const hm=GPTime.hm(iso); stamp.textContent = isRead ? `${hm} · 已讀` : hm; }
+                    // 同步把暫掛行的 raw 文字也保持為我當時送出的原文（已在 createRow 設定）
+                    lastPending=null;
+                  }else{
+                    ChatDivider.appendMessage(
+                      { SenderId:p.SenderId, Content:content, SentAtIso:iso, IsRead:isRead, MessageId:msgId },
+                      renderMessageFromModel
+                    );
                   }
-                  window.__gpProfanity.rules = compiled;
-                  window.__gpProfanity.censor = (txt)=>{ if(!txt) return txt; let o=txt; for(const rr of compiled) o=o.replace(rr.re, rr.repl); return o; };
-                })(d?.rules||[]);
-                // ★ 通知整頁模組一併重套（本視窗也會收到）
-                window.dispatchEvent(new CustomEvent('gp-profanity-updated',{ detail:{ version:ver, source:'floating-dock-hub' }}));
-              }
-            }catch{}
-          });
+                  if(stick) scrollToBottom();
+      
+                  // 視窗開著且收到對方訊息 → 立刻回讀
+                  if(!isMine && document.visibilityState==='visible' && dock.classList.contains('open')){
+                    try{ await _conn.invoke("NotifyRead", Number(peerId), iso); }catch{}
+                  }
+      
+                  // 通知好友清單更新預覽/時間置頂
+                  window.dispatchEvent(new CustomEvent('gp-chat-latest',{ detail:{peerId, content, iso} }));
+                });
 
-          await _conn.start().catch(()=>{});
-          window.dispatchEvent(new CustomEvent('gp-chat-ready'));
-        }catch(e){
-          console.warn('[ChatDock] Hub 啟動失敗：', e);
-          window.dispatchEvent(new CustomEvent('gp-chat-ready'));
-        }
-      })();
+                // ★ 關係變更時鎖定輸入
+                _conn.on("FriendRemoved", friendId => {
+                    if (String(friendId) !== String(peerId)) return;
+
+                    input.disabled = true;
+                    btnSend.disabled = true;
+                    input.placeholder = '已不再是好友，無法傳送訊息';
+                    appendSystemMessage('您與此使用者已不再是好友或已被封鎖。');
+                });
+      
+                // 對方讀到（把我方泡泡 stamp 改「已讀」）
+                _conn.on("ReadReceipt", payload=>{
+                  const fromUserId = String(payload.fromUserId ?? payload.FromUserId);
+                  const upToIso    = GPTime.ensureIsoUtc(payload.upToIso ?? payload.UpToIso ?? payload.read_at);
+                  if(!peerId || fromUserId!==String(peerId)) return;
+                  markMyMsgsReadUpTo(upToIso);
+                });
+      
+                // 未讀統計（紅點）
+                _conn.on("UnreadUpdate", data=>{
+                  const pid = String(data.peerId ?? data.PeerId ?? '');
+                  const unread = Number(data.unread ?? data.Unread ?? 0);
+                  if(!pid) return;
+                  const badge = document.querySelector(`[data-chat-badge="${pid}"]`);
+                  if(badge){ badge.textContent = unread>0 ? unread : ''; badge.style.display = unread>0 ? 'inline-block':'none'; }
+                });
+      
+                // 備援：後台若廣播規則更新 → 立刻重抓並重套
+                _conn.on("ProfanityUpdated", async ()=>{
+                  try{
+                    const url = '/social_hub/profanity/list?ts=' + Date.now();
+                    const r   = await fetch(url, { credentials:'same-origin', cache:'no-store' });
+                    if(!r.ok) return; const d=await r.json();
+                    const ver = Number(d?.version||0);
+                    if(ver !== (window.__gpProfanity?.version||0)){
+                      window.__gpProfanity.version = ver;
+                      (function compile(list){
+                        const compiled=[];
+                        for(const it of (list||[])){
+                          if(!it?.pattern) continue;
+                          try{ compiled.push({ re:new RegExp(it.pattern, it.flags||'gi'), repl:(it.replacement??'**') }); }catch{}
+                        }
+                        window.__gpProfanity.rules = compiled;
+                        window.__gpProfanity.censor = (txt)=>{ if(!txt) return txt; let o=txt; for(const rr of compiled) o=o.replace(rr.re, rr.repl); return o; };
+                      })(d?.rules||[]);
+                      // ★ 通知整頁模組一併重套（本視窗也會收到）
+                      window.dispatchEvent(new CustomEvent('gp-profanity-updated',{ detail:{ version:ver, source:'floating-dock-hub' }}));
+                    }
+                  }catch{}
+                });
+      
+                // await _conn.start().catch(()=>{}); // Connection is already started by getChatHubConnection()
+                window.dispatchEvent(new CustomEvent('gp-chat-ready'));
+              }catch(e){
+                console.warn('[ChatDock] Hub 啟動失敗：', e);
+                window.dispatchEvent(new CustomEvent('gp-chat-ready'));
+              }
+            })();
 
       /* ---------- 已讀相關 ---------- */
       function lastPeerIso(){
@@ -579,9 +584,14 @@
 
       /* ---------- 對外 API：開窗（先刷新規則 → 再載入歷史） ---------- */
       async function openDock(uid, name){
+        // Reset lock state
+        input.disabled = false;
+        btnSend.disabled = false;
+        input.placeholder = '輸入訊息...';
+
         peerId  = String(uid||'').trim();
         peerName= name || ('朋友 #'+peerId);
-        title.textContent = `朋友 #${peerId}`;
+        title.textContent = peerName;
 
         showDock();
 

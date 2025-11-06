@@ -1,4 +1,10 @@
-﻿@* Views/Shared/_Layout.cshtml *@
+﻿@* Views/Shared/_Layout.cshtml*@
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+@{
+    // 產生 Anti-Forgery Token（同時寫 cookie，並回傳一份 RequestToken 給前端夾 header）
+    var af = Xsrf.GetAndStoreTokens(Context);
+}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -6,57 +12,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"]</title>
 
+    <!-- Anti-Forgery：fetch 要夾在 RequestVerificationToken header -->
+    <meta name="request-verification-token" content="@af.RequestToken" />
+
     <!-- 基底套件 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <!-- 全站共用樣式（用 Layout 載入，partial 不要宣告 section） -->
+    <!-- 全站共用樣式 -->
     <link href="~/css/layout-shell.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar1.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar2.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/Forum/hero-swiper.css" rel="stylesheet" asp-append-version="true">
+    <!-- _RightRailAds樣式 -->
+    <link href="~/css/Forum/forum.css" rel="stylesheet" asp-append-version="true" />
 
-    @RenderSection("Styles", required: false) @* 頁面額外樣式才用這個 *@
+    @RenderSection("Styles", required: false)
 </head>
+@* 多加開關 *@
 <body>
-    @await Component.InvokeAsync("TopbarLevel1")
+    @{
+        // 🔧 per-page 開關（預設都顯示）
+        var hideTopbar1 = (ViewBag.HideTopbar1 as bool?) ?? false; // 全站上方 Topbar
+        var hideSidebar = (ViewBag.HideSidebar as bool?) ?? false; // 左側欄
+        var hideForumTopbar = (ViewBag.HideForumTopbar as bool?) ?? false; // Forum 內頁導覽列
+        var hideRightRail = (ViewBag.HideRightRail as bool?) ?? false; // 右側欄
+        var hideFooter = (ViewBag.HideFooter as bool?) ?? false; // 頁腳
+    }
+
+    @if (!hideTopbar1)
+    {
+        @await Component.InvokeAsync("TopbarLevel1")
+    }
 
     <div class="layout-wrap">
         <aside class="layout-sidebar d-none d-lg-block">
-            @await Html.PartialAsync("_Sidebar")
+            @if (!hideSidebar)
+            {
+                @await Html.PartialAsync("_Sidebar")
+            }
         </aside>
 
         <main class="layout-main">
-            @await Html.PartialAsync("_TopbarLevel2")
+            @if (!hideForumTopbar)
+            {
+                @await Html.PartialAsync("_ForumTopbar")
+            }
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
-                    <div class="col-12 col-xxl-9">
+                    <div class="@(hideRightRail ? "col-12" : "col-12 col-xxl-9")">
                         @RenderBody()
                     </div>
-                    <aside class="col-xl-3 d-none d-xl-block">
-                        <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
-                        </div>
-                    </aside>
+
+                    @if (!hideRightRail)
+                    {
+                        <aside class="col-xl-3 d-none d-xl-block">
+                            <div class="right-rail">
+                                @await Html.PartialAsync("_RightRailAds")
+                            </div>
+                        </aside>
+                    }
                 </div>
             </div>
         </main>
     </div>
 
-    <footer class="layout-footer border-top">
-        @await Html.PartialAsync("_Footer")
-    </footer>
+    @if (!hideFooter)
+    {
+        <footer class="layout-footer border-top">
+            @await Html.PartialAsync("_Footer")
+        </footer>
+    }
 
-    @await Html.PartialAsync("_QuickFab")
-    @await Html.PartialAsync("_FriendDock")
-    @await Html.PartialAsync("_FloatingDock")
+    <!-- ✅ 先載入 jQuery（正確 SRI 可加可不加） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 
+    <!-- Bootstrap（含 Popper） -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SignalR 客戶端庫 -->
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
+
+    <!-- SignalR ChatHub 連線管理器 -->
+    <script src="~/js/social_hub/chat-connection-manager.js" asp-append-version="true"></script>
+
+    @* 建議：只有登入後才載入聊天 UI *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_QuickFab")
+        @await Html.PartialAsync("_FriendDock")
+        @await Html.PartialAsync("_FloatingDock")
+    }
+
     <!-- 全站共用腳本 -->
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
-
+    <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
+
 </html>

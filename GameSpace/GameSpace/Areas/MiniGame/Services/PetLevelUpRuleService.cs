@@ -11,12 +11,17 @@ namespace GameSpace.Areas.MiniGame.Services
     public class PetLevelUpRuleService : IPetLevelUpRuleService
     {
         private readonly GameSpacedatabaseContext _context;
+        private readonly ISystemSettingsService _settingsService;
         private readonly ILogger<PetLevelUpRuleService> _logger;
 
-        public PetLevelUpRuleService(GameSpacedatabaseContext context, ILogger<PetLevelUpRuleService> logger)
+        public PetLevelUpRuleService(
+            GameSpacedatabaseContext context,
+            ISystemSettingsService settingsService,
+            ILogger<PetLevelUpRuleService> logger)
         {
-            _context = context;
-            _logger = logger;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         #region IPetLevelUpRuleService 介面方法實作
@@ -144,21 +149,74 @@ namespace GameSpace.Areas.MiniGame.Services
                     return rule;
                 }
 
-                // 如果資料庫中沒有，使用與 PetService 相同的三段式公式
-                // Level 1-10: 40 * level + 60
-                // Level 11-100: 0.8 * level² + 380
-                // Level 101+: 285.69 * 1.06^level
+                // ✅ 如果資料庫中沒有，從 SystemSettings 讀取公式配置
                 var nextLevel = currentLevel + 1;
                 if (nextLevel <= 1) return 0;
-                if (nextLevel <= 10) return 40 * nextLevel + 60;
-                else if (nextLevel <= 100) return (int)(0.8 * nextLevel * nextLevel + 380);
-                else return (int)(285.69 * Math.Pow(1.06, nextLevel));
+
+                // 讀取 JSON 格式的公式配置（Key 名稱與資料庫一致）
+                var formulaConfig = await _settingsService.GetSettingJsonAsync<PetLevelUpFormulaConfig>("Pet.LevelUp.Formula");
+
+                // 如果無法讀取配置，使用預設三段式公式
+                if (formulaConfig == null || formulaConfig.Tiers == null || formulaConfig.Tiers.Count == 0)
+                {
+                    _logger.LogWarning("無法讀取寵物升級公式配置，使用預設公式");
+                    return CalculateExpWithDefaultFormula(nextLevel);
+                }
+
+                // 根據等級找到對應的階段（從 Tiers 列表中查找）
+                FormulaTier? tier = null;
+                foreach (var t in formulaConfig.Tiers)
+                {
+                    if (nextLevel >= t.MinLevel && (t.MaxLevel == -1 || nextLevel <= t.MaxLevel))
+                    {
+                        tier = t;
+                        break;
+                    }
+                }
+
+                if (tier == null)
+                {
+                    _logger.LogWarning("等級 {Level} 找不到對應的公式階段，使用預設公式", nextLevel);
+                    return CalculateExpWithDefaultFormula(nextLevel);
+                }
+
+                // 從公式字串解析參數
+                var (a, b, baseVal) = tier.ParseFormulaParams();
+
+                // 如果解析失敗（A=0），使用預設公式
+                if (a == 0 && b == 0)
+                {
+                    _logger.LogWarning("無法解析公式字串 \"{Formula}\"，使用預設公式", tier.Formula);
+                    return CalculateExpWithDefaultFormula(nextLevel);
+                }
+
+                // 根據公式類型計算經驗值
+                return tier.Type.ToLower() switch
+                {
+                    "linear" => (int)(a * nextLevel + b),
+                    "quadratic" => (int)(a * nextLevel * nextLevel + b),
+                    "exponential" => (int)(a * Math.Pow(baseVal, nextLevel)),
+                    _ => CalculateExpWithDefaultFormula(nextLevel)
+                };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "計算等級 {Level} 所需經驗值時發生錯誤", currentLevel);
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// 使用預設公式計算經驗值（當 SystemSettings 無法讀取時的備援）
+        /// </summary>
+        private int CalculateExpWithDefaultFormula(int nextLevel)
+        {
+            // Level 1-10: 40 * level + 60
+            // Level 11-100: 0.8 * level² + 380
+            // Level 101+: 285.69 * 1.06^level
+            if (nextLevel <= 10) return 40 * nextLevel + 60;
+            else if (nextLevel <= 100) return (int)(0.8 * nextLevel * nextLevel + 380);
+            else return (int)(285.69 * Math.Pow(1.06, nextLevel));
         }
 
         public async Task<(bool IsValid, string ErrorMessage)> ValidateRuleAsync(PetRuleReadModel rule)

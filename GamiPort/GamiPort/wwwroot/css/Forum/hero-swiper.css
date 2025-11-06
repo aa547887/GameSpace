@@ -1,0 +1,137 @@
+﻿/* 容器寬度縮窄＋置中 */
+.topbar-2 {
+    max-width: 980px; /* ← 比原本更瘦 */
+    margin: 0 auto 12px;
+    padding: 4px 8px;
+}
+
+    /* 每張 slide 不要滿版，留點縫隙有呼吸感 */
+    .topbar-2 .swiper {
+        padding: 8px 12px 24px;
+    }
+
+    .topbar-2 .swiper-slide {
+        width: 72%; /* 手機會被下面的 @media 覆蓋 */
+        max-width: 720px;
+        transition: transform .35s ease, filter .35s ease, box-shadow .35s ease;
+        will-change: transform;
+    }
+
+/* 卡片樣式：玻璃感＋浮起 */
+.news-card {
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.75));
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    padding: 18px 20px;
+}
+
+/* 滑到中間稍微放大、兩側微縮暗一點（特效感） */
+.topbar-2 .swiper-slide-active {
+    transform: scale(1.02);
+    filter: none;
+}
+
+.topbar-2 .swiper-slide-prev,
+.topbar-2 .swiper-slide-next {
+    transform: scale(.98);
+    filter: saturate(.95) brightness(.98);
+}
+
+/* 標籤 */
+.news-tags {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tag {
+    font-size: 12px;
+    line-height: 1;
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    letter-spacing: .4px;
+    user-select: none;
+}
+
+.tag-insight {
+    background: #eef6ff;
+    color: #1d4ed8;
+    border-color: #cfe3ff;
+}
+
+.tag-pin {
+    background: #fff6cc;
+    color: #8a5a00;
+    border-color: #f3e19b;
+}
+
+/* 標題＋內文：行數限制避免爆版 */
+.news-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 4px 0 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-excerpt {
+    color: #5b6066;
+    margin: 0 0 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-meta {
+    color: #8d93a1;
+    font-size: 12px;
+}
+
+/* 導覽按鈕、分頁點點微調 */
+.topbar-2 .swiper-button-prev,
+.topbar-2 .swiper-button-next {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.06);
+    backdrop-filter: blur(4px);
+}
+
+    .topbar-2 .swiper-button-prev:after,
+    .topbar-2 .swiper-button-next:after {
+        font-size: 16px;
+        color: #3d4046;
+    }
+
+.topbar-2 .swiper-pagination-bullet {
+    width: 7px;
+    height: 7px;
+    background: #b6beca;
+    opacity: .7;
+}
+
+.topbar-2 .swiper-pagination-bullet-active {
+    background: #3b82f6;
+    opacity: 1;
+}
+
+/* 手機：更窄、更高的字級對比 */
+@media (max-width: 768px) {
+    .topbar-2 .swiper-slide {
+        width: 88%;
+    }
+
+    .news-title {
+        font-size: 18px;
+    }
+
+    .news-excerpt {
+        -webkit-line-clamp: 4;
+    }
+}

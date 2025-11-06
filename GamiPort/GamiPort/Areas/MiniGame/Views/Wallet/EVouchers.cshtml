@@ -1,0 +1,291 @@
+@{
+	ViewData["Title"] = "電子禮券";
+	dynamic viewData = (dynamic)Model;
+	var eVouchers = viewData.EVouchers as List<GamiPort.Models.Evoucher> ?? new List<GamiPort.Models.Evoucher>();
+	var qrCodeData = viewData.QRCodeData as Dictionary<int, string> ?? new Dictionary<int, string>();
+	var searchTerm = viewData.SearchTerm as string ?? "";
+	var filter = viewData.Filter as string ?? "all";
+	var totalCount = (int)viewData.TotalCount;
+	var unusedCount = (int)viewData.UnusedCount;
+	var usedCount = (int)viewData.UsedCount;
+}
+
+<div class="container-fluid px-4">
+	<h1 class="mt-4 text-info">
+		<i class="fas fa-gift me-2"></i>電子禮券
+	</h1>
+	<ol class="breadcrumb mb-4">
+		<li class="breadcrumb-item"><a asp-action="Index">錢包首頁</a></li>
+		<li class="breadcrumb-item active">電子禮券</li>
+	</ol>
+
+	<!-- 統計卡片（可點擊篩選） -->
+	<div class="row mb-4">
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "all" })" class="text-decoration-none">
+				<div class="card bg-info text-white shadow @(filter == "all" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">總計</div>
+						<div class="h4 mb-0">@totalCount 張</div>
+						@if (filter == "all") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "unused" })" class="text-decoration-none">
+				<div class="card bg-success text-white shadow @(filter == "unused" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">可使用</div>
+						<div class="h4 mb-0">@unusedCount 張</div>
+						@if (filter == "unused") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "used" })" class="text-decoration-none">
+				<div class="card bg-secondary text-white shadow @(filter == "used" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">已使用</div>
+						<div class="h4 mb-0">@usedCount 張</div>
+						@if (filter == "used") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+	</div>
+
+	<!-- 搜尋區域 -->
+	<div class="card mb-4">
+		<div class="card-body">
+			<form method="get" asp-action="EVouchers">
+				<div class="input-group">
+					<span class="input-group-text bg-info text-white">
+						<i class="fas fa-search"></i>
+					</span>
+					<input type="text" class="form-control" name="search" value="@searchTerm"
+						   placeholder="搜尋電子禮券（名稱、代碼、描述）..." />
+					<button class="btn btn-info" type="submit">搜尋</button>
+					@if (!string.IsNullOrEmpty(searchTerm))
+					{
+						<a href="@Url.Action("EVouchers")" class="btn btn-outline-secondary">
+							<i class="fas fa-times"></i> 清除
+						</a>
+					}
+				</div>
+				<div class="form-text">
+					<i class="fas fa-lightbulb text-warning"></i>
+					支援模糊搜尋，可搜尋電子禮券名稱、代碼或描述關鍵字
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- 電子禮券列表 -->
+	@if (eVouchers.Any())
+	{
+		<div class="row">
+			@foreach (var voucher in eVouchers)
+			{
+				var isUsed = voucher.IsUsed;
+				var canUse = !isUsed;
+				var hasQRCode = qrCodeData.ContainsKey(voucher.EvoucherId);
+
+				<div class="col-lg-4 col-md-6 mb-4">
+					<div class="card h-100 border-info @(isUsed ? "opacity-75" : "")">
+						<div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+							<div>
+								<i class="fas fa-gift me-2"></i>
+								<strong>@(voucher.EvoucherType?.Name ?? "電子禮券")</strong>
+							</div>
+							@if (isUsed)
+							{
+								<span class="badge bg-secondary">
+									<i class="fas fa-check"></i> 已使用
+								</span>
+							}
+							else
+							{
+								<span class="badge bg-success">
+									<i class="fas fa-check-circle"></i> 可使用
+								</span>
+							}
+						</div>
+						<div class="card-body">
+							<h5 class="card-title">代碼：<code class="text-info">@voucher.EvoucherCode</code></h5>
+
+							<!-- 面額顯示 -->
+							<div class="text-center mb-3 p-3 bg-light rounded">
+								<div class="text-muted small">面額</div>
+								<div class="display-6 text-success fw-bold">
+									$@(voucher.EvoucherType?.ValueAmount ?? 0)
+								</div>
+							</div>
+
+							<!-- 詳細資訊 -->
+							<p class="card-text">
+								<strong>獲得時間：</strong>@voucher.AcquiredTime.ToString("yyyy-MM-dd HH:mm")<br />
+								@if (voucher.EvoucherType != null)
+								{
+									<span>
+										<strong>有效期限：</strong>
+										@voucher.EvoucherType.ValidFrom.ToString("yyyy-MM-dd") ~ @voucher.EvoucherType.ValidTo.ToString("yyyy-MM-dd")
+									</span>
+									<br />
+								}
+								@if (voucher.IsUsed && voucher.UsedTime.HasValue)
+								{
+									<strong>使用時間：</strong>@voucher.UsedTime?.ToString("yyyy-MM-dd HH:mm")<br />
+								}
+								@if (!string.IsNullOrEmpty(voucher.EvoucherType?.Description))
+								{
+									<strong>說明：</strong>@voucher.EvoucherType.Description<br />
+								}
+							</p>
+
+							<!-- QR Code 顯示區域 -->
+							@if (hasQRCode)
+							{
+								<div class="mt-3 p-3 border rounded @(isUsed ? "bg-light" : "bg-white")">
+									<h6 class="text-center mb-2">
+										<i class="fas fa-qrcode me-1"></i>@(isUsed ? "已核銷 QR Code" : "核銷 QR Code")
+									</h6>
+									<div class="text-center position-relative d-inline-block">
+										<img src="@qrCodeData[voucher.EvoucherId]"
+											 alt="QR Code"
+											 class="img-fluid"
+											 style="max-width: 200px; width: 100%;" />
+										@if (isUsed)
+										{
+											<img src="/MiniGame/stamps/QRCODE_REDEEMED_STAMP.png"
+												 alt="已核銷印章"
+												 class="position-absolute top-50 start-50 translate-middle"
+												 style="width: 150px; height: 150px; opacity: 0.85; z-index: 10;" />
+										}
+									</div>
+									<div class="text-center mt-2">
+										<small class="text-muted">
+											<i class="fas fa-info-circle"></i>
+											@(isUsed ? "此禮券已使用" : "請向店員出示此 QR Code 進行核銷")
+										</small>
+									</div>
+								</div>
+							}
+							else
+							{
+								<div class="alert alert-warning mt-3">
+									<i class="fas fa-exclamation-triangle"></i>
+									QR Code 生成失敗，請稍後重試
+								</div>
+							}
+						</div>
+						<div class="card-footer bg-transparent">
+							@if (canUse)
+							{
+								<button type="button" class="btn btn-info btn-sm w-100"
+										data-bs-toggle="modal" data-bs-target="#qrcodeModal@(voucher.EvoucherId)">
+									<i class="fas fa-qrcode me-1"></i>查看完整 QR Code
+								</button>
+							}
+							else
+							{
+								<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+									<i class="fas fa-ban me-1"></i>已使用
+								</button>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- QR Code 全屏 Modal -->
+				@if (canUse && hasQRCode)
+				{
+					<div class="modal fade" id="qrcodeModal@(voucher.EvoucherId)" tabindex="-1"
+						 aria-labelledby="qrcodeModalLabel@(voucher.EvoucherId)" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header bg-info text-white">
+									<h5 class="modal-title" id="qrcodeModalLabel@(voucher.EvoucherId)">
+										<i class="fas fa-qrcode me-2"></i>電子禮券 QR Code
+									</h5>
+									<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+								<div class="modal-body text-center">
+									<div class="mb-3">
+										<h6>代碼：<code class="text-info">@voucher.EvoucherCode</code></h6>
+										<p class="text-muted mb-0">面額：<strong class="text-success">$@(voucher.EvoucherType?.ValueAmount ?? 0)</strong></p>
+									</div>
+									<div class="p-4 bg-light rounded">
+										<img src="@qrCodeData[voucher.EvoucherId]"
+											 alt="QR Code"
+											 class="img-fluid"
+											 style="max-width: 350px; width: 100%;" />
+									</div>
+									<div class="mt-3">
+										<small class="text-muted">
+											<i class="fas fa-info-circle"></i>
+											請向店員出示此 QR Code 進行核銷
+										</small>
+									</div>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+			}
+		</div>
+	}
+	else
+	{
+		<div class="alert alert-info">
+			<i class="fas fa-info-circle me-2"></i>
+			@if (!string.IsNullOrEmpty(searchTerm))
+			{
+				<span>搜尋「<strong>@searchTerm</strong>」沒有找到相關電子禮券</span>
+			}
+			else
+			{
+				<span>您目前沒有電子禮券。<a asp-action="Exchange" class="alert-link">前往兌換</a></span>
+			}
+		</div>
+	}
+
+	<!-- 返回按鈕 -->
+	<div class="mb-4">
+		<a asp-action="Index" class="btn btn-secondary">
+			<i class="fas fa-arrow-left me-1"></i>返回錢包首頁
+		</a>
+		<a asp-action="Exchange" class="btn btn-info">
+			<i class="fas fa-exchange-alt me-1"></i>前往兌換
+		</a>
+	</div>
+</div>
+
+@section Styles {
+	<style>
+		.cursor-pointer {
+			cursor: pointer;
+		}
+
+		.hover-lift {
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+
+		.hover-lift:hover {
+			transform: translateY(-4px);
+			box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+		}
+	</style>
+}
+
+@section Scripts {
+	<script>
+		// 自動刷新功能（可選）
+		// 每30秒自動刷新一次，確保 QR Code 最新
+		// setInterval(() => location.reload(), 30000);
+	</script>
+}

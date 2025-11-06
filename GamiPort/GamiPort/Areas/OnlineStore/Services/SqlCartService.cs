@@ -39,28 +39,35 @@ namespace GamiPort.Areas.OnlineStore.Services
 		// 取得或建立 cart_id
 		public async Task<Guid> EnsureCartIdAsync(int? userId, Guid? anonymousToken)
 		{
-			var pUserId = new SqlParameter("@UserId", (object?)userId ?? DBNull.Value);
-			var pAnon = new SqlParameter("@AnonymousToken", (object?)anonymousToken ?? DBNull.Value);
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
 
-			var pOut = new SqlParameter("@CartId", SqlDbType.UniqueIdentifier)
-			{
-				Direction = ParameterDirection.Output
-			};
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "dbo.usp_Cart_Ensure";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = (object?)userId ?? DBNull.Value });
+			cmd.Parameters.Add(new SqlParameter("@AnonymousToken", SqlDbType.UniqueIdentifier) { Value = (object?)anonymousToken ?? DBNull.Value });
+			var pOut = new SqlParameter("@OutCartId", SqlDbType.UniqueIdentifier) { Direction = ParameterDirection.Output };
+			cmd.Parameters.Add(pOut);
 
-			await _db.Database.ExecuteSqlRawAsync(
-				"EXEC dbo.usp_Cart_Ensure @UserId, @AnonymousToken, @CartId OUTPUT",
-				pUserId, pAnon, pOut);
-
-			return (pOut.Value is DBNull) ? Guid.Empty : (Guid)pOut.Value;
+			await cmd.ExecuteNonQueryAsync();
+			return (pOut.Value is DBNull || pOut.Value is null) ? Guid.Empty : (Guid)pOut.Value;
 		}
 
+
 		// 加入商品
-		public async Task AddAsync(Guid cartId, int productId, int quantity) =>
-			await _db.Database.ExecuteSqlRawAsync(
-		"EXEC dbo.usp_Cart_AddItem @CartId, @ProductId, @Quantity",
-		new SqlParameter("@CartId", cartId),
-		new SqlParameter("@ProductId", productId),
-		new SqlParameter("@Quantity", quantity));
+		public async Task AddAsync(Guid cartId, int productId, int quantity)
+		{
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "dbo.usp_Cart_AddItem";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add(new SqlParameter("@CartId", cartId));
+			cmd.Parameters.Add(new SqlParameter("@ProductId", productId));
+			cmd.Parameters.Add(new SqlParameter("@Quantity", quantity));
+			await cmd.ExecuteNonQueryAsync();
+		}
 
 		// 為舊頁面保留的總覽（可移除）
 		public async Task<LegacyCartSummaryDto> GetAsync(Guid cartId)
@@ -85,44 +92,64 @@ namespace GamiPort.Areas.OnlineStore.Services
 		}
 
 		// 更新數量（0 代表移除）
-		public Task UpdateQtyAsync(Guid cartId, int productId, int qty) =>
-			_db.Database.ExecuteSqlRawAsync(
-				"EXEC dbo.usp_Cart_UpdateQty @CartId={0}, @ProductId={1}, @Quantity={2}",
-				cartId, productId, qty);
+		public async Task UpdateQtyAsync(Guid cartId, int productId, int qty)
+		{
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "dbo.usp_Cart_UpdateQty";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add(new SqlParameter("@CartId", cartId));
+			cmd.Parameters.Add(new SqlParameter("@ProductId", productId));
+			cmd.Parameters.Add(new SqlParameter("@Quantity", qty));
+			await cmd.ExecuteNonQueryAsync();
+		}
 
 		// 刪除單一品項（你庫裡的名字是 usp_Cart_RemoveItem）
 		public async Task RemoveAsync(Guid cartId, int productId)
 		{
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
 			try
 			{
-				await _db.Database.ExecuteSqlRawAsync(
-					"EXEC dbo.usp_Cart_RemoveItem @CartId={0}, @ProductId={1}",
-					cartId, productId);
+				await using var cmd = conn.CreateCommand();
+				cmd.CommandText = "dbo.usp_Cart_RemoveItem";
+				cmd.CommandType = CommandType.StoredProcedure;
+				cmd.Parameters.Add(new SqlParameter("@CartId", cartId));
+				cmd.Parameters.Add(new SqlParameter("@ProductId", productId));
+				await cmd.ExecuteNonQueryAsync();
 			}
-			catch (Microsoft.Data.SqlClient.SqlException ex)
-				when (ex.Message.Contains("Could not find stored procedure", StringComparison.OrdinalIgnoreCase)
-				   || ex.Message.Contains("找不到預存程序"))
+			catch (SqlException ex) when (ex.Message.Contains("Could not find stored procedure", StringComparison.OrdinalIgnoreCase))
 			{
-				// 後援：用 UpdateQty=0 模擬刪除
-				await _db.Database.ExecuteSqlRawAsync(
-					"EXEC dbo.usp_Cart_UpdateQty @CartId={0}, @ProductId={1}, @Quantity={2}",
-					cartId, productId, 0);
+				await using var cmd2 = conn.CreateCommand();
+				cmd2.CommandText = "dbo.usp_Cart_UpdateQty";
+				cmd2.CommandType = CommandType.StoredProcedure;
+				cmd2.Parameters.Add(new SqlParameter("@CartId", cartId));
+				cmd2.Parameters.Add(new SqlParameter("@ProductId", productId));
+				cmd2.Parameters.Add(new SqlParameter("@Quantity", 0));
+				await cmd2.ExecuteNonQueryAsync();
 			}
 		}
 
 		// 清空（你庫裡叫 usp_Cart_Clear；再加一個保險後援）
 		public async Task ClearAsync(Guid cartId)
 		{
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
 			try
 			{
-				await _db.Database.ExecuteSqlRawAsync("EXEC dbo.usp_Cart_Clear @CartId={0}", cartId);
+				await using var cmd = conn.CreateCommand();
+				cmd.CommandText = "dbo.usp_Cart_Clear";
+				cmd.CommandType = CommandType.StoredProcedure;
+				cmd.Parameters.Add(new SqlParameter("@CartId", cartId));
+				await cmd.ExecuteNonQueryAsync();
 			}
-			catch (Microsoft.Data.SqlClient.SqlException ex)
-				when (ex.Message.Contains("Could not find stored procedure", StringComparison.OrdinalIgnoreCase)
-				   || ex.Message.Contains("找不到預存程序"))
+			catch (SqlException ex) when (ex.Message.Contains("Could not find stored procedure", StringComparison.OrdinalIgnoreCase))
 			{
-				// 後援：直接清資料表
-				await _db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.SO_CartItems WHERE cart_id = {0}", cartId);
+				await using var cmd2 = conn.CreateCommand();
+				cmd2.CommandText = "DELETE FROM dbo.SO_CartItems WHERE cart_id=@id";
+				cmd2.Parameters.Add(new SqlParameter("@id", cartId));
+				await cmd2.ExecuteNonQueryAsync();
 			}
 		}
 
@@ -211,7 +238,7 @@ namespace GamiPort.Areas.OnlineStore.Services
 					Product_Name = GetString(reader, "product_name") ?? "",
 					Image_Thumb = GetString(reader, "image_thumb"),
 					Unit_Price = GetDecimal(reader, "unit_price"),
-					Quantity = GetInt32(reader, "quantity"),
+					Quantity = GetInt32Or(reader, new[] { "quantity", "qty" }, 0),
 					Line_Subtotal = GetDecimal(reader, "line_subtotal"),
 					Is_Physical = GetBool(reader, "is_physical"),
 					Weight_G = GetDecimalOrZero(reader, "weight_g"),
@@ -361,57 +388,33 @@ namespace GamiPort.Areas.OnlineStore.Services
 		}
 
 		// 依 shipMethodId 由資料庫載入配送規則
+		// 依 shipMethodId 由資料庫載入配送規則（修正為表欄位蛇形命名）
 		private async Task<ShipRule?> LoadShipRuleAsync(int shipMethodId)
 		{
-			// ★ 若你的 EF 實體屬性名稱不同（例如 Base_Fee / Free_Threshold），請把下面 Select 改成你的屬性。
-			var rule = await _db.SoShipMethods
-				.AsNoTracking()
-				.Where(x => x.ShipMethodId == shipMethodId /* && x.IsActive */) // 若沒有 IsActive，就移除此條件
-				.Select(x => new ShipRule
-				{
-					BaseFee = x.BaseFee,
-					FreeThreshold = x.FreeThreshold,
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
 
-					// ✅ 你的專案實體是 bool → 直接指定即可
-					ForStorePickup = x.ForStorePickup
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+        SELECT TOP (1)
+               base_fee        AS BaseFee,
+               free_threshold  AS FreeThreshold,
+               for_store_pickup AS ForStorePickup
+        FROM dbo.SO_ShipMethods
+        WHERE ship_method_id = @id";
+			cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = shipMethodId });
 
-					// 如果你的實體是 int(0/1)，改成下面這行（把上面那行註解）：
-					// ForStorePickup = x.ForStorePickup == 1
-				})
-				.FirstOrDefaultAsync();
-			return rule;
+			await using var r = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow);
+			if (!await r.ReadAsync()) return null;
+
+			return new ShipRule
+			{
+				BaseFee = r["BaseFee"] is DBNull ? 0m : Convert.ToDecimal(r["BaseFee"]),
+				FreeThreshold = r["FreeThreshold"] is DBNull ? 0m : Convert.ToDecimal(r["FreeThreshold"]),
+				ForStorePickup = !(r["ForStorePickup"] is DBNull) && Convert.ToBoolean(r["ForStorePickup"])
+			};
 		}
 
-		//// 可彈性調整的優惠規則（示範版）
-		//// - "111"      ：折 100 元（負數表示折抵）
-		//// - "FREESHIP" ：免運
-		//private static void ApplyCoupon(CartSummaryDto s, string? couponCode, ShipRule? rule)
-		//{
-		//	if (string.IsNullOrWhiteSpace(couponCode))
-		//	{
-		//		// 沒填券：沿用 SP 的結果（通常是 0 / null）
-		//		if (s.CouponDiscount == 0m) s.CouponDiscount = 0m;
-		//		return;
-		//	}
-
-		//	var code = couponCode.Trim();
-		//	if (code.Equals("111", StringComparison.OrdinalIgnoreCase))
-		//	{
-		//		s.CouponDiscount = -100m;
-		//		s.CouponMessage = "已套用優惠碼，折抵 100 元";
-		//	}
-		//	else if (code.Equals("FREESHIP", StringComparison.OrdinalIgnoreCase))
-		//	{
-		//		if (s.Shipping_Fee > 0m) s.Shipping_Fee = 0m;  // 免運
-		//		s.CouponDiscount = 0m;
-		//		s.CouponMessage = "已套用免運優惠碼";
-		//	}
-		//	else
-		//	{
-		//		s.CouponDiscount ??= 0m;
-		//		s.CouponMessage = "優惠碼無效，未套用折扣";
-		//	}
-		//}
 
 		// 把「運費回填 + 優惠套用 + 應付重算」集中做掉
 		private async Task PostProcessSummaryAsync(CartSummaryDto s, int shipMethodId, string destZip, string? couponCode)
@@ -456,12 +459,16 @@ namespace GamiPort.Areas.OnlineStore.Services
 
 		public async Task<int> GetItemCountAsync(Guid cartId)
 		{
-			// 直接用 EF 聚合；若你的 IsDeleted 欄位是 bit，可這樣過濾
-			var cnt = await _db.SoCartItems
-				.AsNoTracking()
-				.Where(x => x.CartId == cartId && (x.IsDeleted == null || x.IsDeleted == false))
-				.SumAsync(x => (int?)x.Qty) ?? 0;
-			return cnt;
+			await using var conn = new SqlConnection(_connString);
+			await conn.OpenAsync();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+SELECT ISNULL(SUM(CAST(qty AS INT)),0)
+FROM dbo.SO_CartItems
+WHERE cart_id=@id AND (is_deleted IS NULL OR is_deleted=0)";
+			cmd.Parameters.Add(new SqlParameter("@id", cartId));
+			var obj = await cmd.ExecuteScalarAsync();
+			return (obj == null || obj is DBNull) ? 0 : Convert.ToInt32(obj);
 		}
 
 	}

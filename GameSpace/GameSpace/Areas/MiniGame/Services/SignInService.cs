@@ -12,17 +12,20 @@ namespace GameSpace.Areas.MiniGame.Services
         private readonly GameSpacedatabaseContext _context;
         private readonly IAppClock _appClock;
         private readonly ITaiwanHolidayService _holidayService;
+        private readonly ISystemSettingsService _settingsService;
         private readonly ILogger<SignInService> _logger;
 
         public SignInService(
             GameSpacedatabaseContext context,
             IAppClock appClock,
             ITaiwanHolidayService holidayService,
+            ISystemSettingsService settingsService,
             ILogger<SignInService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
             _holidayService = holidayService ?? throw new ArgumentNullException(nameof(holidayService));
+            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -247,31 +250,72 @@ namespace GameSpace.Areas.MiniGame.Services
             var nowTaiwan = _appClock.ToAppTime(_appClock.UtcNow);
             var isHoliday = _holidayService.IsHoliday(nowTaiwan);
 
-            // Initialize reward based on weekday/holiday
-            // 平日簽到: +20 點數, +0 經驗
-            // 假日簽到: +30 點數, +200 經驗
+            // ✅ 從 SystemSettings 讀取基礎獎勵（平日/假日）
+            // 平日簽到: SystemSettings.SignIn.Weekday.Points / Experience
+            // 假日簽到: SystemSettings.SignIn.Weekend.Points / Experience
+            var basePoints = isHoliday
+                ? await _settingsService.GetSettingIntAsync("SignIn.Weekend.Points", 30)
+                : await _settingsService.GetSettingIntAsync("SignIn.Weekday.Points", 20);
+
+            var baseExperience = isHoliday
+                ? await _settingsService.GetSettingIntAsync("SignIn.Weekend.Experience", 200)
+                : await _settingsService.GetSettingIntAsync("SignIn.Weekday.Experience", 0);
+
             var reward = new SignInReward
             {
-                Points = isHoliday ? 30 : 20,
-                Experience = isHoliday ? 200 : 0,
+                Points = basePoints,
+                Experience = baseExperience,
                 ConsecutiveDayBonus = 0
             };
 
-            // 連續 7 天: 額外 +40 點數, +300 經驗
-            if (nextDay % 7 == 0)
+            // ✅ 查詢 SignInRule 表，獲取對應天數的規則和描述
+            var signInRule = await _context.SignInRules
+                .AsNoTracking()
+                .Where(r => r.SignInDay == nextDay && r.IsActive && !r.IsDeleted)
+                .FirstOrDefaultAsync();
+
+            if (signInRule != null)
             {
-                reward.Points += 40;
-                reward.Experience += 300;
-                reward.ConsecutiveDayBonus = 40;
+                // 使用 SignInRule 表的數據覆蓋基礎獎勵
+                reward.Points = signInRule.Points;
+                reward.Experience = signInRule.Experience;
+                reward.Description = signInRule.Description ?? $"第 {nextDay} 天簽到獎勵";
+
+                if (signInRule.HasCoupon && !string.IsNullOrWhiteSpace(signInRule.CouponTypeCode))
+                {
+                    reward.CouponCode = signInRule.CouponTypeCode;
+                }
+            }
+            else
+            {
+                // 沒有對應規則時使用預設描述
+                reward.Description = isHoliday
+                    ? $"假日簽到獎勵（第 {nextDay} 天）"
+                    : $"平日簽到獎勵（第 {nextDay} 天）";
             }
 
-            // 當月全勤: 額外 +200 點數, +2000 經驗, +1 張商城優惠券
-            bool hasPerfectAttendance = await CheckMonthlyPerfectAttendanceAsync(userId, nowTaiwan);
-            if (hasPerfectAttendance)
+            // ✅ 連續 7 天: 從 SystemSettings 讀取額外獎勵（額外加成）
+            if (nextDay % 7 == 0 && signInRule == null)
             {
-                reward.Points += 200;
-                reward.Experience += 2000;
+                var streak7BonusPoints = await _settingsService.GetSettingIntAsync("SignIn.Streak7Days.BonusPoints", 40);
+                var streak7BonusExp = await _settingsService.GetSettingIntAsync("SignIn.Streak7Days.BonusExperience", 300);
+
+                reward.Points += streak7BonusPoints;
+                reward.Experience += streak7BonusExp;
+                reward.ConsecutiveDayBonus = streak7BonusPoints;
+            }
+
+            // ✅ 當月全勤: 從 SystemSettings 讀取額外獎勵（額外加成）
+            bool hasPerfectAttendance = await CheckMonthlyPerfectAttendanceAsync(userId, nowTaiwan);
+            if (hasPerfectAttendance && signInRule == null)
+            {
+                var perfectAttendancePoints = await _settingsService.GetSettingIntAsync("SignIn.PerfectAttendance30Days.BonusPoints", 200);
+                var perfectAttendanceExp = await _settingsService.GetSettingIntAsync("SignIn.PerfectAttendance30Days.BonusExperience", 2000);
+
+                reward.Points += perfectAttendancePoints;
+                reward.Experience += perfectAttendanceExp;
                 reward.CouponCode = $"PERFECT_ATTENDANCE_{nowTaiwan:yyyyMM}";
+                reward.Description = reward.Description + " + 當月全勤獎勵";
             }
 
             return reward;
@@ -322,7 +366,8 @@ namespace GameSpace.Areas.MiniGame.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 發放點數
+                // 發放點數 - 使用台灣時間
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
                 var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
                 if (wallet != null)
                 {
@@ -334,8 +379,8 @@ namespace GameSpace.Areas.MiniGame.Services
                         ChangeType = "SignIn",
                         PointsChanged = reward.Points,
                         ItemCode = "SIGNIN_REWARD",
-                        Description = $"簽到獎勵 (連續 {(reward.ConsecutiveDayBonus > 0 ? "+" + reward.ConsecutiveDayBonus : "")}天加成)",
-                        ChangeTime = nowUtc
+                        Description = reward.Description ?? "簽到獎勵",  // 使用 SignInRule.Description
+                        ChangeTime = nowTaiwanTime  // 使用台灣時間
                     };
                     _context.WalletHistories.Add(history);
                 }
@@ -375,8 +420,10 @@ namespace GameSpace.Areas.MiniGame.Services
                             UserId = userId,
                             CouponTypeId = couponType.CouponTypeId,
                             CouponCode = $"{reward.CouponCode}_{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}",
-                            AcquiredTime = nowUtc,
-                            IsUsed = false
+                            AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                            UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                            IsUsed = false,
+                            IsDeleted = false  // 必填字段：未刪除
                         };
                         _context.Coupons.Add(coupon);
 
@@ -387,8 +434,8 @@ namespace GameSpace.Areas.MiniGame.Services
                             ChangeType = "Coupon",
                             PointsChanged = 0,
                             ItemCode = coupon.CouponCode,
-                            Description = $"全勤獎勵優惠券：{couponType.Name}",
-                            ChangeTime = nowUtc
+                            Description = reward.Description ?? $"優惠券獎勵：{couponType.Name}",  // 使用 SignInRule.Description
+                            ChangeTime = nowTaiwanTime  // 使用台灣時間
                         };
                         _context.WalletHistories.Add(history);
                     }

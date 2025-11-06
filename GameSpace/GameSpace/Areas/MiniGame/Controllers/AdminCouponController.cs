@@ -5,6 +5,8 @@ using GameSpace.Areas.MiniGame.Models;
 using GameSpace.Models;
 using GameSpace.Areas.social_hub.Auth;
 using GameSpace.Areas.MiniGame.Models.ViewModels;
+using GameSpace.Infrastructure.Time;
+using GameSpace.Areas.MiniGame.Services;
 
 namespace GameSpace.Areas.MiniGame.Controllers
 {
@@ -12,8 +14,11 @@ namespace GameSpace.Areas.MiniGame.Controllers
     [Authorize(AuthenticationSchemes = AuthConstants.AdminCookieScheme, Policy = "AdminOnly")]
     public class AdminCouponController : MiniGameBaseController
     {
-        public AdminCouponController(GameSpacedatabaseContext context) : base(context)
+        private readonly IFuzzySearchService _fuzzySearchService;
+
+        public AdminCouponController(GameSpacedatabaseContext context, IAppClock appClock, IFuzzySearchService fuzzySearchService) : base(context, appClock)
         {
+            _fuzzySearchService = fuzzySearchService;
         }
 
         // GET: AdminCoupon
@@ -24,9 +29,60 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 .Include(c => c.User)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 模糊搜尋：SearchTerm（聯集OR邏輯，使用 FuzzySearchService）
+            var hasSearchTerm = !string.IsNullOrWhiteSpace(searchTerm);
+
+            List<int> matchedCouponIds = new List<int>();
+            Dictionary<int, int> couponPriority = new Dictionary<int, int>();
+
+            if (hasSearchTerm)
             {
-                query = query.Where(c => c.CouponCode.Contains(searchTerm) || c.User.UserName.Contains(searchTerm));
+                var term = searchTerm.Trim();
+
+                // 查詢所有優惠券並使用 FuzzySearchService 計算優先順序
+                var allCoupons = await _context.Coupons
+                    .Include(c => c.User)
+                    .AsNoTracking()
+                    .Select(c => new { c.CouponId, c.CouponCode, UserName = c.User != null ? c.User.UserName : "", UserAccount = c.User != null ? c.User.UserAccount : "" })
+                    .ToListAsync();
+
+                foreach (var coupon in allCoupons)
+                {
+                    int priority = 0;
+
+                    // 優惠券代碼精確匹配優先
+                    if (coupon.CouponCode.Equals(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 1; // 完全匹配 CouponCode
+                    }
+                    else if (coupon.CouponCode.StartsWith(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 2; // 開頭匹配
+                    }
+                    else if (coupon.CouponCode.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    {
+                        priority = 3; // 包含匹配
+                    }
+
+                    // 如果優惠券代碼沒有匹配，嘗試用戶名模糊搜尋
+                    if (priority == 0)
+                    {
+                        priority = _fuzzySearchService.CalculateMatchPriority(
+                            term,
+                            coupon.UserAccount,
+                            coupon.UserName
+                        );
+                    }
+
+                    // 如果匹配成功（priority > 0），加入結果
+                    if (priority > 0)
+                    {
+                        matchedCouponIds.Add(coupon.CouponId);
+                        couponPriority[coupon.CouponId] = priority;
+                    }
+                }
+
+                query = query.Where(c => matchedCouponIds.Contains(c.CouponId));
             }
 
             if (!string.IsNullOrEmpty(status))
@@ -37,11 +93,34 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     query = query.Where(c => !c.IsUsed);
             }
 
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            // 計算統計數據（從篩選後的查詢）
+            var statsQuery = query;
+            var totalCount = await statsQuery.CountAsync();
+
+            // 優先順序排序：先取資料再排序
+            var allItems = await query.ToListAsync();
+            var items = allItems;
+
+            if (hasSearchTerm)
+            {
+                // 在記憶體中進行優先順序排序
+                var ordered = allItems.OrderBy(c =>
+                {
+                    // 如果優惠券匹配，返回對應優先順序
+                    if (couponPriority.ContainsKey(c.CouponId))
+                    {
+                        return couponPriority[c.CouponId];
+                    }
+                    return 99;
+                });
+
+                items = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                // 沒有搜尋條件時使用預設排序
+                items = allItems.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            }
 
             var viewModel = new AdminWalletIndexViewModel
             {
@@ -116,15 +195,20 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return View(model);
                 }
 
+                // 使用台灣時間
+                var nowUtc = _appClock.UtcNow;
+                var nowTaiwanTime = _appClock.ToAppTime(nowUtc);
+
                 var coupon = new Coupon
                 {
                     CouponCode = model.CouponCode,
                     UserId = model.UserId,
                     CouponTypeId = model.CouponTypeId,
                     IsUsed = false,
-                    AcquiredTime = DateTime.Now,
-                    UsedTime = null,
-                    UsedInOrderId = null
+                    AcquiredTime = nowTaiwanTime,  // 使用台灣時間
+                    UsedTime = null,  // 明確設為 null (剛發放時未使用)
+                    UsedInOrderId = null,
+                    IsDeleted = false  // 必填字段：未刪除
                 };
 
                 _context.Add(coupon);
@@ -268,9 +352,10 @@ namespace GameSpace.Areas.MiniGame.Controllers
         #region CouponType Management
 
         // GET: AdminCoupon/CouponTypes
-        public async Task<IActionResult> CouponTypes(string searchTerm = "", string discountType = "", string sortBy = "name", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> CouponTypes(string searchTerm = "", string discountType = "", string sortBy = "id", int page = 1, int pageSize = 10)
         {
-            var query = _context.CouponTypes.AsQueryable();
+            // 只查詢未刪除的優惠券類型
+            var query = _context.CouponTypes.Where(ct => !ct.IsDeleted).AsQueryable();
 
             // 搜尋功能
             if (!string.IsNullOrEmpty(searchTerm))
@@ -284,13 +369,14 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 query = query.Where(ct => ct.DiscountType == discountType);
             }
 
-            // 排序
+            // 排序 (預設按 ID 升序排列)
             query = sortBy switch
             {
+                "name" => query.OrderBy(ct => ct.Name),
                 "points" => query.OrderBy(ct => ct.PointsCost),
                 "discount" => query.OrderByDescending(ct => ct.DiscountValue),
                 "validfrom" => query.OrderBy(ct => ct.ValidFrom),
-                _ => query.OrderBy(ct => ct.Name)
+                _ => query.OrderBy(ct => ct.CouponTypeId) // 預設按 ID 升序
             };
 
             var totalCount = await query.CountAsync();
@@ -310,8 +396,12 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 SortBy = sortBy
             };
 
+            ViewBag.TotalCount = totalCount; // 提供給頁面統計卡片使用
             ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             ViewBag.CurrentPage = page;
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.DiscountType = discountType;
+            ViewBag.SortBy = sortBy;
 
             return View(viewModel);
         }
@@ -362,6 +452,18 @@ namespace GameSpace.Areas.MiniGame.Controllers
                 if (couponType.PointsCost < 0)
                 {
                     ModelState.AddModelError("PointsCost", "所需點數不能為負數");
+                    ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
+                    return View(couponType);
+                }
+
+                // 檢查優惠券類型名稱是否重複
+                var existingCouponType = await _context.CouponTypes
+                    .Where(ct => ct.Name == couponType.Name && !ct.IsDeleted)
+                    .FirstOrDefaultAsync();
+
+                if (existingCouponType != null)
+                {
+                    ModelState.AddModelError("Name", $"優惠券類型名稱「{couponType.Name}」已存在，請使用其他名稱");
                     ViewBag.DiscountTypes = new List<string> { "Percentage", "FixedAmount" };
                     return View(couponType);
                 }
@@ -492,15 +594,13 @@ namespace GameSpace.Areas.MiniGame.Controllers
         }
 
         // POST: AdminCoupon/DeleteCouponType/5
+        // 軟刪除優惠券類型 (設定 IsDeleted = true)
         [HttpPost, ActionName("DeleteCouponType")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteCouponTypeConfirmed(int id)
         {
             try
             {
-                // 檢查是否有相關的優惠券
-                var relatedCouponsCount = await _context.Coupons.CountAsync(c => c.CouponTypeId == id);
-                
                 var couponType = await _context.CouponTypes.FindAsync(id);
                 if (couponType == null)
                 {
@@ -508,34 +608,50 @@ namespace GameSpace.Areas.MiniGame.Controllers
                     return RedirectToAction(nameof(CouponTypes));
                 }
 
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
-                {
-                    // 如果有相關優惠券，先刪除相關的優惠券
-                    if (relatedCouponsCount > 0)
-                    {
-                        var relatedCoupons = await _context.Coupons.Where(c => c.CouponTypeId == id).ToListAsync();
-                        _context.Coupons.RemoveRange(relatedCoupons);
-                        
-                        TempData["WarningMessage"] = $"已刪除 {relatedCouponsCount} 個相關優惠券";
-                    }
+                // 軟刪除：設定 IsDeleted = true
+                couponType.IsDeleted = true;
+                couponType.DeletedAt = _appClock.UtcNow;
+                couponType.DeleteReason = "管理員透過後台刪除";
 
-                    // 刪除優惠券類型
-                    _context.CouponTypes.Remove(couponType);
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
+                await _context.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = "優惠券類型刪除成功";
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    TempData["ErrorMessage"] = $"刪除失敗：{ex.Message}";
-                }
+                TempData["SuccessMessage"] = $"優惠券類型「{couponType.Name}」已刪除（軟刪除）";
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"刪除失敗：{ex.Message}";
+            }
+
+            return RedirectToAction(nameof(CouponTypes));
+        }
+
+        // POST: AdminCoupon/DisableCouponType
+        // 停用優惠券類型 (軟刪除，與 DeleteCouponType 相同，但訊息不同)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DisableCouponType(int id)
+        {
+            try
+            {
+                var couponType = await _context.CouponTypes.FindAsync(id);
+                if (couponType == null)
+                {
+                    TempData["ErrorMessage"] = "找不到要停用的優惠券類型";
+                    return RedirectToAction(nameof(CouponTypes));
+                }
+
+                // 軟刪除：設定 IsDeleted = true
+                couponType.IsDeleted = true;
+                couponType.DeletedAt = _appClock.UtcNow;
+                couponType.DeleteReason = "管理員停用";
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"優惠券類型「{couponType.Name}」已停用";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"停用失敗：{ex.Message}";
             }
 
             return RedirectToAction(nameof(CouponTypes));

@@ -1,0 +1,64 @@
+﻿@using System.Linq
+@using GamiPort.Areas.OnlineStore.ViewModels
+@model IEnumerable<GamiPort.Areas.OnlineStore.ViewModels.OrderItemVm>
+
+<!-- 5 段進度條 -->
+<div class="stepper5" data-order="@Context.Request.Query["orderCode"]">
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div><div class="bar"></div>
+    <div class="dot"></div>
+</div>
+<div class="labels d-flex justify-content-between mb-2">
+    <div>接收訂單</div><div>已備貨</div><div>已出貨</div><div>運送中</div><div>已送達</div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-muted">（無明細）</div>
+}
+else
+{
+    foreach (var x in Model)
+    {
+        <div class="item-row d-flex justify-content-between py-1">
+            <div>
+                <div class="item-title">@x.ProductName</div>
+                <div class="item-meta">商品編號：@x.ProductId ．出貨編號：<span class="text-muted">（待出貨）</span></div>
+            </div>
+            <div class="item-amount text-end">
+                <div>數量：@x.Quantity</div>
+                <div>小計：NT$ @x.LineTotal.ToString("N0")</div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        (async function(){
+          // 1..5：接收訂單/已備貨/已出貨/運送中/已送達
+          const wrap = document.currentScript.closest('.order-detail-panel');
+          const step = wrap?.querySelector('.stepper5');
+          if(!step) return;
+          const oc = new URLSearchParams(location.search).get('orderCode') || step.dataset.order;
+          if(!oc) return;
+
+          try{
+            const res = await fetch(`/OnlineStore/Orders/status/${oc}`);
+            const { statusKey } = await res.json();
+
+            // 只有 paid/shipped/completed 三態時的映射：
+            // unpaid→1、paid→2、shipped→4（視為已出貨且運送中）、completed→5、canceled→1
+            const map = { unpaid:1, paid:2, shipped:4, completed:5, canceled:1 };
+            const s = map[statusKey] || 1;
+
+            const dots = step.querySelectorAll('.dot');
+            const bars = step.querySelectorAll('.bar');
+            dots.forEach((d,i)=> d.classList.toggle('active', i < s));
+            bars.forEach((b,i)=> b.classList.toggle('active', i < s-1));
+          }catch{}
+        })();
+    </script>
+}

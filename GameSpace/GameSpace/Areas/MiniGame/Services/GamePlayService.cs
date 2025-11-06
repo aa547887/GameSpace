@@ -13,15 +13,18 @@ namespace GameSpace.Areas.MiniGame.Services
     {
         private readonly GameSpacedatabaseContext _context;
         private readonly IAppClock _appClock;
+        private readonly ISystemSettingsService _settingsService;
         private readonly ILogger<GamePlayService> _logger;
 
         public GamePlayService(
             GameSpacedatabaseContext context,
             IAppClock appClock,
+            ISystemSettingsService settingsService,
             ILogger<GamePlayService> logger)
         {
             _context = context;
             _appClock = appClock;
+            _settingsService = settingsService;
             _logger = logger;
         }
 
@@ -120,7 +123,7 @@ namespace GameSpace.Areas.MiniGame.Services
                 int currentLevel = await GetCurrentLevelForPetAsync(userId, petId);
 
                 // 3. 根據關卡獲取遊戲設定
-                var (monsterCount, speedMultiplier) = GetLevelSettings(currentLevel);
+                var (monsterCount, speedMultiplier) = await GetLevelSettingsAsync(currentLevel);
 
                 // 4. 建立遊戲記錄
                 var game = new GameSpace.Models.MiniGame
@@ -345,6 +348,7 @@ namespace GameSpace.Areas.MiniGame.Services
         /// 規格來源: 專案規格敘述1.txt 第 530 行
         /// 勝利: 飢餓-20、心情+30、體力-20、清潔-20
         /// 失敗: 飢餓-20、心情-30、體力-20、清潔-20
+        /// 設定值從 SystemSettings 表讀取
         /// </summary>
         public async Task<(bool success, string message)> ApplyGameResultToPetStatsAsync(int petId, bool isWin)
         {
@@ -356,11 +360,12 @@ namespace GameSpace.Areas.MiniGame.Services
                     return (false, "找不到寵物資料");
                 }
 
-                // 記錄變化量 (用於遊戲記錄)
-                int hungerDelta = -20;
-                int moodDelta = isWin ? 30 : -30;
-                int staminaDelta = -20;
-                int cleanlinessDelta = -20;
+                // 從 SystemSettings 讀取遊戲結果影響設定
+                var resultType = isWin ? "Win" : "Lose";
+                int hungerDelta = await _settingsService.GetSettingIntAsync($"Game.Result.{resultType}.HungerDelta", isWin ? -20 : -20);
+                int moodDelta = await _settingsService.GetSettingIntAsync($"Game.Result.{resultType}.MoodDelta", isWin ? 30 : -30);
+                int staminaDelta = await _settingsService.GetSettingIntAsync($"Game.Result.{resultType}.StaminaDelta", isWin ? -20 : -20);
+                int cleanlinessDelta = await _settingsService.GetSettingIntAsync($"Game.Result.{resultType}.CleanlinessDelta", isWin ? -20 : -20);
 
                 // 應用變化 (屬性值範圍 0-100，自動鉗位)
                 pet.Hunger = Math.Clamp(pet.Hunger + hungerDelta, 0, 100);
@@ -395,16 +400,29 @@ namespace GameSpace.Areas.MiniGame.Services
         /// <summary>
         /// 根據關卡獲取遊戲設定
         /// 規格來源: 專案規格敘述1.txt 第 526-528 行
+        /// 改為從 SystemSettings 讀取設定值，避免硬編碼
         /// </summary>
-        private (int monsterCount, decimal speedMultiplier) GetLevelSettings(int level)
+        private async Task<(int monsterCount, decimal speedMultiplier)> GetLevelSettingsAsync(int level)
         {
-            return level switch
+            // 取得預設值（用於 SystemSettings 查無資料時的備援值）
+            var (defaultMonsterCount, defaultSpeedMultiplier) = level switch
             {
-                1 => (6, 1.0m),    // 第 1 關: 怪物 6 隻, 速度 1 倍
-                2 => (8, 1.5m),    // 第 2 關: 怪物 8 隻, 速度 1.5 倍
-                3 => (10, 2.0m),   // 第 3 關: 怪物 10 隻, 速度 2 倍
-                _ => (6, 1.0m)     // 預設第 1 關
+                1 => (6, 1.0m),
+                2 => (8, 1.5m),
+                3 => (10, 2.0m),
+                _ => (6, 1.0m)
             };
+
+            // 從 SystemSettings 讀取關卡設定
+            var monsterCount = await _settingsService.GetSettingIntAsync(
+                $"Game.Level{level}.MonsterCount",
+                defaultMonsterCount);
+
+            var speedMultiplier = await _settingsService.GetSettingDecimalAsync(
+                $"Game.Level{level}.SpeedMultiplier",
+                defaultSpeedMultiplier);
+
+            return (monsterCount, speedMultiplier);
         }
 
         #endregion

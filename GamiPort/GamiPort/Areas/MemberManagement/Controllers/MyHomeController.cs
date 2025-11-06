@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using GamiPort.Models;
 using GamiPort.Areas.MemberManagement.ViewModels;
 using GamiPort.Services; // ICurrentUserService
+
 
 namespace GamiPort.Areas.MemberManagement.Controllers
 {
@@ -23,15 +24,15 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			_current = current;
 		}
 
-		// --- å°å·¥å…·ï¼šæŠŠ byte[] è½‰ç‚º <img src> å¯ç”¨çš„ Data URL ---
+		// --- ¤p¤u¨ã¡G§â byte[] Âà¬° <img src> ¥i¥Îªº Data URL ---
 		private static string? ToBase64Src(byte[]? bytes, string mime = "image/png")
 			=> (bytes is null || bytes.Length == 0) ? null
 			   : $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
 
-		// ä¾ UserId å–å¾—å®Œæ•´é é¢ VMï¼ˆå…±ç”¨ï¼‰
+		// ¨Ì UserId ¨ú±o§¹¾ã­¶­± VM¡]¦@¥Î¡^
 		private async Task<HomePageVM?> BuildHomeVmAsync(int ownerUserId, bool isSelf)
 		{
-			// ä¸»è³‡æ–™ï¼šIntroduce + UserHome
+			// ¥D¸ê®Æ¡GIntroduce + UserHome
 			var introduce = await _db.UserIntroduces
 				.AsNoTracking()
 				.FirstOrDefaultAsync(u => u.UserId == ownerUserId);
@@ -42,21 +43,23 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.AsNoTracking()
 				.FirstOrDefaultAsync(h => h.UserId == ownerUserId);
 
-			// é ­åƒ / èƒŒæ™¯ï¼šè™•ç†é è¨­åœ–
+			
+			// ÀY¹³ / ­I´º¡G³B²z¹w³]¹Ï
+
 			var userPictureSrc = ToBase64Src(introduce.UserPicture)
-								 ?? Url.Content("~/images/default-avatar.png"); // è‹¥ä½ çš„ ImagePathService æœ‰æ›´å¥½çš„é è¨­ï¼Œå¯æ”¹é€™è¡Œ
+								 ?? Url.Content("~/images/¹w³]¤Hª«.png"); // ­Y§Aªº ImagePathService ¦³§ó¦nªº¹w³]¡A¥i§ï³o¦æ
 
 			var themeSrc = ToBase64Src(home?.Theme)
 						   ?? Url.Content("/images/UserHome_DefaultPicture.png");
 
-			// æˆ‘çš„è²¼æ–‡è³‡æ–™ï¼ˆä½œè€… = å±‹ä¸»ï¼‰
+			// §Úªº¶K¤å¸ê®Æ¡]§@ªÌ = «Î¥D¡^
 			var posts = await _db.Threads
 				.AsNoTracking()
 				.Where(t => t.AuthorUserId == ownerUserId)
 				.Select(t => new HomePostRowVM
 				{
 					ThreadId = t.ThreadId,
-					Title = t.Title ?? "(æœªå‘½å)",
+					Title = t.Title ?? "(¥¼©R¦W)",
 					ReactionsCount = _db.Reactions.Count(r =>
 						r.TargetType == "Thread" && r.TargetId == t.ThreadId),
 					CommentsCount = _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId),
@@ -67,7 +70,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.OrderByDescending(r => r.CreatedAt)
 				.ToListAsync();
 
-			// å¥½å‹çµ±è¨ˆï¼ˆå³å´æ¬„ä½¿ç”¨ï¼‰
+			// ¦n¤Í²Î­p¡]¥k°¼Äæ¨Ï¥Î¡^
 			var statusAcceptedId = await _db.RelationStatuses
 				.Where(s => s.StatusCode == "ACCEPTED")
 				.Select(s => s.StatusId)
@@ -78,7 +81,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.Select(s => s.StatusId)
 				.FirstOrDefaultAsync();
 
-			// èˆ‡ owner ç›¸é—œçš„å¥½å‹é—œä¿‚ï¼ˆå°çš„åœ¨å‰ï¼Œå¤§çš„åœ¨å¾Œï¼‰
+			// »P owner ¬ÛÃöªº¦n¤ÍÃö«Y
 			var friendAcceptedCount = await _db.Relations
 				.CountAsync(r =>
 					(r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId) &&
@@ -89,6 +92,52 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 					(r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId) &&
 					r.StatusId == statusPendingId);
 
+			var friendAcceptedList = await _db.Relations
+			.Where(r => (r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId)
+			 && r.StatusId == statusAcceptedId)
+			.Select(r => r.UserIdSmall == ownerUserId ? r.UserIdLarge : r.UserIdSmall)
+			.Distinct()
+			.Join(_db.UserIntroduces,
+				id => id,
+				u => u.UserId,
+				(id, u) => new FriendInfoVM { UserId = u.UserId, NickName = u.UserNickName })
+			.ToListAsync();
+
+			var friendPendingList = await _db.Relations
+				.Where(r => (r.UserIdSmall == ownerUserId || r.UserIdLarge == ownerUserId)
+						 && r.StatusId == statusPendingId)
+				.Select(r => r.UserIdSmall == ownerUserId ? r.UserIdLarge : r.UserIdSmall)
+				.Distinct()
+				.Join(_db.UserIntroduces,
+					id => id,
+					u => u.UserId,
+					(id, u) => new FriendInfoVM { UserId = u.UserId, NickName = u.UserNickName })
+				.ToListAsync();
+
+			// ¨ú±o·í«eµn¤J¨Ï¥ÎªÌ»P¤p«Î¾Ö¦³ªÌ¤§¶¡ªºÃö«Yª¬ºA
+			string currentRelationStatus = "NONE";
+			if (!isSelf && _current.IsAuthenticated)
+			{
+				var currentLoggedInUserId = _current.UserId.GetValueOrDefault();
+				var small = Math.Min(currentLoggedInUserId, ownerUserId);
+				var large = Math.Max(currentLoggedInUserId, ownerUserId);
+
+				var relation = await _db.Relations
+					.AsNoTracking()
+					.Where(r => r.UserIdSmall == small && r.UserIdLarge == large)
+					.Join(_db.RelationStatuses, // Join RelationStatus table
+						r => r.StatusId,
+						s => s.StatusId,
+						(r, s) => s.StatusCode)
+					.FirstOrDefaultAsync();
+
+				if (relation != null)
+				{
+					currentRelationStatus = relation;
+				}
+			}
+
+
 			var vm = new HomePageVM
 			{
 				OwnerUserId = ownerUserId,
@@ -96,59 +145,86 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				UserNickName = introduce.UserNickName,
 				Gender = introduce.Gender,
 				IntroText = introduce.UserIntroduce1,
-				Title = home?.Title ?? "é€™è£¡é‚„æ²’æœ‰æ¨™é¡Œ",
+				Title = home?.Title ?? "³o¸ÌÁÙ¨S¦³¼ĞÃD",
 				ThemeSrc = themeSrc,
 				UserPictureSrc = userPictureSrc,
 				VisitCount = home?.VisitCount ?? 0,
 				HomeCode = home?.HomeCode,
 				Posts = posts,
 				FriendAcceptedCount = friendAcceptedCount,
-				FriendPendingCount = friendPendingCount
+				FriendPendingCount = friendPendingCount,
+				FriendAcceptedList = friendAcceptedList,
+				FriendPendingList = friendPendingList,
+				CurrentRelationStatus = currentRelationStatus, // ³]¸mÃö«Yª¬ºA
+				IsPublic = home?.IsPublic ?? true
 			};
 
 			return vm;
 		}
 
-		// --- è‡ªå·±çš„å°å±‹ï¼ˆé è¨­ï¼‰ ---
+		// --- ¦Û¤vªº¤p«Î¡]¹w³]¡^ ---
 		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
 			if (!_current.IsAuthenticated)
 				return RedirectToAction("Login", "Login", new { area = "Login" });
 
-			int userId = _current.UserId.GetValueOrDefault(); // â† ä¿®æ­£ï¼šint? -> int
+			int userId = _current.UserId.GetValueOrDefault(); // int? -> int
 			var vm = await BuildHomeVmAsync(userId, isSelf: true);
+
 			if (vm == null) return NotFound();
 
 			return View("Index", vm);
 		}
 
-		// --- ä»¥ UserId é€ è¨ªä»–äººå°å±‹ ---
-		// ç§»é™¤å¤šé¤˜çš„ [HttpPost]
+		// --- ¥H UserId ³y³X¥L¤H¤p«Î ---
 		[HttpGet("{id:int}")]
-		[ActionName("User")]                      // â† å°å¤–è·¯ç”±ä»æ˜¯ /User/{id}
-		public async Task<IActionResult> VisitById(int id) // â† ä¿®æ­£æ–¹æ³•åç¨±ï¼Œé¿å…é®è”½ ControllerBase.User
+		[ActionName("User")] // ¸ô¥Ñ¤´¬O /MemberManagement/MyHome/User/{id}
+		public async Task<IActionResult> VisitById(int id)
 		{
 			var isSelf = _current.IsAuthenticated && _current.UserId == id;
+
+			// ¥ı¬d¤p«Î¤½¶}ª¬ºA¥H¨M©w¬O§_¥i¬İ
+			var homeRow = await _db.UserHomes.AsNoTracking().FirstOrDefaultAsync(h => h.UserId == id);
+			if (homeRow == null)
+			{
+				// ¨S«Ø¥ß¤p«Î¸ê®Æ¡Aª½±µ 404
+				return NotFound();
+			}
+
+			// ¡¹ «D«Î¥D¥B¥¼¤½¶} ¡÷ ªı¾×
+			if (!isSelf && !homeRow.IsPublic)
+			{
+				var am = await BuildHomeVmAsync(id, isSelf);
+				if (am == null) return NotFound();
+
+				return View("PrivateBlocked", am);
+			}
+
 			var vm = await BuildHomeVmAsync(id, isSelf);
 			if (vm == null) return NotFound();
 
-			// éå±‹ä¸»è¢«é€ è¨ªæ™‚ï¼Œè¨ˆæ•¸ +1
+			// ­p¼Æ¡G¥u¦³¡u«D¥»¤H¥B¥i¨£¡v®É¤~ +1
 			if (!isSelf)
 			{
-				var home = await _db.UserHomes.FirstOrDefaultAsync(h => h.UserId == id);
-				if (home != null)
+				try
 				{
-					home.VisitCount += 1;
-					home.UpdatedAt = DateTime.UtcNow;
+					var forCount = await _db.UserHomes.FirstAsync(h => h.UserId == id);
+					forCount.VisitCount += 1;
+					forCount.UpdatedAt = DateTime.Now;
 					await _db.SaveChangesAsync();
-					vm.VisitCount = home.VisitCount;
+					vm.VisitCount = forCount.VisitCount;
+				}
+				catch
+				{
+					// ­p¼Æ¥¢±Ñ¤£¼vÅTÂsÄı¡A²¤¹L§Y¥i©Î¼g¤J log
 				}
 			}
+
 			return View("Index", vm);
 		}
 
-		// --- å°å±‹æœå°‹ï¼ˆæš±ç¨± / HomeCode / UserIdï¼‰ ---
+		// --- ¤p«Î·j´M¡]¼ÊºÙ / HomeCode / UserId¡^ ---
 		[HttpGet]
 		public async Task<IActionResult> Search(string? q)
 		{
@@ -160,7 +236,7 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 			if (int.TryParse(q, out var uid))
 			{
 				var exists = await _db.UserIntroduces.AnyAsync(u => u.UserId == uid);
-				if (exists) return RedirectToAction("User", new { id = uid }); // â† ç¹¼çºŒç”¨ ActionName("User")
+				if (exists) return RedirectToAction("User", new { id = uid });
 			}
 
 			var byCode = await _db.UserHomes
@@ -175,9 +251,9 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				.FirstOrDefaultAsync();
 			if (byNick != 0) return RedirectToAction("User", new { id = byNick });
 
-			TempData["SearchError"] = "æ‰¾ä¸åˆ°ç¬¦åˆçš„å°å±‹ã€‚";
+			TempData["SearchError"] = "*§ä¤£¨ì²Å¦Xªº¤p«Î";
 			return RedirectToAction(nameof(Index));
 		}
-
 	}
+
 }

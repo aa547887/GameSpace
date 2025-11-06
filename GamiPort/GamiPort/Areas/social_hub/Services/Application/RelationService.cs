@@ -6,6 +6,10 @@ using GamiPort.Areas.social_hub.Services.Abstractions; // RelationCommand / Rela
 using GamiPort.Models;                                  // GameSpacedatabaseContext / Relation / RelationStatus / User
 using Microsoft.EntityFrameworkCore;
 
+using GamiPort.Areas.social_hub.Hubs;
+using GamiPort.Areas.social_hub.SignalR.Contracts;
+using Microsoft.AspNetCore.SignalR;
+
 namespace GamiPort.Areas.social_hub.Services.Application
 {
 	/// <summary>
@@ -18,16 +22,16 @@ namespace GamiPort.Areas.social_hub.Services.Application
 	///  4) RequestedBy 僅在 PENDING 有意義；離開 PENDING 一律清空。
 	///  5) 競態防護：新增/更新時若撞唯一鍵或狀態被他人改動，重讀現況並回合理結果。
 	///
-	/// 狀態機（依你的資料表記錄）：
-	///   NONE(6)：無關係（解除好友/解除封鎖後的最終）
-	///   PENDING(1) ← friend_request（從 NONE/REJECTED/REMOVED）
-	///   PENDING(1) → ACCEPTED(2) ：accept（僅受邀方）
-	///   PENDING(1) → REJECTED(5) ：reject（僅受邀方）
-	///   PENDING(1) → REMOVED(4)  ：cancel_request（僅邀請方；歷史註記「已取消邀請」）
-	///   *         → BLOCKED(3)   ：block（任一狀態可封鎖）
-	///   BLOCKED(3) → NONE(6)     ：unblock（解除封鎖）
-	///   ACCEPTED(2) → NONE(6)    ：unfriend（解除好友）
-	///   ACCEPTED(2) → set_nickname（不改變狀態；僅更新暱稱）
+	/// 狀態機（依你的資料表記錄，ID 從資料庫動態載入）：
+	///   NONE：無關係（解除好友/解除封鎖後的最終）
+	///   PENDING ← friend_request（從 NONE/REJECTED/REMOVED）
+	///   PENDING → ACCEPTED ：accept（僅受邀方）
+	///   PENDING → REJECTED ：reject（僅受邀方）	
+	///   PENDING → REMOVED  ：cancel_request（僅邀請方；歷史註記「已取消邀請」）
+	///   *         → BLOCKED   ：block（任一狀態可封鎖）
+	///   BLOCKED → NONE     ：unblock（解除封鎖）
+	///   ACCEPTED → NONE    ：unfriend（解除好友）
+	///   ACCEPTED → set_nickname（不改變狀態；僅更新暱稱）
 	///
 	/// 安全提醒：
 	///   - 請於 Controller/Hub 以登入身分覆蓋 ActorUserId，勿信任前端送來的 ActorUserId。
@@ -35,21 +39,41 @@ namespace GamiPort.Areas.social_hub.Services.Application
 	public sealed class RelationService : IRelationService
 	{
 		private readonly GameSpacedatabaseContext _db;
-		public RelationService(GameSpacedatabaseContext db) => _db = db;
+		private readonly IHubContext<ChatHub, IChatClient> _hubContext;
+
+		public RelationService(GameSpacedatabaseContext db, IHubContext<ChatHub, IChatClient> hubContext)
+		{
+			_db = db;
+			_hubContext = hubContext;
+		}
+
 
 		// ===== 狀態 Id（請與資料庫 Relation_Status 對應）=============================
-		private const int STATUS_PENDING = 1;
-		private const int STATUS_ACCEPTED = 2;
-		private const int STATUS_BLOCKED = 3;
-		private const int STATUS_REMOVED = 4;
-		private const int STATUS_REJECTED = 5;
-		private const int STATUS_NONE = 6;
+		// 這些將從資料庫動態載入
+		private static System.Collections.Generic.Dictionary<string, int>? _statusIdMap;
 
-	
+		private static int StatusPending => _statusIdMap!["PENDING"];
+		private static int StatusAccepted => _statusIdMap!["ACCEPTED"];
+		private static int StatusBlocked => _statusIdMap!["BLOCKED"];
+		private static int StatusRemoved => _statusIdMap!["REMOVED"];
+		private static int StatusRejected => _statusIdMap!["REJECTED"];
+		private static int StatusNone => _statusIdMap!["NONE"];
 
 		// 暱稱長度限制（與 OnModelCreating HasMaxLength(10) 對應）
 		private const int NICKNAME_MAXLEN = 10;
 
+		private async Task<FriendPayload> GetUserPayloadAsync(int userId, CancellationToken ct)
+		{
+			var user = await _db.Users.AsNoTracking()
+				.Where(u => u.UserId == userId)
+				.Select(u => new { u.UserId, u.UserName })
+				.FirstOrDefaultAsync(ct);
+
+			if (user == null) return new FriendPayload(userId, "Unknown User");
+
+			// TODO: 實際的頭像 URL 邏輯
+			return new FriendPayload(user.UserId, user.UserName, AvatarUrl: "/img/default-avatar.png");
+		}
 		// ===== 一次性快取：StatusId -> StatusCode（用 DB 的代碼回傳給前端）=============
 		private static volatile bool _statusMapLoaded = false;
 		private static readonly object _statusMapLock = new();
@@ -70,11 +94,13 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				.Select(s => new { s.StatusId, s.StatusCode })
 				.ToListAsync(ct);
 
-			var dict = list.ToDictionary(s => s.StatusId, s => s.StatusCode);
+			var statusCodeDict = list.ToDictionary(s => s.StatusId, s => s.StatusCode);
+			var statusIdDict = list.ToDictionary(s => s.StatusCode, s => s.StatusId);
 
 			lock (_statusMapLock)
 			{
-				_statusCodeMap = dict;
+				_statusCodeMap = statusCodeDict;
+				_statusIdMap = statusIdDict;
 				_statusMapLoaded = true;
 			}
 		}
@@ -118,15 +144,14 @@ namespace GamiPort.Areas.social_hub.Services.Application
 			var action = cmd.ActionCode.Trim().ToLowerInvariant();
 			return action switch
 			{
-				"friend_request" or "request" => await DoFriendRequest(row, small, large, actor, ct),
-				"accept" => await DoAccept(row, actor, ct),
-				"reject" => await DoReject(row, actor, ct),
-				"cancel_request" or "cancel" => await DoCancel(row, actor, ct),
-				"block" => await DoBlock(row, small, large, actor, ct),
-				"unblock" => await DoUnblock(row, actor, ct),  // BLOCKED → NONE
-				"unfriend" or "remove_friend" or "delete_friend"
-													   => await DoUnfriend(row, actor, ct), // ACCEPTED → NONE
-				"set_nickname" => await DoSetNickname(row, actor, cmd.Nickname, ct),
+				RelationActionCodes.FriendRequest => await DoFriendRequest(row, small, large, actor, ct),
+				RelationActionCodes.Accept => await DoAccept(row, actor, ct),
+				RelationActionCodes.Reject => await DoReject(row, actor, ct),
+				RelationActionCodes.CancelRequest => await DoCancel(row, actor, ct),
+				RelationActionCodes.Block => await DoBlock(row, small, large, actor, ct),
+				RelationActionCodes.Unblock => await DoUnblock(row, actor, ct),  // BLOCKED → NONE
+				RelationActionCodes.Unfriend => await DoUnfriend(row, actor, ct), // ACCEPTED → NONE
+				RelationActionCodes.SetNickname => await DoSetNickname(row, actor, cmd.Nickname, ct),
 				_ => Fail("未知的 ActionCode。")
 			};
 		}
@@ -145,7 +170,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				{
 					UserIdSmall = small,
 					UserIdLarge = large,
-					StatusId = STATUS_PENDING,
+					StatusId = StatusPending,
 					RequestedBy = actor,
 					CreatedAt = DateTime.UtcNow
 				};
@@ -154,7 +179,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				try
 				{
 					await _db.SaveChangesAsync(ct);
-					return Ok(row.RelationId, STATUS_PENDING);
+					return Ok(row.RelationId, StatusPending);
 				}
 				catch (DbUpdateException)
 				{
@@ -166,41 +191,26 @@ namespace GamiPort.Areas.social_hub.Services.Application
 			}
 
 			// B) 已存在 → 依狀態處理
-			switch (row.StatusId)
+			if (row.StatusId == StatusBlocked)
 			{
-				case STATUS_BLOCKED:
-					return Fail("目前為封鎖狀態，無法送出邀請。");
+				return Fail("目前為封鎖狀態，無法送出邀請。");
+			}
+			else if (row.StatusId == StatusAccepted)
+			{
+				return NoOp(row.RelationId, StatusAccepted, "已是好友。");
+			}
+			else if (row.StatusId == StatusPending)
+			{
+				// 我自己送過邀請 → 不再重複
+				if (row.RequestedBy == actor)
+					return NoOp(row.RelationId, StatusPending, "邀請已送出。");
 
-				case STATUS_ACCEPTED:
-					return NoOp(row.RelationId, STATUS_ACCEPTED, "已是好友。");
-
-				case STATUS_PENDING:
-					// 我自己送過邀請 → 不再重複
-					if (row.RequestedBy == actor)
-						return NoOp(row.RelationId, STATUS_PENDING, "邀請已送出。");
-
-					// 對方已邀我 → 維持 PENDING，提示前端顯示「去按接受」
-					return NoOp(row.RelationId, STATUS_PENDING, "對方已發出邀請，請改用 accept。");
-
-				case STATUS_REJECTED:
-				case STATUS_REMOVED:
-				case STATUS_NONE:
-					row.StatusId = STATUS_PENDING;
-					row.RequestedBy = actor;
-					row.UpdatedAt = DateTime.UtcNow;
-
-					try
-					{
-						await _db.SaveChangesAsync(ct);
-						return Ok(row.RelationId, STATUS_PENDING);
-					}
-					catch (DbUpdateException)
-					{
-						// 極少數競態：被其他操作改掉 → 重讀現況回應
-						var fresh = await _db.Relations.SingleAsync(
-							r => r.UserIdSmall == row.UserIdSmall && r.UserIdLarge == row.UserIdLarge, ct);
-						return NoOp(fresh.RelationId, fresh.StatusId, "關係狀態已被其他操作變更。");
-					}
+				// 對方已邀我 → 維持 PENDING，提示前端顯示「去按接受」
+				return NoOp(row.RelationId, StatusPending, "對方已發出邀請，請改用 accept。");
+			}
+			else if (row.StatusId == StatusRejected || row.StatusId == StatusRemoved || row.StatusId == StatusNone)
+			{
+				return await UpdateAndReturnOk(row, StatusPending, ct, requestedBy: actor, clearRequestedBy: false);
 			}
 
 			return Fail("目前狀態不允許送出邀請。");
@@ -210,43 +220,52 @@ namespace GamiPort.Areas.social_hub.Services.Application
 		private async Task<RelationResult> DoAccept(Relation? row, int actor, CancellationToken ct)
 		{
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_PENDING) return Fail("關係狀態已變更，請重新整理後再試。");
+			if (row.StatusId != StatusPending) return Fail("關係狀態已變更，請重新整理後再試。");
 			if (row.RequestedBy == actor) return Fail("邀請方不得自行接受。");
 
-			row.StatusId = STATUS_ACCEPTED;
-			row.RequestedBy = null;
+			row.StatusId = StatusAccepted;
+
 			row.UpdatedAt = DateTime.UtcNow;
 
 			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_ACCEPTED);
+
+
+
+			// Broadcast FriendAdded event to both users
+
+			var actorPayload = await GetUserPayloadAsync(actor, ct);
+
+			var targetPayload = await GetUserPayloadAsync(row.RequestedBy!.Value, ct);
+
+
+
+			await _hubContext.Clients.User(actor.ToString()).FriendAdded(targetPayload);
+
+			await _hubContext.Clients.User(row.RequestedBy.Value.ToString()).FriendAdded(actorPayload);
+
+
+
+			return Ok(row.RelationId, StatusAccepted);
+
+
 		}
 
 		private async Task<RelationResult> DoReject(Relation? row, int actor, CancellationToken ct)
 		{
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_PENDING) return Fail("關係狀態已變更，請重新整理後再試。");
+			if (row.StatusId != StatusPending) return Fail("關係狀態已變更，請重新整理後再試。");
 			if (row.RequestedBy == actor) return Fail("邀請方不得拒絕。");
 
-			row.StatusId = STATUS_REJECTED;
-			row.RequestedBy = null;
-			row.UpdatedAt = DateTime.UtcNow;
-
-			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_REJECTED);
+			return await UpdateAndReturnOk(row, StatusRejected, ct);
 		}
 
 		private async Task<RelationResult> DoCancel(Relation? row, int actor, CancellationToken ct)
 		{
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_PENDING) return Fail("關係狀態已變更，請重新整理後再試。");
+			if (row.StatusId != StatusPending) return Fail("關係狀態已變更，請重新整理後再試。");
 			if (row.RequestedBy != actor) return Fail("僅邀請方可取消邀請。");
 
-			row.StatusId = STATUS_REMOVED;   // 僅代表「取消邀請」的歷史註記
-			row.RequestedBy = null;
-			row.UpdatedAt = DateTime.UtcNow;
-
-			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_REMOVED);
+			return await UpdateAndReturnOk(row, StatusRemoved, ct);
 		}
 
 		private async Task<RelationResult> DoBlock(Relation? row, int small, int large, int actor, CancellationToken ct)
@@ -257,7 +276,7 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				{
 					UserIdSmall = small,
 					UserIdLarge = large,
-					StatusId = STATUS_BLOCKED,
+					StatusId = StatusBlocked,
 					RequestedBy = null,
 					CreatedAt = DateTime.UtcNow
 				};
@@ -266,80 +285,100 @@ namespace GamiPort.Areas.social_hub.Services.Application
 				try
 				{
 					await _db.SaveChangesAsync(ct);
-					return Ok(row.RelationId, STATUS_BLOCKED);
+					return Ok(row.RelationId, StatusBlocked);
 				}
 				catch (DbUpdateException)
 				{
 					// 撞唯一鍵 → 讀現況
 					row = await _db.Relations.SingleAsync(r => r.UserIdSmall == small && r.UserIdLarge == large, ct);
-					if (row.StatusId == STATUS_BLOCKED)
-						return NoOp(row.RelationId, STATUS_BLOCKED, "已在封鎖狀態。");
+					if (row.StatusId == StatusBlocked)
+						return NoOp(row.RelationId, StatusBlocked, "已在封鎖狀態。");
 
 					// 改為封鎖
-					row.StatusId = STATUS_BLOCKED;
-					row.RequestedBy = null;
-					row.UpdatedAt = DateTime.UtcNow;
-					await _db.SaveChangesAsync(ct);
-					return Ok(row.RelationId, STATUS_BLOCKED);
+					return await UpdateAndReturnOk(row, StatusBlocked, ct);
 				}
 			}
 
-			if (row.StatusId == STATUS_BLOCKED)
-				return NoOp(row.RelationId, STATUS_BLOCKED, "已在封鎖狀態。");
+			if (row.StatusId == StatusBlocked)
+				return NoOp(row.RelationId, StatusBlocked, "已在封鎖狀態。");
 
-			row.StatusId = STATUS_BLOCKED;
-			row.RequestedBy = null;
-			row.UpdatedAt = DateTime.UtcNow;
+			var result = await UpdateAndReturnOk(row, StatusBlocked, ct);
 
-			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_BLOCKED);
+			// Broadcast FriendRemoved event to both users
+			var actorId = actor;
+			var targetId = (actor == row.UserIdSmall) ? row.UserIdLarge : row.UserIdSmall;
+
+			await _hubContext.Clients.User(actorId.ToString()).FriendRemoved(targetId);
+			await _hubContext.Clients.User(targetId.ToString()).FriendRemoved(actorId);
+
+			return result;
 		}
 
 		private async Task<RelationResult> DoUnblock(Relation? row, int actor, CancellationToken ct)
+
 		{
+
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_BLOCKED) return Fail("不是封鎖狀態。");
 
-			row.StatusId = STATUS_NONE;  // 解除封鎖 → 無關係
-			row.RequestedBy = null;
-			row.UpdatedAt = DateTime.UtcNow;
+			if (row.StatusId != StatusBlocked) return Fail("不是封鎖狀態。");
 
-			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_NONE);
+
+
+			return await UpdateAndReturnOk(row, StatusNone, ct);
+
 		}
 
 		private async Task<RelationResult> DoUnfriend(Relation? row, int actor, CancellationToken ct)
 		{
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_ACCEPTED) return Fail("僅在好友狀態可解除好友。");
+			if (row.StatusId != StatusAccepted) return Fail("僅在好友狀態可解除好友。");
 
-			row.StatusId = STATUS_NONE;  // 解除好友 → 無關係
-			row.RequestedBy = null;
-			row.UpdatedAt = DateTime.UtcNow;
+			var result = await UpdateAndReturnOk(row, StatusNone, ct);
 
-			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_NONE);
+			// Broadcast FriendRemoved event to both users
+			var actorId = actor;
+			var targetId = (actor == row.UserIdSmall) ? row.UserIdLarge : row.UserIdSmall;
+
+			await _hubContext.Clients.User(actorId.ToString()).FriendRemoved(targetId);
+			await _hubContext.Clients.User(targetId.ToString()).FriendRemoved(actorId);
+
+			return result;
 		}
 
 		private async Task<RelationResult> DoSetNickname(Relation? row, int actor, string? nickname, CancellationToken ct)
 		{
 			if (row is null) return Fail("尚無此關係。");
-			if (row.StatusId != STATUS_ACCEPTED) return Fail("非好友狀態不可設定暱稱。");
+			if (row.StatusId != StatusAccepted) return Fail("非好友狀態不可設定暱稱。");
 
 			var newName = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
 			if (newName is not null && newName.Length > NICKNAME_MAXLEN)
 				return Fail($"暱稱長度上限 {NICKNAME_MAXLEN}。");
 
 			if (string.Equals(row.FriendNickname, newName, StringComparison.Ordinal))
-				return NoOp(row.RelationId, STATUS_ACCEPTED, "暱稱未變更。");
+				return NoOp(row.RelationId, StatusAccepted, "暱稱未變更。");
 
-			row.FriendNickname = newName;
+			return await UpdateAndReturnOk(row, StatusAccepted, ct, clearRequestedBy: false);
+		}
+
+		private async Task<RelationResult> UpdateAndReturnOk(
+			Relation row, int newStatusId, CancellationToken ct, int? requestedBy = null, bool clearRequestedBy = true)
+		{
+			row.StatusId = newStatusId;
+			if (clearRequestedBy)
+			{
+				row.RequestedBy = requestedBy; // Use the provided requestedBy, which can be null
+			}
+			else if (requestedBy.HasValue)
+			{
+				row.RequestedBy = requestedBy.Value; // Set to specific value if provided and not clearing
+			}
+			// If clearRequestedBy is false and requestedBy is null, keep existing value
+
 			row.UpdatedAt = DateTime.UtcNow;
 
 			await _db.SaveChangesAsync(ct);
-			return Ok(row.RelationId, STATUS_ACCEPTED);
+			return Ok(row.RelationId, newStatusId);
 		}
-
 		// ============================================================================
 		// 統一回傳封裝（newStatusCode 一律用 DB 的 StatusCode）
 		// ============================================================================

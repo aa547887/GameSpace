@@ -34,10 +34,16 @@
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
+
 </head>
 <body>
     <!-- 商城頂部 Default -->
-    @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml")
+    @await Html.PartialAsync(
+    "/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml",
+    new GamiPort.Models.ViewModels.TopbarVM {
+        IsAuthenticated = User?.Identity?.IsAuthenticated ?? false,
+        NickName = User?.Identity?.Name ?? "訪客"
+    })
 
     <!-- 主體 -->
     <div class="layout-wrap">
@@ -76,6 +82,10 @@
     @* ✅ 先載 Bootstrap Bundle，才能讓 sidebar.js 啟動 tooltip 等 bootstrap.* API *@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+     <!-- jQuery + 驗證：放在 body 結尾，且在頁面 Scripts 之前 -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
     @* 共用腳本（保持原順序，確保在 Bootstrap 之後） *@
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
 

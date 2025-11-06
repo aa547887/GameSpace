@@ -1,0 +1,698 @@
+@using GamiPort.Areas.MiniGame.Helpers
+@using GamiPort.Models
+@{
+    ViewData["Title"] = "商城優惠券";
+    var coupons = ViewBag.Coupons as List<Coupon> ?? new List<Coupon>();
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <style>
+        /* Teal 主題顏色變數 */
+        :root {
+            --teal-primary: #0d9488;
+            --teal-secondary: #17a2b8;
+            --teal-light: #e0f2f1;
+            --teal-lighter: #f0f9f8;
+            --orange-accent: #ff9f43;
+            --bg-light: #f0f4f8;
+        }
+
+        /* 頁面基礎樣式 */
+        .coupons-page {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .page-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--teal-primary) 0%, var(--teal-secondary) 100%);
+            color: white;
+            margin: -2rem 0 2rem 0;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .page-header h2 {
+            color: white;
+        }
+
+        .page-header .text-muted {
+            color: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        /* 搜尋區域 */
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus-within {
+            box-shadow: 0 8px 24px rgba(13, 148, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .search-box input {
+            border: none;
+            padding: 14px 20px 14px 48px;
+            font-size: 1rem;
+            width: 100%;
+            background: transparent;
+        }
+
+        .search-box input:focus {
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #ccc;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--teal-primary);
+            font-size: 1.25rem;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 1.25rem;
+            padding: 0;
+            display: none;
+        }
+
+        .search-box input:not(:placeholder-shown) + button.search-clear {
+            display: block;
+        }
+
+        .search-clear:hover {
+            color: var(--teal-primary);
+        }
+
+        /* 篩選與排序 */
+        .filter-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            color: #2c3e50;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            border-color: var(--teal-primary);
+            background: var(--teal-lighter);
+            color: var(--teal-primary);
+        }
+
+        /* 搜尋提示 */
+        .search-hint {
+            background: #e8f5f7;
+            border-left: 4px solid var(--teal-secondary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+
+        .search-hint i {
+            color: var(--teal-primary);
+            margin-right: 8px;
+        }
+
+        /* 優惠券卡片容器 */
+        .coupons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* 優惠券卡片 */
+        .coupon-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .coupon-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+            border-color: var(--teal-light);
+        }
+
+        .coupon-header {
+            background: linear-gradient(135deg, var(--teal-primary) 0%, var(--teal-secondary) 100%);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .coupon-code {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .coupon-type {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .coupon-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .coupon-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.75rem;
+        }
+
+        .coupon-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+
+        .coupon-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        .coupon-info-row:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .coupon-info-label {
+            color: #999;
+        }
+
+        .coupon-info-value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .coupon-discount {
+            color: var(--orange-accent);
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .coupon-expiry {
+            color: #d32f2f;
+        }
+
+        .coupon-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* 按鈕樣式 */
+        .btn-teal {
+            background-color: var(--teal-primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .btn-teal:hover {
+            background-color: var(--teal-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--teal-primary);
+            border: 2px solid var(--teal-primary);
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline:hover {
+            background-color: var(--teal-lighter);
+        }
+
+        /* 狀態徽章 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .badge-unused {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .badge-used {
+            background-color: #f8f9fa;
+            color: #666;
+        }
+
+        .badge-expired {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* 空狀態 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        /* 載入指示 */
+        .loading-hint {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--teal-light);
+            border-top-color: var(--teal-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 計數器 */
+        .result-count {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-count strong {
+            color: var(--teal-primary);
+            font-weight: 700;
+        }
+
+        /* 響應式設計 */
+        @@media (max-width: 768px) {
+            .page-header {
+                padding: 1.5rem;
+                margin: -2rem 0 1.5rem 0;
+            }
+
+            .coupons-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .filter-section {
+                margin-bottom: 1.5rem;
+            }
+
+            .coupon-card {
+                border-radius: 16px;
+            }
+
+            .coupon-header {
+                padding: 1rem;
+            }
+
+            .coupon-body,
+            .coupon-footer {
+                padding: 1rem;
+            }
+        }
+
+        /* 導航按鈕 */
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--teal-primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            gap: 0.75rem;
+            color: var(--teal-secondary);
+        }
+    </style>
+
+    <div class="coupons-page">
+        <!-- 頁面標題 -->
+        <div class="page-header">
+            <a href="@Url.Action("Index", "Wallet", new { Area = "MiniGame" })" class="nav-button" style="color: rgba(255,255,255,0.9); margin-bottom: 0;">
+                <i class="bi bi-chevron-left"></i> 返回錢包
+            </a>
+            <div class="d-flex align-items-center mt-3">
+                <i class="bi bi-ticket-perforated fs-2 me-3" style="color: rgba(255,255,255,0.9);"></i>
+                <div>
+                    <h2 class="mb-0">商城優惠券</h2>
+                    <p class="text-muted mb-0">瀏覽並使用您的優惠券</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid py-4">
+            <!-- 搜尋區域 -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text"
+                           id="searchInput"
+                           class="search-input"
+                           placeholder="搜尋優惠券名稱、代碼或描述...（模糊搜尋）"
+                           value="@searchTerm"
+                           autocomplete="off">
+                    <button type="button" class="search-clear" onclick="clearSearch()">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+
+                <!-- 搜尋提示 -->
+                <div class="search-hint mt-3">
+                    <i class="bi bi-lightbulb"></i>
+                    <strong>搜尋提示：</strong>支援模糊搜尋，輸入優惠券名稱、代碼或任何關鍵字都可以找到相關優惠券。
+                </div>
+            </div>
+
+            <!-- 篩選選項 -->
+            <div class="filter-section">
+                <button class="filter-btn active" data-filter="all" onclick="filterCoupons('all')">
+                    <i class="bi bi-collection"></i> 全部
+                </button>
+                <button class="filter-btn" data-filter="unused" onclick="filterCoupons('unused')">
+                    <i class="bi bi-check-circle"></i> 未使用
+                </button>
+                <button class="filter-btn" data-filter="expiring" onclick="filterCoupons('expiring')">
+                    <i class="bi bi-exclamation-circle"></i> 即將過期
+                </button>
+            </div>
+
+            <!-- 結果計數 -->
+            <div class="result-count">
+                已找到 <strong id="resultCount">@coupons.Count</strong> 張優惠券
+            </div>
+
+            <!-- 優惠券卡片網格 -->
+            @if (coupons != null && coupons.Count > 0)
+            {
+                <div class="coupons-grid" id="couponsContainer">
+                    @foreach (var coupon in coupons)
+                    {
+                        var validTo = coupon.CouponType?.ValidTo;
+                        var isExpired = validTo != null && validTo < DateTime.Now;
+                        var isUsed = coupon.IsUsed;
+                        var daysUntilExpiry = validTo != null ? (int)(validTo.Value - DateTime.Now).TotalDays : -1;
+                        var isExpiringSoon = daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+
+                        <div class="coupon-card" data-coupon-id="@coupon.CouponId" data-status="@(isUsed ? "used" : isExpired ? "expired" : "unused")">
+                            <!-- 優惠券標題 -->
+                            <div class="coupon-header">
+                                <div class="coupon-code">@coupon.CouponCode</div>
+                                <div class="coupon-type">@coupon.CouponType?.Name ?? "優惠券"</div>
+                            </div>
+
+                            <!-- 優惠券內容 -->
+                            <div class="coupon-body">
+                                <!-- 狀態徽章 -->
+                                @if (isUsed)
+                                {
+                                    <span class="status-badge badge-used">
+                                        <i class="bi bi-check-circle"></i> 已使用
+                                    </span>
+                                }
+                                else if (isExpired)
+                                {
+                                    <span class="status-badge badge-expired">
+                                        <i class="bi bi-exclamation-circle"></i> 已過期
+                                    </span>
+                                }
+                                else if (isExpiringSoon)
+                                {
+                                    <span class="status-badge" style="background-color: #fff3cd; color: #856404;">
+                                        <i class="bi bi-clock"></i> 即將過期
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge badge-unused">
+                                        <i class="bi bi-check"></i> 可使用
+                                    </span>
+                                }
+
+                                <!-- 優惠券標題 -->
+                                <h5 class="coupon-title">商城優惠券</h5>
+
+                                <!-- 優惠券描述 -->
+                                <p class="coupon-description">@(coupon.CouponType?.Description ?? "暫無描述")</p>
+
+                                <!-- 優惠券資訊 -->
+                                <div class="coupon-info-row">
+                                    <span class="coupon-info-label">折扣金額</span>
+                                    <span class="coupon-info-value coupon-discount">
+                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                        {
+                                            <text>-</text>
+                                        }
+                                        else
+                                        {
+                                            <text>$@(coupon.CouponType?.DiscountValue ?? 0)</text>
+                                        }
+                                    </span>
+                                </div>
+
+                                <div class="coupon-info-row">
+                                    <span class="coupon-info-label">最小消費</span>
+                                    <span class="coupon-info-value">
+                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                        {
+                                            <text>-</text>
+                                        }
+                                        else
+                                        {
+                                            <text>$@(coupon.CouponType?.MinSpend ?? 0)</text>
+                                        }
+                                    </span>
+                                </div>
+
+                                @if (!isUsed && validTo != null)
+                                {
+                                    <div class="coupon-info-row">
+                                        <span class="coupon-info-label">過期日期</span>
+                                        <span class="coupon-info-value @(isExpiringSoon || isExpired ? "coupon-expiry" : "")">
+                                            @(validTo?.ToUtc8String("yyyy-MM-dd") ?? "-")
+                                        </span>
+                                    </div>
+
+                                    @if (daysUntilExpiry >= 0)
+                                    {
+                                        <div class="coupon-info-row">
+                                            <span class="coupon-info-label">剩餘時間</span>
+                                            <span class="coupon-info-value @(isExpiringSoon ? "coupon-expiry" : "")">
+                                                @(daysUntilExpiry > 0 ? $"{daysUntilExpiry} 天" : "最後 1 天")
+                                            </span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                            <!-- 優惠券使用說明 -->
+                            <div class="coupon-footer" style="padding: 1rem 1.5rem; background-color: #f9f9f9; border-top: 1px solid #eee; display: flex; align-items: center;">
+                                <i class="bi bi-info-circle" style="color: var(--teal-primary); margin-right: 0.5rem; font-size: 1.1rem;"></i>
+                                <span style="font-size: 0.9rem; color: #666;">請於商城結帳時使用</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- 空狀態 -->
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h3>暫無優惠券</h3>
+                    <p>您目前沒有優惠券，點擊下方按鈕兌換您的第一張優惠券吧！</p>
+                    <a href="@Url.Action("Exchange", "Wallet", new { Area = "MiniGame" })" class="btn-teal" style="display: inline-block; margin-top: 1rem;">
+                        <i class="bi bi-plus-circle"></i> 兌換優惠券
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            // 模糊搜尋邏輯
+            let searchTimeout;
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput?.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+
+                searchTimeout = setTimeout(() => {
+                    if (searchTerm === '') {
+                        // 清空搜尋，重新載入所有優惠券
+                        location.href = '@Url.Action("Coupons", "Wallet", new { Area = "MiniGame" })';
+                    } else {
+                        // 執行伺服器端模糊搜尋
+                        location.href = '@Url.Action("Coupons", "Wallet", new { Area = "MiniGame" })' + '?search=' + encodeURIComponent(searchTerm);
+                    }
+                }, 500); // 500ms 防抖延遲
+            });
+
+            // 清空搜尋
+            function clearSearch() {
+                searchInput.value = '';
+                location.href = '@Url.Action("Coupons", "Wallet", new { Area = "MiniGame" })';
+            }
+
+            // 篩選優惠券
+            function filterCoupons(filterType) {
+                // 更新按鈕狀態
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.closest('.filter-btn')?.classList.add('active');
+
+                // 篩選卡片
+                const cards = document.querySelectorAll('.coupon-card');
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    const status = card.dataset.status;
+                    let show = false;
+
+                    switch (filterType) {
+                        case 'all':
+                            show = true;
+                            break;
+                        case 'unused':
+                            show = status === 'unused';
+                            break;
+                        case 'expiring':
+                            show = true; // 這裡應該檢查 data-expiring-soon 屬性
+                            break;
+                    }
+
+                    card.style.display = show ? 'flex' : 'none';
+                    if (show) visibleCount++;
+                });
+
+                // 更新結果計數
+                document.getElementById('resultCount').textContent = visibleCount;
+            }
+
+            // 使用優惠券
+            function useCoupon(couponId) {
+                if (confirm('確定要使用這張優惠券嗎？')) {
+                    // 這裡應該發送 API 請求到伺服器
+                    console.log('使用優惠券:', couponId);
+                    // 可以使用 Fetch API 或 jQuery AJAX
+                }
+            }
+
+            // 查看詳情
+            function viewCouponDetails(couponId) {
+                // 這裡可以打開模態框或導航到詳情頁面
+                console.log('查看詳情:', couponId);
+            }
+        </script>
+    }
+}
+else
+{
+    <div class="container py-5 text-center">
+        <i class="bi bi-lock-fill fs-1 text-muted mb-3 d-block"></i>
+        <h4 class="text-muted">請先登入</h4>
+        <p class="text-muted">登入後即可查看您的優惠券</p>
+        <a href="/Login" class="btn btn-primary">前往登入</a>
+    </div>
+}

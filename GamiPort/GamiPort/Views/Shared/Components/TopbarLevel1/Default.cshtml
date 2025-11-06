@@ -2,7 +2,7 @@
 @using GamiPort.Services
 @inject ICurrentUserService CurrentUser
 
-<header class="topbar1 navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
+<header class="topbar1 navbar navbar-expand navbar-light bg-light border-bottom sticky-top flex-nowrap">
     <div class="container-fluid">
         <button class="navbar-toggler d-lg-none me-2" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas"
@@ -16,17 +16,21 @@
         </a>
 
         <ul class="navbar-nav ms-auto align-items-lg-center">
-            <a asp-area="OnlineStore" asp-controller="Cart" asp-action="Index"
-               class="nav-link position-relative">
-                購物車
-                <span id="navCartBadge"
-                      class="position-absolute translate-middle badge rounded-pill bg-danger"
-                      style="top:0.2rem; right:-0.6rem; min-width:1.4rem;">
-                    <span class="badge-count">0</span>
-                </span>
-            </a>
-            <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 A</a></li>
-            <li class="nav-item d-none d-md-block"><a class="nav-link" href="#">連結 B</a></li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="" asp-controller="" asp-action="">
+                    <i class="bi bi-wallet"></i> 關於我們
+                </a>
+            </li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="MiniGame" asp-controller="Wallet" asp-action="Index">
+                    <i class="bi bi-wallet"></i> 我的錢包
+                </a>
+            </li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" asp-area="MemberManagement" asp-controller="MyHome" asp-action="Index">
+                    <i class="bi bi-house-heart"></i> 我的小屋
+                </a>
+            </li>
 
             @* ✅ 改成用 CurrentUser.IsAuthenticated 讀取 HttpContext *@
             @if (CurrentUser.IsAuthenticated)

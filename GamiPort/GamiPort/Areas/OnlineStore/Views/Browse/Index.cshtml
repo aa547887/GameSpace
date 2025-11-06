@@ -56,17 +56,15 @@
             box-shadow: 0 0 0 0 rgba(0,153,255,.25);
             animation: pulse 1s ease-out;
         }
+
         @@keyframes pulse {
-            0%
+            0% {
+                box-shadow: 0 0 0 0 rgba(0,153,255,.25);
+            }
 
-        {
-            box-shadow: 0 0 0 0 rgba(0,153,255,.25);
-        }
-
-        100% {
-            box-shadow: 0 0 0 18px rgba(0,153,255,0);
-        }
-
+            100% {
+                box-shadow: 0 0 0 18px rgba(0,153,255,0);
+            }
         }
 
         /* 懸浮顯示快速操作 */
@@ -195,7 +193,7 @@
 
                         document.getElementById("pageSize").addEventListener("change", e=>{ state.pageSize=parseInt(e.target.value,10)||40; state.page=1; load(); });
 
-                
+
 
                         function money(v, c = "TWD"){
                           const code = (c ?? "TWD").toString().trim().toUpperCase();
@@ -208,7 +206,7 @@
                           }
                         }
 
-                
+
 
                         function tagLine(x){
 
@@ -230,7 +228,7 @@
 
                         }
 
-                
+
 
                         function cardCol(x){
 
@@ -264,7 +262,7 @@
 
                                 <div class="fw-bold mb-3">${money(x.price, x.currencyCode||'TWD')}</div>
 
-                
+
 
                                 <div class="quick-ops">
 
@@ -290,7 +288,7 @@
 
                         }
 
-                
+
 
                         function pager(total,page,size){
 
@@ -320,19 +318,19 @@
 
                         }
 
-                
+
 
                                 async function load(){
 
-                
+
 
                                   const qs = new URLSearchParams({
 
-                
+
 
                                     q: state.q||"", type: state.type||"", platformId: state.platformId||"",
 
-                
+
 
                                     genreId: state.genreId||"",
                                     merchTypeId: state.merchTypeId||"",
@@ -342,31 +340,31 @@
 
                                     genre: state.genre||"",
 
-                
+
 
                                     sort: state.sort||"newest", page: state.page, pageSize: state.pageSize
 
-                
+
 
                                   });
 
-                
+
 
                                   const res = await fetch(`${api}?${qs.toString()}`);
 
-                
+
 
                                   const data = await res.json();
 
-                
+
 
                                             document.getElementById("product-list").innerHTML = (data.items||[]).map(cardCol).join("");
 
-                
+
 
                                   pager(data.totalCount||0, state.page, state.pageSize);
 
-                
+
 
                                 }
 
