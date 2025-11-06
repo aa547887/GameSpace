@@ -1,37 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace GamiPort.Areas.OnlineStore.DTO.Store
 {
     public class ProductFullDto
     {
-        public int ProductId { get; set; }
-        public string ProductName { get; set; } = string.Empty;
-        public string ProductType { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public string CurrencyCode { get; set; } = "TWD";
-        public string ProductCode { get; set; } = string.Empty;
+        [JsonPropertyName("productId")] public int ProductId { get; set; }
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("productType")] public string ProductType { get; set; } = string.Empty;
+        [JsonPropertyName("price")] public decimal Price { get; set; }
+        [JsonPropertyName("currencyCode")] public string CurrencyCode { get; set; } = "TWD";
+        [JsonPropertyName("productCode")] public string ProductCode { get; set; } = string.Empty;
 
-        public bool IsPreorder { get; set; }
-        public bool IsPhysical { get; set; }
+        [JsonPropertyName("isPreorder")] public bool IsPreorder { get; set; }
+        [JsonPropertyName("isPhysical")] public bool IsPhysical { get; set; }
 
-        public int? PlatformId { get; set; }
-        public string? PlatformName { get; set; }
-        public string? PeripheralTypeName { get; set; }
+        [JsonPropertyName("platformId")] public int? PlatformId { get; set; }
+        [JsonPropertyName("platformName")] public string? PlatformName { get; set; }
+        [JsonPropertyName("peripheralTypeName")] public string? PeripheralTypeName { get; set; }
 
-        public string? ProductDescription { get; set; }
+        [JsonPropertyName("productDescription")] public string? ProductDescription { get; set; }
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public DateTime? PublishAt { get; set; }
-        public DateTime? UnpublishAt { get; set; }
+        [JsonPropertyName("createdAt")] public DateTime CreatedAt { get; set; }
+        [JsonPropertyName("updatedAt")] public DateTime? UpdatedAt { get; set; }
+        [JsonPropertyName("publishAt")] public DateTime? PublishAt { get; set; }
+        [JsonPropertyName("unpublishAt")] public DateTime? UnpublishAt { get; set; }
 
-        public int? SafetyStock { get; set; }
+        [JsonPropertyName("safetyStock")] public int? SafetyStock { get; set; }
 
-        public decimal? RatingAvg { get; set; }
-        public int? RatingCount { get; set; }
+        [JsonPropertyName("ratingAvg")] public decimal? RatingAvg { get; set; }
+        [JsonPropertyName("ratingCount")] public int? RatingCount { get; set; }
 
-        public List<string> Images { get; set; } = new();
-        public List<string> Genres { get; set; } = new();
+        [JsonPropertyName("images")] public List<string> Images { get; set; } = new();
+        [JsonPropertyName("genres")] public List<string> Genres { get; set; } = new();
     }
 }

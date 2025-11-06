@@ -27,17 +27,24 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 		//Get /OnlineStore/api/StoreApi/products?tag=Action&productType=Game&sortBy=price_asc&page=1&pageSize=20
 		[HttpGet("products")]
         public async Task<ActionResult<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>>> GetProducts(
-            [FromQuery, Bind(Prefix = "")] ProductQuery q,
+            [FromQuery] ProductQuery query,
             [FromQuery] string? tag = null,
             [FromQuery] string? productType = null,
             [FromQuery] string? platform = null,
             [FromQuery] string? genre = null)
         {
-            // Debug headers to verify model binding (can be removed later)
-            Response.Headers["X-Debug-Query"] = Request?.QueryString.Value ?? string.Empty;
-            Response.Headers["X-Debug-Bound"] = $"type={q.type}, platformId={q.platformId}, genreId={q.genreId}, merchTypeId={q.merchTypeId}, supplierId={q.supplierId}, page={q.page}, pageSize={q.pageSize}";
-            var result = await _service.GetProducts(q, tag, productType, platform, genre);
-            return Ok(result);
+            try
+            {
+                // Debug headers to verify model binding (can be removed later)
+                Response.Headers["X-Debug-Query"] = Request?.QueryString.Value ?? string.Empty;
+                Response.Headers["X-Debug-Bound"] = $"type={query.type}, platformId={query.platformId}, genreId={query.genreId}, merchTypeId={query.merchTypeId}, supplierId={query.supplierId}, page={query.page}, pageSize={query.pageSize}";
+                var result = await _service.GetProducts(query, tag, productType, platform, genre);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Problem(title: "GetProducts failed", detail: ex.Message, statusCode: 500);
+            }
         }
 
         /// <summary>
@@ -57,8 +64,15 @@ namespace GamiPort.Areas.OnlineStore.Controllers
         [HttpGet("rankings")]
         public async Task<ActionResult<IEnumerable<ProductCardDto>>> GetRankings(string type = "sales", string period = "daily", int take = 12)
         {
-            var items = await _service.GetRankings(type, period, take);
-            return Ok(items);
+            try
+            {
+                var items = await _service.GetRankings(type, period, take);
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                return Problem(title: "GetRankings failed", detail: ex.Message, statusCode: 500);
+            }
         }
 
         /// <summary>

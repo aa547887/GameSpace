@@ -226,11 +226,16 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			if (!string.IsNullOrWhiteSpace(productType))
 			{
-				var pt = productType.Trim();
-				if (pt.Equals("game", StringComparison.OrdinalIgnoreCase))
-					query = query.Where(p => (p.ProductType ?? "").Trim().Equals("game", StringComparison.OrdinalIgnoreCase));
-				else if (pt.Equals("notgame", StringComparison.OrdinalIgnoreCase))
-					query = query.Where(p => (p.ProductType ?? "").Trim().Equals("notgame", StringComparison.OrdinalIgnoreCase));
+				var pt = productType.Trim().ToLower();
+				if (pt == "game")
+				{
+					// 以是否存在遊戲明細判斷，避免字串大小寫/空白問題
+					query = query.Where(p => _db.SGameProductDetails.Any(d => d.ProductId == p.ProductId && d.IsDeleted == false));
+				}
+				else if (pt == "notgame")
+				{
+					query = query.Where(p => _db.SOtherProductDetails.Any(d => d.ProductId == p.ProductId && d.IsDeleted == false));
+				}
 			}
 
         // 先計算過濾後的總筆數
@@ -250,11 +255,11 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
                 .Select(p => new GamiPort.Areas.OnlineStore.DTO.Store.ProductFullDto
                 {
                     ProductId = p.ProductId,
-                    ProductName = p.ProductName,
-                    ProductType = p.ProductType,
+                    ProductName = p.ProductName.Trim(),
+                    ProductType = (p.ProductType ?? "").Trim(),
                     Price = p.Price,
-                    CurrencyCode = p.CurrencyCode,
-                    ProductCode = p.SProductCode != null ? p.SProductCode.ProductCode : string.Empty,
+                    CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
+                    ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? string.Empty).Trim() : string.Empty,
                     IsPreorder = p.IsPreorderEnabled,
                     IsPhysical = p.IsPhysical,
                     CreatedAt = p.CreatedAt,
@@ -387,11 +392,11 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				.Select(p => new ProductDetailDto
 				{
 					ProductId = p.ProductId,
-					ProductName = p.ProductName,
-					ProductType = p.ProductType,
+					ProductName = p.ProductName.Trim(),
+					ProductType = (p.ProductType ?? "").Trim(),
 					Price = p.Price,
-					CurrencyCode = p.CurrencyCode,
-					ProductCode = p.SProductCode!.ProductCode,
+					CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
+					ProductCode = (p.SProductCode!.ProductCode ?? "").Trim(),
 					IsPreorder = p.IsPreorderEnabled,
 					PlatformId = p.SGameProductDetail != null ? p.SGameProductDetail.PlatformId : (int?)null,
 					PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null ? p.SGameProductDetail.Platform.PlatformName : null,
@@ -494,13 +499,13 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					ProductName = p.ProductName.Trim(),
 					ProductType = (p.ProductType ?? "").Trim(),
 					Price = p.Price,
-					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
+					CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
 					CoverUrl = p.SProductImages
 						.OrderByDescending(img => img.IsPrimary)
 						.ThenBy(img => img.SortOrder)
 						.Select(img => img.ProductimgUrl)
-						.FirstOrDefault() ?? "",
+						.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
 					IsPreorder = p.IsPreorderEnabled
 				})
 				.ToListAsync();
