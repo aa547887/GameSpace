@@ -64,20 +64,18 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
         // ★ ② 新版：簽名一定要包含 CancellationToken（最後一個參數）
         public async Task<PagedResult<ThreadListItemDto>> GetThreadsByForumAsync(
-    int forumId, string sort, int page, int size,
-    string? keyword = null, bool inContent = false, bool inGame = false,
-    long currentUserId = 0, CancellationToken ct = default)
+     int forumId, string sort, int page, int size,
+     string? keyword = null, bool inContent = false, bool inGame = false,
+     long currentUserId = 0, CancellationToken ct = default)
         {
             page = Math.Max(1, page);
             size = Math.Clamp(size, 1, 100);
 
-            // 只拿公開貼文（前台列表）
             var allowed = new[] { "normal", "published" };
 
             var baseQ = _db.Threads.AsNoTracking()
                 .Where(t => t.ForumId == forumId && allowed.Contains(t.Status));
 
-            // 關鍵字（標題 + 可選內容）
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var k = keyword.Trim();
@@ -91,8 +89,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 {
                     var contentHit =
                         from t in _db.Threads.AsNoTracking()
-                        join p in _db.ThreadPosts.AsNoTracking()
-                            on t.ThreadId equals p.ThreadId
+                        join p in _db.ThreadPosts.AsNoTracking() on t.ThreadId equals p.ThreadId
                         where t.ForumId == forumId
                               && t.Status == "published"
                               && p.ContentMd != null
@@ -107,27 +104,33 @@ namespace GamiPort.Areas.Forum.Services.Forums
 
             var now = DateTime.UtcNow;
 
-            // 匿名型別先把需要的欄位算好（⚠️ 一定要帶 CreatedBy）
             var q = baseQ
                 .Select(t => new
                 {
                     t.ThreadId,
                     t.Title,
                     t.Status,
-                    t.AuthorUserId,                                   // ★ 加這個才能判斷擁有者
+                    t.AuthorUserId,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
+
+                    // 回覆/按讚在 DB 端計數
                     ReplyCount = _db.ThreadPosts.Count(p => p.ThreadId == t.ThreadId),
-                    LastActivity = (t.UpdatedAt ?? t.CreatedAt ?? now)
+                    LikeCount = _db.Reactions.Count(r =>
+                                     r.TargetType == "thread" &&
+                                     r.TargetId == t.ThreadId &&
+                                     r.Kind == "like"),
+
+                    // ✅ 固定定義兩個排序鍵（避免 NULL 造成亂序）
+                    LastActivity = (t.UpdatedAt ?? t.CreatedAt ?? now),              // 最新回覆用
+                    SortCreated = (t.CreatedAt ?? t.UpdatedAt ?? new DateTime(1))   // 最舊用（NULL 往最前 or 最後都固定）
                 });
 
             var sortKey = (sort ?? "lastReply").ToLowerInvariant();
 
-            // 排序
-            q = sortKey switch
+            if (sortKey == "hot")
             {
-                "created" => q.OrderByDescending(x => x.CreatedAt ?? x.LastActivity),
-                "hot" => q.Select(x => new
+                q = q.Select(x => new
                 {
                     x.ThreadId,
                     x.Title,
@@ -136,25 +139,44 @@ namespace GamiPort.Areas.Forum.Services.Forums
                     x.CreatedAt,
                     x.UpdatedAt,
                     x.ReplyCount,
+                    x.LikeCount,
                     x.LastActivity,
-                    Score = (double)x.ReplyCount * 1.6
-                                  - (double)EF.Functions.DateDiffHour(x.LastActivity, now) * 0.08
+                    x.SortCreated,
+
+                    // 熱度分數
+                    Score = (double)(x.ReplyCount * 2 + x.LikeCount)
+                            / Math.Log10((double)EF.Functions.DateDiffHour(x.LastActivity, now) + 10)
                 })
-                        .OrderByDescending(x => x.Score)
-                        .ThenByDescending(x => x.LastActivity)
-                        .Select(x => new
-                        {
-                            x.ThreadId,
-                            x.Title,
-                            x.Status,
-                            x.AuthorUserId,
-                            x.CreatedAt,
-                            x.UpdatedAt,
-                            x.ReplyCount,
-                            x.LastActivity
-                        }),
-                _ => q.OrderByDescending(x => x.LastActivity) // lastReply（預設）
-            };
+                .OrderByDescending(x => x.Score)
+                .ThenByDescending(x => x.LastActivity)   // ✅ 次鍵1：越新越前
+                .ThenBy(x => x.ThreadId)                 // ✅ 次鍵2：同分同時 → 穩定
+                .Select(x => new
+                {
+                    x.ThreadId,
+                    x.Title,
+                    x.Status,
+                    x.AuthorUserId,
+                    x.CreatedAt,
+                    x.UpdatedAt,
+                    x.ReplyCount,
+                    x.LikeCount,
+                    x.LastActivity,
+                    x.SortCreated
+                });
+            }
+            else if (sortKey == "created")
+            {
+                // ✅ 最舊：用預先算好的 SortCreated，並補 ThreadId 次鍵
+                q = q.OrderBy(x => x.SortCreated)
+                     .ThenBy(x => x.ThreadId);
+            }
+            else // lastReply
+            {
+                // ✅ 最新回覆：也補 ThreadId 次鍵，避免同時戳「看起來在跳」
+                q = q.OrderByDescending(x => x.LastActivity)
+                     .ThenBy(x => x.ThreadId);
+            }
+
 
             var total = await q.CountAsync(ct);
 
@@ -163,7 +185,7 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 .Take(size)
                 .ToListAsync(ct);
 
-            // 投影成 DTO（在這裡算權限）
+            // 投影成 DTO（這裡把 LikeCount / HotScore 補齊）
             var items = rows.Select(x => new ThreadListItemDto
             {
                 ThreadId = x.ThreadId,
@@ -172,13 +194,15 @@ namespace GamiPort.Areas.Forum.Services.Forums
                 CreatedAt = x.CreatedAt ?? x.LastActivity,
                 UpdatedAt = x.UpdatedAt,
                 Replies = x.ReplyCount,
-
+                LikeCount = x.LikeCount,                 // ★ 前端就不會永遠是 0 了
                 IsOwner = (x.AuthorUserId == currentUserId),
-                CanDelete = (x.AuthorUserId == currentUserId) // 之後可加版主權限
+                CanDelete = (x.AuthorUserId == currentUserId),
+                HotScore = null                         // 要的話也可以把上面 Score 帶下來
             }).ToList();
 
             return new PagedResult<ThreadListItemDto>(items, page, size, total);
         }
+
 
 
 

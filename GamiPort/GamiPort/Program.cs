@@ -25,14 +25,19 @@ using GamiPort.Areas.social_hub.Services.Application;
 using GamiPort.Areas.OnlineStore.Utils;   // AnonCookie
 
 // === 新增/確認的 using（本檔有用到的服務/端點） ===
+using GamiPort.Areas.MiniGame.config;      // ★ MiniGame Area 服務擴展方法
+using GamiPort.Infrastructure.BackgroundServices; // ★ 背景服務（寵物每日衰減）
 using GamiPort.Infrastructure.Security;    // ★ 我方統一介面 IAppCurrentUser / AppCurrentUser
 using GamiPort.Infrastructure.Time;
 using GamiPort.Models;                     // GameSpacedatabaseContext（業務資料）
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;       // 只用 IPasswordHasher<User> / PasswordHasher<User>（升級舊明文）
 using Microsoft.EntityFrameworkCore;
-// Program.cs 最上面加（若尚未有）
-
+using Microsoft.Extensions.FileProviders;  // ★ PhysicalFileProvider（Area 靜態檔案支援）
+										   // Program.cs 最上面加（若尚未有）
+using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
+using GamiPort.Areas.OnlineStore.Services.store.Application;
+using GamiPort.Services.NewsApi;
 
 
 namespace GamiPort
@@ -173,12 +178,18 @@ namespace GamiPort
 				return new AppClock(taiwanTz);
 			});
 			// ------------------------------------------------------------
+			// MiniGame Area 服務（集中註冊：簽到、寵物、遊戲、錢包、Filters）
+			builder.Services.AddMiniGameServices(builder.Configuration);
+
 			// MiniGame Area 服務（簽到、寵物、遊戲、錢包等）
 			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.ISignInService, GamiPort.Areas.MiniGame.Services.SignInService>();
 			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IPetService, GamiPort.Areas.MiniGame.Services.PetService>();
 			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IWalletService, GamiPort.Areas.MiniGame.Services.WalletService>();
 			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IFuzzySearchService, GamiPort.Areas.MiniGame.Services.FuzzySearchService>();
 			builder.Services.AddScoped<GamiPort.Areas.MiniGame.Services.IGamePlayService, GamiPort.Areas.MiniGame.Services.GamePlayService>();
+
+			// ★ 背景服務：寵物每日衰減（每日 UTC+8 00:00 自動執行）
+			builder.Services.AddHostedService<PetDailyDecayService>();
 			// ------------------------------------------------------------
 			// SignalR（聊天室必備）— 開啟詳細錯誤與穩定心跳
 			// ------------------------------------------------------------
@@ -188,6 +199,11 @@ namespace GamiPort
 				options.KeepAliveInterval = TimeSpan.FromSeconds(15);     // 伺服器送 keep-alive 的頻率
 				options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 客端容忍逾時
 			});
+
+			//=============ImgBB商城圖片上傳服務===========
+			builder.Services.Configure<ImgBbOptions>(builder.Configuration.GetSection("ImgBb"));
+			builder.Services.AddHttpClient<ImgBbService>();
+			builder.Services.AddEndpointsApiExplorer();
 
 
 			// 購物車＋Session
@@ -200,7 +216,13 @@ namespace GamiPort
 				options.Cookie.IsEssential = true;
 				options.IdleTimeout = TimeSpan.FromHours(2);
 			});
+			builder.Services.AddScoped<IStoreService, StoreService>();
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+
+			// ADD THESE LINES FOR NEWSAPI SERVICE
+			builder.Services.AddHttpClient<NewsService>();
+			builder.Services.AddScoped<NewsService>();
+			// END ADDITION
 
 			// services
 			builder.Services.AddCors(options =>
@@ -211,7 +233,6 @@ namespace GamiPort
 						  .AllowAnyMethod()
 						  .AllowCredentials());
 			});
-
 
 			// ========== ★ ECPay 服務註冊（唯一需要的兩行） ==========
 			builder.Services.AddHttpContextAccessor();                         // BuildCreditRequest 會用到
@@ -241,7 +262,6 @@ namespace GamiPort
 				app.UseHsts();
 			}
 
-
 			// ------------------------------------------------------------
 			// 啟動時先載入一次穢語規則（建議保留）
 			// 讓 IProfanityFilter 有最新規則可用；之後前端每次進聊天會再帶 nocache=1 強制刷新。
@@ -253,7 +273,21 @@ namespace GamiPort
 			}
 
 			app.UseHttpsRedirection();
-			app.UseStaticFiles();
+			app.UseStaticFiles();  // 預設根目錄 wwwroot
+
+			// ============================================================
+			// ★ MiniGame Area 靜態檔案支援
+			// 目的：讓 /MiniGame/stamps/*.png、/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/*.png 等能正確載入
+			// 映射：/MiniGame/* → Areas/MiniGame/wwwroot/*
+			// 範例：/MiniGame/stamps/SIGNIN-STAMP.png → Areas/MiniGame/wwwroot/stamps/SIGNIN-STAMP.png
+			// ============================================================
+			app.UseStaticFiles(new StaticFileOptions
+			{
+				FileProvider = new PhysicalFileProvider(
+					Path.Combine(builder.Environment.ContentRootPath, "Areas", "MiniGame", "wwwroot")),
+				RequestPath = "/MiniGame"
+			});
+
 			app.UseRouting();
 
 			// ✅ CORS 要在 Routing 後、Auth 前

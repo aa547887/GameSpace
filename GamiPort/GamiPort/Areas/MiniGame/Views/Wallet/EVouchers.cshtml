@@ -1,751 +1,292 @@
 @using GamiPort.Areas.MiniGame.Helpers
 @{
-    ViewData["Title"] = "電子禮券";
-    var eVouchers = ViewBag.EVouchers as List<dynamic> ?? new List<dynamic>();
-    var searchTerm = ViewBag.SearchTerm as string ?? "";
+	ViewData["Title"] = "電子禮券";
+	dynamic viewData = (dynamic)Model;
+	var eVouchers = viewData.EVouchers as List<GamiPort.Models.Evoucher> ?? new List<GamiPort.Models.Evoucher>();
+	var qrCodeData = viewData.QRCodeData as Dictionary<int, string> ?? new Dictionary<int, string>();
+	var searchTerm = viewData.SearchTerm as string ?? "";
+	var filter = viewData.Filter as string ?? "all";
+	var totalCount = (int)viewData.TotalCount;
+	var unusedCount = (int)viewData.UnusedCount;
+	var usedCount = (int)viewData.UsedCount;
 }
 
-@if (User.Identity?.IsAuthenticated == true)
-{
-    <style>
-        /* Teal 主題顏色變數 */
-        :root {
-            --teal-primary: #0d9488;
-            --teal-secondary: #17a2b8;
-            --teal-light: #e0f2f1;
-            --teal-lighter: #f0f9f8;
-            --orange-accent: #ff9f43;
-            --bg-light: #f0f4f8;
-        }
-
-        /* 頁面基礎樣式 */
-        .evouchers-page {
-            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
-            min-height: 100vh;
-            padding: 2rem 0;
-        }
-
-        .page-header {
-            padding: 2rem;
-            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
-            color: white;
-            margin: -2rem 0 2rem 0;
-            border-radius: 0 0 24px 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .page-header h2 {
-            color: white;
-        }
-
-        .page-header .text-muted {
-            color: rgba(255, 255, 255, 0.85) !important;
-        }
-
-        /* 搜尋區域 */
-        .search-container {
-            margin-bottom: 2rem;
-        }
-
-        .search-box {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: all 0.2s ease;
-        }
-
-        .search-box:focus-within {
-            box-shadow: 0 8px 24px rgba(211, 47, 47, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .search-box input {
-            border: none;
-            padding: 14px 20px 14px 48px;
-            font-size: 1rem;
-            width: 100%;
-            background: transparent;
-        }
-
-        .search-box input:focus {
-            outline: none;
-        }
-
-        .search-box input::placeholder {
-            color: #ccc;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #d32f2f;
-            font-size: 1.25rem;
-        }
-
-        .search-clear {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #999;
-            font-size: 1.25rem;
-            padding: 0;
-            display: none;
-        }
-
-        .search-box input:not(:placeholder-shown) + button.search-clear {
-            display: block;
-        }
-
-        .search-clear:hover {
-            color: #d32f2f;
-        }
-
-        /* 篩選與排序 */
-        .filter-section {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 20px;
-            background: white;
-            color: #2c3e50;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .filter-btn:hover,
-        .filter-btn.active {
-            border-color: #d32f2f;
-            background: #ffebee;
-            color: #d32f2f;
-        }
-
-        /* 搜尋提示 */
-        .search-hint {
-            background: #ffebee;
-            border-left: 4px solid #d32f2f;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-            color: #2c3e50;
-        }
-
-        .search-hint i {
-            color: #d32f2f;
-            margin-right: 8px;
-        }
-
-        /* 電子禮券卡片容器 */
-        .evouchers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        /* 電子禮券卡片 */
-        .evoucher-card {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .evoucher-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-            border-color: #ffcdd2;
-        }
-
-        .evoucher-header {
-            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .evoucher-icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        .evoucher-code {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-top: 0.75rem;
-            letter-spacing: 1px;
-        }
-
-        .evoucher-body {
-            padding: 1.5rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .evoucher-type {
-            font-size: 0.85rem;
-            color: #d32f2f;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .evoucher-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .evoucher-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #d32f2f;
-            margin-bottom: 1rem;
-        }
-
-        .evoucher-description {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-            flex-grow: 1;
-        }
-
-        .evoucher-info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-top: 1px solid #eee;
-            font-size: 0.9rem;
-        }
-
-        .evoucher-info-row:first-child {
-            border-top: none;
-            padding-top: 0;
-        }
-
-        .evoucher-info-label {
-            color: #999;
-        }
-
-        .evoucher-info-value {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        .evoucher-expiry {
-            color: #d32f2f;
-        }
-
-        .evoucher-qrcode {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #eee;
-            text-align: center;
-        }
-
-        .qrcode-placeholder {
-            width: 100%;
-            height: 120px;
-            background: #f5f5f5;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .qrcode-placeholder i {
-            font-size: 2rem;
-            color: #ccc;
-        }
-
-        .qrcode-text {
-            font-size: 0.75rem;
-            color: #999;
-        }
-
-        .evoucher-footer {
-            padding: 1.5rem;
-            border-top: 1px solid #eee;
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        /* 按鈕樣式 */
-        .btn-danger {
-            background-color: #d32f2f;
-            color: white;
-            border: none;
-            border-radius: 16px;
-            padding: 10px 20px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex: 1;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .btn-danger:hover {
-            background-color: #b71c1c;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            color: #d32f2f;
-            border: 2px solid #d32f2f;
-            border-radius: 16px;
-            padding: 8px 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex: 1;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .btn-outline:hover {
-            background-color: #ffebee;
-        }
-
-        /* 狀態徽章 */
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-
-        .badge-available {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .badge-redeemed {
-            background-color: #f8f9fa;
-            color: #666;
-        }
-
-        .badge-expired {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        /* 空狀態 */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #999;
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            color: #ddd;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .empty-state h3 {
-            color: #666;
-            margin-bottom: 0.5rem;
-        }
-
-        /* 計數器 */
-        .result-count {
-            color: #666;
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .result-count strong {
-            color: #d32f2f;
-            font-weight: 700;
-        }
-
-        /* 響應式設計 */
-        @@media (max-width: 768px) {
-            .page-header {
-                padding: 1.5rem;
-                margin: -2rem 0 1.5rem 0;
-            }
-
-            .evouchers-grid {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-
-            .filter-section {
-                margin-bottom: 1.5rem;
-            }
-
-            .evoucher-card {
-                border-radius: 16px;
-            }
-
-            .evoucher-header {
-                padding: 1rem;
-            }
-
-            .evoucher-body,
-            .evoucher-footer {
-                padding: 1rem;
-            }
-
-            .evoucher-icon {
-                font-size: 2.5rem;
-            }
-
-            .qrcode-placeholder {
-                height: 100px;
-            }
-        }
-
-        /* 導航按鈕 */
-        .nav-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-            transition: all 0.2s ease;
-            opacity: 0.9;
-        }
-
-        .nav-button:hover {
-            gap: 0.75rem;
-            opacity: 1;
-        }
-
-        /* 禮券號碼複製 */
-        .copy-code-btn {
-            background: none;
-            border: none;
-            color: #d32f2f;
-            cursor: pointer;
-            padding: 0;
-            margin-left: 0.5rem;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        .copy-code-btn:hover {
-            color: #b71c1c;
-        }
-    </style>
-
-    <div class="evouchers-page">
-        <!-- 頁面標題 -->
-        <div class="page-header">
-            <a href="@Url.Action("Index", "Wallet", new { Area = "MiniGame" })" class="nav-button">
-                <i class="bi bi-chevron-left"></i> 返回錢包
-            </a>
-            <div class="d-flex align-items-center mt-3">
-                <i class="bi bi-gift-fill fs-2 me-3"></i>
-                <div>
-                    <h2 class="mb-0">電子禮券</h2>
-                    <p class="text-muted mb-0">查看並使用您的電子禮券</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="container-fluid py-4">
-            <!-- 搜尋區域 -->
-            <div class="search-container">
-                <div class="search-box">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="text"
-                           id="searchInput"
-                           class="search-input"
-                           placeholder="搜尋禮券名稱、代碼或描述...（模糊搜尋）"
-                           value="@searchTerm"
-                           autocomplete="off">
-                    <button type="button" class="search-clear" onclick="clearSearch()">
-                        <i class="bi bi-x-circle-fill"></i>
-                    </button>
-                </div>
-
-                <!-- 搜尋提示 -->
-                <div class="search-hint mt-3">
-                    <i class="bi bi-lightbulb"></i>
-                    <strong>搜尋提示：</strong>支援模糊搜尋，輸入禮券名稱、代碼或任何關鍵字都可以找到相關禮券。
-                </div>
-            </div>
-
-            <!-- 篩選選項 -->
-            <div class="filter-section">
-                <button class="filter-btn active" data-filter="all" onclick="filterEVouchers('all')">
-                    <i class="bi bi-collection"></i> 全部
-                </button>
-                <button class="filter-btn" data-filter="available" onclick="filterEVouchers('available')">
-                    <i class="bi bi-check-circle"></i> 可使用
-                </button>
-                <button class="filter-btn" data-filter="expiring" onclick="filterEVouchers('expiring')">
-                    <i class="bi bi-exclamation-circle"></i> 即將過期
-                </button>
-            </div>
-
-            <!-- 結果計數 -->
-            <div class="result-count">
-                已找到 <strong id="resultCount">@eVouchers.Count</strong> 張電子禮券
-            </div>
-
-            <!-- 電子禮券卡片網格 -->
-            @if (eVouchers != null && eVouchers.Count > 0)
-            {
-                <div class="evouchers-grid" id="evouchersContainer">
-                    @foreach (var evoucher in eVouchers)
-                    {
-                        var isRedeemed = evoucher.IsRedeemed ?? false;
-                        var isExpired = evoucher.ExpiryDate != null && evoucher.ExpiryDate < DateTime.Now;
-                        var daysUntilExpiry = evoucher.ExpiryDate != null ? (int)(evoucher.ExpiryDate - DateTime.Now).TotalDays : -1;
-                        var isExpiringSoon = daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
-
-                        <div class="evoucher-card" data-evoucher-id="@evoucher.EVoucherId" data-status="@(isRedeemed ? "redeemed" : isExpired ? "expired" : "available")">
-                            <!-- 禮券標題 -->
-                            <div class="evoucher-header">
-                                <i class="bi bi-gift evoucher-icon"></i>
-                                <div class="evoucher-code">@evoucher.EVoucherCode</div>
-                            </div>
-
-                            <!-- 禮券內容 -->
-                            <div class="evoucher-body">
-                                <!-- 狀態徽章 -->
-                                @if (isRedeemed)
-                                {
-                                    <span class="status-badge badge-redeemed">
-                                        <i class="bi bi-check-circle"></i> 已兌換
-                                    </span>
-                                }
-                                else if (isExpired)
-                                {
-                                    <span class="status-badge badge-expired">
-                                        <i class="bi bi-exclamation-circle"></i> 已過期
-                                    </span>
-                                }
-                                else if (isExpiringSoon)
-                                {
-                                    <span class="status-badge" style="background-color: #fff3cd; color: #856404;">
-                                        <i class="bi bi-clock"></i> 即將過期
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="status-badge badge-available">
-                                        <i class="bi bi-check"></i> 可使用
-                                    </span>
-                                }
-
-                                <!-- 禮券類型和名稱 -->
-                                <span class="evoucher-type">@evoucher.EVoucherType?.EVoucherTypeName ?? "電子禮券"</span>
-                                <h5 class="evoucher-name">@evoucher.EVoucherName</h5>
-
-                                <!-- 禮券面額 -->
-                                <div class="evoucher-value">$@evoucher.FaceValue</div>
-
-                                <!-- 禮券描述 -->
-                                <p class="evoucher-description">@evoucher.Description</p>
-
-                                <!-- 禮券資訊 -->
-                                <div class="evoucher-info-row">
-                                    <span class="evoucher-info-label">兌換點數</span>
-                                    <span class="evoucher-info-value">@evoucher.RedemptionPoints 點</span>
-                                </div>
-
-                                <div class="evoucher-info-row">
-                                    <span class="evoucher-info-label">兌換時間</span>
-                                    <span class="evoucher-info-value">@((DateTime)evoucher.IssuedDate).ToUtc8String("yyyy-MM-dd")</span>
-                                </div>
-
-                                @if (!isRedeemed && evoucher.ExpiryDate.HasValue)
-                                {
-                                    <div class="evoucher-info-row">
-                                        <span class="evoucher-info-label">過期日期</span>
-                                        <span class="evoucher-info-value @(isExpiringSoon || isExpired ? "evoucher-expiry" : "")">
-                                            @(((DateTime?)evoucher.ExpiryDate)?.ToUtc8String("yyyy-MM-dd") ?? "-")
-                                        </span>
-                                    </div>
-
-                                    @if (daysUntilExpiry >= 0)
-                                    {
-                                        <div class="evoucher-info-row">
-                                            <span class="evoucher-info-label">剩餘時間</span>
-                                            <span class="evoucher-info-value @(isExpiringSoon ? "evoucher-expiry" : "")">
-                                                @(daysUntilExpiry > 0 ? $"{daysUntilExpiry} 天" : "最後 1 天")
-                                            </span>
-                                        </div>
-                                    }
-                                }
-
-                                <!-- QR Code 區域 -->
-                                @if (!isRedeemed && !isExpired)
-                                {
-                                    <div class="evoucher-qrcode">
-                                        <div class="qrcode-placeholder">
-                                            <i class="bi bi-qr-code"></i>
-                                        </div>
-                                        <div class="qrcode-text">
-                                            掃描 QR Code 進行核銷
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            <!-- 禮券操作 -->
-                            <div class="evoucher-footer">
-                                @if (!isRedeemed && !isExpired)
-                                {
-                                    <button class="btn-danger" onclick="showQRCode(@evoucher.EVoucherId)">
-                                        <i class="bi bi-qr-code"></i> 查看QR Code
-                                    </button>
-                                    <button class="btn-outline" onclick="viewEVoucherDetails(@evoucher.EVoucherId)">
-                                        <i class="bi bi-info-circle"></i> 詳情
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button class="btn-outline" disabled style="cursor: not-allowed; opacity: 0.6;">
-                                        <i class="bi bi-lock"></i> @(isRedeemed ? "已兌換" : "已過期")
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <!-- 空狀態 -->
-                <div class="empty-state">
-                    <i class="bi bi-inbox"></i>
-                    <h3>暫無電子禮券</h3>
-                    <p>您目前沒有電子禮券，點擊下方按鈕兌換您的第一張電子禮券吧！</p>
-                    <a href="@Url.Action("Exchange", "Wallet", new { Area = "MiniGame" })" class="btn-danger" style="display: inline-block; margin-top: 1rem;">
-                        <i class="bi bi-plus-circle"></i> 兌換禮券
-                    </a>
-                </div>
-            }
-        </div>
-    </div>
-
-    @section Scripts {
-        <script>
-            // 模糊搜尋邏輯
-            let searchTimeout;
-            const searchInput = document.getElementById('searchInput');
-
-            searchInput?.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                const searchTerm = this.value.toLowerCase().trim();
-
-                searchTimeout = setTimeout(() => {
-                    if (searchTerm === '') {
-                        // 清空搜尋，重新載入所有禮券
-                        location.href = '@Url.Action("EVouchers", "Wallet", new { Area = "MiniGame" })';
-                    } else {
-                        // 執行伺服器端模糊搜尋
-                        location.href = '@Url.Action("EVouchers", "Wallet", new { Area = "MiniGame" })' + '?search=' + encodeURIComponent(searchTerm);
-                    }
-                }, 500); // 500ms 防抖延遲
-            });
-
-            // 清空搜尋
-            function clearSearch() {
-                searchInput.value = '';
-                location.href = '@Url.Action("EVouchers", "Wallet", new { Area = "MiniGame" })';
-            }
-
-            // 篩選電子禮券
-            function filterEVouchers(filterType) {
-                // 更新按鈕狀態
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.closest('.filter-btn')?.classList.add('active');
-
-                // 篩選卡片
-                const cards = document.querySelectorAll('.evoucher-card');
-                let visibleCount = 0;
-
-                cards.forEach(card => {
-                    const status = card.dataset.status;
-                    let show = false;
-
-                    switch (filterType) {
-                        case 'all':
-                            show = true;
-                            break;
-                        case 'available':
-                            show = status === 'available';
-                            break;
-                        case 'expiring':
-                            show = true; // 這裡應該檢查 data-expiring-soon 屬性
-                            break;
-                    }
-
-                    card.style.display = show ? 'flex' : 'none';
-                    if (show) visibleCount++;
-                });
-
-                // 更新結果計數
-                document.getElementById('resultCount').textContent = visibleCount;
-            }
-
-            // 查看 QR Code
-            function showQRCode(evoucherId) {
-                // 這裡應該打開模態框顯示 QR Code
-                console.log('查看 QR Code:', evoucherId);
-                // 可以使用 Bootstrap Modal 或自定義模態框
-            }
-
-            // 查看詳情
-            function viewEVoucherDetails(evoucherId) {
-                // 這裡可以打開模態框或導航到詳情頁面
-                console.log('查看詳情:', evoucherId);
-            }
-        </script>
-    }
+<div class="container-fluid px-4">
+	<h1 class="mt-4 text-info">
+		<i class="fas fa-gift me-2"></i>電子禮券
+	</h1>
+	<ol class="breadcrumb mb-4">
+		<li class="breadcrumb-item"><a asp-action="Index">錢包首頁</a></li>
+		<li class="breadcrumb-item active">電子禮券</li>
+	</ol>
+
+	<!-- 統計卡片（可點擊篩選） -->
+	<div class="row mb-4">
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "all" })" class="text-decoration-none">
+				<div class="card bg-info text-white shadow @(filter == "all" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">總計</div>
+						<div class="h4 mb-0">@totalCount 張</div>
+						@if (filter == "all") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "unused" })" class="text-decoration-none">
+				<div class="card bg-success text-white shadow @(filter == "unused" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">可使用</div>
+						<div class="h4 mb-0">@unusedCount 張</div>
+						@if (filter == "unused") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-lg-3 col-md-6 mb-3">
+			<a href="@Url.Action("EVouchers", new { search = searchTerm, filter = "used" })" class="text-decoration-none">
+				<div class="card bg-secondary text-white shadow @(filter == "used" ? "border border-3 border-warning" : "") cursor-pointer hover-lift">
+					<div class="card-body">
+						<div class="text-white-50 small">已使用</div>
+						<div class="h4 mb-0">@usedCount 張</div>
+						@if (filter == "used") { <div class="badge bg-warning text-dark mt-2">目前顯示</div> }
+					</div>
+				</div>
+			</a>
+		</div>
+	</div>
+
+	<!-- 搜尋區域 -->
+	<div class="card mb-4">
+		<div class="card-body">
+			<form method="get" asp-action="EVouchers">
+				<div class="input-group">
+					<span class="input-group-text bg-info text-white">
+						<i class="fas fa-search"></i>
+					</span>
+					<input type="text" class="form-control" name="search" value="@searchTerm"
+						   placeholder="搜尋電子禮券（名稱、代碼、描述）..." />
+					<button class="btn btn-info" type="submit">搜尋</button>
+					@if (!string.IsNullOrEmpty(searchTerm))
+					{
+						<a href="@Url.Action("EVouchers")" class="btn btn-outline-secondary">
+							<i class="fas fa-times"></i> 清除
+						</a>
+					}
+				</div>
+				<div class="form-text">
+					<i class="fas fa-lightbulb text-warning"></i>
+					支援模糊搜尋，可搜尋電子禮券名稱、代碼或描述關鍵字
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- 電子禮券列表 -->
+	@if (eVouchers.Any())
+	{
+		<div class="row">
+			@foreach (var voucher in eVouchers)
+			{
+				var isUsed = voucher.IsUsed;
+				var canUse = !isUsed;
+				var hasQRCode = qrCodeData.ContainsKey(voucher.EvoucherId);
+
+				<div class="col-lg-4 col-md-6 mb-4">
+					<div class="card h-100 border-info @(isUsed ? "opacity-75" : "")">
+						<div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+							<div>
+								<i class="fas fa-gift me-2"></i>
+								<strong>@(voucher.EvoucherType?.Name ?? "電子禮券")</strong>
+							</div>
+							@if (isUsed)
+							{
+								<span class="badge bg-secondary">
+									<i class="fas fa-check"></i> 已使用
+								</span>
+							}
+							else
+							{
+								<span class="badge bg-success">
+									<i class="fas fa-check-circle"></i> 可使用
+								</span>
+							}
+						</div>
+						<div class="card-body">
+							<h5 class="card-title">代碼：<code class="text-info">@voucher.EvoucherCode</code></h5>
+
+							<!-- 面額顯示 -->
+							<div class="text-center mb-3 p-3 bg-light rounded">
+								<div class="text-muted small">面額</div>
+								<div class="display-6 text-success fw-bold">
+									$@(voucher.EvoucherType?.ValueAmount ?? 0)
+								</div>
+							</div>
+
+							<!-- 詳細資訊 -->
+							<p class="card-text">
+								<strong>獲得時間：</strong>@voucher.AcquiredTime.ToUtc8String("yyyy-MM-dd HH:mm")<br />
+								@if (voucher.EvoucherType != null)
+								{
+									<span>
+										<strong>有效期限：</strong>
+										@voucher.EvoucherType.ValidFrom.ToUtc8String("yyyy-MM-dd") ~ @voucher.EvoucherType.ValidTo.ToUtc8String("yyyy-MM-dd")
+									</span>
+									<br />
+								}
+								@if (voucher.IsUsed && voucher.UsedTime.HasValue)
+								{
+									<strong>使用時間：</strong>@voucher.UsedTime?.ToUtc8String("yyyy-MM-dd HH:mm")<br />
+								}
+								@if (!string.IsNullOrEmpty(voucher.EvoucherType?.Description))
+								{
+									<strong>說明：</strong>@voucher.EvoucherType.Description<br />
+								}
+							</p>
+
+							<!-- QR Code 顯示區域 -->
+							@if (hasQRCode)
+							{
+								<div class="mt-3 p-3 border rounded @(isUsed ? "bg-light" : "bg-white")">
+									<h6 class="text-center mb-2">
+										<i class="fas fa-qrcode me-1"></i>@(isUsed ? "已核銷 QR Code" : "核銷 QR Code")
+									</h6>
+									<div class="text-center position-relative d-inline-block">
+										<img src="@qrCodeData[voucher.EvoucherId]"
+											 alt="QR Code"
+											 class="img-fluid"
+											 style="max-width: 200px; width: 100%;" />
+										@if (isUsed)
+										{
+											<img src="/MiniGame/stamps/QRCODE_REDEEMED_STAMP.png"
+												 alt="已核銷印章"
+												 class="position-absolute top-50 start-50 translate-middle"
+												 style="width: 150px; height: 150px; opacity: 0.85; z-index: 10;" />
+										}
+									</div>
+									<div class="text-center mt-2">
+										<small class="text-muted">
+											<i class="fas fa-info-circle"></i>
+											@(isUsed ? "此禮券已使用" : "請向店員出示此 QR Code 進行核銷")
+										</small>
+									</div>
+								</div>
+							}
+							else
+							{
+								<div class="alert alert-warning mt-3">
+									<i class="fas fa-exclamation-triangle"></i>
+									QR Code 生成失敗，請稍後重試
+								</div>
+							}
+						</div>
+						<div class="card-footer bg-transparent">
+							@if (canUse)
+							{
+								<button type="button" class="btn btn-info btn-sm w-100"
+										data-bs-toggle="modal" data-bs-target="#qrcodeModal@(voucher.EvoucherId)">
+									<i class="fas fa-qrcode me-1"></i>查看完整 QR Code
+								</button>
+							}
+							else
+							{
+								<button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+									<i class="fas fa-ban me-1"></i>已使用
+								</button>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- QR Code 全屏 Modal -->
+				@if (canUse && hasQRCode)
+				{
+					<div class="modal fade" id="qrcodeModal@(voucher.EvoucherId)" tabindex="-1"
+						 aria-labelledby="qrcodeModalLabel@(voucher.EvoucherId)" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header bg-info text-white">
+									<h5 class="modal-title" id="qrcodeModalLabel@(voucher.EvoucherId)">
+										<i class="fas fa-qrcode me-2"></i>電子禮券 QR Code
+									</h5>
+									<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+								<div class="modal-body text-center">
+									<div class="mb-3">
+										<h6>代碼：<code class="text-info">@voucher.EvoucherCode</code></h6>
+										<p class="text-muted mb-0">面額：<strong class="text-success">$@(voucher.EvoucherType?.ValueAmount ?? 0)</strong></p>
+									</div>
+									<div class="p-4 bg-light rounded">
+										<img src="@qrCodeData[voucher.EvoucherId]"
+											 alt="QR Code"
+											 class="img-fluid"
+											 style="max-width: 350px; width: 100%;" />
+									</div>
+									<div class="mt-3">
+										<small class="text-muted">
+											<i class="fas fa-info-circle"></i>
+											請向店員出示此 QR Code 進行核銷
+										</small>
+									</div>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+			}
+		</div>
+	}
+	else
+	{
+		<div class="alert alert-info">
+			<i class="fas fa-info-circle me-2"></i>
+			@if (!string.IsNullOrEmpty(searchTerm))
+			{
+				<span>搜尋「<strong>@searchTerm</strong>」沒有找到相關電子禮券</span>
+			}
+			else
+			{
+				<span>您目前沒有電子禮券。<a asp-action="Exchange" class="alert-link">前往兌換</a></span>
+			}
+		</div>
+	}
+
+	<!-- 返回按鈕 -->
+	<div class="mb-4">
+		<a asp-action="Index" class="btn btn-secondary">
+			<i class="fas fa-arrow-left me-1"></i>返回錢包首頁
+		</a>
+		<a asp-action="Exchange" class="btn btn-info">
+			<i class="fas fa-exchange-alt me-1"></i>前往兌換
+		</a>
+	</div>
+</div>
+
+@section Styles {
+	<style>
+		.cursor-pointer {
+			cursor: pointer;
+		}
+
+		.hover-lift {
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+
+		.hover-lift:hover {
+			transform: translateY(-4px);
+			box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+		}
+	</style>
 }
-else
-{
-    <div class="container py-5 text-center">
-        <i class="bi bi-lock-fill fs-1 text-muted mb-3 d-block"></i>
-        <h4 class="text-muted">請先登入</h4>
-        <p class="text-muted">登入後即可查看您的電子禮券</p>
-        <a href="/Login" class="btn btn-primary">前往登入</a>
-    </div>
+
+@section Scripts {
+	<script>
+		// 自動刷新功能（可選）
+		// 每30秒自動刷新一次，確保 QR Code 最新
+		// setInterval(() => location.reload(), 30000);
+	</script>
 }

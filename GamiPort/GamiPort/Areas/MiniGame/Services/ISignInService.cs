@@ -42,6 +42,12 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// <param name="month">篩選月份 (1-12)（可選）</param>
 		/// <returns>分頁簽到歷史記錄</returns>
 		Task<SignInHistoryPageDto> GetSignInHistoryAsync(int userId, int page, int pageSize, int? year = null, int? month = null);
+
+		/// <summary>
+		/// 取得所有活動的簽到規則（供使用者查看獎勵表）
+		/// </summary>
+		/// <returns>所有活動簽到規則列表（按日序號排序）</returns>
+		Task<List<SignInRuleDto>> GetAllActiveRulesAsync();
 	}
 
 	/// <summary>
@@ -72,6 +78,15 @@ namespace GamiPort.Areas.MiniGame.Services
 
 		/// <summary>今天是否會獲得優惠券</summary>
 		public bool TodayHasCoupon { get; set; }
+
+		/// <summary>實際獲得的點數（已簽到時才有值）</summary>
+		public int? ActualPointsGained { get; set; }
+
+		/// <summary>實際獲得的經驗（已簽到時才有值）</summary>
+		public int? ActualExpGained { get; set; }
+
+		/// <summary>實際獲得的優惠券代碼（已簽到時才有值）</summary>
+		public string? ActualCouponGained { get; set; }
 
 		/// <summary>上次簽到時間（UTC+8 格式）</summary>
 		public DateTime? LastSignInTime { get; set; }
@@ -192,5 +207,32 @@ namespace GamiPort.Areas.MiniGame.Services
 
 		/// <summary>簽到日序號（當月第幾天簽到）</summary>
 		public int SignInDayNumber { get; set; }
+	}
+
+	/// <summary>
+	/// 簽到規則 DTO（用於顯示獎勵規則表）
+	/// </summary>
+	public class SignInRuleDto
+	{
+		/// <summary>規則 ID</summary>
+		public int Id { get; set; }
+
+		/// <summary>簽到日序號（第幾天簽到）</summary>
+		public int SignInDay { get; set; }
+
+		/// <summary>點數獎勵</summary>
+		public int Points { get; set; }
+
+		/// <summary>經驗值獎勵</summary>
+		public int Experience { get; set; }
+
+		/// <summary>是否有優惠券獎勵</summary>
+		public bool HasCoupon { get; set; }
+
+		/// <summary>優惠券類型代碼</summary>
+		public string? CouponTypeCode { get; set; }
+
+		/// <summary>規則描述</summary>
+		public string? Description { get; set; }
 	}
 }

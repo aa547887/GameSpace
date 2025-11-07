@@ -9,7 +9,6 @@
    商城專用 Layout（Area/OnlineStore）
    =============================== *@
 @{
-    Layout = null;
     var areaName = (ViewContext.RouteData.Values["area"] as string) ?? "";
 }
 <!DOCTYPE html>
@@ -22,11 +21,11 @@
     <!-- ✅ Anti-Forgery：前端 fetch 可從這個 meta 讀 token，夾到 RequestVerificationToken header -->
     <meta name="request-verification-token" content="@af.RequestToken" />
 
-    <!-- 基底套件（建議與根版型同版號以免衝突） -->
+    <!-- 基底套件 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <!-- 共用樣式（保持原本結構） -->
+    <!-- 全站共用樣式 -->
     <link href="~/css/layout-shell.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar1.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
@@ -70,8 +69,19 @@
         @await Html.PartialAsync("_Footer")
     </footer>
 
-    @* ❌ 原本：不分登入狀態載入（匿名頁面會觸發好友/通知腳本去打需要授權的 API）
-       ✅ 與根版型相同：只在登入後載入，避免 console 出現一堆 401/錯誤 *@
+    <!-- ✅ 先載入 jQuery（正確 SRI 值） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap（含 Popper） -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SignalR 客戶端庫 -->
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
+
+    <!-- SignalR ChatHub 連線管理器 -->
+    <script src="~/js/social_hub/chat-connection-manager.js" asp-append-version="true"></script>
+
+    @* 建議：只有登入後才載入聊天 UI *@
     @if (User.Identity?.IsAuthenticated == true)
     {
         @await Html.PartialAsync("_QuickFab")
@@ -79,15 +89,9 @@
         @await Html.PartialAsync("_FloatingDock")
     }
 
-    @* ✅ 先載 Bootstrap Bundle，才能讓 sidebar.js 啟動 tooltip 等 bootstrap.* API *@
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-     <!-- jQuery + 驗證：放在 body 結尾，且在頁面 Scripts 之前 -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
-    @* 共用腳本（保持原順序，確保在 Bootstrap 之後） *@
+    <!-- 全站共用腳本 -->
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
+    <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
     @* 🔧 不報錯處理 HideCats section *@

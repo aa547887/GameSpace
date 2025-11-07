@@ -1,9 +1,11 @@
 @using GamiPort.Areas.MiniGame.Controllers
 @using GamiPort.Areas.MiniGame.Helpers
 @model SignInHistoryViewModel
+@inject GamiPort.Infrastructure.Time.IAppClock AppClock
 
 @{
 	ViewData["Title"] = "簽到歷史";
+	var appNow = AppClock.ToAppTime(AppClock.UtcNow);
 }
 
 <div class="container my-5">
@@ -21,7 +23,7 @@
 							<label class="mr-2">年份:</label>
 							<select name="year" class="form-control form-control-sm mr-2">
 								<option value="">不指定</option>
-								@for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 5; y--)
+								@for (int y = appNow.Year; y >= appNow.Year - 5; y--)
 								{
 									<option value="@y" selected="@(Model.FilterYear == y)">@y</option>
 								}
@@ -57,17 +59,20 @@
 					<tbody>
 						@if (Model.History.Items.Any())
 						{
-							@foreach (var item in Model.History.Items)
+							var itemsList = Model.History.Items.ToList();
+							for (int i = 0; i < itemsList.Count; i++)
 							{
+								var item = itemsList[i];
+								var rowNumber = (Model.History.CurrentPage - 1) * Model.History.PageSize + i + 1;
 								<tr style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0;">
 									<td>
-										<span class="badge badge-primary" style="background-color: #17a2b8;">@item.LogId</span>
+										<span class="badge badge-primary" style="background-color: #17a2b8;">@rowNumber</span>
 									</td>
 									<td>@item.SignTime.ToUtc8String("yyyy-MM-dd HH:mm")</td>
 									<td><span style="color: #ff9f43; font-weight: bold;">+@item.PointsGained</span></td>
 									<td><span style="color: #28a745;">+@item.ExpGained</span></td>
 									<td>
-										@if (!string.IsNullOrEmpty(item.CouponGained))
+										@if (!string.IsNullOrEmpty(item.CouponGained) && item.CouponGained.StartsWith("CPN-"))
 										{
 											<span class="badge badge-success">@item.CouponGained</span>
 										}

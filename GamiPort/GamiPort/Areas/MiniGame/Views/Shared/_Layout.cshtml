@@ -49,13 +49,29 @@
         @await Html.PartialAsync("_Footer")
     </footer>
 
-    @await Html.PartialAsync("_QuickFab")
-    @await Html.PartialAsync("_FriendDock")
-    @await Html.PartialAsync("_FloatingDock")
+    <!-- ✅ 先載入 jQuery（正確 SRI 值） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+    <!-- Bootstrap（含 Popper） -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SignalR 客戶端庫 -->
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
+
+    <!-- SignalR ChatHub 連線管理器 -->
+    <script src="~/js/social_hub/chat-connection-manager.js" asp-append-version="true"></script>
+
+    @* 建議：只有登入後才載入聊天 UI *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_QuickFab")
+        @await Html.PartialAsync("_FriendDock")
+        @await Html.PartialAsync("_FloatingDock")
+    }
+
     <!-- 全站共用腳本 -->
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
-
+    <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

@@ -34,7 +34,7 @@
             <!-- 精選卡片 -->
             <section class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="m-0">精選</h5>
+                    <h5 class="m-0">精選論壇</h5>
                     <a href="/Forum/Home" class="text-decoration-none small">看更多</a>
                 </div>
                 <div id="featured-forums-container" class="featured-forums-grid-container" style="position: relative; padding-bottom: 50px;">
@@ -42,59 +42,121 @@
                 </div>
             </section>
 
-            <!-- GNN 新聞（分頁骨架） -->
-            <section class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="m-0">GNN 新聞</h5>
-                    <ul class="nav nav-pills small" id="gnnTabs" role="tablist">
-                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t0">焦點</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t1">手機</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t2">PC</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t3">主機</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t4">活動</button></li>
-                    </ul>
-                </div>
-
-                <div class="tab-content">
-                    @for (int t = 0; t < 5; t++)
-                    {
-                        <div id="t@t" class="tab-pane fade @(t == 0 ? "show active" : "")">
-                            <div class="row g-3">
-                                @for (int i = 0; i < 6; i++)
-                                {
-                                    <div class="col-12 col-md-6 col-lg-4">
-                                        <a class="card h-100 shadow-sm hover-lift text-reset text-decoration-none" href="#">
-                                            <div class="ratio ratio-16x9 card-thumb-skeleton"></div>
-                                            <div class="card-body">
-                                                <span class="badge bg-secondary me-2">多平台</span>
-                                                <h6 class="card-title mt-2">新聞標題</h6>
-                                            </div>
-                                        </a>
-                                    </div>
-                                }
+                        <!-- 商品推薦 -->
+                        <section class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="m-0">商品推薦</h5>
+                                <ul class="nav nav-pills small" id="product-showcase-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-showcase-type="latest" type="button">最新商品</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-showcase-type="clicks" type="button">點擊最高</button>
+                                    </li>
+                                </ul>
                             </div>
-                        </div>
-                    }
+                            <div id="product-showcase-content" class="position-relative">
+                                <!-- Partial view will be loaded here -->
+                            </div>
+                        </section>
+            
+                        <!-- NewsAPI 新聞 -->
+                        <section class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="m-0">BBC新聞</h5>
+                            </div>
+                            <div id="newsapi-content" class="position-relative" style="min-height: 200px;">
+                                <!-- News partial view will be loaded here -->
+                            </div>
+                        </section>
+                    </div>
                 </div>
-            </section>
-        </div>         
-    </div>
-</div>
-
-@section Styles {
-
-    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-
-}
-
-@section Scripts {
-    <script>
-        $(function () {
-            $('#featured-forums-container').on('click', '.featured-forums-pagination a', function (e) {
-                e.preventDefault();
-                var url = $(this).attr('href');
-                $('#featured-forums-container').load(url);
-            });
-        });
-    </script>
-}
+            </div>
+            
+            @section Styles {
+            
+                <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+            
+            }
+            
+            @section Scripts {
+                <script>
+                    $(function () {
+                        // --- Featured Forums (Existing) ---
+                        $('#featured-forums-container').on('click', '.featured-forums-pagination a', function (e) {
+                            e.preventDefault();
+                            var url = $(this).attr('href');
+                            $('#featured-forums-container').load(url);
+                            return false;
+                        });
+            
+                        // --- New Product Showcase Logic ---
+                        const showcaseContainer = $('#product-showcase-content');
+                        const showcaseTabs = $('#product-showcase-tabs');
+            
+                        function loadProductShowcase(type) {
+                            if (!type) return;
+            
+                            // Get current height before content is replaced
+                            const currentHeight = showcaseContainer.height();
+                            if (currentHeight > 0) {
+                                showcaseContainer.css('height', currentHeight + 'px'); // Fix height during loading
+                            }
+            
+                            // Add a simple loading indicator that fills the container
+                            showcaseContainer.html(`
+                                <div class="d-flex justify-content-center align-items-center position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(255,255,255,0.7);">
+                                    <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+                                </div>
+                            `);
+                            
+                            const url = `/Home/GetProductShowcase?type=${type}`;
+                            showcaseContainer.load(url, function(response, status, xhr) {
+                                // Remove fixed height after new content is loaded
+                                showcaseContainer.css('height', '');
+                                if (status == "error") {
+                                    showcaseContainer.html('<div class="text-center p-4 text-danger">載入失敗，請稍後再試。</div>');
+                                }
+                            });
+                        }
+            
+                        // Tab click handler
+                        showcaseTabs.on('click', 'button.nav-link', function(e) {
+                            e.preventDefault();
+                            const button = $(this);
+            
+                            if (button.hasClass('active')) {
+                                return false; // Do nothing if already active
+                            }
+            
+                            showcaseTabs.find('.nav-link').removeClass('active');
+                            button.addClass('active');
+                            
+                            const type = button.attr('data-showcase-type');
+                            loadProductShowcase(type);
+                            return false; // Prevent default action and stop propagation
+                        });
+            
+                        // Initial load for the product showcase
+                        loadProductShowcase('latest');
+            
+                        // --- NewsAPI Logic ---
+                        const newsApiContainer = $('#newsapi-content');
+            
+                        function loadNewsApi() {
+                            newsApiContainer.html('<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                            
+                            const url = `/Home/GetLatestNews`;
+                            newsApiContainer.load(url, function(response, status, xhr) {
+                                if (status == "error") {
+                                    newsApiContainer.html('<div class="text-center p-4 text-danger">載入新聞失敗，請稍後再試。</div>');
+                                }
+                            });
+                        }
+            
+                        // Initial load for NewsAPI
+                        loadNewsApi();
+                    });
+                </script>
+            }
+            
