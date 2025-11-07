@@ -139,16 +139,32 @@
         }
 
         .preview-header {
-            color: #2c3e50;
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            color: white;
             font-weight: 700;
-            margin-bottom: 1.5rem;
-            font-size: 1.125rem;
-            background: rgba(255, 255, 255, 0.9);
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            background: linear-gradient(135deg, rgba(23, 162, 184, 0.95) 0%, rgba(13, 148, 136, 0.95) 100%);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .preview-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-header i {
+            font-size: 1.125rem;
         }
 
         .preview-pet-avatar {
@@ -165,16 +181,46 @@
         }
 
         .preview-pet-name {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
             font-weight: 700;
-            color: #2c3e50;
+            color: white;
             font-size: 1.25rem;
             margin-bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, rgba(255, 107, 129, 0.95) 0%, rgba(255, 159, 67, 0.95) 100%);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .preview-pet-name:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-pet-name .pet-emoji {
+            font-size: 1.5rem;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @@keyframes wave {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-10deg);
+            }
+            75% {
+                transform: rotate(10deg);
+            }
         }
 
         .info-banner {
@@ -299,6 +345,29 @@
             .customize-card-body {
                 padding: 1.5rem;
             }
+
+            .preview-header {
+                top: 1rem;
+                right: 1rem;
+                font-size: 0.875rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .preview-header i {
+                font-size: 1rem;
+            }
+
+            .preview-pet-name {
+                top: 1rem;
+                left: 1rem;
+                font-size: 1rem;
+                padding: 0.5rem 1rem;
+                max-width: calc(100% - 8rem);
+            }
+
+            .preview-pet-name .pet-emoji {
+                font-size: 1.25rem;
+            }
         }
     </style>
 
@@ -331,12 +400,18 @@
 
             <!-- Preview Card -->
             <div class="preview-card" id="previewCard" style="background-image: url('@Html.Raw($"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{currentBackgroundColor}.png")');">
-                <div class="preview-header">預覽</div>
+                <div class="preview-pet-name" id="previewPetName">
+                    <span class="pet-emoji">🐾</span>
+                    <span>嗨! 我是@(Model?.PetName ?? "我的寵物")</span>
+                </div>
+                <div class="preview-header">
+                    <i class="bi bi-eye-fill"></i>
+                    <span>預覽</span>
+                </div>
                 <div class="preview-pet-avatar" style="border-color: white;">
                     <!-- SVG Pet Avatar Container -->
                     <div id="customizePetAvatarContainer" style="width: 100%; height: 100%;"></div>
                 </div>
-                <div class="preview-pet-name" id="previewPetName">@(Model?.PetName ?? "我的寵物")</div>
             </div>
 
             <!-- Skin Color Customization -->
