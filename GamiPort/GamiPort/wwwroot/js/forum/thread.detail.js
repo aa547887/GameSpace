@@ -271,7 +271,7 @@ createApp({
         <div class="d-flex justify-content-between align-items-center">
           <div class="fw-semibold">
             <span class="badge text-bg-secondary me-2">{{ p.floor }}F</span>
-            <a class="link-underline" :href="\`/Users/Profile/\${p.authorId}\`">
+            <a class="link-underline" :href="\`/MemberManagement/MyHome/User/\${p.authorId}\`">
               {{ p.authorName || ('user_' + p.authorId) }}
             </a>
           </div>
