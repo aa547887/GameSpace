@@ -258,7 +258,7 @@ namespace GamiPort.Areas.MiniGame.Services
 								PointsChanged = pointsReward,
 								ItemCode = $"PET_LEVELUP_{pet.Level}",
 								Description = $"寵物升級至 Level {pet.Level}",
-								ChangeTime = _appClock.UtcNow,
+								ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
 								IsDeleted = false
 							});
 
@@ -289,7 +289,7 @@ namespace GamiPort.Areas.MiniGame.Services
 							PointsChanged = bonusPoints,
 							ItemCode = todayItemCode,
 							Description = $"寵物狀態全滿獎勵（經驗值+{bonusExp}，點數+{bonusPoints}）",
-							ChangeTime = _appClock.UtcNow,
+							ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
 							IsDeleted = false
 						};
 						_context.WalletHistories.Add(historyRecord);
@@ -444,20 +444,20 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 更新膚色
 				if (!string.IsNullOrWhiteSpace(skinColor) && pet.SkinColor != skinColor)
 				{
 					pet.SkinColor = skinColor;
-					pet.SkinColorChangedTime = utcNow;
+					pet.SkinColorChangedTime = nowUtc8;
 				}
 
 				// 更新背景
 				if (!string.IsNullOrWhiteSpace(background) && pet.BackgroundColor != background)
 				{
 					pet.BackgroundColor = background;
-					pet.BackgroundColorChangedTime = utcNow;
+					pet.BackgroundColorChangedTime = nowUtc8;
 				}
 
 				// 扣除點數
@@ -479,9 +479,9 @@ namespace GamiPort.Areas.MiniGame.Services
 					UserId = userId,
 					ChangeType = "Pet",
 					PointsChanged = -totalPointCost,
-					ItemCode = $"PET-UPGRADE-{userId}-{utcNow:yyyyMMddHHmmss}",
+					ItemCode = $"PET-UPGRADE-{userId}-{nowUtc8:yyyyMMddHHmmss}",
 					Description = $"寵物外觀升級（{string.Join("、", upgradeParts)}）",
-					ChangeTime = utcNow,
+					ChangeTime = nowUtc8,
 					IsDeleted = false
 				});
 
@@ -995,7 +995,7 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 扣除點數
 				wallet.UserPoint -= skinSetting.PointsCost;
@@ -1009,7 +1009,7 @@ namespace GamiPort.Areas.MiniGame.Services
 					PointsChanged = -skinSetting.PointsCost,
 					ItemCode = itemCode,
 					Description = $"購買寵物膚色：{skinSetting.ColorName}",
-					ChangeTime = utcNow,
+					ChangeTime = nowUtc8,
 					IsDeleted = false
 				});
 
@@ -1117,7 +1117,7 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 扣除點數
 				wallet.UserPoint -= backgroundSetting.PointsCost;
@@ -1131,7 +1131,7 @@ namespace GamiPort.Areas.MiniGame.Services
 					PointsChanged = -backgroundSetting.PointsCost,
 					ItemCode = itemCode,
 					Description = $"購買寵物背景：{backgroundSetting.BackgroundName}",
-					ChangeTime = utcNow,
+					ChangeTime = nowUtc8,
 					IsDeleted = false
 				});
 
