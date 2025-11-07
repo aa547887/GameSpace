@@ -1,0 +1,51 @@
+@model IEnumerable<GamiPort.Areas.OnlineStore.DTO.Store.ProductCardDto>
+
+@{
+    var top3 = Model?.Take(3).ToList() ?? new List<GamiPort.Areas.OnlineStore.DTO.Store.ProductCardDto>();
+    var rest = Model?.Skip(3).ToList() ?? new List<GamiPort.Areas.OnlineStore.DTO.Store.ProductCardDto>();
+
+    string ImgUrl(string url) => string.IsNullOrEmpty(url) ? "/images/placeholder-4x3.png" : url;
+    string FormatCurrency(decimal price) => price.ToString("C0");
+}
+
+@if (Model != null && Model.Any())
+{
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="row g-3">
+                @for (int i = 0; i < top3.Count; i++)
+                {
+                    var p = top3[i];
+                    <div class="col-12 col-md-4">
+                        <a href="/OnlineStore/Product/Detail/@p.ProductCode" class="card h-100 shadow-sm border-0 product-link" target="_blank">
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('@ImgUrl(p.CoverUrl)'); background-size:contain; background-position:center;"></div>
+                            <div class="card-body">
+                                <span class="badge bg-dark me-2">No.@(i + 1)</span>
+                                <h6 class="card-title mt-1 text-truncate" title="@p.ProductName">@p.ProductName</h6>
+                                <div class="fw-semibold">@FormatCurrency(p.Price)</div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <ol class="list-group" style="--bs-list-group-border-color:transparent;">
+                @for (int i = 0; i < rest.Count; i++)
+                {
+                    var p = rest[i];
+                    <li class="list-group-item d-flex align-items-center">
+                        <span class="me-3 fw-bold text-muted">@(i + 4).</span>
+                        <a class="text-decoration-none text-dark text-truncate" href="/OnlineStore/Product/Detail/@p.ProductCode" title="@p.ProductName">@p.ProductName</a>
+                    </li>
+                }
+            </ol>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center p-4">
+        <p class="text-muted">目前沒有商品可顯示。</p>
+    </div>
+}

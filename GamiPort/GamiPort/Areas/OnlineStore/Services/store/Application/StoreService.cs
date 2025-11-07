@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GamiPort.Areas.OnlineStore.Services.store.Application
 {
 	/// <summary>
-	/// 蝺????亥岷/????撖虫???
+	/// 線上商店查詢/操作服務實作。
 	/// </summary>
 	public class StoreService : IStoreService
 	{
@@ -34,7 +34,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		                    NormalizePriceRange(q);
 		                    var query = _db.SProductInfos.AsNoTracking().Where(p => !p.IsDeleted);
 		        
-		                    // 憒???亙?蝔梧??詨捆???嚗?頧?撠???Id
+		                    // 如果僅傳入名稱（相容舊連結），轉成對應的 Id
 		                    if (!q.platformId.HasValue && !string.IsNullOrWhiteSpace(platform))
 		                    {
 		                        var pnorm = platform.Trim();
@@ -54,14 +54,14 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		                        if (gid != 0) q.genreId = gid;
 		                    }
 		        
-		                    // ?摮?撠?????
+		                    // 關鍵字搜尋（商品名）
 		                    if (!string.IsNullOrWhiteSpace(q.q))
 		                    {
 		                        var kw = q.q.Trim();
 		                        query = query.Where(p => EF.Functions.Like(p.ProductName, "%" + kw + "%"));
 		                    }
 		        
-		                    // ??蝔桅?嚗? q.type嚗甈∠摰寡???productType ?
+		                    // 商品種類：優先用 q.type，其次相容舊的 productType 參數
 		                    string? typeFilter = null;
 		                    if (!string.IsNullOrWhiteSpace(q.type)) typeFilter = q.type!.Trim();
 		                    else if (!string.IsNullOrWhiteSpace(productType)) typeFilter = productType!.Trim();
@@ -71,7 +71,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		                        var tf = typeFilter!.Trim().ToLower();
 		                        if (tf == "game")
 		                        {
-		                            // 隞仿??臬??函皞?銝?鞈?ProductType 摮葡嚗?
+		                            // 以關聯存在為準（不依賴 ProductType 字串）
 		                            query = query.Where(p => _db.SGameProductDetails.Any(d => d.ProductId == p.ProductId && d.IsDeleted == false));
 		                        }
 		                        else if (tf == "notgame")
@@ -81,21 +81,21 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		                    }
 		        
 		        
-		                    // 撟喳?蕪嚗? game嚗蝙?典??亥岷?踹?撠撅祆抒蕃霅臭?銝??
+		                    // 平台過濾（僅 game）使用子查詢避免導航屬性翻譯不一致
 		                    if (q.platformId.HasValue)
 		                    {
 		                        int pid = q.platformId.Value;
 		                        query = query.Where(p => _db.SGameProductDetails.Any(d => d.ProductId == p.ProductId && d.PlatformId == pid && d.IsDeleted == false));
 		                    }
 		        
-		                    // 憿??蕪嚗? game嚗?
+		                    // 類型過濾（僅 game）
 		                    if (q.genreId.HasValue)
 		                    {
 		                        int gid = q.genreId.Value;
 		                        query = query.Where(p => p.Genres.Any(g => g.GenreId == gid));
 		                    }
 		        
-		                    // ?券?憿?嚗? notgame嚗??????
+		                    // 周邊類型（僅 notgame）：包含或排除
 		                        if (q.merchTypeId.HasValue)
 		                        {
 		                            int mid = q.merchTypeId.Value;
@@ -117,13 +117,13 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		                            );
 		                        }
 		        
-		                    // ?寞???
+		                    // 價格區間
 		                    if (q.priceMin.HasValue) query = query.Where(p => p.Price >= q.priceMin.Value);
 		                    if (q.priceMax.HasValue) query = query.Where(p => p.Price <= q.priceMax.Value);
-                    // ??蝞?瞈曉??蜇蝑
+                    // 先計算過濾後的總筆數
                     var total = await query.CountAsync();
 
-                    // ?冽????寧?冽???嚗??Guid.NewGuid() ??SQL 銝頧陌
+                    // 隨機排序改為隨機分頁，避免 Guid.NewGuid() 在 SQL 不可轉譯
                     if (string.Equals(q.sort, "random", StringComparison.OrdinalIgnoreCase) && total > 0)
                     {
                         var pageSize = Math.Clamp(q.pageSize, 1, 60);
@@ -169,7 +169,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
                         };
                     }
 
-                    // ?園???蝬剜???摩
+                    // 其餘排序維持原本邏輯
                     IOrderedQueryable<SProductInfo> orderedQuery = q.sort switch
                     {
                         "price_asc" => query.OrderBy(p => p.Price),
@@ -215,7 +215,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
                     };
 		                }
 		/// <summary>
-		/// ????摰鞈?皜嚗???嚗?
+		/// 取得商品完整資料清單（分頁版）
 		/// </summary>
 		public async Task<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<GamiPort.Areas.OnlineStore.DTO.Store.ProductFullDto>> GetProductsFull(ProductQuery q, string? tag, string? productType)
 		{
@@ -229,7 +229,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				var pt = productType.Trim().ToLower();
 				if (pt == "game")
 				{
-					// 隞交?血??券??脫?蝝啣?瘀??踹?摮葡憭批?撖?蝛箇??
+					// 以是否存在遊戲明細判斷，避免字串大小寫/空白問題
 					query = query.Where(p => _db.SGameProductDetails.Any(d => d.ProductId == p.ProductId && d.IsDeleted == false));
 				}
 				else if (pt == "notgame")
@@ -238,10 +238,10 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				}
 			}
 
-        // ??蝞?瞈曉??蜇蝑
+        // 先計算過濾後的總筆數
         var total = await query.CountAsync();
 
-        // ?冽????寧?冽???
+        // 隨機排序改為隨機分頁
         if (string.Equals(q.sort, "random", StringComparison.OrdinalIgnoreCase) && total > 0)
         {
             var pageSize = Math.Clamp(q.pageSize, 1, 60);
