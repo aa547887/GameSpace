@@ -59,6 +59,22 @@
     <!-- 關係動作按鈕列（由 JS 依狀態動態插入） -->
     <div id="relation-action-bar" class="d-flex justify-content-end gap-2 mb-3"></div>
 
+
+
+@if (!Model.IsOwner && Model.IsPublic == false)
+    {
+        <div class="card text-center shadow-sm border-danger">
+            <div class="card-body py-5">
+                <h5 class="fw-semibold text-danger mb-3">
+                    <i class="bi bi-lock-fill"></i> 此小屋目前設定為不公開
+                </h5>
+                <p class="text-muted mb-0">
+                    僅屋主本人可查看貼文、好友清單與其他互動內容。
+                </p>
+            </div>
+        </div>
+    }
+    else{
     <!-- 內容分頁（關於我／我的貼文） -->
     <ul class="nav nav-tabs" id="homeTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -84,8 +100,10 @@
         <div class="tab-pane fade" id="posts" role="tabpanel">
             @await Html.PartialAsync("_PostsTable", Model)
         </div>
-    </div>
+        </div>
+    }
 </div>
+
 
 @section Scripts {
     <!-- 關係操作：封裝 sendRelationCommand、讀取 Anti-Forgery 等 -->

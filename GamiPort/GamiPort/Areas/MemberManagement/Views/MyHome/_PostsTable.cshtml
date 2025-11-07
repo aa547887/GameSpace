@@ -27,7 +27,12 @@ else
                     {
                         <tr>
                             <td>@(i++)</td>
-                            <td>@r.Title</td>
+                            <td class="text-start">
+                                <a href="/Forum/Threads/Detail?threadId=@r.ThreadId"
+                                   class="link-body-emphasis text-decoration-none">
+                                    @r.Title
+                                </a>
+                            </td>
                             <td>@r.ReactionsCount</td>
                             <td>@r.CommentsCount</td>
                             <td>@r.BookmarksCount</td>

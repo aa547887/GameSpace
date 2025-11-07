@@ -192,15 +192,6 @@ namespace GamiPort.Areas.MemberManagement.Controllers
 				return NotFound();
 			}
 
-			// ★ 非屋主且未公開 → 阻擋
-			if (!isSelf && !homeRow.IsPublic)
-			{
-				var am = await BuildHomeVmAsync(id, isSelf);
-				if (am == null) return NotFound();
-
-				return View("PrivateBlocked", am);
-			}
-
 			var vm = await BuildHomeVmAsync(id, isSelf);
 			if (vm == null) return NotFound();
 
