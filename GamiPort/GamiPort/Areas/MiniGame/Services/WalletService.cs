@@ -491,7 +491,9 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 建立基礎查詢
 				var query = _context.WalletHistories
 					.AsNoTracking()
-					.Where(h => h.UserId == userId && !h.IsDeleted);
+					.Where(h => h.UserId == userId && !h.IsDeleted)
+					// 過濾遊戲破關獎勵（ItemCode 以 GAME- 開頭，依用戶需求不顯示）
+					.Where(h => h.ItemCode == null || !h.ItemCode.StartsWith("GAME-"));
 
 				// 篩選交易類型（支持多重分類）
 				if (!string.IsNullOrWhiteSpace(changeType))
@@ -518,6 +520,22 @@ namespace GamiPort.Areas.MiniGame.Services
 						query = query.Where(h =>
 							h.ChangeType == "EVoucher" ||
 							(h.Description != null && (h.Description.Contains("兌換電子禮券") || h.Description.Contains("兌換禮券")))
+						);
+					}
+					else if (changeType == "Pet")
+					{
+						// 寵物篩選：包含所有寵物相關交易（升級、購買膚色、購買背景、全滿獎勵）
+						query = query.Where(h =>
+							h.ChangeType == "Pet" ||
+							h.ChangeType == "PetSkinColor" ||
+							h.ChangeType == "PetBackground"
+						);
+					}
+					else if (changeType == "SignIn")
+					{
+						// 簽到篩選：通過 Description 包含「簽到」判斷
+						query = query.Where(h =>
+							h.Description != null && h.Description.Contains("簽到")
 						);
 					}
 					else

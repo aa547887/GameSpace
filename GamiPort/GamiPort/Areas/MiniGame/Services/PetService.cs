@@ -463,6 +463,28 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 扣除點數
 				wallet.UserPoint -= totalPointCost;
 
+				// 記錄到 WalletHistory（補充遺漏的記錄）
+				var upgradeParts = new List<string>();
+				if (!string.IsNullOrWhiteSpace(skinColor) && pet.SkinColor != skinColor)
+				{
+					upgradeParts.Add("膚色");
+				}
+				if (!string.IsNullOrWhiteSpace(background) && pet.BackgroundColor != background)
+				{
+					upgradeParts.Add("背景");
+				}
+
+				_context.WalletHistories.Add(new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = -totalPointCost,
+					ItemCode = $"PET-UPGRADE-{userId}-{utcNow:yyyyMMddHHmmss}",
+					Description = $"寵物外觀升級（{string.Join("、", upgradeParts)}）",
+					ChangeTime = utcNow,
+					IsDeleted = false
+				});
+
 				// 保存更改
 				_context.Pets.Update(pet);
 				_context.UserWallets.Update(wallet);
