@@ -753,11 +753,23 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					PlatformName = p.SGameProductDetail.Platform.PlatformName,
 					DownloadLink = p.SGameProductDetail.DownloadLink,
 					GenreName = p.Genres.Select(g => g.GenreName).FirstOrDefault(),
-					SupplierName = p.SGameProductDetail.Supplier.SupplierName ?? _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.Supplier.SupplierName).FirstOrDefault(),
+					SupplierName = p.SGameProductDetail.Supplier.SupplierName ??
+						(
+							from od in _db.SOtherProductDetails
+							join s in _db.SSuppliers on od.SupplierId equals s.SupplierId
+							where od.ProductId == p.ProductId
+							select s.SupplierName
+						).FirstOrDefault(),
 
 					// Other product details
 					MerchTypeId = _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.MerchTypeId).FirstOrDefault(),
-					PeripheralTypeName = _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.MerchType.MerchTypeName).FirstOrDefault(),
+					PeripheralTypeName =
+						(
+							from od in _db.SOtherProductDetails
+							join mt in _db.SMerchTypes on od.MerchTypeId equals mt.MerchTypeId
+							where od.ProductId == p.ProductId
+							select mt.MerchTypeName
+						).FirstOrDefault(),
 					DigitalCode = _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.DigitalCode).FirstOrDefault(),
 					Size = _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.Size).FirstOrDefault(),
 					Color = _db.SOtherProductDetails.Where(o => o.ProductId == p.ProductId).Select(o => o.Color).FirstOrDefault(),
