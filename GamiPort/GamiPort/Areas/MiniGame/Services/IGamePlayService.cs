@@ -18,11 +18,11 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// <summary>
 		/// 開始遊戲
 		/// 檢查今日剩餘次數、建立遊戲記錄
+		/// 自動根據用戶歷史記錄決定關卡難度（難度進程機制）
 		/// </summary>
 		/// <param name="userId">用戶 ID</param>
-		/// <param name="level">遊戲難度等級 (1-3)</param>
-		/// <returns>成功狀態、訊息、遊戲記錄 ID</returns>
-		Task<(bool success, string message, int? playId)> StartGameAsync(int userId, int level);
+		/// <returns>成功狀態、訊息、遊戲記錄 ID、關卡等級</returns>
+		Task<(bool success, string message, int? playId, int level)> StartGameAsync(int userId);
 
 		/// <summary>
 		/// 結束遊戲並發放獎勵

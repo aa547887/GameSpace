@@ -1,65 +1,87 @@
-﻿@model GamiPort.Models.ViewModels.TopbarVM
-@using GamiPort.Services
+﻿@using GamiPort.Services
 @inject ICurrentUserService CurrentUser
 
 @{
-    var storeHomeUrl = Url.Action("Index", "Store", new { area = "OnlineStore" }) ?? Url.Action("Index", "Home", new { area = "OnlineStore" });
+    var storeHomeUrl = Url.Action("Index", "Store", new { area = "OnlineStore" });
     var siteHomeUrl = Url.Action("Index", "Home", new { area = "" });
+    var onlineStoreHomeUrl = Url.Action("Index", "Home", new { area = "OnlineStore" });
 }
 
 <header class="topbar1 navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
     <div class="container-fluid">
-        <button class="navbar-toggler d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas" aria-controls="mainOffcanvas" aria-label="Open menu">
+
+        <!-- Hamburger Menu -->
+        <button class="navbar-toggler d-lg-none me-2" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#mainOffcanvas"
+                aria-controls="mainOffcanvas" aria-label="Open menu">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- 品牌（回商城首頁，用圖片統一外層） -->
-        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2 text-decoration-none nav-elevate" href="@storeHomeUrl" title="回 GamiStore 首頁">
-            <span class="brand-glass d-inline-grid place-items-center"><img src="~/picture/Gamiport.png" alt="Logo" height="24"/></span>  <!-- 統一用圖片 -->
+        <!-- Brand Logo -->
+        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2 text-decoration-none" href="@storeHomeUrl" title="回 GamiStore 首頁">
+            <span class="brand-glass d-inline-grid place-items-center">
+                <img src="~/picture/gamiport.png" alt="GamiPort Logo" style="height: 22px;" />
+            </span>
             <span class="text-dark">GamiStore</span>
         </a>
 
-        <!-- 右側功能列（統一外層圖示/登入鈕，加商城連結） -->
+        <!-- Right-side Links -->
         <ul class="navbar-nav ms-auto align-items-lg-center topbar-links">
-            <li class="nav-item"><a class="nav-link nav-elevate" href="@siteHomeUrl"><i class="bi bi-house-door me-1"></i> 網站首頁</a></li>
-            <li class="nav-item"><a class="nav-link nav-elevate" href="@storeHomeUrl"><i class="bi bi-shop me-1"></i> 商城首頁</a></li>
-            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/store/favorites"><i class="bi bi-heart me-1"></i> 我的收藏</a></li>
             <li class="nav-item">
-                <a asp-area="OnlineStore"
-                   asp-controller="Cart"
-                   asp-action="Index"
-                   class="nav-link nav-elevate">
-                    <i class="bi bi-cart me-1"></i> 購物車
+                <a class="nav-link nav-elevate" href="@siteHomeUrl" title="網站首頁">
+                    <i class="bi bi-house-door me-1"></i> 網站首頁
                 </a>
             </li>
-
             <li class="nav-item">
-                <a asp-area="OnlineStore"
-                   asp-controller="Orders"
-                   asp-action="Index"
-                   class="nav-link nav-elevate">
+                <a class="nav-link nav-elevate" href="/OnlineStore/Store/index" title="商城首頁">
+                    <i class="bi bi-joystick me-1"></i> 商城首頁
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-elevate" href="/OnlineStore/store/favorites" title="我的收藏">
+                    <i class="bi bi-heart me-1"></i> 我的收藏
+                </a>
+            </li>
+            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/cart"><i class="bi bi-cart3 me-1"></i> 購物車</a></li>
+            <li class="nav-item">
+                <a class="nav-link nav-elevate" href="/OnlineStore/orders" title="我的訂單">
                     <i class="bi bi-receipt me-1"></i> 我的訂單
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link nav-elevate" href="/OnlineStore/notice" title="商城公告">
+                    <i class="bi bi-megaphone me-1"></i> 商城公告
+                </a>
+            </li>
 
-            <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/notice"><i class="bi bi-megaphone me-1"></i> 商城公告</a></li>
-
+            @* Login Status *@
             @if (CurrentUser.IsAuthenticated)
             {
                 <li class="nav-item dropdown ms-2">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-elevate" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-1"></i>  <!-- 統一外層圖示 -->
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-elevate" href="#" id="userMenu"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-1"></i>
                         <span>@(CurrentUser.NickName ?? "使用者")</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                         <li class="dropdown-header text-secondary small">已登入：@(CurrentUser.NickName ?? "使用者")</li>
-                        <li><a class="dropdown-item" asp-area="Login" asp-controller="Introduce" asp-action="Details"><i class="bi bi-person-badge me-2"></i> 檢視個人資料</a></li>
-                        <li><a class="dropdown-item" asp-area="Login" asp-controller="Introduce" asp-action="Edit"><i class="bi bi-pencil-square me-2"></i> 編輯個人資料</a></li>
+                        <li>
+                            <a class="dropdown-item" asp-area="Login" asp-controller="Introduce" asp-action="Details">
+                                <i class="bi bi-person-badge me-2"></i> 檢視個人資料
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" asp-area="Login" asp-controller="Introduce" asp-action="Edit">
+                                <i class="bi bi-pencil-square me-2"></i> 編輯個人資料
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <form asp-area="Login" asp-controller="Login" asp-action="Logout" method="post" class="px-2 py-1 mb-0">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="dropdown-item text-danger w-100"><i class="bi bi-box-arrow-right me-2"></i> 登出</button>
+                                <button type="submit" class="dropdown-item text-danger w-100">
+                                    <i class="bi bi-box-arrow-right me-2"></i> 登出
+                                </button>
                             </form>
                         </li>
                     </ul>
@@ -68,7 +90,7 @@
             else
             {
                 <li class="nav-item ms-2">
-                    <a class="btn btn-primary" asp-area="Login" asp-controller="Login" asp-action="Login">  <!-- 統一外層登入鈕 -->
+                    <a class="btn btn-primary" asp-area="Login" asp-controller="Login" asp-action="Login">
                         <i class="bi bi-box-arrow-in-right me-1"></i> 登入
                     </a>
                 </li>
@@ -77,59 +99,29 @@
     </div>
 </header>
 
-<!-- 左側 Offcanvas：用商城Sidebar -->
+<!-- Offcanvas Menu -->
 <div class="offcanvas offcanvas-start offcanvas-main" tabindex="-1" id="mainOffcanvas" aria-labelledby="mainOffcanvasLabel">
-    <div class="offcanvas-header"><h6 class="offcanvas-title" id="mainOffcanvasLabel">商城選單</h6><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button></div>
-    <div class="offcanvas-body p-0">@await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_Sidebar.cshtml")</div>
+    <div class="offcanvas-header">
+        <h6 class="offcanvas-title" id="mainOffcanvasLabel">主選單</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_Sidebar.cshtml")
+    </div>
 </div>
 
 <style>
-    /* ===== 尺寸變數：再調低高度，避免遮sidebar ===== */
-    :root {
-        --topbar-h: 48px;  /* 從56px調到48px */
-        --topbar-vpad: 8px;  /* 調低padding */
-        --brand-img-h: 24px;  /* 調低logo */
-        --topbar-h-sm: 40px;  /* 手機從48px調到40px */
-        --topbar-vpad-sm: 6px;
-        --brand-img-h-sm: 20px;
+    /* ... existing styles ... */
+    .navbar-brand:hover {
+        animation: breathe 2s ease-in-out infinite;
     }
 
-    /* 讓 StoreBar 知道高度，卷軸下滑時齊高 */
-    :root { --storebar-top-offset: var(--topbar-h); }
-
-    /* 桌面尺寸 */
-    .topbar1.navbar { min-height: var(--topbar-h); }
-    .topbar1 .navbar-brand, .topbar1 .nav-link { padding-top: var(--topbar-vpad); padding-bottom: var(--topbar-vpad); }
-    .topbar1 .navbar-brand img { height: var(--brand-img-h); }
-
-    /* 玻璃品牌小方塊 */
-    .brand-glass {
-        width: 24px; height: 24px;  /* 調小 */
-        border-radius: 8px;
-        background: rgba(255,255,255,.55);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(0,0,0,.08);
-        box-shadow: 0 4px 14px rgba(0,0,0,.10);
-        display: grid; place-items: center;
-        animation: brand-bounce 2.4s ease-in-out infinite;
-    }
-
-    /* 黑字 + hover浮起 */
-    .topbar1 .nav-link, .topbar1 .navbar-brand span { color: #111 !important; }
-    .nav-elevate {
-        border-radius: .5rem;
-        transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
-    }
-    .nav-elevate:hover { transform: translateY(-2px); background: rgba(0,0,0,.04); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
-
-    @@keyframes brand-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-
-    /* 手機尺寸 */
-    @@media (max-width: 992px) {
-        :root { --storebar-top-offset: var(--topbar-h-sm); }
-        .topbar1.navbar { min-height: var(--topbar-h-sm); }
-        .topbar1 .navbar-brand, .topbar1 .nav-link { padding-top: var(--topbar-vpad-sm); padding-bottom: var(--topbar-vpad-sm); }
-        .topbar1 .navbar-brand img { height: var(--brand-img-h-sm); }
-        .topbar-links .nav-link { padding: .3rem .3rem; }
+    @@keyframes breathe {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
     }
 </style>
+
+<script>
+    // ... existing script ...
+</script>

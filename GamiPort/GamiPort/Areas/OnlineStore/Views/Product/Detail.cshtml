@@ -1,0 +1,368 @@
+@model GamiPort.Areas.OnlineStore.ViewModels.ProductDetailVM
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@{
+    ViewData["Title"] = Model.ProductName;
+    Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
+}
+<section class="container py-4" id="app" data-pid="@Model.ProductId">
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm bg-light">
+                <img id="cover" src="/images/placeholder-cover.png" class="w-100 h-100" style="object-fit:cover;">
+            </div>
+            <div id="thumbs" class="d-flex flex-nowrap gap-2 mt-2 overflow-auto"></div>
+            <div id="video" class="mt-3"></div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <h2 id="name" class="fw-bold mb-2">...</h2>
+            <div class="mb-2">
+                <span class="badge text-bg-dark" id="ptype"></span>
+            </div>
+            <div class="h4 fw-bold mb-3">
+                <span id="price-product-name" class="d-block fs-6 fw-normal text-secondary"></span> <!-- New element -->
+                <span id="price"></span>
+                <span class="text-muted fs-6" id="cc">TWD</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-star-fill"></i>
+                <span id="rating">0.0</span>
+                <small class="text-muted" id="ratingcnt">(0)</small>
+            </div>
+
+            <div class="d-flex gap-2 mb-4">
+                <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 立即購買</button>
+                <button class="btn btn-lg btn-outline-dark flex-fill" data-action="add-cart"><i class="bi bi-cart-plus me-1"></i> 加入購物車</button>
+                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的最愛" aria-pressed="false"><i class="bi bi-heart"></i></button>
+            </div>
+
+            <div class="mb-3">
+                <h5 class="fw-bold">商品介紹</h5>
+                <p id="desc" class="text-secondary"></p>
+            </div>
+
+            <div class="mb-3">
+                <h5 class="fw-bold">商品規格</h5>
+                <div id="specs" class="small text-secondary"></div>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold mb-2">評分 / 評論</h5>
+                <div class="d-flex align-items-center gap-2 mb-2" id="rate-stars" aria-label="給予評分" role="group">
+                    <i class="bi bi-star fs-4" data-star="1" style="cursor:pointer"></i>
+                    <i class="bi bi-star fs-4" data-star="2" style="cursor:pointer"></i>
+                    <i class="bi bi-star fs-4" data-star="3" style="cursor:pointer"></i>
+                    <i class="bi bi-star fs-4" data-star="4" style="cursor:pointer"></i>
+                    <i class="bi bi-star fs-4" data-star="5" style="cursor:pointer"></i>
+                </div>
+                <div class="mb-2 small text-muted">點擊星星評分，或撰寫評論後送出</div>
+                <textarea id="reviewText" class="form-control mb-2" rows="3" placeholder="分享你的心得（選填）"></textarea>
+                <button id="btnSubmitReview" class="btn btn-sm btn-dark">送出評價</button>
+            </div>
+        </div>
+    </div>
+    }
+</section>
+
+<section class="container py-3">
+    <div class="row g-3">
+        <div class="col-12 col-lg-7">
+            <h5 class="fw-bold mb-2">使用者評論</h5>
+            <div id="reviews" class="vstack gap-3"></div>
+            <button id="btnMoreReviews" class="btn btn-outline-secondary btn-sm mt-2 d-none">載入更多</button>
+        </div>
+        <div class="col-12 col-lg-5">
+            <h5 class="fw-bold mb-2">你可能也會喜歡</h5>
+            <div id="related" class="row g-2"></div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+                const initialData = @Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions { PropertyNamingPolicy = null }));
+                const API_BASE = "/OnlineStore/api/StoreApi";
+                let currentRating = 0;
+                let authChecked = false, isAuthenticated = false;
+
+                async function ensureAuthenticated(){
+                  if(authChecked) return isAuthenticated;
+                  try{
+                    const r = await fetch(`${API_BASE}/favorites/ids`);
+                    isAuthenticated = r.ok;
+                  }catch{ isAuthenticated = false; }
+                  authChecked = true;
+                  return isAuthenticated;
+                }
+
+                function ensureLoginPrompt() {
+                  if (document.getElementById('loginPromptModal')) return;
+                  const el = document.createElement('div');
+                  el.innerHTML = `
+                    <div class="modal fade" id="loginPromptModal" tabindex="-1">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">請先登入</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="mb-0">您需要登入後才能使用收藏功能。</p>
+                          </div>
+                          <div class="modal-footer">
+                            <a class="btn btn-dark" href="/Login/Login/Login">現在去登入</a>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再看看</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`;
+                  document.body.appendChild(el.firstElementChild);
+                }
+
+                async function toggleFavorite(productId){
+                  const userId = window.USER_ID ?? 1; // TODO: 替換為實際登入使用者 Id
+                  const resp = await fetch(`${API_BASE}/products/${productId}/favorite`, { method: 'POST' });
+                  if(!resp.ok){ throw new Error(`收藏失敗 (${resp.status})`); }
+                  const data = await resp.json();
+                  return !!data?.isFavorited;
+                }
+
+                function money(v){
+                  return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);
+                }
+
+function renderSpecs(x){
+  const host = document.getElementById('specs');
+  if (!host) {
+      return;
+  }
+  const isGame = (x.ProductType || '').toLowerCase() === 'game';
+  let htmlContent = '';
+  if(isGame){
+    htmlContent = `
+      <ul class="list-unstyled mb-0">
+        ${x.PlatformName ? `<li>平台：${x.PlatformName}</li>` : ''}
+        ${x.GenreName ? `<li>類型：${x.GenreName}</li>` : ''}
+        ${x.PublishAt ? `<li>發售日：${new Date(x.PublishAt).toLocaleDateString('zh-TW')}</li>` : ''}
+        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+        ${x.DownloadLink ? `<li>下載連結：<a href="${x.DownloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
+      </ul>`;
+  } else {
+    htmlContent = `
+      <ul class="list-unstyled mb-0">
+        ${x.PeripheralTypeName ? `<li>周邊分類：${x.PeripheralTypeName}</li>` : ''}
+        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+        ${x.Size ? `<li>尺寸：${x.Size}</li>` : ''}
+        ${x.Color ? `<li>顏色：${x.Color}</li>` : ''}
+        ${x.Weight ? `<li>重量：${x.Weight}</li>` : ''}
+        ${x.Dimensions ? `<li>外觀尺寸：${x.Dimensions}</li>` : ''}
+        ${x.Material ? `<li>材質：${x.Material}</li>` : ''}
+        ${x.DigitalCode ? `<li>型號/序號：${x.DigitalCode}</li>` : ''}
+      </ul>`;
+  }
+  host.innerHTML = htmlContent;
+}
+
+                function tryRenderYoutube(url){
+                  if(!url) return;
+                  try{
+                    const m = String(url).match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+                    const vid = m?.[1];
+                    if(!vid) return;
+                    document.getElementById('video').innerHTML = `
+                      <div class="ratio ratio-16x9">
+                        <iframe src="https://www.youtube.com/embed/${vid}" title="YouTube video" allowfullscreen class="rounded shadow-sm"></iframe>
+                      </div>`;
+                  }catch{}
+                }
+
+                function renderProduct(x) {
+                    if (!x) {
+                        document.getElementById('name').textContent = '查無此商品';
+                        return;
+                    }document.getElementById('name').textContent = x.ProductName; // Keep the main title
+document.getElementById('price-product-name').textContent = x.ProductName; // Populate the new span
+document.getElementById('ptype').textContent = x.ProductType || '';
+document.getElementById('price').textContent = `NT ${money(x.Price)}`;                    document.getElementById('cc').textContent = x.currencyCode || 'TWD';
+                    document.getElementById('desc').textContent = x.productDescription || '';
+                    document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
+                    document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
+
+                    const cover = x.coverUrl || "/images/placeholder-cover.png";
+                    document.getElementById('cover').src = cover;
+
+                    const thumbs = x.gallery?.length ? x.gallery : [cover];
+                    document.getElementById('thumbs').innerHTML = thumbs.map(url =>
+                        `<img src="${url}" class="rounded" style="width:60px;height:60px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
+                    ).join('');
+                    document.getElementById('thumbs').addEventListener('click', (e)=>{
+                        if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
+                    });
+
+                    renderSpecs(x);
+                    tryRenderYoutube(x.youtubeUrl);
+                }
+
+                function paintStars(n){
+                    document.querySelectorAll('#rate-stars i[data-star]')
+                        .forEach(i=>{
+                            const k = parseInt(i.getAttribute('data-star'),10);
+                            i.classList.toggle('bi-star-fill', k <= n);
+                            i.classList.toggle('bi-star', k > n);
+                        });
+                }
+
+                async function submitReview(){
+                    if(!(await ensureAuthenticated())){
+                        ensureLoginPrompt();
+                        new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
+                        return;
+                    }
+                    if(currentRating < 1 || currentRating > 5){ alert('請先選擇 1-5 顆星的評分'); return; }
+                    const body = { rating: currentRating, review: document.getElementById('reviewText').value?.trim() || null };
+                    const pid = initialData.productId;
+                    const res = await fetch(`${API_BASE}/products/${pid}/rate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                    if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
+                    if(!res.ok){ alert('送出評價失敗，請稍後再試'); return; }
+                    try{
+                        const detail = await (await fetch(`${API_BASE}/${pid}`)).json();
+                        document.getElementById('rating').textContent = (detail.ratingAvg ?? 0).toFixed(1);
+                        document.getElementById('ratingcnt').textContent = `(${detail.ratingCount ?? 0})`;
+                    }catch{}
+                    document.getElementById('reviewText').value = '';
+                    loadReviews(true);
+                    alert('已送出評價，感謝你的回饋！');
+                }
+
+                async function loadReviews(reset=false){
+                    const pid = initialData.productId;
+                    const host = document.getElementById('reviews');
+                    const more = document.getElementById('btnMoreReviews');
+                    const pageSize = 10;
+                    let page = parseInt(host.getAttribute('data-page')||'0',10) || 0;
+                    page = reset ? 1 : (page+1);
+                    const res = await fetch(`${API_BASE}/products/${pid}/reviews?page=${page}&pageSize=${pageSize}`);
+                    const data = await res.json();
+                    const items = Array.isArray(data.items)? data.items : [];
+                    const html = items.map(r=>{
+                        const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.rating||0);
+                        const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.rating||0));
+                        return `<div class="p-3 border rounded">\
+                            <div class=\"d-flex justify-content-between align-items-center mb-1\">\
+                                <div class=\"text-warning\">${starFilled}${starEmpty}</div>\
+                                <small class=\"text-muted\">#${r.userId} · ${new Date(r.createdAt).toLocaleString('zh-TW')}</small>\
+                            </div>\
+                            ${r.reviewText ? `<div class=\"text-secondary\">${r.reviewText}</div>` : ''}\
+                        </div>`;
+                    }).join('');
+                    if(reset) host.innerHTML = '';
+                    host.insertAdjacentHTML('beforeend', html);
+                    host.setAttribute('data-page', String(page));
+                    const total = parseInt(data.totalCount||0,10);
+                    more.classList.toggle('d-none', page*pageSize >= total);
+                }
+
+                async function loadRelated(){
+                    const pid = initialData.productId;
+                    let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
+                    const isGame = (initialData.productType||'').toLowerCase()==='game';
+                    if(isGame && initialData.genreName){
+                        url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.genreName)}&page=1&pageSize=4`;
+                    } else if(!isGame && initialData.merchTypeId){
+                        url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.merchTypeId)}&page=1&pageSize=4`;
+                    }
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    const items = (data.items||data||[]).filter(x=>x.productId!==pid).slice(0,4);
+                    const host = document.getElementById('related');
+                    host.innerHTML = items.map(x=>{
+                        const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
+                        const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
+                        return `<div class=\"col-6\">\
+                            <div class=\"card h-100 position-relative\">\
+                                <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
+                                <div class=\"card-body p-2\">\
+                                    <div class=\"small text-truncate\" title=\"${x.productName}\">${x.productName}</div>\
+                                </div>\
+                            </div>\
+                        </div>`;
+                    }).join('');
+                }
+
+                (function(){
+                  renderProduct(initialData);
+
+                  // 初始亮起收藏狀態（若已登入）
+                  fetch(`${API_BASE}/favorites/ids`).then(r=>r.ok?r.json():[]).then(ids=>{
+                    try{
+                      const pid = initialData?.productId;
+                      if(!pid) return;
+                      const btn = document.querySelector('button[data-action="fav"]');
+                      const icon = btn?.querySelector('i');
+                      if(Array.isArray(ids) && ids.includes(pid)){
+                        btn?.classList.add('text-danger');
+                        btn?.setAttribute('aria-pressed','true');
+                        icon?.classList.add('bi-heart-fill');
+                        icon?.classList.remove('bi-heart');
+                      }
+                    }catch{}
+                  }).catch(()=>{});
+
+                  document.addEventListener('click', (e)=>{
+                    const btn = e.target.closest('button[data-action]');
+                    if(!btn) return;
+                    const act = btn.getAttribute('data-action');
+                    if(act==='add-cart'){
+                      alert(`已加入購物車（商品ID: ${initialData.productId}）`);
+                    }else if(act==='buy-now'){
+                      location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.productId}`;
+                    }else if(act==='fav'){
+                      if(!initialData?.productId){ return; }
+                      btn.disabled = true;
+                      toggleFavorite(initialData.productId)
+                        .then(isFav => {
+                          const icon = btn.querySelector('i');
+                          if(isFav){
+                            btn.classList.add('text-danger');
+                            btn.setAttribute('aria-pressed','true');
+                            icon?.classList.remove('bi-heart');
+                            icon?.classList.add('bi-heart-fill');
+                          }else{
+                            btn.classList.remove('text-danger');
+                            btn.setAttribute('aria-pressed','false');
+                            icon?.classList.add('bi-heart');
+                            icon?.classList.remove('bi-heart-fill');
+                          }
+                        })
+                        .catch(err => {
+                          console.error(err);
+                          if(String(err.message||"").includes("401") || String(err).includes("Unauthorized")){
+                            ensureLoginPrompt();
+                            const modal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+                            modal.show();
+                          }else{
+                            alert('加入收藏失敗，請稍後再試');
+                          }
+                        })
+                        .finally(()=>{ btn.disabled = false; });
+                    }
+                  });
+
+                  // 評星互動
+                  document.getElementById('rate-stars')?.addEventListener('click', async (e)=>{
+                    const i = e.target.closest('i[data-star]');
+                    if(!i) return;
+                    if(!(await ensureAuthenticated())){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
+                    currentRating = parseInt(i.getAttribute('data-star'),10) || 0;
+                    paintStars(currentRating);
+                  });
+                  document.getElementById('btnSubmitReview')?.addEventListener('click', submitReview);
+
+                  // 初始評論與推薦
+                  loadReviews(true);
+                  loadRelated();
+                })();
+    </script>
+}
+

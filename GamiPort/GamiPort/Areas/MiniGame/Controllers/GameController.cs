@@ -12,24 +12,27 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		private readonly GameSpacedatabaseContext _context;
 		private readonly IAppCurrentUser _appCurrentUser;
 		private readonly IGamePlayService _gamePlayService;
+		private readonly IPetService _petService;
 		private readonly ILogger<GameController> _logger;
 
 		public GameController(
 			GameSpacedatabaseContext context,
 			IAppCurrentUser appCurrentUser,
 			IGamePlayService gamePlayService,
+			IPetService petService,
 			ILogger<GameController> logger)
 		{
 			_context = context;
 			_appCurrentUser = appCurrentUser;
 			_gamePlayService = gamePlayService;
+			_petService = petService;
 			_logger = logger;
 		}
 
 		/// <summary>
 		/// 遊戲首頁 - 顯示難度選擇與今日剩餘次數
 		/// </summary>
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(int? selectedLevel = null, string? gameResult = null, int? rewardPoints = null, int? rewardExperience = null)
 		{
 			// 檢查登入狀態
 			if (User.Identity?.IsAuthenticated != true)
@@ -54,9 +57,25 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				// 獲取今日剩餘遊戲次數
 				int remainingPlays = await _gamePlayService.GetUserRemainingPlaysAsync(userId);
 
+				// 獲取用戶寵物資料（用於顯示在遊戲畫面）
+				var pet = await _petService.GetUserPetAsync(userId);
+				string petSkinColor = pet?.SkinColor ?? "#ff6b6b";
+				string petName = pet?.PetName ?? "寵物";
+
 				// 傳遞資料到視圖
-				ViewBag.RemainingPlays = remainingPlays;
+				ViewBag.TodayRemainingPlays = remainingPlays;
 				ViewBag.UserId = userId;
+				ViewBag.SelectedLevel = selectedLevel ?? 0;
+				ViewBag.GameResult = gameResult;
+				ViewBag.RewardPoints = rewardPoints ?? 0;
+				ViewBag.RewardExperience = rewardExperience ?? 0;
+				ViewBag.PetSkinColor = petSkinColor;
+				ViewBag.PetName = petName;
+
+				// TODO: 獲取統計數據
+				ViewBag.MonthlyWins = 0; // await _gamePlayService.GetMonthlyWinsAsync(userId);
+				ViewBag.MonthlyPoints = 0; // await _gamePlayService.GetMonthlyPointsAsync(userId);
+				ViewBag.WinRate = "0"; // await _gamePlayService.GetWinRateAsync(userId);
 
 				return View();
 			}
@@ -68,14 +87,36 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		}
 
 		/// <summary>
-		/// 選擇難度並啟動遊戲
+		/// 選擇難度 - 重定向到 Index 並顯示所選難度
 		/// </summary>
 		[HttpPost]
-		public async Task<IActionResult> SelectDifficulty(int level)
+		public IActionResult SelectDifficulty(int level)
 		{
 			if (User.Identity?.IsAuthenticated != true)
 			{
 				return Unauthorized();
+			}
+
+			// 驗證難度等級
+			if (level < 1 || level > 3)
+			{
+				return RedirectToAction("Index");
+			}
+
+			// 重定向到 Index 並傳遞選擇的難度
+			return RedirectToAction("Index", new { selectedLevel = level });
+		}
+
+		/// <summary>
+		/// 開始遊戲 - 實際啟動遊戲並扣除次數
+		/// 自動根據難度進程機制決定關卡等級
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> StartGame()
+		{
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "未授權的用戶" });
 			}
 
 			try
@@ -91,18 +132,44 @@ namespace GamiPort.Areas.MiniGame.Controllers
 					return Json(new { success = false, message = "未授權的用戶" });
 				}
 
-				// 驗證難度等級
-				if (level < 1 || level > 3)
-				{
-					return Json(new { success = false, message = "無效的難度等級" });
-				}
-
-				// 啟動遊戲
-				var (success, message, playId) = await _gamePlayService.StartGameAsync(userId, level);
+				// 啟動遊戲（自動計算關卡、扣除遊戲次數、創建遊戲記錄）
+				var (success, message, playId, level) = await _gamePlayService.StartGameAsync(userId);
 
 				if (success)
 				{
-					return Json(new { success = true, message = message, playId = playId, level = level });
+					// 獲取剩餘次數
+					int remainingPlays = await _gamePlayService.GetUserRemainingPlaysAsync(userId);
+
+					// 根據關卡決定配置（怪物數量、速度倍率）
+					int monsterCount = level switch
+					{
+						1 => 6,
+						2 => 8,
+						3 => 10,
+						_ => 6
+					};
+
+					decimal speedMultiplier = level switch
+					{
+						1 => 1.0m,
+						2 => 1.5m,
+						3 => 2.0m,
+						_ => 1.0m
+					};
+
+					// 儲存遊戲 ID 和關卡到 TempData 供遊戲結束時使用
+					TempData["CurrentPlayId"] = playId;
+					TempData["CurrentLevel"] = level;
+
+					return Json(new {
+						success = true,
+						message = message,
+						sessionId = playId,
+						level = level,
+						remainingPlays = remainingPlays,
+						monsterCount = monsterCount,
+						speedMultiplier = speedMultiplier
+					});
 				}
 				else
 				{
@@ -111,7 +178,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "選擇難度時發生錯誤");
+				_logger.LogError(ex, "啟動遊戲時發生錯誤");
 				return Json(new { success = false, message = "啟動遊戲失敗，請稍後重試" });
 			}
 		}

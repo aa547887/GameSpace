@@ -1,8 +1,11 @@
 @using GamiPort.Areas.MiniGame.Helpers
+@using GamiPort.Models
+@inject GamiPort.Infrastructure.Time.IAppClock AppClock
 @{
     ViewData["Title"] = "商城優惠券";
-    var coupons = ViewBag.Coupons as List<dynamic> ?? new List<dynamic>();
+    var coupons = ViewBag.Coupons as List<Coupon> ?? new List<Coupon>();
     var searchTerm = ViewBag.SearchTerm as string ?? "";
+    var appNow = AppClock.ToAppTime(AppClock.UtcNow);
 }
 
 @if (User.Identity?.IsAuthenticated == true)
@@ -485,16 +488,20 @@
                 <div class="coupons-grid" id="couponsContainer">
                     @foreach (var coupon in coupons)
                     {
-                        var isExpired = coupon.ExpiryDate != null && coupon.ExpiryDate < DateTime.Now;
-                        var isUsed = coupon.IsUsed ?? false;
-                        var daysUntilExpiry = coupon.ExpiryDate != null ? (int)(coupon.ExpiryDate - DateTime.Now).TotalDays : -1;
+                        var validTo = coupon.CouponType?.ValidTo;
+                        // 注意：validTo 是 UTC 時間，appNow 是 UTC+8 時間
+                        // 需要將 validTo 轉換為 UTC+8 進行比較
+                        var validToApp = validTo != null ? AppClock.ToAppTime(validTo.Value) : (DateTime?)null;
+                        var isExpired = validToApp != null && validToApp < appNow;
+                        var isUsed = coupon.IsUsed;
+                        var daysUntilExpiry = validToApp != null ? (int)(validToApp.Value - appNow).TotalDays : -1;
                         var isExpiringSoon = daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
 
                         <div class="coupon-card" data-coupon-id="@coupon.CouponId" data-status="@(isUsed ? "used" : isExpired ? "expired" : "unused")">
                             <!-- 優惠券標題 -->
                             <div class="coupon-header">
                                 <div class="coupon-code">@coupon.CouponCode</div>
-                                <div class="coupon-type">@coupon.CouponType?.Name ?? "優惠券"</div>
+                                <div class="coupon-type">官網商城限定</div>
                             </div>
 
                             <!-- 優惠券內容 -->
@@ -526,28 +533,67 @@
                                 }
 
                                 <!-- 優惠券標題 -->
-                                <h5 class="coupon-title">@coupon.CouponName</h5>
+                                <h5 class="coupon-title">@(coupon.CouponType?.Name ?? "商城優惠券")</h5>
 
                                 <!-- 優惠券描述 -->
-                                <p class="coupon-description">@coupon.Description</p>
+                                <p class="coupon-description">@(coupon.CouponType?.Description ?? "暫無描述")</p>
 
                                 <!-- 優惠券資訊 -->
                                 <div class="coupon-info-row">
-                                    <span class="coupon-info-label">折扣金額</span>
-                                    <span class="coupon-info-value coupon-discount">$@coupon.DiscountAmount</span>
+                                    <span class="coupon-info-label">
+                                        @if (coupon.CouponType?.DiscountType == "Percent")
+                                        {
+                                            <text>折抵比率</text>
+                                        }
+                                        else
+                                        {
+                                            <text>折扣優惠</text>
+                                        }
+                                    </span>
+                                    <span class="coupon-info-value coupon-discount">
+                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                        {
+                                            <text>免運費</text>
+                                        }
+                                        else if (coupon.CouponType?.DiscountType == "Percent")
+                                        {
+                                            var percentage = ((int)((coupon.CouponType.DiscountValue ?? 0) * 100));
+                                            <text>@percentage% OFF</text>
+                                        }
+                                        else if (coupon.CouponType?.DiscountType == "Fixed")
+                                        {
+                                            var fixedDiscount = ((int)(coupon.CouponType.DiscountValue ?? 0));
+                                            <text>折抵 $@fixedDiscount</text>
+                                        }
+                                        else
+                                        {
+                                            var defaultValue = ((int)(coupon.CouponType?.DiscountValue ?? 0));
+                                            <text>$@defaultValue</text>
+                                        }
+                                    </span>
                                 </div>
 
                                 <div class="coupon-info-row">
                                     <span class="coupon-info-label">最小消費</span>
-                                    <span class="coupon-info-value">$@(coupon.MinimumSpend ?? 0)</span>
+                                    <span class="coupon-info-value">
+                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                        {
+                                            <text>-</text>
+                                        }
+                                        else
+                                        {
+                                            var minSpend = ((int)(coupon.CouponType?.MinSpend ?? 0));
+                                            <text>$@minSpend</text>
+                                        }
+                                    </span>
                                 </div>
 
-                                @if (!isUsed && coupon.ExpiryDate.HasValue)
+                                @if (!isUsed && validToApp != null)
                                 {
                                     <div class="coupon-info-row">
                                         <span class="coupon-info-label">過期日期</span>
                                         <span class="coupon-info-value @(isExpiringSoon || isExpired ? "coupon-expiry" : "")">
-                                            @(((DateTime?)coupon.ExpiryDate)?.ToUtc8String("yyyy-MM-dd") ?? "-")
+                                            @(validToApp?.ToString("yyyy-MM-dd") ?? "-")
                                         </span>
                                     </div>
 
@@ -563,23 +609,10 @@
                                 }
                             </div>
 
-                            <!-- 優惠券操作 -->
-                            <div class="coupon-footer">
-                                @if (!isUsed && !isExpired)
-                                {
-                                    <button class="btn-teal" onclick="useCoupon(@coupon.CouponId)">
-                                        <i class="bi bi-check-lg"></i> 使用優惠券
-                                    </button>
-                                    <button class="btn-outline" onclick="viewCouponDetails(@coupon.CouponId)">
-                                        <i class="bi bi-info-circle"></i> 詳情
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button class="btn-outline" disabled style="cursor: not-allowed; opacity: 0.6;">
-                                        <i class="bi bi-lock"></i> @(isUsed ? "已使用" : "已過期")
-                                    </button>
-                                }
+                            <!-- 優惠券使用說明 -->
+                            <div class="coupon-footer" style="padding: 1rem 1.5rem; background-color: #f9f9f9; border-top: 1px solid #eee; display: flex; align-items: center;">
+                                <i class="bi bi-info-circle" style="color: var(--teal-primary); margin-right: 0.5rem; font-size: 1.1rem;"></i>
+                                <span style="font-size: 0.9rem; color: #666;">請於商城結帳時使用</span>
                             </div>
                         </div>
                     }

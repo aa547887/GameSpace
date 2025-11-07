@@ -1,11 +1,13 @@
 @using GamiPort.Areas.MiniGame.Controllers
 @using GamiPort.Areas.MiniGame.Helpers
 @model SignInIndexViewModel
+@inject GamiPort.Infrastructure.Time.IAppClock AppClock
 
 @{
-	ViewData["Title"] = "簽到";
+	ViewData["Title"] = "簽到月曆";
 	var currentMonth = Model.CurrentMonth;
 	var currentYear = Model.CurrentYear;
+	var today = AppClock.ToAppTime(AppClock.UtcNow);
 }
 
 <div class="container my-5">
@@ -36,12 +38,31 @@
 					@if (Model.Status.IsSignedInToday)
 					{
 						<div class="alert alert-success mb-3">
-							<i class="fas fa-check-circle"></i> 今天已簽到
+							<i class="fas fa-check-circle"></i> <strong>今日已簽到</strong>
+							<hr style="background-color: rgba(0,0,0,0.1); margin: 8px 0;" />
+							<div style="font-size: 14px; margin-top: 8px;">
+								<strong>今日獲得獎勵：</strong>
+								<ul class="mb-0" style="padding-left: 20px; margin-top: 4px;">
+									@if (Model.Status.ActualPointsGained.HasValue && Model.Status.ActualPointsGained.Value > 0)
+									{
+										<li>點數: +@Model.Status.ActualPointsGained</li>
+									}
+									@if (Model.Status.ActualExpGained.HasValue && Model.Status.ActualExpGained.Value > 0)
+									{
+										<li>經驗: +@Model.Status.ActualExpGained</li>
+									}
+									@if (!string.IsNullOrEmpty(Model.Status.ActualCouponGained))
+									{
+										<li><i class="fas fa-gift text-warning"></i> 優惠券: @Model.Status.ActualCouponGained</li>
+									}
+								</ul>
+							</div>
 						</div>
 					}
 					else
 					{
-						<form method="post" action="@Url.Action("CheckIn")">
+						<form method="post" action="@Url.Action("CheckIn", "SignIn", new { area = "MiniGame" })">
+							@Html.AntiForgeryToken()
 							<button type="submit" class="btn btn-warning w-100" style="font-weight: bold;">
 								<i class="fas fa-pencil-alt"></i> 立即簽到
 							</button>
@@ -68,12 +89,49 @@
 			<div class="card" style="border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
 				<div class="card-body">
 					<div class="d-flex justify-content-between align-items-center mb-4">
-						<h5 class="card-title mb-0">@currentYear 年 @currentMonth 月簽到日曆</h5>
-						<div>
+						<h5 class="card-title mb-0">@currentYear 年 @currentMonth 月簽到月曆</h5>
+						<div class="d-flex align-items-center gap-2">
 							<a href="@Url.Action("Index", new { year = currentYear, month = currentMonth > 1 ? currentMonth - 1 : 12 })"
 							   class="btn btn-sm btn-outline-secondary">
 								<i class="fas fa-chevron-left"></i> 上月
 							</a>
+
+							<!-- 快速選擇年月 -->
+							<div class="d-flex align-items-center gap-2">
+								<select class="form-select form-select-sm" id="yearSelect" style="width: 100px;">
+									@for (int y = today.Year - 2; y <= today.Year + 1; y++)
+									{
+										@if (y == currentYear)
+									{
+										<option value="@y" selected>@y 年</option>
+									}
+									else
+									{
+										<option value="@y">@y 年</option>
+									}
+									}
+								</select>
+								<select class="form-select form-select-sm" id="monthSelect" style="width: 90px;">
+									@for (int m = 1; m <= 12; m++)
+									{
+										@if (m == currentMonth)
+									{
+										<option value="@m" selected>@m 月</option>
+									}
+									else
+									{
+										<option value="@m">@m 月</option>
+									}
+									}
+								</select>
+								<button type="button" class="btn btn-info" id="goToMonth" style="padding: 8px 16px;">
+									<i class="fas fa-arrow-right me-1"></i>前往
+								</button>
+								<button type="button" class="btn btn-success" id="backToCurrentMonth" style="padding: 8px 16px; margin-left: 8px;">
+									<i class="fas fa-home me-1"></i>回到本月
+								</button>
+							</div>
+
 							<a href="@Url.Action("Index", new { year = currentYear, month = currentMonth < 12 ? currentMonth + 1 : 1 })"
 							   class="btn btn-sm btn-outline-secondary">
 								下月 <i class="fas fa-chevron-right"></i>
@@ -85,13 +143,13 @@
 						<table class="table table-bordered text-center">
 							<thead style="background-color: #f0f4f8;">
 								<tr>
-									<th>日</th>
+									<th style="background-color: #ffe4e1;">日</th>
 									<th>一</th>
 									<th>二</th>
 									<th>三</th>
 									<th>四</th>
 									<th>五</th>
-									<th>六</th>
+									<th style="background-color: #ffe4e1;">六</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -113,19 +171,27 @@
 												else
 												{
 													var day = Model.Calendar.Days[dayIndex];
-													var bgColor = day.IsSignedIn ? "#e0f2f1" : "#ffffff";
+													var isWeekend = (col == 0 || col == 6); // 日或六
+													var baseBgColor = isWeekend ? "#ffe4e1" : "#ffffff"; // 週末淡粉紅色
+													var bgColor = day.IsSignedIn ? "#e0f2f1" : baseBgColor;
 													var borderColor = day.IsSignedIn ? "#17a2b8" : "#ddd";
 
-													<td style="background-color: @bgColor; border: 2px solid @borderColor; padding: 12px; border-radius: 8px;">
+													<td style="background-color: @bgColor; border: 2px solid @borderColor; padding: 12px; border-radius: 8px; position: relative;">
 														<strong>@day.Day</strong>
 														@if (day.IsSignedIn)
 														{
-															<div style="font-size: 11px; color: #17a2b8; margin-top: 4px;">
+															<!-- 印章圖示蓋上去 -->
+															<div class="position-absolute top-50 start-50 translate-middle" style="pointer-events: none; z-index: 2;">
+																<img src="/MiniGame/stamps/SIGNIN-STAMP.png"
+																	 alt="已簽到印章"
+																	 style="width: 70px; height: 70px; opacity: 0.75;" />
+															</div>
+															<div style="font-size: 11px; color: #17a2b8; margin-top: 4px; position: relative; z-index: 3;">
 																<i class="fas fa-check-circle"></i> 已簽到
 															</div>
 															@if (day.PointsGained.HasValue)
 															{
-																<div style="font-size: 10px; color: #666;">+@day.PointsGained P</div>
+																<div style="font-size: 10px; color: #666; position: relative; z-index: 3;">+@day.PointsGained P</div>
 															}
 														}
 													</td>
@@ -144,6 +210,71 @@
 						<a href="@Url.Action("History")" class="btn btn-primary" style="background-color: #17a2b8; border-color: #17a2b8;">
 							<i class="fas fa-history"></i> 查看簽到歷史
 						</a>
+						<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#signInRulesModal">
+							<i class="fas fa-gift"></i> 查看簽到規則
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- 簽到規則 Modal -->
+			<div class="modal fade" id="signInRulesModal" tabindex="-1" aria-labelledby="signInRulesModalLabel" aria-hidden="true">
+				<div class="modal-dialog modal-lg modal-dialog-centered">
+					<div class="modal-content">
+						<div class="modal-header" style="background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%); color: white;">
+							<h5 class="modal-title" id="signInRulesModalLabel">
+								<i class="fas fa-gift me-2"></i>簽到規則說明
+							</h5>
+							<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="row">
+								<div class="col-md-6 mb-3">
+									<div class="p-3 border rounded" style="background-color: #f8f9fa;">
+										<h6 class="fw-bold text-primary"><i class="fas fa-calendar-day"></i> 平日獎勵</h6>
+										<ul class="mb-0">
+											<li>會員點數：+20 點</li>
+											<li>寵物經驗：+0 經驗</li>
+										</ul>
+									</div>
+								</div>
+								<div class="col-md-6 mb-3">
+									<div class="p-3 border rounded" style="background-color: #fff8e1;">
+										<h6 class="fw-bold text-warning"><i class="fas fa-calendar-week"></i> 假日獎勵</h6>
+										<ul class="mb-0">
+											<li>會員點數：+30 點</li>
+											<li>寵物經驗：+200 經驗</li>
+										</ul>
+									</div>
+								</div>
+								<div class="col-md-6 mb-3">
+									<div class="p-3 border rounded" style="background-color: #e8f5e9;">
+										<h6 class="fw-bold text-success"><i class="fas fa-fire"></i> 連續7天獎勵</h6>
+										<ul class="mb-0">
+											<li>額外會員點數：+40 點</li>
+											<li>額外寵物經驗：+300 經驗</li>
+										</ul>
+									</div>
+								</div>
+								<div class="col-md-6 mb-3">
+									<div class="p-3 border rounded" style="background-color: #fce4ec;">
+										<h6 class="fw-bold text-danger"><i class="fas fa-trophy"></i> 當月全勤獎勵</h6>
+										<ul class="mb-0">
+											<li>額外會員點數：+200 點</li>
+											<li>額外寵物經驗：+2000 經驗</li>
+											<li>商城優惠券：+1 張</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+							<div class="alert alert-info mt-3 mb-0">
+								<i class="fas fa-info-circle"></i> <strong>提示：</strong>
+								每日簽到時間以 UTC+8 時區為準，每日限簽到一次。連續簽到可獲得更多獎勵！
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -172,4 +303,45 @@
 	.btn:hover {
 		transform: translateY(-2px);
 	}
+
+	.gap-2 {
+		gap: 0.5rem !important;
+	}
 </style>
+
+<script>
+	// 快速選擇年月功能
+	document.addEventListener('DOMContentLoaded', function() {
+		const goToMonthBtn = document.getElementById('goToMonth');
+		const yearSelect = document.getElementById('yearSelect');
+		const monthSelect = document.getElementById('monthSelect');
+
+		if (goToMonthBtn && yearSelect && monthSelect) {
+			goToMonthBtn.addEventListener('click', function() {
+				const year = yearSelect.value;
+				const month = monthSelect.value;
+				window.location.href = '@Url.Action("Index")?year=' + year + '&month=' + month;
+			});
+
+			// 按Enter也可跳轉
+			[yearSelect, monthSelect].forEach(select => {
+				select.addEventListener('keypress', function(e) {
+					if (e.key === 'Enter') {
+						goToMonthBtn.click();
+					}
+				});
+			});
+		}
+
+		// 回到本月按鈕
+		const backToCurrentMonthBtn = document.getElementById('backToCurrentMonth');
+		if (backToCurrentMonthBtn) {
+			backToCurrentMonthBtn.addEventListener('click', function() {
+				const today = new Date();
+				const currentYear = today.getFullYear();
+				const currentMonth = today.getMonth() + 1;
+				window.location.href = '@Url.Action("Index")?year=' + currentYear + '&month=' + currentMonth;
+			});
+		}
+	});
+</script>

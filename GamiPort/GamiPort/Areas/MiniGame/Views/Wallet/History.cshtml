@@ -1,0 +1,349 @@
+@using GamiPort.Models
+@using GamiPort.Areas.MiniGame.Helpers
+@{
+	ViewData["Title"] = "錢包交易歷史";
+	dynamic viewData = (dynamic)Model;
+	var items = viewData.Items as List<WalletHistory> ?? new List<WalletHistory>();
+	var currentPoints = (int)viewData.CurrentPoints;
+	var pagination = viewData.Pagination;
+	var filters = viewData.Filters;
+
+	var pageNumber = (int)pagination.PageNumber;
+	var pageSize = (int)pagination.PageSize;
+	var totalCount = (int)pagination.TotalCount;
+	var totalPages = (int)pagination.TotalPages;
+	var hasPreviousPage = (bool)pagination.HasPreviousPage;
+	var hasNextPage = (bool)pagination.HasNextPage;
+
+	var changeType = filters.ChangeType as string;
+	var startDate = filters.StartDate as DateTime?;
+	var endDate = filters.EndDate as DateTime?;
+	var searchTerm = filters.SearchTerm as string;
+}
+
+<div class="container-fluid px-4">
+	<h1 class="mt-4 text-info">
+		<i class="fas fa-history me-2"></i>錢包交易歷史
+	</h1>
+	<ol class="breadcrumb mb-4">
+		<li class="breadcrumb-item"><a asp-action="Index">錢包首頁</a></li>
+		<li class="breadcrumb-item active">交易歷史</li>
+	</ol>
+
+	<!-- 當前點數卡片 -->
+	<div class="row mb-4">
+		<div class="col-lg-4 col-md-6">
+			<div class="card bg-info text-white shadow">
+				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-center">
+						<div>
+							<div class="text-white-50 small">當前點數</div>
+							<div class="h2 mb-0">@currentPoints.ToString("N0")</div>
+						</div>
+						<div class="fs-1">
+							<i class="fas fa-coins"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 篩選器區域 -->
+	<div class="card mb-4">
+		<div class="card-header bg-info text-white">
+			<i class="fas fa-filter me-2"></i>篩選與搜尋
+		</div>
+		<div class="card-body">
+			<form method="get" asp-action="History" id="filterForm">
+				<div class="row g-3">
+					<!-- 交易類型篩選 -->
+					<div class="col-md-3">
+						<label for="changeType" class="form-label">交易類型</label>
+						<select class="form-select" id="changeType" name="changeType">
+							<option value="">全部類型</option>
+							<option value="Point" selected="@(changeType == "Point")">點數交易</option>
+							<option value="Coupon" selected="@(changeType == "Coupon")">優惠券</option>
+							<option value="EVoucher" selected="@(changeType == "EVoucher")">電子禮券</option>
+						</select>
+					</div>
+
+					<!-- 開始日期 -->
+					<div class="col-md-3">
+						<label for="startDate" class="form-label">開始日期</label>
+						<input type="date" class="form-control" id="startDate" name="startDate"
+							   value="@(startDate?.ToString("yyyy-MM-dd"))" />
+					</div>
+
+					<!-- 結束日期 -->
+					<div class="col-md-3">
+						<label for="endDate" class="form-label">結束日期</label>
+						<input type="date" class="form-control" id="endDate" name="endDate"
+							   value="@(endDate?.ToString("yyyy-MM-dd"))" />
+					</div>
+
+					<!-- 每頁筆數 -->
+					<div class="col-md-3">
+						<label for="pageSize" class="form-label">每頁筆數</label>
+						<select class="form-select" id="pageSize" name="pageSize">
+							<option value="10" selected="@(pageSize == 10)">10</option>
+							<option value="20" selected="@(pageSize == 20)">20</option>
+							<option value="50" selected="@(pageSize == 50)">50</option>
+							<option value="100" selected="@(pageSize == 100)">100</option>
+						</select>
+					</div>
+
+					<!-- 搜尋關鍵字 -->
+					<div class="col-12">
+						<label for="searchTerm" class="form-label">搜尋關鍵字（描述或代碼）</label>
+						<div class="input-group">
+							<span class="input-group-text bg-info text-white">
+								<i class="fas fa-search"></i>
+							</span>
+							<input type="text" class="form-control" id="searchTerm" name="searchTerm"
+								   value="@searchTerm" placeholder="支援模糊搜尋..." />
+							<button class="btn btn-info" type="submit">
+								<i class="fas fa-filter me-1"></i>套用篩選
+							</button>
+							<a href="@Url.Action("History")" class="btn btn-outline-secondary">
+								<i class="fas fa-redo me-1"></i>重置
+							</a>
+						</div>
+						<div class="form-text">
+							<i class="fas fa-lightbulb text-warning"></i>
+							支援 5 級模糊搜尋：精確匹配 > 開頭匹配 > 包含匹配 > 編輯距離 ≤ 2 > 部分詞組匹配
+						</div>
+					</div>
+				</div>
+
+				<!-- 隱藏的 pageNumber 欄位 -->
+				<input type="hidden" name="pageNumber" value="1" />
+			</form>
+		</div>
+	</div>
+
+	<!-- 結果摘要 -->
+	<div class="alert alert-info">
+		<i class="fas fa-info-circle me-2"></i>
+		共找到 <strong>@totalCount</strong> 筆交易記錄
+		@if (!string.IsNullOrEmpty(searchTerm))
+		{
+			<span>（搜尋關鍵字：「<strong>@searchTerm</strong>」）</span>
+		}
+	</div>
+
+	<!-- 交易記錄表格 -->
+	@if (items.Any())
+	{
+		<div class="card mb-4">
+			<div class="card-body p-0">
+				<div class="table-responsive">
+					<table class="table table-hover mb-0">
+						<thead class="table-info">
+							<tr>
+								<th>時間</th>
+								<th>類型</th>
+								<th class="text-end">點數變動</th>
+								<th>項目代碼</th>
+								<th>描述</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var item in items)
+							{
+								var isPositive = item.PointsChanged > 0;
+								var changeClass = isPositive ? "text-success" : "text-danger";
+								var changeIcon = isPositive ? "fa-arrow-up" : "fa-arrow-down";
+
+								<tr>
+									<td class="text-nowrap">
+										<small>@(((DateTime?)item.ChangeTime)?.ToUtc8String("yyyy-MM-dd") ?? "-")</small><br />
+										<small class="text-muted">@(((DateTime?)item.ChangeTime)?.ToUtc8String("HH:mm:ss") ?? "-")</small>
+									</td>
+									<td>
+										@{
+											var description = item.Description ?? "";
+											var isExchangeCoupon = description.Contains("兌換優惠券") || description.Contains("兌換商城優惠券");
+											var isExchangeEVoucher = description.Contains("兌換電子禮券") || description.Contains("兌換禮券");
+										}
+										@if (isExchangeCoupon)
+										{
+											@* 兌換優惠券：同時顯示點數 + 優惠券 *@
+											<span class="badge bg-primary me-1">
+												<i class="fas fa-coins"></i> 點數
+											</span>
+											<span class="badge bg-warning text-dark">
+												<i class="fas fa-ticket-alt"></i> 優惠券
+											</span>
+										}
+										else if (isExchangeEVoucher)
+										{
+											@* 兌換電子禮券：同時顯示點數 + 電子禮券 *@
+											<span class="badge bg-primary me-1">
+												<i class="fas fa-coins"></i> 點數
+											</span>
+											<span class="badge bg-info">
+												<i class="fas fa-gift"></i> 電子禮券
+											</span>
+										}
+										else if (item.ChangeType == "Point")
+										{
+											<span class="badge bg-primary">
+												<i class="fas fa-coins"></i> 點數
+											</span>
+										}
+										else if (item.ChangeType == "Coupon")
+										{
+											<span class="badge bg-warning text-dark">
+												<i class="fas fa-ticket-alt"></i> 優惠券
+											</span>
+										}
+										else if (item.ChangeType == "EVoucher")
+										{
+											<span class="badge bg-info">
+												<i class="fas fa-gift"></i> 電子禮券
+											</span>
+										}
+										else
+										{
+											<span class="badge bg-secondary">@item.ChangeType</span>
+										}
+									</td>
+									<td class="text-end fw-bold @changeClass">
+										<i class="fas @changeIcon me-1"></i>
+										@(isPositive ? "+" : "")@(((int?)item.PointsChanged)?.ToString("N0") ?? "0")
+									</td>
+									<td>
+										@if (!string.IsNullOrEmpty(item.ItemCode))
+										{
+											<code class="small">@item.ItemCode</code>
+										}
+										else
+										{
+											<span class="text-muted">-</span>
+										}
+									</td>
+									<td>@item.Description</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- 分頁控制 -->
+		@if (totalPages > 1)
+		{
+			<nav aria-label="頁碼導航">
+				<ul class="pagination justify-content-center">
+					<!-- 第一頁 -->
+					<li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+						<a class="page-link" href="@BuildPageUrl(1, pageSize, changeType, startDate, endDate, searchTerm)" aria-label="第一頁">
+							<i class="fas fa-angle-double-left"></i>
+						</a>
+					</li>
+
+					<!-- 上一頁 -->
+					<li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+						<a class="page-link" href="@BuildPageUrl(pageNumber - 1, pageSize, changeType, startDate, endDate, searchTerm)" aria-label="上一頁">
+							<i class="fas fa-angle-left"></i>
+						</a>
+					</li>
+
+					<!-- 頁碼 -->
+					@{
+						var startPage = Math.Max(1, pageNumber - 2);
+						var endPage = Math.Min(totalPages, pageNumber + 2);
+
+						for (int i = startPage; i <= endPage; i++)
+						{
+							<li class="page-item @(i == pageNumber ? "active" : "")">
+								<a class="page-link" href="@BuildPageUrl(i, pageSize, changeType, startDate, endDate, searchTerm)">@i</a>
+							</li>
+						}
+					}
+
+					<!-- 下一頁 -->
+					<li class="page-item @(!hasNextPage ? "disabled" : "")">
+						<a class="page-link" href="@BuildPageUrl(pageNumber + 1, pageSize, changeType, startDate, endDate, searchTerm)" aria-label="下一頁">
+							<i class="fas fa-angle-right"></i>
+						</a>
+					</li>
+
+					<!-- 最後一頁 -->
+					<li class="page-item @(!hasNextPage ? "disabled" : "")">
+						<a class="page-link" href="@BuildPageUrl(totalPages, pageSize, changeType, startDate, endDate, searchTerm)" aria-label="最後一頁">
+							<i class="fas fa-angle-double-right"></i>
+						</a>
+					</li>
+				</ul>
+			</nav>
+
+			<div class="text-center text-muted mb-3">
+				第 @pageNumber 頁，共 @totalPages 頁（共 @totalCount 筆）
+			</div>
+		}
+	}
+	else
+	{
+		<div class="alert alert-warning">
+			<i class="fas fa-exclamation-triangle me-2"></i>
+			@if (!string.IsNullOrEmpty(searchTerm) || changeType != null || startDate.HasValue || endDate.HasValue)
+			{
+				<span>找不到符合條件的交易記錄，請調整篩選條件後重試。</span>
+			}
+			else
+			{
+				<span>您目前還沒有任何交易記錄。</span>
+			}
+		</div>
+	}
+
+	<!-- 返回按鈕 -->
+	<div class="mb-4">
+		<a asp-action="Index" class="btn btn-secondary">
+			<i class="fas fa-arrow-left me-1"></i>返回錢包首頁
+		</a>
+	</div>
+</div>
+
+@functions {
+	string BuildPageUrl(int page, int pageSize, string changeType, DateTime? startDate, DateTime? endDate, string searchTerm)
+	{
+		var urlParams = new Dictionary<string, string>
+		{
+			{ "pageNumber", page.ToString() },
+			{ "pageSize", pageSize.ToString() }
+		};
+
+		if (!string.IsNullOrEmpty(changeType))
+			urlParams["changeType"] = changeType;
+
+		if (startDate.HasValue)
+			urlParams["startDate"] = startDate.Value.ToString("yyyy-MM-dd");
+
+		if (endDate.HasValue)
+			urlParams["endDate"] = endDate.Value.ToString("yyyy-MM-dd");
+
+		if (!string.IsNullOrEmpty(searchTerm))
+			urlParams["searchTerm"] = searchTerm;
+
+		var queryString = string.Join("&", urlParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+		return $"{Url.Action("History")}?{queryString}";
+	}
+}
+
+@section Scripts {
+	<script>
+		// 當篩選器變更時，自動將頁碼重置為 1
+		document.getElementById('changeType').addEventListener('change', function() {
+			document.querySelector('input[name="pageNumber"]').value = '1';
+		});
+
+		document.getElementById('pageSize').addEventListener('change', function() {
+			document.querySelector('input[name="pageNumber"]').value = '1';
+			document.getElementById('filterForm').submit();
+		});
+	</script>
+}
