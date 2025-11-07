@@ -21,25 +21,15 @@
 ﻿﻿        }
 ﻿﻿
 ﻿﻿        [HttpGet("/OnlineStore/Product/Detail/{productCode}")]
-﻿﻿        public async Task<IActionResult> Detail(string productCode)
-﻿﻿        {
-﻿﻿            var product = await _db.SProductCodes
-﻿﻿                                   .AsNoTracking()
-﻿﻿                                   .FirstOrDefaultAsync(p => p.ProductCode == productCode);
-﻿﻿
-﻿﻿            if (product == null)
-﻿﻿            {
-﻿﻿                return NotFound();
-﻿﻿            }
-﻿﻿
-﻿﻿            var viewModel = await _storeService.GetProductDetailVM(product.ProductId);
-﻿﻿
-﻿﻿            if (viewModel == null)
-﻿﻿            {
-﻿﻿                return NotFound();
-﻿﻿            }
-﻿﻿
-﻿﻿            return View(viewModel);
-﻿﻿        }
-﻿﻿    }
+﻿﻿                public async Task<IActionResult> Detail(string productCode)
+﻿﻿                {
+﻿﻿                    var viewModel = await _storeService.GetProductDetailVM(productCode);
+﻿﻿        
+﻿﻿                    if (viewModel == null)
+﻿﻿                    {
+﻿﻿                        return NotFound();
+﻿﻿                    }
+﻿﻿        
+﻿﻿                    return View(viewModel);
+﻿﻿                }﻿﻿    }
 ﻿﻿}
