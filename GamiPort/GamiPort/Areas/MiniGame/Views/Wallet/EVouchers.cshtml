@@ -126,18 +126,18 @@
 
 							<!-- 詳細資訊 -->
 							<p class="card-text">
-								<strong>獲得時間：</strong>@voucher.AcquiredTime.ToUtc8String("yyyy-MM-dd HH:mm")<br />
+								<strong>獲得時間：</strong>@voucher.AcquiredTime.ToString("yyyy-MM-dd HH:mm")<br />
 								@if (voucher.EvoucherType != null)
 								{
 									<span>
 										<strong>有效期限：</strong>
-										@voucher.EvoucherType.ValidFrom.ToUtc8String("yyyy-MM-dd") ~ @voucher.EvoucherType.ValidTo.ToUtc8String("yyyy-MM-dd")
+										@voucher.EvoucherType.ValidFrom.ToString("yyyy-MM-dd") ~ @voucher.EvoucherType.ValidTo.ToString("yyyy-MM-dd")
 									</span>
 									<br />
 								}
 								@if (voucher.IsUsed && voucher.UsedTime.HasValue)
 								{
-									<strong>使用時間：</strong>@voucher.UsedTime?.ToUtc8String("yyyy-MM-dd HH:mm")<br />
+									<strong>使用時間：</strong>@voucher.UsedTime?.ToString("yyyy-MM-dd HH:mm")<br />
 								}
 								@if (!string.IsNullOrEmpty(voucher.EvoucherType?.Description))
 								{
