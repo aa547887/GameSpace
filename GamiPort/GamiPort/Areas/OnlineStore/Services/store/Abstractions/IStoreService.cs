@@ -45,7 +45,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Abstractions
         Task<List<ProductCardVM>> GetBrowseCards();
 
         /// <summary>取得商品詳情（依 Id）。</summary>
-        Task<ProductDetailVM?> GetProductDetailVM(int id);
+        Task<ProductDetailVM?> GetProductDetailVM(string productCode);
 
         /// <summary>取得收藏數最高的商品清單。</summary>
         Task<List<ProductCardDto>> GetTopFavorites(int count);

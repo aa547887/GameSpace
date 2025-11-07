@@ -7,6 +7,9 @@ using GamiPort.Areas.OnlineStore.DTO.Store;
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.ViewModels;
 using GamiPort.Services;
+using GamiPort.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -17,10 +20,12 @@ namespace GamiPort.Areas.OnlineStore.Controllers
     {
         private readonly IStoreService _service;
         private readonly ICurrentUserService _currentUser;
-        public StoreApiController(IStoreService service, ICurrentUserService currentUser)
+        private readonly GameSpacedatabaseContext _db;
+        public StoreApiController(IStoreService service, ICurrentUserService currentUser, GameSpacedatabaseContext db)
         {
             _service = service;
             _currentUser = currentUser;
+            _db = db;
         }
 
 		/// <summary>
@@ -211,7 +216,15 @@ namespace GamiPort.Areas.OnlineStore.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<ProductDetailVM>> GetProductDetail(int id)
         {
-            var vm = await _service.GetProductDetailVM(id);
+            var productCode = await _db.SProductCodes
+                                       .Where(pc => pc.ProductId == id)
+                                       .Select(pc => pc.ProductCode)
+                                       .FirstOrDefaultAsync();
+            if (productCode == null)
+            {
+                return NotFound();
+            }
+            var vm = await _service.GetProductDetailVM(productCode);
             if (vm == null) return NotFound();
             return Ok(vm);
         }
