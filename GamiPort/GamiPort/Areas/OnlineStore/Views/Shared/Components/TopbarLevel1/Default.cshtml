@@ -1,4 +1,4 @@
-﻿@using GamiPort.Services
+@using GamiPort.Services
 @inject ICurrentUserService CurrentUser
 
 @{
@@ -38,7 +38,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link nav-elevate" href="/OnlineStore/store/favorites" title="我的收藏">
+                <a id="favorites-link" class="nav-link nav-elevate" href="/OnlineStore/store/favorites" title="我的收藏">
                     <i class="bi bi-heart me-1"></i> 我的收藏
                 </a>
             </li>
@@ -122,6 +122,39 @@
     }
 </style>
 
+<!-- Login Prompt Modal -->
+<div class="modal fade" id="loginPromptModal" tabindex="-1" aria-labelledby="loginPromptModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginPromptModalLabel">請先登入</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">您需要登入後才能使用此功能。</p>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-dark" href="/Login/Login/Login">現在去登入</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再看看</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-    // ... existing script ...
+    document.addEventListener("DOMContentLoaded", function() {
+        const isAuthenticated = @CurrentUser.IsAuthenticated.ToString().ToLower();
+
+        if (!isAuthenticated) {
+            const favoritesLink = document.getElementById('favorites-link');
+            if (favoritesLink) {
+                const loginModal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+
+                favoritesLink.addEventListener('click', function(event) {
+                    event.preventDefault(); // Stop the link from navigating
+                    loginModal.show(); // Show the modal
+                });
+            }
+        }
+    });
 </script>
