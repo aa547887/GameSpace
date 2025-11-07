@@ -165,10 +165,17 @@
 									<td>
 										@{
 											var description = item.Description ?? "";
+											var itemCode = item.ItemCode ?? "";
 											var isExchangeCoupon = description.Contains("兌換優惠券") || description.Contains("兌換商城優惠券");
 											var isExchangeEVoucher = description.Contains("兌換電子禮券") || description.Contains("兌換禮券");
 											var isSignIn = description.Contains("簽到");
-											var isPet = item.ChangeType == "Pet" || item.ChangeType == "PetSkinColor" || item.ChangeType == "PetBackground";
+											// 寵物判斷：ChangeType 或 ItemCode 以 PET- 開頭 或 Description 包含「寵物」
+											var isPet = item.ChangeType == "Pet"
+												|| item.ChangeType == "PetSkinColor"
+												|| item.ChangeType == "PetBackground"
+												|| itemCode.StartsWith("PET-")
+												|| itemCode.StartsWith("PET_")
+												|| description.Contains("寵物");
 										}
 										@if (isSignIn && item.ChangeType == "Point")
 										{
