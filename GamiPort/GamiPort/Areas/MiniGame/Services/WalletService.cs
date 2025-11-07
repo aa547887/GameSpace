@@ -73,7 +73,7 @@ namespace GamiPort.Areas.MiniGame.Services
 				var coupons = await _context.Coupons
 					.Include(c => c.CouponType)
 					.AsNoTracking()
-					.Where(c => c.UserId == userId && !c.IsDeleted)
+					.Where(c => c.UserId == userId && !c.IsDeleted && c.CouponCode.StartsWith("CPN-"))
 					.ToListAsync();
 
 				// 應用模糊搜尋 (OR 邏輯: 優惠券代碼 OR 優惠券類型名稱)
@@ -158,6 +158,7 @@ namespace GamiPort.Areas.MiniGame.Services
 
 		/// <summary>
 		/// 獲取用戶未使用的優惠券數量
+		/// 僅計算 CPN- 開頭的商城優惠券
 		/// </summary>
 		public async Task<int> GetUnusedCouponCountAsync(int userId)
 		{
@@ -165,7 +166,7 @@ namespace GamiPort.Areas.MiniGame.Services
 			{
 				return await _context.Coupons
 					.AsNoTracking()
-					.CountAsync(c => c.UserId == userId && !c.IsUsed && !c.IsDeleted);
+					.CountAsync(c => c.UserId == userId && !c.IsUsed && !c.IsDeleted && c.CouponCode.StartsWith("CPN-"));
 			}
 			catch (Exception ex)
 			{
@@ -327,6 +328,21 @@ namespace GamiPort.Areas.MiniGame.Services
 				}
 
 				_context.Coupons.Update(coupon);
+
+				// 7. 添加WalletHistory記錄 - 優惠券使用
+				var couponTypeName = coupon.CouponType?.Name ?? "優惠券";
+				var walletHistory = new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Coupon",
+					PointsChanged = -1,
+					ItemCode = coupon.CouponCode,
+					Description = $"使用優惠券: {couponTypeName}",
+					ChangeTime = usedTime,
+					IsDeleted = false
+				};
+				_context.WalletHistories.Add(walletHistory);
+
 				await _context.SaveChangesAsync();
 				await transaction.CommitAsync();
 
@@ -423,6 +439,21 @@ namespace GamiPort.Areas.MiniGame.Services
 
 				_context.Evouchers.Update(evoucher);
 				_context.EvoucherRedeemLogs.Add(redeemLog);
+
+				// 8. 添加WalletHistory記錄 - 電子禮券核銷
+				var evoucherTypeName = evoucher.EvoucherType?.Name ?? "電子禮券";
+				var walletHistory = new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "EVoucher",
+					PointsChanged = -1,
+					ItemCode = evoucher.EvoucherCode,
+					Description = $"核銷電子禮券: {evoucherTypeName}",
+					ChangeTime = usedTime,
+					IsDeleted = false
+				};
+				_context.WalletHistories.Add(walletHistory);
+
 				await _context.SaveChangesAsync();
 				await transaction.CommitAsync();
 
@@ -563,6 +594,9 @@ namespace GamiPort.Areas.MiniGame.Services
 			int couponTypeId,
 			int quantity = 1)
 		{
+			_logger.LogInformation("開始兌換優惠券: UserId={UserId}, CouponTypeId={CouponTypeId}, Quantity={Quantity}",
+				userId, couponTypeId, quantity);
+
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
@@ -616,24 +650,33 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 7. 扣除點數
 				wallet.UserPoint -= totalPointsRequired;
 
-				// 8. 生成優惠券
+				// 8. 生成優惠券（使用原生SQL繞過DEFAULT約束）
 				var generatedCodes = new List<string>();
 				for (int i = 0; i < quantity; i++)
 				{
 					var couponCode = await GenerateUniqueCouponCodeAsync();
-					var coupon = new Coupon
-					{
-						CouponCode = couponCode,
-						CouponTypeId = couponTypeId,
-						UserId = userId,
-						IsUsed = false,
-						AcquiredTime = nowUtc8,
-						UsedTime = null,
-						UsedInOrderId = null,
-						IsDeleted = false
-					};
-					_context.Coupons.Add(coupon);
+					_logger.LogDebug("生成優惠券代碼: {CouponCode}, Iteration={Iteration}", couponCode, i + 1);
+
+					// 使用原生SQL直接插入，完全控制NULL值
+					var sql = @"
+						INSERT INTO [Coupon]
+						([CouponCode], [CouponTypeId], [UserId], [IsUsed], [AcquiredTime], [UsedTime], [UsedInOrderId], [IsDeleted])
+						VALUES
+						({0}, {1}, {2}, {3}, {4}, NULL, NULL, {5})";
+
+					await _context.Database.ExecuteSqlRawAsync(
+						sql,
+						couponCode,
+						couponTypeId,
+						userId,
+						false,  // IsUsed
+						nowUtc8,
+						false   // IsDeleted
+					);
+
 					generatedCodes.Add(couponCode);
+
+					_logger.LogDebug("優惠券插入成功: CouponCode={CouponCode}, 使用原生SQL繞過DEFAULT約束", couponCode);
 				}
 
 				// 9. 記錄錢包歷史
@@ -659,12 +702,34 @@ namespace GamiPort.Areas.MiniGame.Services
 
 				return (true, $"成功兌換 {quantity} 張優惠券「{couponType.Name}」", generatedCodes);
 			}
+			catch (DbUpdateException dbEx)
+			{
+				await transaction.RollbackAsync();
+				_logger.LogError(dbEx, "資料庫更新失敗: UserId={UserId}, CouponTypeId={CouponTypeId}, InnerException={InnerException}",
+					userId, couponTypeId, dbEx.InnerException?.Message ?? "無");
+
+				// 檢查是否為唯一性約束違反
+				if (dbEx.InnerException?.Message?.Contains("UNIQUE") == true ||
+				    dbEx.InnerException?.Message?.Contains("duplicate") == true)
+				{
+					return (false, "優惠券代碼生成衝突，請重試", new List<string>());
+				}
+
+				// 檢查是否為CHECK約束違反
+				if (dbEx.InnerException?.Message?.Contains("CHECK") == true ||
+				    dbEx.InnerException?.Message?.Contains("CK_") == true)
+				{
+					return (false, "資料驗證失敗，請聯繫客服", new List<string>());
+				}
+
+				return (false, $"兌換失敗：{dbEx.InnerException?.Message ?? dbEx.Message}", new List<string>());
+			}
 			catch (Exception ex)
 			{
 				await transaction.RollbackAsync();
-				_logger.LogError(ex, "兌換優惠券失敗: UserId={UserId}, CouponTypeId={CouponTypeId}",
-					userId, couponTypeId);
-				return (false, "兌換失敗，請稍後再試", new List<string>());
+				_logger.LogError(ex, "兌換優惠券失敗: UserId={UserId}, CouponTypeId={CouponTypeId}, ExceptionType={ExceptionType}",
+					userId, couponTypeId, ex.GetType().Name);
+				return (false, $"兌換失敗：{ex.Message}", new List<string>());
 			}
 		}
 
@@ -797,15 +862,25 @@ namespace GamiPort.Areas.MiniGame.Services
 
 		/// <summary>
 		/// 獲取所有可兌換的優惠券類型
+		/// 僅返回有對應 CPN- 開頭的優惠券實例的類型
 		/// </summary>
 		public async Task<IEnumerable<CouponType>> GetAvailableCouponTypesAsync()
 		{
 			try
 			{
 				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
+
+				// 取得所有有 CPN- 開頭的優惠券的類型 ID
+				var validCouponTypeIds = await _context.Coupons
+					.AsNoTracking()
+					.Where(c => c.CouponCode.StartsWith("CPN-") && !c.IsDeleted)
+					.Select(c => c.CouponTypeId)
+					.Distinct()
+					.ToListAsync();
+
 				return await _context.CouponTypes
 					.AsNoTracking()
-					.Where(ct => !ct.IsDeleted && ct.ValidTo >= nowUtc8)
+					.Where(ct => !ct.IsDeleted && ct.ValidTo >= nowUtc8 && validCouponTypeIds.Contains(ct.CouponTypeId))
 					.OrderBy(ct => ct.PointsCost)
 					.ToListAsync();
 			}
@@ -865,7 +940,8 @@ namespace GamiPort.Areas.MiniGame.Services
 			}
 
 			// Fallback: use full timestamp + GUID if all retries failed
-			var fallbackCode = $"CPN-{DateTime.Now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			var fallbackCode = $"CPN-{appNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
 			_logger.LogError("優惠券代碼生成失敗，使用 Fallback: Code={Code}", fallbackCode);
 			return fallbackCode;
 		}
@@ -898,7 +974,8 @@ namespace GamiPort.Areas.MiniGame.Services
 			}
 
 			// Fallback: use full timestamp + GUID if all retries failed
-			var fallbackCode = $"EV-{DateTime.Now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			var fallbackCode = $"EV-{appNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
 			_logger.LogError("電子禮券代碼生成失敗，使用 Fallback: Code={Code}", fallbackCode);
 			return fallbackCode;
 		}

@@ -1,4 +1,5 @@
 @using GamiPort.Models
+@using GamiPort.Areas.MiniGame.Helpers
 @{
 	ViewData["Title"] = "錢包交易歷史";
 	dynamic viewData = (dynamic)Model;
@@ -156,8 +157,8 @@
 
 								<tr>
 									<td class="text-nowrap">
-										<small>@(((DateTime?)item.ChangeTime)?.ToString("yyyy-MM-dd") ?? "-")</small><br />
-										<small class="text-muted">@(((DateTime?)item.ChangeTime)?.ToString("HH:mm:ss") ?? "-")</small>
+										<small>@(((DateTime?)item.ChangeTime)?.ToUtc8String("yyyy-MM-dd") ?? "-")</small><br />
+										<small class="text-muted">@(((DateTime?)item.ChangeTime)?.ToUtc8String("HH:mm:ss") ?? "-")</small>
 									</td>
 									<td>
 										@{

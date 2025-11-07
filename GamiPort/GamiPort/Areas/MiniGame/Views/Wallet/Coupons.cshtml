@@ -1,9 +1,11 @@
 @using GamiPort.Areas.MiniGame.Helpers
 @using GamiPort.Models
+@inject GamiPort.Infrastructure.Time.IAppClock AppClock
 @{
     ViewData["Title"] = "商城優惠券";
     var coupons = ViewBag.Coupons as List<Coupon> ?? new List<Coupon>();
     var searchTerm = ViewBag.SearchTerm as string ?? "";
+    var appNow = AppClock.ToAppTime(AppClock.UtcNow);
 }
 
 @if (User.Identity?.IsAuthenticated == true)
@@ -487,16 +489,19 @@
                     @foreach (var coupon in coupons)
                     {
                         var validTo = coupon.CouponType?.ValidTo;
-                        var isExpired = validTo != null && validTo < DateTime.Now;
+                        // 注意：validTo 是 UTC 時間，appNow 是 UTC+8 時間
+                        // 需要將 validTo 轉換為 UTC+8 進行比較
+                        var validToApp = validTo != null ? AppClock.ToAppTime(validTo.Value) : (DateTime?)null;
+                        var isExpired = validToApp != null && validToApp < appNow;
                         var isUsed = coupon.IsUsed;
-                        var daysUntilExpiry = validTo != null ? (int)(validTo.Value - DateTime.Now).TotalDays : -1;
+                        var daysUntilExpiry = validToApp != null ? (int)(validToApp.Value - appNow).TotalDays : -1;
                         var isExpiringSoon = daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
 
                         <div class="coupon-card" data-coupon-id="@coupon.CouponId" data-status="@(isUsed ? "used" : isExpired ? "expired" : "unused")">
                             <!-- 優惠券標題 -->
                             <div class="coupon-header">
                                 <div class="coupon-code">@coupon.CouponCode</div>
-                                <div class="coupon-type">@coupon.CouponType?.Name ?? "優惠券"</div>
+                                <div class="coupon-type">官網商城限定</div>
                             </div>
 
                             <!-- 優惠券內容 -->
@@ -528,22 +533,42 @@
                                 }
 
                                 <!-- 優惠券標題 -->
-                                <h5 class="coupon-title">商城優惠券</h5>
+                                <h5 class="coupon-title">@(coupon.CouponType?.Name ?? "商城優惠券")</h5>
 
                                 <!-- 優惠券描述 -->
                                 <p class="coupon-description">@(coupon.CouponType?.Description ?? "暫無描述")</p>
 
                                 <!-- 優惠券資訊 -->
                                 <div class="coupon-info-row">
-                                    <span class="coupon-info-label">折扣金額</span>
-                                    <span class="coupon-info-value coupon-discount">
-                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                    <span class="coupon-info-label">
+                                        @if (coupon.CouponType?.DiscountType == "Percent")
                                         {
-                                            <text>-</text>
+                                            <text>折抵比率</text>
                                         }
                                         else
                                         {
-                                            <text>$@(coupon.CouponType?.DiscountValue ?? 0)</text>
+                                            <text>折扣優惠</text>
+                                        }
+                                    </span>
+                                    <span class="coupon-info-value coupon-discount">
+                                        @if (coupon.CouponType?.Name?.Contains("免運") == true)
+                                        {
+                                            <text>免運費</text>
+                                        }
+                                        else if (coupon.CouponType?.DiscountType == "Percent")
+                                        {
+                                            var percentage = ((int)((coupon.CouponType.DiscountValue ?? 0) * 100));
+                                            <text>@percentage% OFF</text>
+                                        }
+                                        else if (coupon.CouponType?.DiscountType == "Fixed")
+                                        {
+                                            var fixedDiscount = ((int)(coupon.CouponType.DiscountValue ?? 0));
+                                            <text>折抵 $@fixedDiscount</text>
+                                        }
+                                        else
+                                        {
+                                            var defaultValue = ((int)(coupon.CouponType?.DiscountValue ?? 0));
+                                            <text>$@defaultValue</text>
                                         }
                                     </span>
                                 </div>
@@ -557,17 +582,18 @@
                                         }
                                         else
                                         {
-                                            <text>$@(coupon.CouponType?.MinSpend ?? 0)</text>
+                                            var minSpend = ((int)(coupon.CouponType?.MinSpend ?? 0));
+                                            <text>$@minSpend</text>
                                         }
                                     </span>
                                 </div>
 
-                                @if (!isUsed && validTo != null)
+                                @if (!isUsed && validToApp != null)
                                 {
                                     <div class="coupon-info-row">
                                         <span class="coupon-info-label">過期日期</span>
                                         <span class="coupon-info-value @(isExpiringSoon || isExpired ? "coupon-expiry" : "")">
-                                            @(validTo?.ToUtc8String("yyyy-MM-dd") ?? "-")
+                                            @(validToApp?.ToString("yyyy-MM-dd") ?? "-")
                                         </span>
                                     </div>
 
