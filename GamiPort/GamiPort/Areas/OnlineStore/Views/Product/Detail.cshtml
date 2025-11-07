@@ -198,6 +198,92 @@
             tryRenderYoutube(x.youtubeUrl);
         }
 
+        function paintStars(n){
+            document.querySelectorAll('#rate-stars i[data-star]')
+                .forEach(i=>{
+                    const k = parseInt(i.getAttribute('data-star'),10);
+                    i.classList.toggle('bi-star-fill', k <= n);
+                    i.classList.toggle('bi-star', k > n);
+                });
+        }
+
+        async function submitReview(){
+            if(!(await ensureAuthenticated())){
+                ensureLoginPrompt();
+                new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
+                return;
+            }
+            if(currentRating < 1 || currentRating > 5){ alert('請先選擇 1-5 顆星的評分'); return; }
+            const body = { rating: currentRating, review: document.getElementById('reviewText').value?.trim() || null };
+            const pid = initialData.productId;
+            const res = await fetch(`${API_BASE}/products/${pid}/rate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+            if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
+            if(!res.ok){ alert('送出評價失敗，請稍後再試'); return; }
+            try{
+                const detail = await (await fetch(`${API_BASE}/${pid}`)).json();
+                document.getElementById('rating').textContent = (detail.ratingAvg ?? 0).toFixed(1);
+                document.getElementById('ratingcnt').textContent = `(${detail.ratingCount ?? 0})`;
+            }catch{}
+            document.getElementById('reviewText').value = '';
+            loadReviews(true);
+            alert('已送出評價，感謝你的回饋！');
+        }
+
+        async function loadReviews(reset=false){
+            const pid = initialData.productId;
+            const host = document.getElementById('reviews');
+            const more = document.getElementById('btnMoreReviews');
+            const pageSize = 10;
+            let page = parseInt(host.getAttribute('data-page')||'0',10) || 0;
+            page = reset ? 1 : (page+1);
+            const res = await fetch(`${API_BASE}/products/${pid}/reviews?page=${page}&pageSize=${pageSize}`);
+            const data = await res.json();
+            const items = Array.isArray(data.items)? data.items : [];
+            const html = items.map(r=>{
+                const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.rating||0);
+                const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.rating||0));
+                return `<div class="p-3 border rounded">\
+                    <div class=\"d-flex justify-content-between align-items-center mb-1\">\
+                        <div class=\"text-warning\">${starFilled}${starEmpty}</div>\
+                        <small class=\"text-muted\">#${r.userId} · ${new Date(r.createdAt).toLocaleString('zh-TW')}</small>\
+                    </div>\
+                    ${r.reviewText ? `<div class=\"text-secondary\">${r.reviewText}</div>` : ''}\
+                </div>`;
+            }).join('');
+            if(reset) host.innerHTML = '';
+            host.insertAdjacentHTML('beforeend', html);
+            host.setAttribute('data-page', String(page));
+            const total = parseInt(data.totalCount||0,10);
+            more.classList.toggle('d-none', page*pageSize >= total);
+        }
+
+        async function loadRelated(){
+            const pid = initialData.productId;
+            let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
+            const isGame = (initialData.productType||'').toLowerCase()==='game';
+            if(isGame && initialData.genreName){
+                url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.genreName)}&page=1&pageSize=4`;
+            } else if(!isGame && initialData.merchTypeId){
+                url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.merchTypeId)}&page=1&pageSize=4`;
+            }
+            const res = await fetch(url);
+            const data = await res.json();
+            const items = (data.items||data||[]).filter(x=>x.productId!==pid).slice(0,4);
+            const host = document.getElementById('related');
+            host.innerHTML = items.map(x=>{
+                const detailUrl = `/OnlineStore/Product/Detail/${x.productId}`;
+                const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
+                return `<div class=\"col-6\">\
+                    <div class=\"card h-100 position-relative\">\
+                        <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
+                        <div class=\"card-body p-2\">\
+                            <div class=\"small text-truncate\" title=\"${x.productName}\">${x.productName}</div>\
+                        </div>\
+                    </div>\
+                </div>`;
+            }).join('');
+        }
+
         (function(){
           renderProduct(initialData);
 

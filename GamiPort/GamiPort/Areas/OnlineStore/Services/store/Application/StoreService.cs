@@ -786,6 +786,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				.FirstOrDefaultAsync(d => d.ProductId == id && d.IsDeleted == false);
 			if (other != null)
 			{
+				vm.MerchTypeId = other.MerchTypeId;
 				if (other.MerchTypeId.HasValue)
 				{
 					vm.PeripheralTypeName = await _db.SMerchTypes

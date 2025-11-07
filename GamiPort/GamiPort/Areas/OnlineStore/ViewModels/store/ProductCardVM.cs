@@ -40,6 +40,7 @@ namespace GamiPort.Areas.OnlineStore.ViewModels
         public string? PlatformName { get; set; }
         public string? GenreName { get; set; }
         public string? PeripheralTypeName { get; set; }
+        public int? MerchTypeId { get; set; }
 
         // 供應商 / 下載連結
         public string? SupplierName { get; set; }
