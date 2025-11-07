@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using GamiPort.Services;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -6,25 +7,29 @@ namespace GamiPort.Areas.OnlineStore.Controllers
     [Route("OnlineStore/[controller]")] // => /OnlineStore/Store/...
     public class StoreController : Controller
     {
+        private readonly ICurrentUserService _currentUser;
+        public StoreController(ICurrentUserService currentUser)
+        {
+            _currentUser = currentUser;
+        }
+
         /// <summary>
-        /// 商城首頁
-        /// 支援：/OnlineStore、/OnlineStore/Store、/OnlineStore/Store/Index
+        /// 首頁：/OnlineStore、/OnlineStore/Store、/OnlineStore/Store/Index
         /// </summary>
         [HttpGet("")]
         [HttpGet("Index")]
-        [HttpGet("~/OnlineStore")]                 // 直接以區路徑進來也到首頁
+        [HttpGet("~/OnlineStore")]
         public IActionResult Index()
         {
-            // 將使用慣例路徑：Areas/OnlineStore/Views/Store/Index.cshtml
             return View();
         }
 
         // =========================
-        // 兼容舊連結（Redirect）
+        // 舊連結轉向（Redirect）
         // =========================
 
         /// <summary>
-        /// 舊：/OnlineStore/Store/Browse  -> 新：/OnlineStore/Browse/Index
+        /// 舊：/OnlineStore/Store/Browse -> 新：/OnlineStore/Browse/Index
         /// </summary>
         [HttpGet("Browse")]
         public IActionResult BrowseLegacy()
@@ -32,18 +37,29 @@ namespace GamiPort.Areas.OnlineStore.Controllers
 
         /// <summary>
         /// 舊：/OnlineStore/Store/Product/{id} -> 新：/OnlineStore/Product/Detail/{id}
-        /// （原本用 code 的話請改成 id；若一定要 code，告訴我我改成以 code 轉 id）
         /// </summary>
         [HttpGet("Product/{id:int}")]
         public IActionResult ProductLegacy(int id)
             => RedirectToAction("Detail", "Product", new { area = "OnlineStore", id });
 
         /// <summary>
-        /// 舊：/OnlineStore/Store/Rankings -> 建議未來獨立 RankingsController/Index
-        /// 目前先導回首頁，避免 404。若你已做 RankingsController，再把這段刪掉即可。
+        /// 舊：/OnlineStore/Store/Rankings -> 目前導回首頁
         /// </summary>
         [HttpGet("Rankings")]
         public IActionResult RankingsLegacy()
             => RedirectToAction("Index");
+
+        /// <summary>
+        /// 我的收藏頁（需登入）
+        /// </summary>
+        [HttpGet("Favorites")]
+        public IActionResult Favorites()
+        {
+            if (!_currentUser.IsAuthenticated)
+            {
+                return Redirect("/Login/Login/Login");
+            }
+            return View();
+        }
     }
 }

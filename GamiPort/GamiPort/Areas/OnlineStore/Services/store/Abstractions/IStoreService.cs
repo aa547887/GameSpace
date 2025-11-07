@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using GamiPort.Areas.OnlineStore.DTO.Store;
@@ -49,5 +49,10 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Abstractions
 
         /// <summary>取得收藏數最高的商品清單。</summary>
         Task<List<ProductCardDto>> GetTopFavorites(int count);
+        Task<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>> GetFavorites(int userId, int page, int pageSize);
+        Task<List<int>> GetFavoriteIds(int userId);
+        Task<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<GamiPort.Areas.OnlineStore.DTO.Store.ReviewDto>> GetProductReviews(int productId, int page, int pageSize);
     }
 }
+
+

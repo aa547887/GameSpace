@@ -1,4 +1,4 @@
-using GamiPort.Areas.OnlineStore.DTO.Store;
+﻿using GamiPort.Areas.OnlineStore.DTO.Store;
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.ViewModels;
 using GamiPort.Models;
@@ -786,6 +786,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				.FirstOrDefaultAsync(d => d.ProductId == id && d.IsDeleted == false);
 			if (other != null)
 			{
+				vm.MerchTypeId = other.MerchTypeId;
 				if (other.MerchTypeId.HasValue)
 				{
 					vm.PeripheralTypeName = await _db.SMerchTypes
@@ -860,5 +861,97 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 			var items = await query.ToListAsync();
 			return items;
 		}
+
+		/// <inheritdoc />
+		public async Task<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>> GetFavorites(int userId, int page, int pageSize)
+		{
+			page = Math.Max(1, page);
+			pageSize = Math.Clamp(pageSize, 1, 60);
+
+			var favBase = _db.SUserFavorites.AsNoTracking().Where(f => f.UserId == userId);
+			var total = await favBase.CountAsync();
+
+			var query =
+				from f in favBase
+				join p in _db.SProductInfos.AsNoTracking() on f.ProductId equals p.ProductId
+				where !p.IsDeleted
+				orderby f.CreatedAt descending, p.ProductId
+				select new ProductCardDto
+				{
+					ProductId = p.ProductId,
+					ProductName = p.ProductName.Trim(),
+					ProductType = (p.ProductType ?? "").Trim(),
+					Price = p.Price,
+					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
+					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
+					CoverUrl = p.SProductImages
+								.OrderByDescending(i => i.IsPrimary)
+								.ThenBy(i => i.SortOrder)
+								.Select(i => i.ProductimgUrl)
+								.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+					PlatformName = (p.SGameProductDetail != null && p.SGameProductDetail.Platform != null)
+									? p.SGameProductDetail.Platform.PlatformName
+									: null,
+					MerchTypeName =
+						(from d in _db.SOtherProductDetails
+						 join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
+						 where d.ProductId == p.ProductId && !d.IsDeleted
+						 select mt.MerchTypeName).FirstOrDefault(),
+					IsPreorder = p.IsPreorderEnabled
+				};
+
+			var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+			return new GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>
+			{
+				page = page,
+				pageSize = pageSize,
+				totalCount = total,
+				items = items
+			};
+		}
+
+		/// <inheritdoc />
+    		public async Task<List<int>> GetFavoriteIds(int userId)
+    		{
+    			return await _db.SUserFavorites
+    				.AsNoTracking()
+    				.Where(f => f.UserId == userId)
+    				.Select(f => f.ProductId)
+    				.ToListAsync();
+    		}
+
+		/// <inheritdoc />
+		public async Task<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<GamiPort.Areas.OnlineStore.DTO.Store.ReviewDto>> GetProductReviews(int productId, int page, int pageSize)
+		{
+			page = Math.Max(1, page);
+			pageSize = Math.Clamp(pageSize, 1, 60);
+
+			var baseQ = _db.SProductRatings.AsNoTracking().Where(r => r.ProductId == productId);
+			var total = await baseQ.CountAsync();
+			var items = await baseQ
+				.OrderByDescending(r => r.CreatedAt)
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.Select(r => new GamiPort.Areas.OnlineStore.DTO.Store.ReviewDto {
+					RatingId = r.RatingId,
+					UserId = r.UserId,
+					Rating = r.Rating,
+					ReviewText = r.ReviewText,
+					CreatedAt = r.CreatedAt
+				})
+				.ToListAsync();
+
+			return new GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<GamiPort.Areas.OnlineStore.DTO.Store.ReviewDto>
+			{
+				page = page,
+				pageSize = pageSize,
+				totalCount = total,
+				items = items
+			};
+		}
 	}
 }
+
+
+

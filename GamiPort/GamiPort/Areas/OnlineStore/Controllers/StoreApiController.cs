@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using GamiPort.Areas.OnlineStore.DTO.Store;
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.ViewModels;
+using GamiPort.Services;
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
@@ -15,10 +16,11 @@ namespace GamiPort.Areas.OnlineStore.Controllers
     public class StoreApiController : ControllerBase
     {
         private readonly IStoreService _service;
-
-        public StoreApiController(IStoreService service)
+        private readonly ICurrentUserService _currentUser;
+        public StoreApiController(IStoreService service, ICurrentUserService currentUser)
         {
             _service = service;
+            _currentUser = currentUser;
         }
 
 		/// <summary>
@@ -79,10 +81,39 @@ namespace GamiPort.Areas.OnlineStore.Controllers
         /// 切換商品收藏狀態。
         /// </summary>
         [HttpPost("products/{id}/favorite")]
-        public async Task<IActionResult> ToggleFavorite(int id, [FromBody] int userId)
+        public async Task<IActionResult> ToggleFavorite(int id)
         {
-            var isFavorited = await _service.ToggleFavorite(id, userId);
+            if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+                return Unauthorized();
+
+            var isFavorited = await _service.ToggleFavorite(id, _currentUser.UserId.Value);
             return Ok(new { isFavorited });
+        }
+
+        /// <summary>
+        /// 目前登入者的收藏清單（分頁）
+        /// </summary>
+        [HttpGet("favorites")]
+        public async Task<ActionResult<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>>> GetFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 40)
+        {
+            if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+                return Unauthorized();
+
+            var result = await _service.GetFavorites(_currentUser.UserId.Value, page, pageSize);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// 目前登入者收藏的商品 Id 清單
+        /// </summary>
+        [HttpGet("favorites/ids")]
+        public async Task<ActionResult<IEnumerable<int>>> GetFavoriteIds()
+        {
+            if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+                return Unauthorized();
+
+            var ids = await _service.GetFavoriteIds(_currentUser.UserId.Value);
+            return Ok(ids);
         }
 
         /// <summary>
@@ -91,8 +122,20 @@ namespace GamiPort.Areas.OnlineStore.Controllers
         [HttpPost("products/{id}/rate")]
         public async Task<IActionResult> RateProduct(int id, [FromBody] RateRequest req)
         {
+            if (!_currentUser.IsAuthenticated || _currentUser.UserId == null) return Unauthorized();
+            req.UserId = _currentUser.UserId.Value; // 強制以登入者為準
             await _service.RateProduct(id, req);
             return Ok();
+        }
+
+        /// <summary>
+        /// 取得指定商品的評價列表（簡單列表）
+        /// </summary>
+        [HttpGet("products/{id}/reviews")]
+        public async Task<ActionResult<GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ReviewDto>>> GetProductReviews(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var data = await _service.GetProductReviews(id, page, pageSize);
+            return Ok(data);
         }
 
         /// <summary>
