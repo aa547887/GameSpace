@@ -18,90 +18,120 @@
   <h3 class="fw-bold mb-3">我的收藏</h3>
   <div id="fav-list" class="row g-3"></div>
   <nav class="mt-3"><ul class="pagination pagination-sm justify-content-center" id="pager"></ul></nav>
+  <div id="empty" class="text-center text-muted d-none">目前沒有收藏項目</div>
+  <div id="error" class="text-center text-danger d-none">載入失敗，請稍後再試</div>
+  <div id="loading" class="text-center text-secondary d-none">載入中...</div>
 </div>
 
 @section Scripts {
-<script>
-  const API_BASE = "/OnlineStore/api/StoreApi";
-  const PLACEHOLDER = "/images/onlinestoreNOPic/nophoto.jpg";
-  let page=1, pageSize=40;
+    <script>
+        const API_BASE = "/OnlineStore/api/StoreApi";
+        const PLACEHOLDER = "/images/onlinestoreNOPic/nophoto.jpg";
+        let page=1, pageSize=40;
 
-  function money(v, c = "TWD"){
-    try { return new Intl.NumberFormat('zh-TW', { style:'currency', currency:c||'TWD', minimumFractionDigits:0 }).format(+v||0); } catch { return NT ; }
-  }
+        function money(v, c = "TWD"){
+          const code = (c ?? "TWD").toString().trim().toUpperCase();
+          const value = Number.isFinite(v) ? v : (parseFloat(v) || 0);
+          try { return new Intl.NumberFormat('zh-TW', { style:'currency', currency:code, minimumFractionDigits:0 }).format(value); } catch { return new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(value); }
+        }
 
-  function cardCol(x){
-    const detailUrl = /OnlineStore/Product/Detail/;
-    const img = x.coverUrl || PLACEHOLDER;
-    return <div class="col-6 col-md-4 col-lg-4 col-xxl-3">
-      <div class="card h-100 position-relative">
-        <a class="badge-fav" href="javascript:void(0)" title="移除收藏" data-action="fav" data-id=""><i class="bi bi-heart-fill text-danger"></i></a>
-        <a class="card-img-hold d-block" href="" title=""><img src="" onerror="this.src=''"></a>
-        <div class="card-body d-flex flex-column p-3">
-          <h6 class="card-title text-truncate mb-1" title=""></h6>
-          <div class="fw-bold mb-3"></div>
-          <div class="quick-ops">
-            <button class="btn btn-sm btn-dark flex-fill" data-action="buy-now" data-id=""><i class="bi bi-bag-check"></i> 立即購買</button>
-            <button class="btn btn-sm btn-outline-dark flex-fill" data-action="add-cart" data-id=""><i class="bi bi-cart-plus"></i> 加入購物車</button>
-          </div>
-        </div>
-      </div>
-    </div>;
-  }
+        function tagLine(x){
+          if(x.productType === 'game'){
+            const a = x.platformName ? <span class=\"badge text-bg-secondary me-1\"></span> : '';
+            return a;
+          }else{
+            return x.peripheralTypeName ? <span class=\"badge text-bg-secondary\"></span> : '';
+          }
+        }
 
-  function pager(total){
-    const pages = Math.max(1, Math.ceil(total/pageSize));
-    const host = document.getElementById('pager');
-    const mk=(p,t,d=false,a=false)=><li class="page-item  "><a class="page-link" href="#" data-page=""></a></li>;
-    const items=[mk(page-1,'&laquo;',page<=1)];
-    let s=Math.max(1,page-3), e=Math.min(pages,page+3);
-    for(let i=s;i<=e;i++) items.push(mk(i,i,false,i===page));
-    items.push(mk(page+1,'&raquo;',page>=pages));
-    host.innerHTML = items.join('');
-    host.querySelectorAll('a.page-link').forEach(a=>a.addEventListener('click',e=>{e.preventDefault(); const p=parseInt(a.dataset.page,10); if(!isNaN(p)){ page=p; load(); }}));
-  }
+        function cardCol(x){
+          const detailUrl = /OnlineStore/Product/Detail/;
+          const img = x.coverUrl || PLACEHOLDER;
+          return 
+          <div class=\"col-6 col-md-4 col-lg-4 col-xxl-3\">
+            <div class=\"card h-100 position-relative\">
+              <a class=\"badge-fav\" href=\"javascript:void(0)\" title=\"移除收藏\" data-action=\"fav\" data-id=\"\"><i class=\"bi bi-heart-fill text-danger\"></i></a>
+              <a class=\"card-img-hold d-block\" href=\"\" title=\"\"><img src=\"\" alt=\"\" onerror=\"this.src=''\"></a>
+              <div class=\"card-body d-flex flex-column p-3\">
+                <div class=\"mb-2\"> </div>
+                <h6 class=\"card-title text-truncate mb-1\" title=\"\"></h6>
+                <div class=\"fw-bold mb-3\"></div>
+                <div class=\"quick-ops\">
+                  <button class=\"btn btn-sm btn-dark flex-fill\" data-action=\"buy-now\" data-id=\"\"><i class=\"bi bi-bag-check\"></i> 立即購買</button>
+                  <button class=\"btn btn-sm btn-outline-dark flex-fill\" data-action=\"add-cart\" data-id=\"\"><i class=\"bi bi-cart-plus\"></i> 加入購物車</button>
+                </div>
+              </div>
+            </div>
+          </div>;
+        }
 
-  function ensureLoginPrompt(){
-    if(document.getElementById('loginPromptModal')) return;
-    const el = document.createElement('div');
-    el.innerHTML = 
-      <div class="modal fade" id="loginPromptModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-          <div class="modal-header"><h5 class="modal-title">請先登入</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body"><p class="mb-0">您需要登入後才能使用收藏功能。</p></div>
-          <div class="modal-footer"><a class="btn btn-dark" href="/Login/Login/Login">現在去登入</a><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再看看</button></div>
-        </div></div>
-      </div>;
-    document.body.appendChild(el.firstElementChild);
-  }
+        function pager(total){
+          const pages = Math.max(1, Math.ceil(total/pageSize));
+          const host = document.getElementById('pager');
+          const mk=(p,t,d=false,a=false)=><li class=\"page-item  \"><a class=\"page-link\" href=\"#\" data-page=\"C:\OOP分組大專案\dev -1023\GamiPort\GamiPort\Areas\OnlineStore\Views\Store\Favorites.cshtml\"></a></li>;
+          const items=[mk(page-1,'&laquo;',page<=1)];
+          let s=Math.max(1,page-3), e=Math.min(pages,page+3);
+          for(let i=s;i<=e;i++) items.push(mk(i,i,false,i===page));
+          items.push(mk(page+1,'&raquo;',page>=pages));
+          host.innerHTML = items.join('');
+          host.querySelectorAll('a.page-link').forEach(a=>a.addEventListener('click',e=>{e.preventDefault(); const p=parseInt(a.dataset.page,10); if(!isNaN(p)){ page=p; load(); }}));
+        }
 
-  async function load(){
-    const res = await fetch(${API_BASE}/favorites?page=&pageSize=);
-    if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
-    const data = await res.json();
-    document.getElementById('fav-list').innerHTML = (data.items||[]).map(cardCol).join('');
-    pager(data.totalCount||0);
-  }
+        function ensureLoginPrompt(){
+          if(document.getElementById('loginPromptModal')) return;
+          const el = document.createElement('div');
+          el.innerHTML = 
+            <div class=\"modal fade\" id=\"loginPromptModal\" tabindex=\"-1\">
+              <div class=\"modal-dialog modal-dialog-centered\"><div class=\"modal-content\">
+                <div class=\"modal-header\"><h5 class=\"modal-title\">請先登入</h5><button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div>
+                <div class=\"modal-body\"><p class=\"mb-0\">此功能需要登入後才能使用。</p></div>
+                <div class=\"modal-footer\"><a class=\"btn btn-dark\" href=\"/Login/Login/Login\">前往登入</a><button type=\"button\" class=\"btn btn-outline-secondary\" data-bs-dismiss=\"modal\">稍後再說</button></div>
+              </div></div>
+            </div>;
+          document.body.appendChild(el.firstElementChild);
+        }
 
-  document.addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-action]');
-    if(!btn) return;
-    const id = btn.getAttribute('data-id');
-    const act = btn.getAttribute('data-action');
-    if(act==='add-cart'){
-      alert(已加入購物車（商品ID: ）);
-    }else if(act==='buy-now'){
-      location.href = /OnlineStore/Checkout/CreateOrder?productId=;
-    }else if(act==='fav'){
-      btn.classList.add('disabled');
-      fetch(${API_BASE}/products//favorite, { method:'POST' })
-      .then(r=>{ if(!r.ok){ const e = new Error(r.statusText); e.status=r.status; throw e; } return r.json(); })
-      .then(()=> load())
-      .catch(err=>{ if(err?.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); } else { alert('操作失敗，請稍後再試'); } })
-      .finally(()=> btn.classList.remove('disabled'));
-    }
-  });
+        async function load(){
+          document.getElementById('loading')?.classList.remove('d-none');
+          document.getElementById('error')?.classList.add('d-none');
+          document.getElementById('empty')?.classList.add('d-none');
+          try{
+            const res = await fetch(${API_BASE}/favorites?page=&pageSize=);
+            if(res.status===401){ ensureLoginPrompt(); const m = new bootstrap.Modal(document.getElementById('loginPromptModal')); m.show(); return; }
+            const data = await res.json();
+            const items = data.items||[];
+            document.getElementById('fav-list').innerHTML = items.map(cardCol).join('');
+            pager(data.totalCount||0);
+            if(items.length===0) document.getElementById('empty')?.classList.remove('d-none');
+          }catch(err){
+            console.error(err);
+            document.getElementById('error')?.classList.remove('d-none');
+          }finally{
+            document.getElementById('loading')?.classList.add('d-none');
+          }
+        }
 
-  load();
-</script>
+        document.addEventListener('click', (e)=>{
+          const btn = e.target.closest('[data-action]');
+          if(!btn) return;
+          const id = btn.getAttribute('data-id');
+          const act = btn.getAttribute('data-action');
+          if(act==='add-cart'){
+            alert(已加入購物車（商品ID: ）);
+          }else if(act==='buy-now'){
+            location.href = /OnlineStore/Checkout/CreateOrder?productId=;
+          }else if(act==='fav'){
+            const pid = parseInt(id,10);
+            if(!pid || isNaN(pid)) return;
+            btn.classList.add('disabled');
+            fetch(${API_BASE}/products/23332/favorite, { method:'POST' })
+            .then(r=>{ if(!r.ok){ const e = new Error(r.statusText); e.status=r.status; throw e; } return r.json(); })
+            .then(()=> load())
+            .catch(err=>{ if(err?.status===401){ ensureLoginPrompt(); const m = new bootstrap.Modal(document.getElementById('loginPromptModal')); m.show(); } else { alert('操作失敗，請稍後再試'); } })
+            .finally(()=> btn.classList.remove('disabled'));
+          }
+        });
+
+        load();
+    </script>
 }

@@ -150,6 +150,13 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
                                 PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null
                                     ? p.SGameProductDetail.Platform.PlatformName
                                     : null,
+                                GenreNames = p.Genres.Select(g => g.GenreName).ToArray(),
+                                PeripheralTypeName = (
+                                    from d in _db.SOtherProductDetails
+                                    join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
+                                    where d.ProductId == p.ProductId && !d.IsDeleted
+                                    select mt.MerchTypeName
+                                ).FirstOrDefault(),
                                 MerchTypeName = (
                                     from d in _db.SOtherProductDetails
                                     join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
@@ -196,6 +203,13 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
                             PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null
                                 ? p.SGameProductDetail.Platform.PlatformName
                                 : null,
+                            GenreNames = p.Genres.Select(g => g.GenreName).ToArray(),
+                            PeripheralTypeName = (
+                                from d in _db.SOtherProductDetails
+                                join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
+                                where d.ProductId == p.ProductId && !d.IsDeleted
+                                select mt.MerchTypeName
+                            ).FirstOrDefault(),
                             MerchTypeName = (
                                 from d in _db.SOtherProductDetails
                                 join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId

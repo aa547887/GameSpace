@@ -18,6 +18,9 @@ namespace GamiPort.Areas.OnlineStore.DTO.Store
         [JsonPropertyName("peripheralTypeName")] public string? PeripheralTypeName { get; set; }
 
         [JsonPropertyName("merchTypeName")] public string? MerchTypeName { get; set; }
+
+        // Multiple genre names for game products
+        [JsonPropertyName("genreNames")] public string[] GenreNames { get; set; } = Array.Empty<string>();
     }
 }
 

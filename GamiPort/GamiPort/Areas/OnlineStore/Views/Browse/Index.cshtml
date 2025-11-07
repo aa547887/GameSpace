@@ -236,6 +236,12 @@
           genre: params.get("genre") || "",
           sort: "newest", page: 1, pageSize: 40
         };
+        // Map tab to query: points -> notgame + merchTypeId=1
+        const tab = params.get("tab") || "";
+        if(tab === "points"){
+          state.type = "notgame";
+          state.merchTypeId = 1;
+        }
         if(state.q) document.getElementById("q").value = state.q;
 
                         document.getElementById("btnSearch").addEventListener("click", ()=>{ state.q=document.getElementById("q").value.trim(); state.page=1; load(); });
@@ -267,9 +273,11 @@
 
                             const a = x.platformName ? `<span class="badge text-bg-secondary me-1">${x.platformName}</span>` : "";
 
-                            const b = x.genreName ? `<span class="badge text-bg-info-subtle border">${x.genreName}</span>` : "";
+                            const g = Array.isArray(x.genreNames) && x.genreNames.length
+                              ? x.genreNames.filter(Boolean).map(n => `<span class="badge text-bg-info-subtle border me-1">${n}</span>`).join("")
+                              : "";
 
-                            return a + b;
+                            return a + g;
 
                           }else{
 
