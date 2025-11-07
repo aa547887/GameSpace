@@ -37,6 +37,7 @@ using Microsoft.Extensions.FileProviders;  // ★ PhysicalFileProvider（Area �
 										   // Program.cs 最上面加（若尚未有）
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.Services.store.Application;
+using GamiPort.Services.NewsApi;
 
 
 namespace GamiPort
@@ -217,6 +218,11 @@ namespace GamiPort
 			});
 			builder.Services.AddScoped<IStoreService, StoreService>();
 			builder.Services.AddScoped<ILookupService, SqlLookupService>();
+
+			// ADD THESE LINES FOR NEWSAPI SERVICE
+			builder.Services.AddHttpClient<NewsService>();
+			builder.Services.AddScoped<NewsService>();
+			// END ADDITION
 
 			// services
 			builder.Services.AddCors(options =>

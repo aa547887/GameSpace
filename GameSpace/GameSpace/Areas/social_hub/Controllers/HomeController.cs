@@ -24,7 +24,7 @@ namespace GameSpace.Areas.social_hub.Controllers
 
 		[HttpGet, AllowAnonymous]
 		public IActionResult Index() => RedirectToAction(nameof(WhoAmI));
-
+		
 		[HttpGet, AllowAnonymous]
 		public IActionResult Login(string? returnUrl = null) => RedirectToAction(nameof(WhoAmI));
 
