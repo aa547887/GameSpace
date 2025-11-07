@@ -1,12 +1,13 @@
 @using GamiPort.Areas.MiniGame.Controllers
 @using GamiPort.Areas.MiniGame.Helpers
 @model SignInIndexViewModel
+@inject GamiPort.Infrastructure.Time.IAppClock AppClock
 
 @{
 	ViewData["Title"] = "簽到月曆";
 	var currentMonth = Model.CurrentMonth;
 	var currentYear = Model.CurrentYear;
-	var today = DateTime.Now;
+	var today = AppClock.ToAppTime(AppClock.UtcNow);
 }
 
 <div class="container my-5">

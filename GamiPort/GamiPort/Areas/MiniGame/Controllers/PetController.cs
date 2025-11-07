@@ -55,6 +55,32 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				return View("Index");
 			}
 
+			// 模擬升級計算顯示值（不修改數據庫，只用於正確顯示進度條）
+			int displayLevel = pet.Level;
+			int displayExperience = pet.Experience;
+
+			while (true)
+			{
+				var requiredExp = await _petService.GetRequiredExpForLevelAsync(displayLevel + 1);
+				if (requiredExp > 0 && displayExperience >= requiredExp)
+				{
+					displayLevel++;
+					displayExperience -= requiredExp;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// 計算顯示用的下一級經驗需求
+			var expToNext = await _petService.GetRequiredExpForLevelAsync(displayLevel + 1);
+
+			// 傳遞顯示值給View（不修改pet實體）
+			ViewBag.DisplayLevel = displayLevel;
+			ViewBag.DisplayExperience = displayExperience;
+			ViewBag.DisplayExpToNext = expToNext;
+
 			// 獲取錢包信息
 			var wallet = await _context.UserWallets
 				.AsNoTracking()
@@ -63,6 +89,22 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				ViewBag.Wallet = wallet;
 			ViewBag.UserPoints = wallet?.UserPoint ?? 0;  // 添加用戶點數供View使用
 			ViewBag.PetHealthStatus = GetHealthStatus(pet);
+
+			// 獲取用戶信息（用戶名稱和註冊日期）
+			var user = await _context.Users
+				.Where(u => u.UserId == userId)
+				.Select(u => new {
+					u.UserName,
+					u.CreateAccount
+				})
+				.AsNoTracking()
+				.FirstOrDefaultAsync();
+
+			if (user != null)
+			{
+				ViewBag.UserName = user.UserName;
+				ViewBag.RegistrationDate = user.CreateAccount.ToUtc8String("yyyy-MM-dd");
+			}
 
 			return View(pet);
 		}
@@ -94,9 +136,17 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				return View();
 			}
 
+			// 重新計算下一級所需經驗值（確保顯示正確）
+			var expToNext = await _petService.GetRequiredExpForLevelAsync(pet.Level + 1);
+			pet.ExperienceToNextLevel = expToNext;
+
 			// 獲取可用的膚色和背景（所有11種，包括限時活動限定已失效的）
 			var skins = await _petService.GetAvailableSkinsAsync();
 			var backgrounds = await _petService.GetAvailableBackgroundsAsync();
+
+			// 獲取已購買的膚色和背景列表
+			var purchasedSkinColors = await _petService.GetPurchasedSkinColorsAsync(userId);
+			var purchasedBackgrounds = await _petService.GetPurchasedBackgroundsAsync(userId);
 
 			// 獲取錢包信息
 			var wallet = await _context.UserWallets
@@ -105,6 +155,8 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 			ViewBag.Skins = skins;
 			ViewBag.Backgrounds = backgrounds;
+			ViewBag.PurchasedSkinColors = purchasedSkinColors;
+			ViewBag.PurchasedBackgrounds = purchasedBackgrounds;
 			ViewBag.Wallet = wallet;
 
 			return View(pet);
@@ -133,10 +185,23 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 			if (!result.Success)
 			{
-				return Json(new { success = false, message = result.Message });
+				return Json(new { success = false, message = result.Message, pet = result.Pet != null ? new
+				{
+					petId = result.Pet?.PetId,
+					petName = result.Pet?.PetName,
+					hunger = result.Pet?.Hunger,
+					mood = result.Pet?.Mood,
+					stamina = result.Pet?.Stamina,
+					cleanliness = result.Pet?.Cleanliness,
+					health = result.Pet?.Health,
+					level = result.Pet?.Level,
+					experience = result.Pet?.Experience,
+					experienceToNextLevel = result.Pet?.ExperienceToNextLevel,
+					healthStatus = GetHealthStatus(result.Pet)
+				} : null });
 			}
 
-			// 返回更新後的寵物狀態
+			// 返回更新後的寵物狀態和完整的互動結果
 			return Json(new
 			{
 				success = true,
@@ -150,8 +215,16 @@ namespace GamiPort.Areas.MiniGame.Controllers
 					stamina = result.Pet?.Stamina,
 					cleanliness = result.Pet?.Cleanliness,
 					health = result.Pet?.Health,
+					level = result.Pet?.Level,
+					experience = result.Pet?.Experience,
+					experienceToNextLevel = result.Pet?.ExperienceToNextLevel,
 					healthStatus = GetHealthStatus(result.Pet)
-				}
+				},
+				statChanges = result.StatChanges,
+				healthRecovered = result.HealthRecovered,
+				isFirstDailyFullStats = result.IsFirstDailyFullStats,
+				bonusExperience = result.BonusExperience,
+				bonusPoints = result.BonusPoints
 			});
 		}
 
@@ -240,6 +313,182 @@ namespace GamiPort.Areas.MiniGame.Controllers
 					petId = result.Pet?.PetId,
 					petName = result.Pet?.PetName
 				}
+			});
+		}
+
+		/// <summary>
+		/// GET: 檢查膚色擁有狀態
+		/// </summary>
+		[HttpGet]
+		public async Task<IActionResult> CheckSkinColorOwnership(string colorHex)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 獲取已購買的膚色列表
+			var purchasedColors = await _petService.GetPurchasedSkinColorsAsync(userId);
+			var isOwned = purchasedColors.Contains(colorHex);
+
+			return Json(new { success = true, isOwned });
+		}
+
+		/// <summary>
+		/// GET: 檢查背景擁有狀態
+		/// </summary>
+		[HttpGet]
+		public async Task<IActionResult> CheckBackgroundOwnership(string backgroundCode)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 獲取已購買的背景列表
+			var purchasedBackgrounds = await _petService.GetPurchasedBackgroundsAsync(userId);
+			var isOwned = purchasedBackgrounds.Contains(backgroundCode);
+
+			return Json(new { success = true, isOwned });
+		}
+
+		/// <summary>
+		/// POST: 購買膚色
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> PurchaseSkinColor(string colorHex)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 執行購買
+			var result = await _petService.PurchaseSkinColorAsync(userId, colorHex);
+
+			return Json(new
+			{
+				success = result.Success,
+				message = result.Message,
+				pointsSpent = result.PointsSpent,
+				remainingPoints = result.RemainingPoints
+			});
+		}
+
+		/// <summary>
+		/// POST: 套用膚色
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> ApplySkinColor(string colorHex)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 執行套用
+			var result = await _petService.ApplySkinColorAsync(userId, colorHex);
+
+			return Json(new
+			{
+				success = result.Success,
+				message = result.Message,
+				pet = result.Pet != null ? new
+				{
+					skinColor = result.Pet.SkinColor,
+					skinColorChangedTime = result.Pet.SkinColorChangedTime.ToUtc8String("yyyy-MM-dd HH:mm:ss")
+				} : null
+			});
+		}
+
+		/// <summary>
+		/// POST: 購買背景
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> PurchaseBackground(string backgroundCode)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 執行購買
+			var result = await _petService.PurchaseBackgroundAsync(userId, backgroundCode);
+
+			return Json(new
+			{
+				success = result.Success,
+				message = result.Message,
+				pointsSpent = result.PointsSpent,
+				remainingPoints = result.RemainingPoints
+			});
+		}
+
+		/// <summary>
+		/// POST: 套用背景
+		/// </summary>
+		[HttpPost]
+		public async Task<IActionResult> ApplyBackground(string backgroundCode)
+		{
+			// 檢查登入狀態
+			if (User.Identity?.IsAuthenticated != true)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			var userId = _appCurrentUser.UserId;
+			if (userId <= 0)
+			{
+				return Json(new { success = false, message = "請先登入" });
+			}
+
+			// 執行套用
+			var result = await _petService.ApplyBackgroundAsync(userId, backgroundCode);
+
+			return Json(new
+			{
+				success = result.Success,
+				message = result.Message,
+				pet = result.Pet != null ? new
+				{
+					backgroundColor = result.Pet.BackgroundColor,
+					backgroundColorChangedTime = result.Pet.BackgroundColorChangedTime.ToUtc8String("yyyy-MM-dd HH:mm:ss")
+				} : null
 			});
 		}
 

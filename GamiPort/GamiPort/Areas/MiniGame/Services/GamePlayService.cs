@@ -127,10 +127,10 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 自動計算用戶下一次應挑戰的關卡
 				int level = await GetUserNextGameLevelAsync(userId);
 
-				// 檢查用戶是否存在
+				// 檢查用戶是否存在且未被鎖定（檢查 UserLockoutEnd 是否為 null 或已過期）
 				var user = await _context.Users
 					.AsNoTracking()
-					.FirstOrDefaultAsync(u => u.UserId == userId && !u.UserLockoutEnabled);
+					.FirstOrDefaultAsync(u => u.UserId == userId && (u.UserLockoutEnd == null || u.UserLockoutEnd <= _appClock.UtcNow));
 
 				if (user == null)
 				{
@@ -265,6 +265,40 @@ namespace GamiPort.Areas.MiniGame.Services
 						wallet.UserPoint += rewardPoints;
 						wallet.IsDeleted = false; // 確保未軟刪除
 						_context.UserWallets.Update(wallet);
+					}
+
+					// 添加WalletHistory記錄 - 點數獎勵
+					if (rewardPoints > 0 && wallet != null)
+					{
+						var appNowForHistory = _appClock.ToAppTime(_appClock.UtcNow);
+						var pointHistory = new WalletHistory
+						{
+							UserId = userId,
+							ChangeType = "Point",
+							PointsChanged = rewardPoints,
+							ItemCode = $"GAME-STAGE-{level}",
+							Description = $"冒險勝利獎勵 (第{level}關)",
+							ChangeTime = appNowForHistory,
+							IsDeleted = false
+						};
+						_context.WalletHistories.Add(pointHistory);
+					}
+
+					// 添加WalletHistory記錄 - 優惠券獎勵（第3關）
+					if (hasCoupon && level == 3)
+					{
+						var appNowForHistory = _appClock.ToAppTime(_appClock.UtcNow);
+						var couponHistory = new WalletHistory
+						{
+							UserId = userId,
+							ChangeType = "Coupon",
+							PointsChanged = 1,
+							ItemCode = "GAME-COUPON-STAGE3",
+							Description = $"冒險勝利優惠券獎勵 (第3關)",
+							ChangeTime = appNowForHistory,
+							IsDeleted = false
+						};
+						_context.WalletHistories.Add(couponHistory);
 					}
 
 					// 根據難度更新寵物屬性 Delta

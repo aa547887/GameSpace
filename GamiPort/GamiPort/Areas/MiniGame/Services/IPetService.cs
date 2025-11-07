@@ -73,6 +73,52 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// <param name="newName">新名稱</param>
 		/// <returns>操作結果</returns>
 		Task<PetUpdateNameResult> UpdatePetNameAsync(int userId, string newName);
+
+		/// <summary>
+		/// 獲取用戶已購買的膚色列表
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <returns>已購買的膚色代碼列表</returns>
+		Task<IEnumerable<string>> GetPurchasedSkinColorsAsync(int userId);
+
+		/// <summary>
+		/// 獲取用戶已購買的背景列表
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <returns>已購買的背景代碼列表</returns>
+		Task<IEnumerable<string>> GetPurchasedBackgroundsAsync(int userId);
+
+		/// <summary>
+		/// 購買膚色（不套用）
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="skinColor">膚色代碼</param>
+		/// <returns>操作結果</returns>
+		Task<PetPurchaseResult> PurchaseSkinColorAsync(int userId, string skinColor);
+
+		/// <summary>
+		/// 購買背景（不套用）
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="background">背景代碼</param>
+		/// <returns>操作結果</returns>
+		Task<PetPurchaseResult> PurchaseBackgroundAsync(int userId, string background);
+
+		/// <summary>
+		/// 套用已購買的膚色
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="skinColor">膚色代碼</param>
+		/// <returns>操作結果</returns>
+		Task<PetApplyResult> ApplySkinColorAsync(int userId, string skinColor);
+
+		/// <summary>
+		/// 套用已購買的背景
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="background">背景代碼</param>
+		/// <returns>操作結果</returns>
+		Task<PetApplyResult> ApplyBackgroundAsync(int userId, string background);
 	}
 
 	/// <summary>
@@ -83,6 +129,42 @@ namespace GamiPort.Areas.MiniGame.Services
 		public bool Success { get; set; }
 		public string Message { get; set; } = string.Empty;
 		public Pet? Pet { get; set; }
+		/// <summary>
+		/// 數值變化字典 (key: 屬性名, value: 變化量)
+		/// </summary>
+		public Dictionary<string, int>? StatChanges { get; set; }
+		/// <summary>
+		/// 健康值是否回復至100
+		/// </summary>
+		public bool HealthRecovered { get; set; }
+		/// <summary>
+		/// 是否為當日首次五值全滿
+		/// </summary>
+		public bool IsFirstDailyFullStats { get; set; }
+		/// <summary>
+		/// 獎勵經驗值
+		/// </summary>
+		public int BonusExperience { get; set; }
+		/// <summary>
+		/// 獎勵會員點數
+		/// </summary>
+		public int BonusPoints { get; set; }
+		/// <summary>
+		/// 是否升級了
+		/// </summary>
+		public bool LeveledUp { get; set; }
+		/// <summary>
+		/// 升級前的等級
+		/// </summary>
+		public int OldLevel { get; set; }
+		/// <summary>
+		/// 升級後的新等級
+		/// </summary>
+		public int NewLevel { get; set; }
+		/// <summary>
+		/// 升級獎勵點數（總和）
+		/// </summary>
+		public int LevelUpRewards { get; set; }
 	}
 
 	/// <summary>
@@ -99,6 +181,27 @@ namespace GamiPort.Areas.MiniGame.Services
 	/// 寵物名稱更新結果
 	/// </summary>
 	public class PetUpdateNameResult
+	{
+		public bool Success { get; set; }
+		public string Message { get; set; } = string.Empty;
+		public Pet? Pet { get; set; }
+	}
+
+	/// <summary>
+	/// 寵物購買結果
+	/// </summary>
+	public class PetPurchaseResult
+	{
+		public bool Success { get; set; }
+		public string Message { get; set; } = string.Empty;
+		public int PointsSpent { get; set; }
+		public int RemainingPoints { get; set; }
+	}
+
+	/// <summary>
+	/// 寵物套用結果
+	/// </summary>
+	public class PetApplyResult
 	{
 		public bool Success { get; set; }
 		public string Message { get; set; } = string.Empty;

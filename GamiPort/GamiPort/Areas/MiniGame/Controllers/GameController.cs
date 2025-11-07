@@ -12,17 +12,20 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		private readonly GameSpacedatabaseContext _context;
 		private readonly IAppCurrentUser _appCurrentUser;
 		private readonly IGamePlayService _gamePlayService;
+		private readonly IPetService _petService;
 		private readonly ILogger<GameController> _logger;
 
 		public GameController(
 			GameSpacedatabaseContext context,
 			IAppCurrentUser appCurrentUser,
 			IGamePlayService gamePlayService,
+			IPetService petService,
 			ILogger<GameController> logger)
 		{
 			_context = context;
 			_appCurrentUser = appCurrentUser;
 			_gamePlayService = gamePlayService;
+			_petService = petService;
 			_logger = logger;
 		}
 
@@ -54,6 +57,11 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				// 獲取今日剩餘遊戲次數
 				int remainingPlays = await _gamePlayService.GetUserRemainingPlaysAsync(userId);
 
+				// 獲取用戶寵物資料（用於顯示在遊戲畫面）
+				var pet = await _petService.GetUserPetAsync(userId);
+				string petSkinColor = pet?.SkinColor ?? "#ff6b6b";
+				string petName = pet?.PetName ?? "寵物";
+
 				// 傳遞資料到視圖
 				ViewBag.TodayRemainingPlays = remainingPlays;
 				ViewBag.UserId = userId;
@@ -61,6 +69,8 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				ViewBag.GameResult = gameResult;
 				ViewBag.RewardPoints = rewardPoints ?? 0;
 				ViewBag.RewardExperience = rewardExperience ?? 0;
+				ViewBag.PetSkinColor = petSkinColor;
+				ViewBag.PetName = petName;
 
 				// TODO: 獲取統計數據
 				ViewBag.MonthlyWins = 0; // await _gamePlayService.GetMonthlyWinsAsync(userId);
@@ -106,7 +116,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 		{
 			if (User.Identity?.IsAuthenticated != true)
 			{
-				return Unauthorized();
+				return Json(new { success = false, message = "未授權的用戶" });
 			}
 
 			try
@@ -119,8 +129,7 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 				if (userId == 0)
 				{
-					TempData["ErrorMessage"] = "未授權的用戶";
-					return RedirectToAction("Index");
+					return Json(new { success = false, message = "未授權的用戶" });
 				}
 
 				// 啟動遊戲（自動計算關卡、扣除遊戲次數、創建遊戲記錄）
@@ -128,23 +137,49 @@ namespace GamiPort.Areas.MiniGame.Controllers
 
 				if (success)
 				{
+					// 獲取剩餘次數
+					int remainingPlays = await _gamePlayService.GetUserRemainingPlaysAsync(userId);
+
+					// 根據關卡決定配置（怪物數量、速度倍率）
+					int monsterCount = level switch
+					{
+						1 => 6,
+						2 => 8,
+						3 => 10,
+						_ => 6
+					};
+
+					decimal speedMultiplier = level switch
+					{
+						1 => 1.0m,
+						2 => 1.5m,
+						3 => 2.0m,
+						_ => 1.0m
+					};
+
 					// 儲存遊戲 ID 和關卡到 TempData 供遊戲結束時使用
 					TempData["CurrentPlayId"] = playId;
 					TempData["CurrentLevel"] = level;
-					TempData["SuccessMessage"] = message;
-					return RedirectToAction("Index", new { selectedLevel = level });
+
+					return Json(new {
+						success = true,
+						message = message,
+						sessionId = playId,
+						level = level,
+						remainingPlays = remainingPlays,
+						monsterCount = monsterCount,
+						speedMultiplier = speedMultiplier
+					});
 				}
 				else
 				{
-					TempData["ErrorMessage"] = message;
-					return RedirectToAction("Index");
+					return Json(new { success = false, message = message });
 				}
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "啟動遊戲時發生錯誤");
-				TempData["ErrorMessage"] = "啟動遊戲失敗，請稍後重試";
-				return RedirectToAction("Index");
+				return Json(new { success = false, message = "啟動遊戲失敗，請稍後重試" });
 			}
 		}
 

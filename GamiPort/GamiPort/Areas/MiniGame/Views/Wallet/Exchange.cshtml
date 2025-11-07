@@ -1,5 +1,5 @@
 @{
-	ViewData["Title"] = "點數兌換";
+	ViewData["Title"] = "商城優惠券兌換";
 	var userPoints = (int)((Dictionary<string, object>)Model)["UserPoints"];
 	var couponTypes = (IEnumerable<GamiPort.Models.CouponType>)((Dictionary<string, object>)Model)["CouponTypes"];
 	var evoucherTypes = (IEnumerable<GamiPort.Models.EvoucherType>)((Dictionary<string, object>)Model)["EVoucherTypes"];
@@ -7,16 +7,16 @@
 
 <div class="container-fluid px-4">
 	<!-- Anti-Forgery Token -->
-	<form id="antiForgeryForm" style="display:none;">
+	<div id="antiForgeryTokenContainer">
 		@Html.AntiForgeryToken()
-	</form>
+	</div>
 
 	<h1 class="mt-4 text-info">
-		<i class="fas fa-exchange-alt me-2"></i>點數兌換
+		<i class="fas fa-exchange-alt me-2"></i>商城優惠券兌換
 	</h1>
 	<ol class="breadcrumb mb-4">
 		<li class="breadcrumb-item"><a asp-action="Index">錢包首頁</a></li>
-		<li class="breadcrumb-item active">點數兌換</li>
+		<li class="breadcrumb-item active">商城優惠券兌換</li>
 	</ol>
 
 	<!-- 當前點數顯示 -->
@@ -57,7 +57,23 @@
 										<span class="badge bg-secondary">@coupon.DiscountType</span>
 									</div>
 									<p class="card-text">
-										<strong>折扣值:</strong> @coupon.DiscountValue<br />
+										<strong>@(coupon.DiscountType == "Percent" ? "折抵比率" : "折扣值"):</strong>
+										@if (coupon.DiscountType == "Percent")
+										{
+											var percentage = ((int)(coupon.DiscountValue * 100 ?? 0));
+											<text>@percentage%</text>
+										}
+										else if (coupon.DiscountType == "Fixed")
+										{
+											var fixedValue = ((int)(coupon.DiscountValue ?? 0));
+											<text>$@fixedValue</text>
+										}
+										else
+										{
+											var defaultValue = ((int)(coupon.DiscountValue ?? 0));
+											<text>@defaultValue</text>
+										}
+										<br />
 										<strong>所需點數:</strong> <span class="text-danger fw-bold">@coupon.PointsCost</span> 點<br />
 										<strong>有效期:</strong> @(((DateTime?)coupon.ValidFrom)?.ToString("yyyy/MM/dd") ?? "-") ~ @(((DateTime?)coupon.ValidTo)?.ToString("yyyy/MM/dd") ?? "-")
 									</p>
@@ -216,16 +232,42 @@
 				this.disabled = true;
 				this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>兌換中...';
 
-				const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+				// 獲取CSRF Token並驗證
+				const tokenInput = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
+				if (!tokenInput || !tokenInput.value) {
+					console.error('CSRF Token not found!');
+					showErrorModal('系統錯誤', '安全驗證失敗，請重新整理頁面後再試');
+					this.disabled = false;
+					this.innerHTML = '<i class="fas fa-shopping-cart me-1"></i>立即兌換';
+					return;
+				}
+				const token = tokenInput.value;
+				const requestBody = `couponTypeId=${couponId}&quantity=${quantity}&__RequestVerificationToken=${encodeURIComponent(token)}`;
+				console.log('📤 發送請求:', {
+					url: '@Url.Action("ExchangeForCoupon", "Wallet")',
+					method: 'POST',
+					couponId: couponId,
+					quantity: quantity,
+					bodyLength: requestBody.length
+				});
+
 				fetch('@Url.Action("ExchangeForCoupon", "Wallet")', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded'
 					},
-					body: `couponTypeId=${couponId}&quantity=${quantity}&__RequestVerificationToken=${encodeURIComponent(token)}`
+					body: requestBody
 				})
-				.then(response => response.json())
+				.then(response => {
+					console.log('📥 收到響應:', {
+						status: response.status,
+						statusText: response.statusText,
+						ok: response.ok
+					});
+					return response.json();
+				})
 				.then(data => {
+					console.log('📋 響應數據:', data);
 					if (data.success) {
 						// 更新點數顯示
 						userPoints -= totalCost;
@@ -234,11 +276,12 @@
 						// 顯示成功訊息
 						showSuccessModal('兌換成功', data.message, data.couponCodes, 'coupon');
 					} else {
+						console.error('❌ 兌換失敗:', data.message);
 						showErrorModal('兌換失敗', data.message);
 					}
 				})
 				.catch(error => {
-					console.error('Error:', error);
+					console.error('❌ 請求錯誤:', error);
 					showErrorModal('系統錯誤', '兌換過程發生錯誤，請稍後再試');
 				})
 				.finally(() => {
@@ -279,7 +322,16 @@
 				this.disabled = true;
 				this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>兌換中...';
 
-				const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+				// 獲取CSRF Token並驗證
+				const tokenInput = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
+				if (!tokenInput || !tokenInput.value) {
+					console.error('CSRF Token not found!');
+					showErrorModal('系統錯誤', '安全驗證失敗，請重新整理頁面後再試');
+					this.disabled = false;
+					this.innerHTML = '<i class="fas fa-shopping-cart me-1"></i>立即兌換';
+					return;
+				}
+				const token = tokenInput.value;
 				fetch('@Url.Action("ExchangeForEVoucher", "Wallet")', {
 					method: 'POST',
 					headers: {
