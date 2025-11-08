@@ -5,13 +5,73 @@
     ViewData["Title"] = Model.ProductName;
     Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
 }
+
+@section Styles {
+<style>
+    /* 新的縮圖樣式 */
+    .thumb-item {
+        border: 1px solid #ddd;
+        border-radius: .25rem;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .thumb-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform .2s ease;
+    }
+    .thumb-item:hover img {
+        transform: scale(1.1);
+    }
+    .thumb-item.empty {
+        cursor: default;
+    }
+    #cover {
+        cursor: pointer;
+    }
+
+    /* 燈箱樣式 */
+    .basicLightbox {
+        background-color: rgba(0, 0, 0, 0.5) !important; /* 使背景更淡 */
+    }
+    .basicLightbox__placeholder {
+        color: #fff;
+    }
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        border: none;
+        font-size: 2rem;
+        padding: 0 1rem;
+        cursor: pointer;
+        height: 100%;
+        display: flex;
+        align-items: center;
+    }
+    .lightbox-nav.prev { left: 0; border-radius: 0 5px 5px 0; }
+    .lightbox-nav.next { right: 0; border-radius: 5px 0 0 5px; }
+    .lightbox-nav:hover { background: rgba(0,0,0,0.6); }
+</style>
+}
+
 <section class="container py-4" id="app" data-pid="@Model.ProductId">
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm bg-light">
                 <img id="cover" src="/images/placeholder-cover.png" class="w-100 h-100" style="object-fit:cover;">
             </div>
-            <div id="thumbs" class="d-flex flex-nowrap gap-2 mt-2 overflow-auto"></div>
+            <!-- 修改後的四格縮圖 -->
+            <div id="thumbs" class="row g-2 mt-2">
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+            </div>
             <div id="video" class="mt-3"></div>
         </div>
 
@@ -34,7 +94,7 @@
             <div class="d-flex gap-2 mb-4">
                 <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 立即購買</button>
                 <button class="btn btn-lg btn-outline-dark flex-fill" data-action="add-cart"><i class="bi bi-cart-plus me-1"></i> 加入購物車</button>
-                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的最愛" aria-pressed="false"><i class="bi bi-heart"></i></button>
+                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的商品蒐藏" aria-pressed="false"><i class="bi bi-heart"></i></button>
             </div>
 
             <div class="mb-3">
@@ -62,19 +122,19 @@
             </div>
         </div>
     </div>
-    }
 </section>
 
 <section class="container py-3">
+    <!-- 對調後的新版面配置 -->
     <div class="row g-3">
-        <div class="col-12 col-lg-7">
+        <div class="col-12 col-lg-8">
+            <h5 class="fw-bold mb-2">你可能也會喜歡</h5>
+            <div id="related" class="row g-2"></div>
+        </div>
+        <div class="col-12 col-lg-4">
             <h5 class="fw-bold mb-2">使用者評論</h5>
             <div id="reviews" class="vstack gap-3"></div>
             <button id="btnMoreReviews" class="btn btn-outline-secondary btn-sm mt-2 d-none">載入更多</button>
-        </div>
-        <div class="col-12 col-lg-5">
-            <h5 class="fw-bold mb-2">你可能也會喜歡</h5>
-            <div id="related" class="row g-2"></div>
         </div>
     </div>
 </section>
@@ -132,37 +192,37 @@
                   return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);
                 }
 
-function renderSpecs(x){
-  const host = document.getElementById('specs');
-  if (!host) {
-      return;
-  }
-  const isGame = (x.ProductType || '').toLowerCase() === 'game';
-  let htmlContent = '';
-  if(isGame){
-    htmlContent = `
-      <ul class="list-unstyled mb-0">
-        ${x.PlatformName ? `<li>平台：${x.PlatformName}</li>` : ''}
-        ${x.GenreName ? `<li>類型：${x.GenreName}</li>` : ''}
-        ${x.PublishAt ? `<li>發售日：${new Date(x.PublishAt).toLocaleDateString('zh-TW')}</li>` : ''}
-        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
-        ${x.DownloadLink ? `<li>下載連結：<a href="${x.DownloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
-      </ul>`;
-  } else {
-    htmlContent = `
-      <ul class="list-unstyled mb-0">
-        ${x.PeripheralTypeName ? `<li>周邊分類：${x.PeripheralTypeName}</li>` : ''}
-        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
-        ${x.Size ? `<li>尺寸：${x.Size}</li>` : ''}
-        ${x.Color ? `<li>顏色：${x.Color}</li>` : ''}
-        ${x.Weight ? `<li>重量：${x.Weight}</li>` : ''}
-        ${x.Dimensions ? `<li>外觀尺寸：${x.Dimensions}</li>` : ''}
-        ${x.Material ? `<li>材質：${x.Material}</li>` : ''}
-        ${x.DigitalCode ? `<li>型號/序號：${x.DigitalCode}</li>` : ''}
-      </ul>`;
-  }
-  host.innerHTML = htmlContent;
-}
+                function renderSpecs(x){
+                  const host = document.getElementById('specs');
+                  if (!host) {
+                      return;
+                  }
+                  const isGame = (x.ProductType || '').toLowerCase() === 'game';
+                  let htmlContent = '';
+                  if(isGame){
+                    htmlContent = `
+                      <ul class="list-unstyled mb-0">
+                        ${x.PlatformName ? `<li>平台：${x.PlatformName}</li>` : ''}
+                        ${x.GenreName ? `<li>類型：${x.GenreName}</li>` : ''}
+                        ${x.PublishAt ? `<li>發售日：${new Date(x.PublishAt).toLocaleDateString('zh-TW')}</li>` : ''}
+                        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+                        ${x.DownloadLink ? `<li>下載連結：<a href="${x.DownloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
+                      </ul>`;
+                  } else {
+                    htmlContent = `
+                      <ul class="list-unstyled mb-0">
+                        ${x.PeripheralTypeName ? `<li>周邊分類：${x.PeripheralTypeName}</li>` : ''}
+                        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+                        ${x.Size ? `<li>尺寸：${x.Size}</li>` : ''}
+                        ${x.Color ? `<li>顏色：${x.Color}</li>` : ''}
+                        ${x.Weight ? `<li>重量：${x.Weight}</li>` : ''}
+                        ${x.Dimensions ? `<li>外觀尺寸：${x.Dimensions}</li>` : ''}
+                        ${x.Material ? `<li>材質：${x.Material}</li>` : ''}
+                        ${x.DigitalCode ? `<li>型號/序號：${x.DigitalCode}</li>` : ''}
+                      </ul>`;
+                  }
+                  host.innerHTML = htmlContent;
+                }
 
                 function tryRenderYoutube(url){
                   if(!url) return;
@@ -181,27 +241,39 @@ function renderSpecs(x){
                     if (!x) {
                         document.getElementById('name').textContent = '查無此商品';
                         return;
-                    }document.getElementById('name').textContent = x.ProductName; // Keep the main title
-document.getElementById('price-product-name').textContent = x.ProductName; // Populate the new span
-document.getElementById('ptype').textContent = x.ProductType || '';
-document.getElementById('price').textContent = `NT ${money(x.Price)}`;                    document.getElementById('cc').textContent = x.currencyCode || 'TWD';
-                    document.getElementById('desc').textContent = x.productDescription || '';
-                    document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
-                    document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
+                    }
+                    document.getElementById('name').textContent = x.ProductName;
+                    document.getElementById('price-product-name').textContent = x.ProductName;
+                    document.getElementById('ptype').textContent = x.ProductType || '';
+                    document.getElementById('price').textContent = `NT ${money(x.Price)}`;
+                    document.getElementById('cc').textContent = x.CurrencyCode || 'TWD';
+                    document.getElementById('desc').textContent = x.ProductDescription || '';
+                    document.getElementById('rating').textContent = (x.RatingAvg ?? 0).toFixed(1);
+                    document.getElementById('ratingcnt').textContent = `(${x.RatingCount ?? 0})`;
 
-                    const cover = x.coverUrl || "/images/placeholder-cover.png";
-                    document.getElementById('cover').src = cover;
+                    const gallery = Array.isArray(x.Gallery) && x.Gallery.length > 0 ? x.Gallery : ["/images/placeholder-cover.png"];
+                    const coverEl = document.getElementById('cover');
+                    coverEl.src = gallery[0];
+                    coverEl.dataset.index = 0; // 用於燈箱
 
-                    const thumbs = x.gallery?.length ? x.gallery : [cover];
-                    document.getElementById('thumbs').innerHTML = thumbs.map(url =>
-                        `<img src="${url}" class="rounded" style="width:60px;height:60px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
-                    ).join('');
-                    document.getElementById('thumbs').addEventListener('click', (e)=>{
-                        if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
+                    const thumbSlots = document.querySelectorAll('#thumbs .thumb-item');
+                    thumbSlots.forEach((slot, i) => {
+                        const thumbIndex = i + 1;
+                        if (gallery[thumbIndex]) {
+                            slot.classList.remove('empty');
+                            slot.innerHTML = `<img src="${gallery[thumbIndex]}" data-index="${thumbIndex}">`;
+                            slot.firstElementChild.addEventListener('click', (e) => {
+                                coverEl.src = e.target.src;
+                                coverEl.dataset.index = e.target.dataset.index;
+                            });
+                        } else {
+                            slot.classList.add('empty');
+                            slot.innerHTML = '';
+                        }
                     });
 
                     renderSpecs(x);
-                    tryRenderYoutube(x.youtubeUrl);
+                    tryRenderYoutube(x.YoutubeUrl);
                 }
 
                 function paintStars(n){
@@ -221,7 +293,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                     }
                     if(currentRating < 1 || currentRating > 5){ alert('請先選擇 1-5 顆星的評分'); return; }
                     const body = { rating: currentRating, review: document.getElementById('reviewText').value?.trim() || null };
-                    const pid = initialData.productId;
+                    const pid = initialData.ProductId;
                     const res = await fetch(`${API_BASE}/products/${pid}/rate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
                     if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
                     if(!res.ok){ alert('送出評價失敗，請稍後再試'); return; }
@@ -236,7 +308,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                 }
 
                 async function loadReviews(reset=false){
-                    const pid = initialData.productId;
+                    const pid = initialData.ProductId;
                     const host = document.getElementById('reviews');
                     const more = document.getElementById('btnMoreReviews');
                     const pageSize = 10;
@@ -264,31 +336,81 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                 }
 
                 async function loadRelated(){
-                    const pid = initialData.productId;
+                    const pid = initialData.ProductId;
                     let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
-                    const isGame = (initialData.productType||'').toLowerCase()==='game';
-                    if(isGame && initialData.genreName){
-                        url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.genreName)}&page=1&pageSize=4`;
-                    } else if(!isGame && initialData.merchTypeId){
-                        url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.merchTypeId)}&page=1&pageSize=4`;
+                    const isGame = (initialData.ProductType||'').toLowerCase()==='game';
+                    if(isGame && initialData.GenreName){
+                        url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.GenreName)}&sort=random&page=1&pageSize=4`;
+                    } else if(!isGame && initialData.MerchTypeId){
+                        url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.MerchTypeId)}&sort=random&page=1&pageSize=4`;
                     }
                     const res = await fetch(url);
                     const data = await res.json();
-                    const items = (data.items||data||[]).filter(x=>x.productId!==pid).slice(0,4);
+                    const items = (data.items||data||[]).filter(x=>x.ProductId!==pid).slice(0,4);
                     const host = document.getElementById('related');
                     host.innerHTML = items.map(x=>{
-                        const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
-                        const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
-                        return `<div class=\"col-6\">\
+                        const detailUrl = `/OnlineStore/Product/Detail/${x.ProductCode}`;
+                        const img = x.CoverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
+                        return `<div class=\"col-6 col-md-4 col-lg-3\">\
                             <div class=\"card h-100 position-relative\">\
                                 <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
                                 <div class=\"card-body p-2\">\
-                                    <div class=\"small text-truncate\" title=\"${x.productName}\">${x.productName}</div>\
+                                    <div class=\"small text-truncate\" title=\"${x.ProductName}\">${x.ProductName}</div>\
                                 </div>\
                             </div>\
                         </div>`;
                     }).join('');
                 }
+
+                // 新增：燈箱功能
+                function initLightbox() {
+                    if (typeof basicLightbox === 'undefined') {
+                        console.error('basicLightbox is not loaded.');
+                        return;
+                    }
+
+                    const gallery = initialData.Gallery;
+                    if (!Array.isArray(gallery) || gallery.length === 0) return;
+
+                    let currentInstance = null;
+
+                    const showImage = (index) => {
+                        const content = `
+                            <img src="${gallery[index]}" style="max-height: 70vh; max-width: 70vw;">
+                            ${gallery.length > 1 ? '<button class="lightbox-nav prev">&lt;</button><button class="lightbox-nav next">&gt;</button>' : ''}
+                        `;
+                        
+                        if (currentInstance) {
+                            currentInstance.element().innerHTML = content;
+                        } else {
+                            currentInstance = basicLightbox.create(content, {
+                                onClose: () => { currentInstance = null; }
+                            });
+                            currentInstance.show();
+                        }
+
+                        const prevBtn = currentInstance.element().querySelector('.prev');
+                        const nextBtn = currentInstance.element().querySelector('.next');
+
+                        if (prevBtn) {
+                            prevBtn.onclick = () => showImage((index - 1 + gallery.length) % gallery.length);
+                        }
+                        if (nextBtn) {
+                            nextBtn.onclick = () => showImage((index + 1) % gallery.length);
+                        }
+                    };
+
+                    document.getElementById('app').addEventListener('click', (e) => {
+                        const target = e.target;
+                        if (target.matches('#cover') || target.matches('.thumb-item img')) {
+                            const index = parseInt(target.dataset.index, 10);
+                            if (!isNaN(index)) {
+                                showImage(index);
+                            }
+                        }
+                    });
+                }
+
 
                 (function(){
                   renderProduct(initialData);
@@ -296,7 +418,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                   // 初始亮起收藏狀態（若已登入）
                   fetch(`${API_BASE}/favorites/ids`).then(r=>r.ok?r.json():[]).then(ids=>{
                     try{
-                      const pid = initialData?.productId;
+                      const pid = initialData?.ProductId;
                       if(!pid) return;
                       const btn = document.querySelector('button[data-action="fav"]');
                       const icon = btn?.querySelector('i');
@@ -314,13 +436,13 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                     if(!btn) return;
                     const act = btn.getAttribute('data-action');
                     if(act==='add-cart'){
-                      alert(`已加入購物車（商品ID: ${initialData.productId}）`);
+                      alert(`已加入購物車（商品ID: ${initialData.ProductId}）`);
                     }else if(act==='buy-now'){
-                      location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.productId}`;
+                      location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.ProductId}`;
                     }else if(act==='fav'){
-                      if(!initialData?.productId){ return; }
+                      if(!initialData?.ProductId){ return; }
                       btn.disabled = true;
-                      toggleFavorite(initialData.productId)
+                      toggleFavorite(initialData.ProductId)
                         .then(isFav => {
                           const icon = btn.querySelector('i');
                           if(isFav){
@@ -362,6 +484,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                   // 初始評論與推薦
                   loadReviews(true);
                   loadRelated();
+                  initLightbox(); // 初始化燈箱
                 })();
     </script>
 }

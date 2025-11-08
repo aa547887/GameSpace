@@ -32,7 +32,91 @@
     <link href="~/css/topbar2.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
 
+    <!-- Lightbox -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.css" />
+
     @RenderSection("Styles", required: false)
+
+    <style>
+        /* StoreBar 動畫效果 */
+        .store-bar {
+            position: sticky;
+            top: 64px;
+            z-index: 1020;
+            padding: 0.25rem 0;
+            background-color: var(--bs-body-bg);
+            transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); /* 動畫回到容器本身 */
+        }
+
+        .store-bar-hidden {
+            transform: translateY(-100%); /* 讓整個容器向上移出 */
+        }
+
+        /* 修正 hover 下拉選單樣式 */
+        .hover-dd:hover > .dropdown-menu {
+            display: block;
+        }
+        .hover-dd > .dropdown-menu {
+            margin-top: 0;
+        }
+
+        /* 分類導覽列樣式 */
+        .nav-cats {
+            display: flex;
+            justify-content: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            margin: 0;
+            padding: 0.25rem 0;
+            list-style: none;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .nav-cats::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-cats li {
+            flex-shrink: 0;
+        }
+
+        .cats-pill {
+            display: block;
+            padding: 0.4rem 1rem;
+            margin: 0 0.3rem;
+            border-radius: 50px;
+            background-color: #f0f2f5;
+            color: #333;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), inset 0 1px 1px #fff;
+            transition: all 0.2s ease-out;
+        }
+
+        .cats-pill:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15), inset 0 1px 1px #fff;
+            color: #007bff;
+            background-color: #fff;
+        }
+
+        .cats-pill:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), inset 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        .cats-pill.dropdown-toggle::after {
+            margin-left: .5em;
+        }
+
+        .store-bar .dropdown-menu {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+    </style>
 
 </head>
 <body>
@@ -52,8 +136,8 @@
         </aside>
 
         <main class="layout-main">
-            <!-- 分類列 -->
-            @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_StoreBar.Cats.cshtml")
+            <!-- 動態分類列 -->
+            @await Component.InvokeAsync("StoreBar")
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
@@ -93,7 +177,45 @@
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
     <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
 
+    <!-- Lightbox -->
+    <script src="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.js"></script>
+
     @RenderSection("Scripts", required: false)
+    
+    <script>
+        // StoreBar 動畫腳本
+        (function() {
+            const storeBar = document.getElementById('store-bar-wrapper');
+            if (!storeBar) return;
+
+            let lastScrollTop = 0;
+            const delta = 5; // 滾動靈敏度
+
+            window.addEventListener('scroll', function() {
+                const st = window.pageYOffset || document.documentElement.scrollTop;
+
+                // 確保在頁面頂部時總是顯示
+                if (st <= 0) {
+                    storeBar.classList.remove('store-bar-hidden');
+                    lastScrollTop = st;
+                    return;
+                }
+
+                // 忽略小幅度的滾動
+                if (Math.abs(lastScrollTop - st) <= delta) {
+                    return;
+                }
+
+                if (st < lastScrollTop) { // 向上滾動
+                    storeBar.classList.remove('store-bar-hidden'); // 顯示 StoreBar
+                } else if (st > lastScrollTop) { // 向下滾動
+                    storeBar.classList.add('store-bar-hidden'); // 隱藏 StoreBar
+                }
+                lastScrollTop = st;
+            }, false);
+        })();
+    </script>
+
     @* 🔧 不報錯處理 HideCats section *@
     @try { IgnoreSection("HideCats"); } catch { }
 </body>

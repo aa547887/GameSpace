@@ -55,6 +55,14 @@
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="Areas\social_hub\Models\" />
     <Folder Include="wwwroot\images\forum\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\Game\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\1點數卡\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\2娃娃\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\3畫冊紀錄本\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\5服飾\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\4吊飾\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\6滑鼠墊\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\7杯子\" />
   </ItemGroup>
 
   <ItemGroup>

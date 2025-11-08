@@ -1,8 +1,10 @@
-﻿using GamiPort.Areas.OnlineStore.DTO.Store;
+using GamiPort.Areas.OnlineStore.DTO.Store;
 using GamiPort.Areas.OnlineStore.Services.store.Abstractions;
 using GamiPort.Areas.OnlineStore.ViewModels;
 using GamiPort.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GamiPort.Areas.OnlineStore.Services.store.Application
 {
@@ -149,11 +151,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 						Price = p.Price,
 						CurrencyCode = (p.CurrencyCode ?? "").Trim(),
 						ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-						CoverUrl = p.SProductImages
-							.OrderByDescending(img => img.IsPrimary)
-							.ThenBy(img => img.SortOrder)
-							.Select(img => img.ProductimgUrl)
-							.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+						CoverUrl = GetCoverUrl(p.SProductImages),
 						PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null
 							? p.SGameProductDetail.Platform.PlatformName
 							: null,
@@ -176,12 +174,11 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				};
 			}
 
-			// 其餘排序維持原本邏輯
 			IOrderedQueryable<SProductInfo> orderedQuery = q.sort switch
 			{
 				"price_asc" => query.OrderBy(p => p.Price),
 				"price_desc" => query.OrderByDescending(p => p.Price),
-				_ => query.OrderByDescending(p => p.CreatedAt)
+				_ => query.OrderBy(p => p.ProductId) // Default sort by ProductId ascending
 			};
 
 			var items = await orderedQuery
@@ -195,11 +192,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					Price = p.Price,
 					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-					CoverUrl = p.SProductImages
-						.OrderByDescending(img => img.IsPrimary)
-						.ThenBy(img => img.SortOrder)
-						.Select(img => img.ProductimgUrl)
-						.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+					CoverUrl = GetCoverUrl(p.SProductImages),
 					PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null
 						? p.SGameProductDetail.Platform.PlatformName
 						: null,
@@ -423,7 +416,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				ProductCode = x.SProductCode != null ? x.SProductCode.ProductCode : "",
 				Price = x.Price,
 				CurrencyCode = x.CurrencyCode,
-				CoverUrl = x.SProductImages.OrderByDescending(img => img.IsPrimary).ThenBy(img => img.SortOrder).Select(img => img.ProductimgUrl!).FirstOrDefault() ?? ""
+				CoverUrl = GetCoverUrl(x.SProductImages)
 			}).ToListAsync();
 
 			product.Related = related;
@@ -508,11 +501,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					Price = p.Price,
 					CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-					CoverUrl = p.SProductImages
-						.OrderByDescending(img => img.IsPrimary)
-						.ThenBy(img => img.SortOrder)
-						.Select(img => img.ProductimgUrl)
-						.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+					CoverUrl = GetCoverUrl(p.SProductImages),
 					IsPreorder = p.IsPreorderEnabled
 				})
 				.ToListAsync();
@@ -603,20 +592,20 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			var items = await _db.SProductInfos.AsNoTracking()
 				.Where(p => !p.IsDeleted)
-								.OrderByDescending(p => p.CreatedAt)
-								.Take(take)
-								.Select(p => new ProductCardDto
-								{
-									ProductId = p.ProductId,
-									ProductName = p.ProductName.Trim(),
-									ProductType = (p.ProductType ?? "").Trim(),
-									Price = p.Price,
-									CurrencyCode = (p.CurrencyCode ?? "").Trim(),
-									ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-									CoverUrl = p.SProductImages.OrderByDescending(img => img.IsPrimary).ThenBy(img => img.SortOrder).Select(img => img.ProductimgUrl).FirstOrDefault() ?? "",
-									PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null ? p.SGameProductDetail.Platform.PlatformName : null,
-									IsPreorder = p.IsPreorderEnabled
-								})
+				.OrderByDescending(p => p.CreatedAt)
+				.Take(take)
+				.Select(p => new ProductCardDto
+				{
+					ProductId = p.ProductId,
+					ProductName = p.ProductName.Trim(),
+					ProductType = (p.ProductType ?? "").Trim(),
+					Price = p.Price,
+					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
+					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
+					CoverUrl = GetCoverUrl(p.SProductImages),
+					PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null ? p.SGameProductDetail.Platform.PlatformName : null,
+					IsPreorder = p.IsPreorderEnabled
+				})
 				.ToListAsync();
 
 			return items;
@@ -682,11 +671,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				Price = p.Price,
 				CurrencyCode = (p.CurrencyCode ?? "").Trim(),
 				ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-				CoverUrl = p.SProductImages
-					.OrderByDescending(img => img.IsPrimary)
-					.ThenBy(img => img.SortOrder)
-					.Select(img => img.ProductimgUrl)
-					.FirstOrDefault() ?? "",
+				CoverUrl = GetCoverUrl(p.SProductImages),
 				PlatformName = p.SGameProductDetail != null && p.SGameProductDetail.Platform != null
 										? p.SGameProductDetail.Platform.PlatformName
 										: null,
@@ -704,7 +689,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 		public async Task<List<ProductCardVM>> GetBrowseCards()
 		{
 			var query =
-				from p in _db.SProductInfos
+				from p in _db.SProductInfos.Include(p => p.SProductImages)
 				where p.IsDeleted == false
 				orderby p.ProductId descending
 				select new ProductCardVM
@@ -714,12 +699,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					ProductType = p.ProductType,
 					Price = p.Price,
 					CurrencyCode = p.CurrencyCode,
-					CoverUrl = _db.SProductImages
-						.Where(img => img.ProductId == p.ProductId)
-						.OrderByDescending(img => img.IsPrimary)
-						.ThenBy(img => img.SortOrder)
-						.Select(img => img.ProductimgUrl)
-						.FirstOrDefault() ?? "/images/placeholder-cover.png"
+					CoverUrl = GetCoverUrl(p.SProductImages)
 				};
 
 			var data = await query.AsNoTracking().ToListAsync();
@@ -810,7 +790,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			var query =
 				from t in topFavQuery
-				join p in _db.SProductInfos.AsNoTracking() on t.ProductId equals p.ProductId
+				join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages) on t.ProductId equals p.ProductId
 				where !p.IsDeleted
 				select new ProductCardDto
 				{
@@ -820,11 +800,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					Price = p.Price,
 					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-					CoverUrl = p.SProductImages
-								.OrderByDescending(i => i.IsPrimary)
-								.ThenBy(i => i.SortOrder)
-								.Select(i => i.ProductimgUrl)
-								.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+					CoverUrl = GetCoverUrl(p.SProductImages),
 					PlatformName = (p.SGameProductDetail != null && p.SGameProductDetail.Platform != null)
 									? p.SGameProductDetail.Platform.PlatformName
 									: null,
@@ -851,7 +827,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			var query =
 				from f in favBase
-				join p in _db.SProductInfos.AsNoTracking() on f.ProductId equals p.ProductId
+				join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages) on f.ProductId equals p.ProductId
 				where !p.IsDeleted
 				orderby f.CreatedAt descending, p.ProductId
 				select new ProductCardDto
@@ -862,11 +838,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					Price = p.Price,
 					CurrencyCode = (p.CurrencyCode ?? "").Trim(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
-					CoverUrl = p.SProductImages
-								.OrderByDescending(i => i.IsPrimary)
-								.ThenBy(i => i.SortOrder)
-								.Select(i => i.ProductimgUrl)
-								.FirstOrDefault() ?? "/images/onlinestoreNOPic/nophoto.jpg",
+					CoverUrl = GetCoverUrl(p.SProductImages),
 					PlatformName = (p.SGameProductDetail != null && p.SGameProductDetail.Platform != null)
 									? p.SGameProductDetail.Platform.PlatformName
 									: null,
@@ -929,8 +901,25 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				items = items
 			};
 		}
-	}
+
+        /// <summary>
+        /// (共用方法) 根據商品的圖片集合，取得封面圖片的 URL。
+        /// </summary>
+        /// <param name="images">商品圖片的集合。</param>
+        /// <returns>封面圖片的 URL，如果找不到則回傳預設圖片路徑。</returns>
+        private static string GetCoverUrl(ICollection<SProductImage> images)
+        {
+            if (images == null || !images.Any())
+            {
+                return "/images/onlinestoreNOPic/nophoto.jpg";
+            }
+
+            var img = images
+                .OrderByDescending(i => i.IsPrimary)
+                .ThenBy(i => i.SortOrder)
+                .FirstOrDefault();
+
+            return img?.ProductimgUrl ?? "/images/onlinestoreNOPic/nophoto.jpg";
+        }
+    }
 }
-
-
-
