@@ -11,10 +11,20 @@
         .badge-fav { position:absolute; top:.5rem; right:.5rem; background:rgba(255,255,255,.9); width:36px; height:36px; display:grid; place-items:center; border-radius:999px; box-shadow:0 3px 8px rgba(0,0,0,.15); }
         .quick-ops { position:absolute; left:.5rem; right:.5rem; bottom:.5rem; display:flex; gap:.5rem; }
         #fav-list .card .card-body { padding-bottom: 3.25rem; }
+
+        .px-15mm {
+            padding-left: 15mm !important;
+            padding-right: 15mm !important;
+        }
+
+        .col-5-per-row {
+            flex: 0 0 20%;
+            max-width: 20%;
+        }
     </style>
 }
 
-<div class="container-xxl py-3">
+<div class="container-xxl py-3 px-15mm">
   <h3 class="fw-bold mb-3">我的收藏</h3>
   <div id="fav-list" class="row g-3"></div>
   <nav class="mt-3"><ul class="pagination pagination-sm justify-content-center" id="pager"></ul></nav>

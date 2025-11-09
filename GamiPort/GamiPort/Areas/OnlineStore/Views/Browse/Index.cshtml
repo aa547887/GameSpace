@@ -109,7 +109,7 @@
 
         /* 預留底部空間，避免浮現按鈕遮住資訊 */
         #product-list .card .card-body {
-            padding-bottom: 3.25rem;
+            padding-bottom: 4rem; /* Increased padding to prevent overlap */
         }
 
         .sticky-side {
@@ -168,6 +168,10 @@
             text-align: center;
             padding: 0.5rem;
         }
+        .py-1-5mm {
+            padding-top: 1.5mm !important;
+            padding-bottom: 1.5mm !important;
+        }
     </style>
 }
 
@@ -179,7 +183,7 @@
                 
                 <div class="image-promo-block">
                     <a href="#link1">
-                        <img src="/images/onlinestoreleftad/連接新品.jpg" alt="">
+                        <img src="/images/onlinestoreleftad/新品上架.png" alt="">
                         <div class="image-promo-overlay">
                             <span class="overlay-text">新品上架</span>
                         </div>
@@ -214,25 +218,22 @@
 
         <!-- 主內容 -->
         <div class="col-12 col-lg-8">
-            <div class="tools-sticky pt-1 pb-3 mb-2">
-                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
-                    <div class="input-group shadow rounded-pill" style="max-width:560px">
-                        <input id="q" class="form-control rounded-start-pill px-4" placeholder="搜尋商品/關鍵字">
-                        <button id="btnSearch" class="btn btn-light rounded-end-pill px-4"><i class="bi bi-search"></i></button>
-                    </div>
+            <div class="tools-sticky py-1-5mm mb-2 d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <div class="input-group shadow rounded-pill" style="max-width:560px">
+                    <input id="q" class="form-control rounded-start-pill px-4" placeholder="搜尋商品/關鍵字">
+                    <button id="btnSearch" class="btn btn-light rounded-end-pill px-4"><i class="bi bi-search"></i></button>
                 </div>
-                <div class="d-flex align-items-center gap-2 ms-auto mt-2">
-                    <select id="sort" class="form-select form-select-sm" style="width:auto">
-                        <option value="newest">最新</option>
-                        <option value="price_asc">價格 ↑</option>
-                        <option value="price_desc">價格 ↓</option>
-                    </select>
-                    <select id="pageSize" class="form-select form-select-sm" style="width:auto">
-                        <option value="40">40</option>
-                        <option value="60">60</option>
-                        <option value="80">80</option>
-                    </select>
-                </div>
+                <select id="sort" class="form-select form-select-sm" style="width:auto">
+                    <option value="newest">最新</option>
+                    <option value="price_asc">價格 ↑</option>
+                    <option value="price_desc">價格 ↓</option>
+                </select>
+                <select id="pageSize" class="form-select form-select-sm" style="width:auto">
+                    <option value="20" selected>20</option>
+                    <option value="40">40</option>
+                    <option value="60">60</option>
+                    <option value="80">80</option>
+                </select>
             </div>
 
             <div id="product-list" class="row g-3"></div>
@@ -313,7 +314,7 @@
           supplierId: parseInt(params.get("supplierId") || "", 10) || "",
           platform: params.get("platform") || "",
           genre: params.get("genre") || "",
-          sort: "newest", page: 1, pageSize: 40
+          sort: "newest", page: 1, pageSize: 20
         };
         // Map tab to query: points -> notgame + merchTypeId=1
         const tab = params.get("tab") || "";
@@ -335,6 +336,11 @@
                           const code = (c ?? "TWD").toString().trim().toUpperCase();
                           const currency = /^[A-Z]{3}$/.test(code) ? code : "TWD";
                           const value = Number.isFinite(v) ? v : (parseFloat(v) || 0);
+
+                          if (value === 0) {
+                              return "免費下載";
+                          }
+
                           try {
                             return new Intl.NumberFormat('zh-TW', { style:'currency', currency, minimumFractionDigits:0 }).format(value);
                           } catch {
@@ -374,7 +380,7 @@
 
                           const img = x.coverUrl || PLACEHOLDER;
 
-                          return `<div class="col-6 col-md-4 col-lg-4 col-xxl-3">
+                          return `<div class="col-6 col-md-4 col-lg-3 col-xxl-3">
 
                             <div class="card h-100 position-relative">
 
@@ -515,7 +521,19 @@
           const id = btn.getAttribute('data-id');
           const act = btn.getAttribute('data-action');
           if(act==='add-cart'){
-            alert(`已加入購物車（商品ID: ${id}）`);
+            const originalText = btn.innerHTML;
+            const originalClasses = btn.className;
+            const originalAction = btn.dataset.action;
+
+            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> 已加入';
+            btn.className = 'btn btn-sm btn-success flex-fill disabled'; // Change to success color and disable
+            btn.dataset.action = 'added'; // Prevent re-clicking during animation
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.className = originalClasses;
+                btn.dataset.action = originalAction;
+            }, 1500); // Revert after 1.5 seconds
           }else if(act==='buy-now'){
             location.href = `/OnlineStore/Checkout/CreateOrder?productId=${id}`;
           }else if(act==='fav'){

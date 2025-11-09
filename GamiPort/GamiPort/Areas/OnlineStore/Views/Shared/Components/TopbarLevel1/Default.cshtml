@@ -44,7 +44,7 @@
             </li>
             <li class="nav-item"><a class="nav-link nav-elevate" href="/OnlineStore/cart"><i class="bi bi-cart3 me-1"></i> 購物車</a></li>
             <li class="nav-item">
-                <a class="nav-link nav-elevate" href="/OnlineStore/orders" title="我的訂單">
+                <a id="orders-link" class="nav-link nav-elevate" href="/OnlineStore/orders" title="我的訂單">
                     <i class="bi bi-receipt me-1"></i> 我的訂單
                 </a>
             </li>
@@ -120,6 +120,10 @@
         0%,100% { transform: scale(1); }
         50% { transform: scale(1.05); }
     }
+
+    .clickable-title {
+        cursor: pointer;
+    }
 </style>
 
 <!-- Login Prompt Modal -->
@@ -127,14 +131,16 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="loginPromptModalLabel">請先登入</h5>
+        <h5 class="modal-title" id="loginPromptModalLabel">
+            <a href="/Login/Login/Login" class="text-decoration-none text-dark clickable-title">請先登入</a>
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p class="mb-0">您需要登入後才能使用此功能。</p>
       </div>
       <div class="modal-footer">
-        <a class="btn btn-dark" href="/Login/Login/Login">現在去登入</a>
+        <a class="btn btn-dark" href="/Login/Login/Login/Login">現在去登入</a>
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再看看</button>
       </div>
     </div>
@@ -146,11 +152,19 @@
         const isAuthenticated = @CurrentUser.IsAuthenticated.ToString().ToLower();
 
         if (!isAuthenticated) {
+            const loginModal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+
             const favoritesLink = document.getElementById('favorites-link');
             if (favoritesLink) {
-                const loginModal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
-
                 favoritesLink.addEventListener('click', function(event) {
+                    event.preventDefault(); // Stop the link from navigating
+                    loginModal.show(); // Show the modal
+                });
+            }
+
+            const ordersLink = document.getElementById('orders-link'); // Get the new orders link
+            if (ordersLink) {
+                ordersLink.addEventListener('click', function(event) {
                     event.preventDefault(); // Stop the link from navigating
                     loginModal.show(); // Show the modal
                 });
