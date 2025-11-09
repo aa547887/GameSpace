@@ -492,8 +492,13 @@ namespace GamiPort.Areas.MiniGame.Services
 				var query = _context.WalletHistories
 					.AsNoTracking()
 					.Where(h => h.UserId == userId && !h.IsDeleted)
-					// 過濾遊戲破關獎勵（ItemCode 以 GAME- 開頭，依用戶需求不顯示）
-					.Where(h => h.ItemCode == null || !h.ItemCode.StartsWith("GAME-"));
+					// 過濾遊戲破關獎勵（包含新舊紀錄，依用戶需求不顯示）
+					.Where(h =>
+						// 排除 ItemCode 以 GAME- 開頭的新紀錄
+						(h.ItemCode == null || !h.ItemCode.StartsWith("GAME-")) &&
+						// 排除 Description 包含小遊戲關鍵字的舊紀錄
+						(h.Description == null || !h.Description.Contains("小遊戲"))
+					);
 
 				// 篩選交易類型（支持多重分類）
 				if (!string.IsNullOrWhiteSpace(changeType))
