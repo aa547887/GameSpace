@@ -451,11 +451,26 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			if (type == "sales")
 			{
-				var ranked = _db.SVRankingSales.AsNoTracking()
-					.Where(r => r.PeriodType == periodType)
+				// 僅支援日/週/月（1/2/3），取 S_Official_Store_Ranking 最新 RankingDate 的排行
+				int ptype = period switch { "daily" => 1, "weekly" => 2, "monthly" => 3, _ => 1 };
+				const string metric = "purchase";
+
+				var latestDate = await _db.SOfficialStoreRankings.AsNoTracking()
+					.Where(r => r.PeriodType == ptype && r.RankingMetric == metric)
+					.OrderByDescending(r => r.RankingDate)
+					.Select(r => r.RankingDate)
+					.FirstOrDefaultAsync();
+
+				if (latestDate == default)
+				{
+					return new List<ProductCardDto>();
+				}
+
+				var ranked = _db.SOfficialStoreRankings.AsNoTracking()
+					.Where(r => r.PeriodType == ptype && r.RankingMetric == metric && r.RankingDate == latestDate)
 					.OrderBy(r => r.RankingPosition)
-					.Select(r => new { r.ProductId, r.RankingPosition })
-					.Take(take);
+					.Take(take)
+					.Select(r => new { r.ProductId, r.RankingPosition });
 
 				query =
 					from r in ranked
