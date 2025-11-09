@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 
 namespace GamiPort.Areas.Login.Controllers
@@ -61,10 +62,27 @@ namespace GamiPort.Areas.Login.Controllers
 			vm.UserPassword = vm.UserPassword?.Trim() ?? string.Empty;
 			vm.ConfirmPassword = vm.ConfirmPassword?.Trim() ?? string.Empty;
 
+			// 唯一性（Step1 當下就擋）
+			if (await _db.Users.AnyAsync(u => EF.Functions.Collate(u.UserName, "Latin1_General_CS_AS") == vm.UserName.Trim()))
+			{
+				ModelState.AddModelError(nameof(vm.UserName), "此使用者名稱已被使用");
+				return View(vm);
+			}
+			if (await _db.Users.AnyAsync(u => EF.Functions.Collate(u.UserAccount, "Latin1_General_CS_AS") == vm.UserAccount.Trim()))
+			{
+				ModelState.AddModelError(nameof(vm.UserAccount), "此帳號已被使用");
+				return View(vm);
+			}
+
+			if (string.IsNullOrWhiteSpace(vm.UserPassword))
+			{
+				ModelState.AddModelError(nameof(vm.UserPassword), "請輸入密碼");
+				return View(vm);
+			}
 			// 密碼規則
 			if (vm.UserPassword.Length < 8)
 			{
-				ModelState.AddModelError(nameof(vm.UserPassword), "密碼至少 8 碼");
+				ModelState.AddModelError(nameof(vm.UserPassword), "密碼至少 8 至 20 碼");
 				return View(vm);
 			}
 			if (!string.Equals(vm.UserPassword, vm.ConfirmPassword))
@@ -73,20 +91,12 @@ namespace GamiPort.Areas.Login.Controllers
 				return View(vm);
 			}
 
-			// 唯一性（Step1 當下就擋）
-			if (await _db.Users.AnyAsync(u => EF.Functions.Collate(u.UserName, "Latin1_General_CS_AS") == vm.UserName.Trim()))
-			{
-				ModelState.AddModelError(nameof(vm.UserName), "此使用者名稱已被使用");
-				return View(vm);
-			}
 
 
 
-			if (await _db.Users.AnyAsync(u => EF.Functions.Collate(u.UserAccount, "Latin1_General_CS_AS") == vm.UserAccount.Trim()))
-			{
-				ModelState.AddModelError(nameof(vm.UserAccount), "此帳號已被使用");
-				return View(vm);
-			}
+
+
+
 
 			// 進入 Step2
 			TempData[Step1TempKey] = JsonSerializer.Serialize(vm);
@@ -140,6 +150,7 @@ namespace GamiPort.Areas.Login.Controllers
 
 			if (await _db.UserIntroduces.AnyAsync(x => x.IdNumber == vm.IdNumber.Trim()))
 			{ ModelState.AddModelError(nameof(vm.IdNumber), "此 身分證字號 已被使用"); return View(vm); }
+			
 
 			if (await _db.UserIntroduces.AnyAsync(x => x.Email == vm.Email.Trim()))
 			{ ModelState.AddModelError(nameof(vm.Email), "此 Email 已被使用"); return View(vm); }
