@@ -304,7 +304,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const POINTCARD_MERCHTYPE_ID = 3;
+            const POINTCARD_MERCHTYPE_ID = 1; // 調整為 1：點數卡類別
 
             // ===== Helper Functions =====
             const $  = (s) => document.querySelector(s);
@@ -374,11 +374,14 @@
                 loadTri();
             });
 
-            const salesState = { period: 'daily' };
+            const salesState = { period: 'daily', date: null };
             async function loadSales(){
                 let list = [];
                 try {
-                    const url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
+                    let url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
+                    if (salesState.date) {
+                        url += `&date=${encodeURIComponent(salesState.date)}`; // yyyy-mm-dd
+                    }
                     const data = await fetch(url).then(r=>r.json());
                     list = data ?? []; // Ensure it's an array
                 } catch (error) {
@@ -392,8 +395,27 @@
                 $$('#salesRank .btn-group .btn').forEach(b=>b.classList.remove('active','btn-primary'));
                 btn.classList.add('active','btn-primary');
                 salesState.period = btn.getAttribute('data-sales');
+                // 切換日/週/月時清除日期條件（回到最新）
+                salesState.date = null;
                 loadSales();
             });
+
+            // 日期選擇器：選擇日期後載入該日（預設視為日排行），並將切換鈕重置到『日』
+            const rankDateEl = document.getElementById('rank-date');
+            if (rankDateEl) {
+                rankDateEl.addEventListener('change', () => {
+                    const val = (rankDateEl.value || '').trim();
+                    if (!val) return;
+                    // 設定日期並強制回到『日』類別
+                    salesState.date = val; // yyyy-mm-dd
+                    salesState.period = 'daily';
+                    const btns = document.querySelectorAll('#salesRank .btn-group .btn');
+                    btns.forEach(b=>b.classList.remove('active','btn-primary'));
+                    const dailyBtn = document.querySelector('#salesRank .btn-group [data-sales="daily"]');
+                    dailyBtn?.classList.add('active','btn-primary');
+                    loadSales();
+                });
+            }
 
             async function loadLatest5(){
                 const data = await fetch(`${apiBase}/products?sort=newest&pageSize=5`).then(r=>r.json());
