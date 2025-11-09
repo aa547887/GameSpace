@@ -313,6 +313,8 @@
             const img = (u) => u || '/images/placeholder-4x3.png.png';
             const tagLine = (p) => (p.productType?.toLowerCase() === 'game') ? (p.platformName ?? '') : (p.merchTypeName ?? '');
             const apiBase = '/OnlineStore/api/StoreApi';
+            // 移除不再使用的『最新』切換鈕
+            document.querySelector('#triRank .btn-group [data-tri="latest"]')?.remove();
 
             // ===== Ranking & Product Loading Logic =====
             function renderTop3AndList(items, top3Sel, listSel){
@@ -341,15 +343,22 @@
             async function loadTri(){
                 let list = [];
                 try {
-                    if (triState.tab === 'latest') { // This branch is currently not used as 'latest' button is commented out
-                        const data = await fetch(`${apiBase}/products?sort=newest&pageSize=10`).then(r=>r.json());
-                        list = data.items ?? []; // Ensure it's an array
-                    } else {
-                        const type = triState.tab;
-                        // Backend API needs to support 'type=favorite' for this endpoint to return favorite ranking data.
-                        const url  = `${apiBase}/rankings?type=${type}&period=daily&take=10`;
+                    if (triState.tab === 'favorite') {
+                        const url  = `${apiBase}/rankings?type=favorite&take=10`;
                         const data = await fetch(url).then(r=>r.json());
-                        list = data ?? []; // Ensure it's an array
+                        list = data ?? [];
+                    } else if (triState.tab === 'click') {
+                        // 預留：點擊排行尚未接後端，先用占位資料
+                        list = Array.from({length:10}, () => ({
+                            productId: 0,
+                            productCode: '#',
+                            coverUrl: '',
+                            productName: '待開發',
+                            price: 0,
+                            productType: '',
+                            platformName: null,
+                            merchTypeName: null
+                        }));
                     }
                 } catch (error) {
                     console.error(`Error loading ${triState.tab} ranking:`, error);

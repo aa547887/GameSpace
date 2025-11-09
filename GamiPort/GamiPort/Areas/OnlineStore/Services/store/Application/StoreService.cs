@@ -481,18 +481,45 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 			}
 			else if (type == "favorite")
 			{
-				var ranked = _db.SVRankingRatings.AsNoTracking()
-					.Where(r => r.PeriodType == periodType)
-					.OrderBy(r => r.RankingPosition)
-					.Select(r => new { r.ProductId, r.RankingPosition })
+				// 改為以 SUserFavorites 統計收藏數（不分日/週/月），取前 N 名
+				var ranked = _db.SUserFavorites
+					.AsNoTracking()
+					.GroupBy(f => f.ProductId)
+					.Select(g => new { ProductId = g.Key, Cnt = g.Count() })
+					.OrderByDescending(x => x.Cnt)
+					.ThenBy(x => x.ProductId)
 					.Take(take);
 
-				query =
+				var itemsFav = await (
 					from r in ranked
-					join p in _db.SProductInfos.AsNoTracking().Where(p => !p.IsDeleted)
-						on r.ProductId equals p.ProductId
-					orderby r.RankingPosition
-					select p;
+					join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages) on r.ProductId equals p.ProductId
+					where !p.IsDeleted
+					orderby r.Cnt descending, r.ProductId
+					select new ProductCardDto
+					{
+						ProductId = p.ProductId,
+						ProductName = p.ProductName.Trim(),
+						ProductType = (p.ProductType ?? "").Trim(),
+						Price = p.Price,
+						CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
+						ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
+						CoverUrl = GetCoverUrl(p.SProductImages),
+						PlatformName = (p.SGameProductDetail != null && p.SGameProductDetail.Platform != null)
+							? p.SGameProductDetail.Platform.PlatformName
+							: null,
+						MerchTypeName = (
+							from d in _db.SOtherProductDetails
+							join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
+							where d.ProductId == p.ProductId && !d.IsDeleted
+							select mt.MerchTypeName
+						).FirstOrDefault(),
+						GenreNames = p.Genres.Select(g => g.GenreName).ToArray(),
+						IsPreorder = p.IsPreorderEnabled,
+						FavoriteCount = r.Cnt
+					}
+				).ToListAsync();
+
+				return itemsFav;
 			}
 			else
 			{
@@ -512,6 +539,16 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					CurrencyCode = (p.CurrencyCode ?? "TWD").Trim().ToUpper(),
 					ProductCode = p.SProductCode != null ? (p.SProductCode.ProductCode ?? "").Trim() : "",
 					CoverUrl = GetCoverUrl(p.SProductImages),
+					PlatformName = (p.SGameProductDetail != null && p.SGameProductDetail.Platform != null)
+						? p.SGameProductDetail.Platform.PlatformName
+						: null,
+					MerchTypeName = (
+						from d in _db.SOtherProductDetails
+						join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
+						where d.ProductId == p.ProductId && !d.IsDeleted
+						select mt.MerchTypeName
+					).FirstOrDefault(),
+					GenreNames = p.Genres.Select(g => g.GenreName).ToArray(),
 					IsPreorder = p.IsPreorderEnabled
 				})
 				.ToListAsync();

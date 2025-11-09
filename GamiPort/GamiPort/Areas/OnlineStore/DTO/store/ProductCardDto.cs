@@ -21,6 +21,9 @@ namespace GamiPort.Areas.OnlineStore.DTO.Store
 
         // Multiple genre names for game products
         [JsonPropertyName("genreNames")] public string[] GenreNames { get; set; } = Array.Empty<string>();
+
+        // Favorite count for ranking (nullable when not applicable)
+        [JsonPropertyName("favoriteCount")] public int? FavoriteCount { get; set; }
     }
 }
 
