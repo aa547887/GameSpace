@@ -51,15 +51,16 @@ namespace GamiPort.Areas.MiniGame.Services
 			}
 
 			// 檢查寵物健康狀態 - 任一屬性為0時無法互動
-			if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
-				pet.Cleanliness == 0 || pet.Health == 0)
-			{
-				return new PetInteractionResult
-				{
-					Success = false,
-					Message = "寵物狀態不佳，無法進行互動"
-				};
-			}
+			// 註解：已移除此限制，允許任何狀態下都可以互動
+			//if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
+			//	pet.Cleanliness == 0 || pet.Health == 0)
+			//{
+			//	return new PetInteractionResult
+			//	{
+			//		Success = false,
+			//		Message = "寵物狀態不佳，無法進行互動"
+			//	};
+			//}
 
 			// 檢查是否五值全滿 - 全滿時不允許任何互動
 			if (pet.Hunger == 100 && pet.Mood == 100 && pet.Stamina == 100 &&
@@ -192,6 +193,11 @@ namespace GamiPort.Areas.MiniGame.Services
 					}
 				}
 
+				// 註解：互動不增加經驗值（用戶要求）
+				// const int expPerInteraction = 10; // 每次互動獲得10經驗值
+				// pet.Experience += expPerInteraction;
+				// statChanges["experience"] = expPerInteraction;
+
 				// 商業規則：全滿回復
 				// 當飢餓、心情、體力、清潔四項值均達到 100 時，寵物健康值恢復至 100
 				bool healthRecovered = false;
@@ -228,52 +234,9 @@ namespace GamiPort.Areas.MiniGame.Services
 						bonusPoints = 100; // 商業規則：每日狀態全滿獎勵 +100 點會員點數
 						isFirstDailyFullStats = true;
 
-						// 發放寵物經驗值
+						// 發放寵物經驗值（五值全滿獎勵）
 						pet.Experience += bonusExp;
-						statChanges["experience"] = bonusExp;
-
-						// 記錄升級前的等級
-						int oldLevel = pet.Level;
-						int totalLevelUpRewards = 0;
-
-						// 檢查升級（內嵌升級邏輯，避免重複事務）
-						var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
-						while (pet.Experience >= requiredExp && requiredExp > 0)
-						{
-							// 執行升級
-							pet.Level++;
-							pet.LevelUpTime = _appClock.UtcNow;
-							pet.Experience -= requiredExp; // 保留溢出經驗值
-
-							// 計算升級獎勵
-							var pointsReward = CalculateLevelUpReward(pet.Level);
-							wallet.UserPoint += pointsReward;
-							totalLevelUpRewards += pointsReward;
-
-							// 記錄升級獎勵到錢包歷史
-							_context.WalletHistories.Add(new WalletHistory
-							{
-								UserId = userId,
-								ChangeType = "Pet",
-								PointsChanged = pointsReward,
-								ItemCode = $"PET_LEVELUP_{pet.Level}",
-								Description = $"寵物升級至 Level {pet.Level}",
-								ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
-								IsDeleted = false
-							});
-
-							// 檢查下一級
-							requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
-						}
-
-						// 記錄升級信息到statChanges
-						if (pet.Level > oldLevel)
-						{
-							statChanges["leveledUp"] = 1;
-							statChanges["oldLevel"] = oldLevel;
-							statChanges["newLevel"] = pet.Level;
-							statChanges["levelUpRewards"] = totalLevelUpRewards;
-						}
+						statChanges["experience"] = bonusExp; // 只有五值全滿獎勵 100
 
 						// 發放會員點數（如果有配置）
 						if (bonusPoints > 0)
@@ -294,6 +257,48 @@ namespace GamiPort.Areas.MiniGame.Services
 						};
 						_context.WalletHistories.Add(historyRecord);
 					}
+				}
+
+				// 檢查升級（所有互動後都檢查，不限於五值全滿）
+				int oldLevel = pet.Level;
+				int totalLevelUpRewards = 0;
+
+				var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+				while (pet.Experience >= requiredExp && requiredExp > 0)
+				{
+					// 執行升級
+					pet.Level++;
+					pet.LevelUpTime = _appClock.UtcNow;
+					pet.Experience -= requiredExp; // 保留溢出經驗值
+
+					// 計算升級獎勵
+					var pointsReward = CalculateLevelUpReward(pet.Level);
+					wallet.UserPoint += pointsReward;
+					totalLevelUpRewards += pointsReward;
+
+					// 記錄升級獎勵到錢包歷史
+					_context.WalletHistories.Add(new WalletHistory
+					{
+						UserId = userId,
+						ChangeType = "Pet",
+						PointsChanged = pointsReward,
+						ItemCode = $"PET_LEVELUP_{pet.Level}",
+						Description = $"寵物升級至 Level {pet.Level}",
+						ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+						IsDeleted = false
+					});
+
+					// 檢查下一級
+					requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+				}
+
+				// 記錄升級信息到statChanges
+				if (pet.Level > oldLevel)
+				{
+					statChanges["leveledUp"] = 1;
+					statChanges["oldLevel"] = oldLevel;
+					statChanges["newLevel"] = pet.Level;
+					statChanges["levelUpRewards"] = totalLevelUpRewards;
 				}
 
 				// 保存更改
