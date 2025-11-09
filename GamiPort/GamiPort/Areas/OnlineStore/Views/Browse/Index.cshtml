@@ -108,7 +108,9 @@
         }
 
         /* 預留底部空間，避免浮現按鈕遮住資訊 */
-        #product-list .card .card-body { padding-bottom: 3.25rem; }
+        #product-list .card .card-body {
+            padding-bottom: 3.25rem;
+        }
 
         .sticky-side {
             position: sticky;
@@ -119,39 +121,117 @@
         .pagination .page-link {
             border-radius: .5rem;
         }
+
+        /* 新增的圖片推廣區塊樣式 */
+        .image-promo-block {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1rem; /* 區塊間距 */
+            border-radius: 0.5rem; /* 圓角 */
+            box-shadow: 0 2px 8px rgba(0,0,0,.1); /* 陰影 */
+            cursor: pointer; /* 顯示可點擊游標 */
+        }
+
+        .image-promo-block img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: filter 0.3s ease-in-out; /* 飽和度過渡 */
+        }
+
+        .image-promo-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* 半透明遮罩 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; /* 預設隱藏 */
+            transition: opacity 0.3s ease-in-out; /* 遮罩過渡 */
+        }
+
+        .image-promo-block:hover .image-promo-overlay {
+            opacity: 1; /* 懸停時顯示 */
+        }
+
+        .image-promo-block:hover img {
+            filter: grayscale(80%); /* 懸停時降低飽和度 */
+        }
+
+        .overlay-text {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 0.5rem;
+        }
     </style>
 }
 
 <div class="container-xxl py-3">
     <div class="row g-3">
         <!-- 側邊分類（保留位） -->
-        <aside class="col-lg-2 d-none d-lg-block">
-            <div class="sticky-side">
-                @* @await Html.PartialAsync("_StoreBar.Cats")   你現有的共用分類列  *@
+        <aside class="col-lg-2 d-none d-lg-block ">
+            <div class="sticky-side ">
+                
+                <div class="image-promo-block">
+                    <a href="#link1">
+                        <img src="/images/onlinestoreleftad/連接新品.jpg" alt="">
+                        <div class="image-promo-overlay">
+                            <span class="overlay-text">新品上架</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="image-promo-block ">
+                    <a href="#https://store.steampowered.com/">
+                        <img src="/images/onlinestoreleftad/連結Steam.jpg" alt="">
+                        <div class="image-promo-overlay">
+                            <span class="overlay-text">Steam 官網</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="image-promo-block ">
+                    <a href="#https://www.playstation.com/zh-hant-tw/">
+                        <img src="/images/onlinestoreleftad/連結Playstation.jpg" alt="">
+                        <div class="image-promo-overlay">
+                            <span class="overlay-text">PlayStation 官網</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="image-promo-block ">
+                    <a href="#https://www.nintendo.com/tw/">
+                        <img src="/images/onlinestoreleftad/連結任天堂.jpg" alt="">
+                        <div class="image-promo-overlay">
+                            <span class="overlay-text">任天堂 官網</span>
+                        </div>
+                    </a>
+                </div>
             </div>
         </aside>
 
         <!-- 主內容 -->
         <div class="col-12 col-lg-8">
             <div class="tools-sticky pt-1 pb-3 mb-2">
-                <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <div class="input-group shadow-sm rounded-pill" style="max-width:560px">
-                        <input id="q" class="form-control border-0 rounded-start-pill px-4" placeholder="搜尋商品/關鍵字">
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                    <div class="input-group shadow rounded-pill" style="max-width:560px">
+                        <input id="q" class="form-control rounded-start-pill px-4" placeholder="搜尋商品/關鍵字">
                         <button id="btnSearch" class="btn btn-light rounded-end-pill px-4"><i class="bi bi-search"></i></button>
                     </div>
-
-                    <div class="ms-auto d-flex align-items-center gap-2">
-                        <select id="sort" class="form-select form-select-sm" style="width:auto">
-                            <option value="newest">最新</option>
-                            <option value="price_asc">價格 ↑</option>
-                            <option value="price_desc">價格 ↓</option>
-                        </select>
-                        <select id="pageSize" class="form-select form-select-sm" style="width:auto">
-                            <option value="40">40</option>
-                            <option value="60">60</option>
-                            <option value="80">80</option>
-                        </select>
-                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-auto mt-2">
+                    <select id="sort" class="form-select form-select-sm" style="width:auto">
+                        <option value="newest">最新</option>
+                        <option value="price_asc">價格 ↑</option>
+                        <option value="price_desc">價格 ↓</option>
+                    </select>
+                    <select id="pageSize" class="form-select form-select-sm" style="width:auto">
+                        <option value="40">40</option>
+                        <option value="60">60</option>
+                        <option value="80">80</option>
+                    </select>
                 </div>
             </div>
 
@@ -164,8 +244,7 @@
             <div class="sticky-side">
                 @* 若你有共用 Partial，改成 Partial： *@
                 @* @await Html.PartialAsync("_RightRailAds") *@
-                <img src="/images/ads/sample-rail-1.jpg" class="img-fluid rounded mb-3" alt="">
-                <img src="/images/ads/sample-rail-2.jpg" class="img-fluid rounded mb-3" alt="">
+                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.v2.cshtml")
             </div>
         </div>
     </div>
@@ -460,8 +539,8 @@
                 favSet.delete(pid);
               }
             })
-            .catch(err=>{ 
-              console.error(err); 
+            .catch(err=>{
+              console.error(err);
               if(err?.status===401){
                 ensureLoginPrompt();
                 const modal = new bootstrap.Modal(document.getElementById('loginPromptModal'));

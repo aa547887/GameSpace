@@ -165,6 +165,11 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 					})
 					.ToListAsync();
 
+				// 將隨機抽樣到的一頁資料在記憶體中再隨機打亂，避免固定的 ProductId 順序
+				randomItems = randomItems
+					.OrderBy(_ => Random.Shared.Next())
+					.ToList();
+
 				return new GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<ProductCardDto>
 				{
 					page = 1,
@@ -302,6 +307,11 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 							.FirstOrDefault(),
 					})
 					.ToListAsync();
+
+				// 將隨機抽樣到的一頁資料在記憶體中再隨機打亂，避免固定的 ProductId 順序
+				randomItems = randomItems
+					.OrderBy(_ => Random.Shared.Next())
+					.ToList();
 
 				return new GamiPort.Areas.OnlineStore.DTO.Store.PagedResult<GamiPort.Areas.OnlineStore.DTO.Store.ProductFullDto>
 				{

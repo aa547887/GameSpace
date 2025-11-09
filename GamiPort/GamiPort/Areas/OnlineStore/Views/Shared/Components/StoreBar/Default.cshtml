@@ -78,5 +78,109 @@
                 </ul>
             </li>
         </ul>
-    </div>
 </div>
+</div>
+
+<style>
+    /* 讓商店導覽列固定在頂部，並具備平滑顯示/隱藏動畫 */
+    #store-bar-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 1040; /* 高於一般內容與大部分元件 */
+        transition: transform 0.22s ease-in-out, opacity 0.18s ease-in-out;
+        will-change: transform, opacity;
+    }
+
+    /* 往下滾動時隱藏（上滑再顯示） */
+    #store-bar-wrapper.hide-on-scroll {
+        transform: translateY(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* 在支援 position: sticky 的情況下避免佔位抖動 */
+    @@supports (position: sticky) or (position: -webkit-sticky) {
+        #store-bar-wrapper { position: sticky; }
+    }
+</style>
+
+<script>
+    (function () {
+        // 讓隨機瀏覽每次點擊產生不同序列（加上唯一參數避免快取）
+        const links = document.querySelectorAll('a[href="/OnlineStore/Browse?sort=random"], a[href$="/OnlineStore/Browse?sort=random"]');
+        if (!links || links.length === 0) return;
+        links.forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const url = new URL(link.href, window.location.origin);
+                const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+                url.searchParams.set('rnd', nonce);
+                window.location.href = url.toString();
+            });
+        });
+    })();
+</script>
+
+<script>
+    (function () {
+        const bar = document.getElementById('store-bar-wrapper');
+        if (!bar) return;
+
+        let lastY = window.scrollY || window.pageYOffset || 0;
+        let ticking = false;
+        const threshold = 8; // 避免過度敏感的小幅捲動
+
+        function handleScroll() {
+            const y = window.scrollY || window.pageYOffset || 0;
+            const delta = y - lastY;
+
+            // 接近頂部時一律顯示
+            if (y <= 8) {
+                bar.classList.remove('hide-on-scroll');
+            } else if (delta > threshold) {
+                // 往下滾動 => 隱藏
+                bar.classList.add('hide-on-scroll');
+            } else if (delta < -threshold) {
+                // 往上滾動 => 顯示
+                bar.classList.remove('hide-on-scroll');
+            }
+
+            lastY = y;
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', function () {
+            if (!ticking) {
+                window.requestAnimationFrame(handleScroll);
+                ticking = true;
+            }
+        }, { passive: true });
+    })();
+</script>
+
+<style>
+    /* 讓下拉選單可超出 StoreBar 顯示，並保持可滾動 */
+    /* StoreBar 固定在 Topbar(約 64px) 底下，且不蓋住 Topbar */
+    #store-bar-wrapper { position: sticky; top: 64px; z-index: 1010; overflow: visible; }
+    #store-bar-wrapper .container-xxl, #store-bar-wrapper .nav-cats { overflow: visible !important; }
+
+    #store-bar-wrapper .hover-dd { position: relative; }
+    #store-bar-wrapper .hover-dd > .dropdown-menu {
+        position: absolute;
+        top: calc(100% + .5rem);
+        left: 0;
+        z-index: 1100; /* 顯示在 Topbar 之上 */
+    }
+
+    #store-bar-wrapper .dropdown-menu {
+        max-height: 60vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    #store-bar-wrapper .suppliers-menu {
+        max-height: 50vh;
+        overflow-y: auto;
+        min-width: 260px;
+    }
+</style>

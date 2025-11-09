@@ -7,22 +7,25 @@
     <!-- Carousel Wrapper -->
     <div class="carousel-wrapper">
         <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
-        <div class="carousel-inner hero-inner">
-            <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt="GamiStore Birthday"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt="卡比"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt="NINJA"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt="絕對摩拳"></div>
-            <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt="無雙戰技"></div>
+            <div class="carousel-inner hero-inner">
+                <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestorecm/06廣告，英雄聯盟.jpg" /></div>
+                <div class="carousel-item"><img src="~/images/onlinestorecm/07廣告，動物派對.jpg" /></div>
+                <div class="carousel-item"><img src="~/images/onlinestorecm/08廣告，皮克敏.jpg" /></div>
+            </div>
+            <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev"><i class="bi bi-chevron-left"></i></button>
+            <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next"><i class="bi bi-chevron-right"></i></button>
+            <div class="hero-indicators"><div class="hero-progress"><span></span></div></div>
+            <div class="hero-fade hero-fade-left"></div>
+            <div class="hero-fade hero-fade-right"></div>
         </div>
-        <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev"><i class="bi bi-chevron-left"></i></button>
-        <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next"><i class="bi bi-chevron-right"></i></button>
-        <div class="hero-indicators"><div class="hero-progress"><span></span></div></div>
-        <div class="hero-fade hero-fade-left"></div>
-        <div class="hero-fade hero-fade-right"></div>
-    </div>
     </div>
     <div class="hero-search-wrapper">
-         <div class="hero-search">
+        <div class="hero-search">
             <i class="bi bi-search"></i>
             <input id="heroQ" placeholder="搜尋遊戲、周邊、點數卡…" />
             <button class="btn btn-primary btn-sm" id="heroGo"><i class="bi bi-search"></i></button>
@@ -88,7 +91,7 @@
                     </div>
                 </div>
                 <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3" id="catGrid"></div>
-                 <div class="text-end mt-3">
+                <div class="text-end mt-3">
                     <a class="small me-2" href="/OnlineStore/Store/Browse?type=game">更多遊戲…</a>
                     <a class="small me-2" href="/OnlineStore/Store/Browse?type=notgame">更多周邊…</a>
                     <a class="small" href="/OnlineStore/Store/Browse?merchTypeId=3">更多點數卡…</a>
@@ -99,7 +102,7 @@
         <!-- Right Ad Column -->
         <aside class="col-lg-3 d-none d-lg-block">
             <div class="ad-rail">
-                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.cshtml")
+                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.v2.cshtml")
             </div>
         </aside>
     </div>
@@ -111,45 +114,165 @@
             position: sticky;
             top: 80px;
         }
-        .hero-search-wrapper { 
-            margin-top: 1.5rem; 
-            margin-bottom: 2rem; 
-            display: flex; 
-            justify-content: center; 
+
+        .hero-search-wrapper {
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
         }
+
         .content-block {
             background-color: #f8f9fa;
             padding: 1.5rem;
             border-radius: 12px;
         }
 
-        .hero-search { display: flex; align-items: center; gap: 10px; width: min(720px, 94%); padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,.08); box-shadow: 0 8px 24px rgba(0,0,0,.1); transition: background .2s; }
-        .hero-search:hover { background: rgba(255,255,255,.9); }
-        .hero-search input { border: 0; background: transparent; outline: none; width: 100%; font-size: 1.05rem; }
-        .hero-search .btn { border-radius: 10px; }
+        .hero-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: min(720px, 94%);
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,.1);
+            transition: background .2s;
+        }
+
+            .hero-search:hover {
+                background: rgba(255,255,255,.9);
+            }
+
+            .hero-search input {
+                border: 0;
+                background: transparent;
+                outline: none;
+                width: 100%;
+                font-size: 1.05rem;
+            }
+
+            .hero-search .btn {
+                border-radius: 10px;
+            }
 
         /* Card styles for rankings and product previews */
-        .card { border: 1px solid #e0e0e0; border-radius: 8px; background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,.1); }
-        .card .ratio { background-color: #f5f5f5; }
-        .card .card-body { padding: 1rem; }
-        .card .card-title { font-weight: 600; font-size: 1rem; line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: .5rem; }
-        .card .fw-semibold { font-weight: 700; }
-        .list-group-item { border-bottom: 1px dashed rgba(0,0,0,.06); }
-        .list-group-item:last-child { border-bottom: 0; }
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fff;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 28px rgba(0,0,0,.1);
+            }
+
+            .card .ratio {
+                background-color: #f5f5f5;
+            }
+
+            .card .card-body {
+                padding: 1rem;
+            }
+
+            .card .card-title {
+                font-weight: 600;
+                font-size: 1rem;
+                line-height: 1.3;
+                height: 2.6em;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                margin-bottom: .5rem;
+            }
+
+            .card .fw-semibold {
+                font-weight: 700;
+            }
+
+        .list-group-item {
+            border-bottom: 1px dashed rgba(0,0,0,.06);
+        }
+
+            .list-group-item:last-child {
+                border-bottom: 0;
+            }
 
         /* Advanced Center-Mode Carousel */
-        .carousel-wrapper { position: relative; background-color: #f0f2f5; border-radius: 16px; padding: 2rem 0; overflow: hidden; }
-        #storeHero { overflow: visible; }
-        .carousel-inner { overflow: visible; height: 380px; }
-        #storeHero .carousel-item { display: block; position: absolute; width: 100%; height: 100%; transition: transform 0.6s ease, opacity 0.6s ease, filter 0.6s ease; }
-        #storeHero .carousel-item img { width: 100%; height: 100%; object-fit: contain; }
-        #storeHero .carousel-control-prev, #storeHero .carousel-control-next { width: 5%; background: rgba(0,0,0,0.1); border-radius: 12px; margin: 0 1rem; transition: background-color 0.2s ease; }
-        #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover { background: rgba(0,0,0,0.3); }
+        .carousel-wrapper {
+            position: relative;
+            background-color: #f0f2f5;
+            border-radius: 16px;
+            padding: 2rem 0;
+            overflow: hidden;
+        }
+
+        #storeHero {
+            overflow: visible;
+        }
+
+        .carousel-inner {
+            overflow: visible;
+            height: 380px;
+        }
+
+        #storeHero .carousel-item {
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s ease, opacity 0.6s ease, filter 0.6s ease;
+        }
+
+            #storeHero .carousel-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        #storeHero .carousel-control-prev, #storeHero .carousel-control-next {
+            width: 5%;
+            background: rgba(0,0,0,0.1);
+            border-radius: 12px;
+            margin: 0 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+            #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover {
+                background: rgba(0,0,0,0.3);
+            }
         /* Carousel progress segments (FA) */
-        #storeHero .hero-indicators { position: absolute; left: 0; right: 0; bottom: -36px; display: flex; gap: 10px; padding: 0 24px; }
-        .hero-seg { flex: 1 1 0; height: 6px; background: #e6ebf2; border-radius: 999px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
-        .hero-seg-bar { display: block; height: 100%; width: 0%; background: #0d6efd; transition: width 5s linear; }
+        #storeHero .hero-indicators {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -36px;
+            display: flex;
+            gap: 10px;
+            padding: 0 24px;
+        }
+
+        .hero-seg {
+            flex: 1 1 0;
+            height: 6px;
+            background: #e6ebf2;
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
+        }
+
+        .hero-seg-bar {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: #0d6efd;
+            transition: width 5s linear;
+        }
 
         .home-row .card {
             border: none;
@@ -345,7 +468,7 @@
             function updateCarouselClasses(activeIndex) {
                 items.forEach((item, i) => {
                     item.classList.remove('active');
-                    
+
                     let newTransform = 'translateX(200%)'; // Hide far away
                     let newOpacity = 0.5;
                     let newFilter = 'grayscale(1)';
