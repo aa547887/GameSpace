@@ -204,6 +204,7 @@ namespace GamiPort.Areas.MiniGame.Services
 				bool isFirstDailyFullStats = false;
 				int bonusExp = 0;
 				int bonusPoints = 0;
+				int experienceGainedThisInteraction = 0; // 追蹤本次互動獲得的經驗值
 
 				if (pet.Hunger == 100 && pet.Mood == 100 &&
 					pet.Stamina == 100 && pet.Cleanliness == 100)
@@ -236,6 +237,7 @@ namespace GamiPort.Areas.MiniGame.Services
 
 						// 發放寵物經驗值（五值全滿獎勵）
 						pet.Experience += bonusExp;
+						experienceGainedThisInteraction = bonusExp; // 記錄本次獲得的經驗值
 						statChanges["experience"] = bonusExp; // 只有五值全滿獎勵 100
 
 						// 發放會員點數（如果有配置）
@@ -262,10 +264,19 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 檢查升級（所有互動後都檢查，不限於五值全滿）
 				int oldLevel = pet.Level;
 				int totalLevelUpRewards = 0;
+				bool isFirstLevelUpProcessed = false; // 追蹤是否已處理首次升級
 
 				var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
 				while (pet.Experience >= requiredExp && requiredExp > 0)
 				{
+					// 【新增】檢查今日是否可以升級
+					var canLevelUp = await CheckCanLevelUpTodayAsync(userId);
+					if (!canLevelUp)
+					{
+						// 不滿足升級條件，跳出循環
+						break;
+					}
+
 					// 執行升級
 					pet.Level++;
 					pet.LevelUpTime = _appClock.UtcNow;
@@ -287,6 +298,13 @@ namespace GamiPort.Areas.MiniGame.Services
 						ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
 						IsDeleted = false
 					});
+
+					// 【新增】如果是今日首次升級，記錄標記（只記錄一次）
+					if (!isFirstLevelUpProcessed)
+					{
+						await MarkFirstLevelUpTodayAsync(userId);
+						isFirstLevelUpProcessed = true;
+					}
 
 					// 檢查下一級
 					requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
@@ -636,24 +654,58 @@ namespace GamiPort.Areas.MiniGame.Services
 			// 增加經驗值
 			pet.Experience += exp;
 
+			// 取得用戶ID（用於升級條件檢查）
+			var userId = pet.UserId;
+
 			// 自動檢查升級（支援跨多級升級）
 			var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+			bool isFirstLevelUpProcessed = false; // 追蹤是否已處理首次升級
+
 			while (pet.Experience >= requiredExp && requiredExp > 0)
 			{
-				// 執行升級
-				var levelUpSuccess = await LevelUpPetAsync(petId);
-				if (!levelUpSuccess)
+				// 【新增】檢查今日是否可以升級
+				var canLevelUp = await CheckCanLevelUpTodayAsync(userId);
+				if (!canLevelUp)
 				{
+					// 不滿足升級條件，跳出循環
 					break;
 				}
 
-				// 重新取得寵物資料
-				pet = await _context.Pets
-					.FirstOrDefaultAsync(p => p.PetId == petId && !p.IsDeleted);
+				// 執行升級
+				pet.Level++;
+				pet.LevelUpTime = _appClock.UtcNow;
+				pet.Experience -= requiredExp;
 
-				if (pet == null)
+				// 計算升級獎勵
+				var pointsReward = CalculateLevelUpReward(pet.Level);
+
+				// 發放點數到錢包
+				var wallet = await _context.UserWallets
+					.FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
+
+				if (wallet != null)
 				{
-					break;
+					wallet.UserPoint += pointsReward;
+					_context.UserWallets.Update(wallet);
+				}
+
+				// 記錄升級獎勵到錢包歷史
+				_context.WalletHistories.Add(new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = pointsReward,
+					ItemCode = $"PET_LEVELUP_{pet.Level}",
+					Description = $"寵物升級至 Level {pet.Level}",
+					ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+					IsDeleted = false
+				});
+
+				// 【新增】如果是今日首次升級，記錄標記（只記錄一次）
+				if (!isFirstLevelUpProcessed)
+				{
+					await MarkFirstLevelUpTodayAsync(userId);
+					isFirstLevelUpProcessed = true;
 				}
 
 				// 檢查下一級
@@ -743,6 +795,117 @@ namespace GamiPort.Areas.MiniGame.Services
 			{
 				await transaction.RollbackAsync();
 				return false;
+			}
+		}
+
+		/// <summary>
+		/// 檢查今日是否可以進行升級
+		/// 規則：每天UTC+8 00:00後，第一次升級需要滿足以下條件之一：
+		/// 條件A：當天第一次簽到且有獲得寵物經驗值獎勵
+		/// 條件B：當天第一次達成五個屬性值全滿
+		/// 當天第一次升級後，後續升級恢復正常邏輯（只要經驗值足夠就升級）
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <returns>是否可以升級</returns>
+		private async Task<bool> CheckCanLevelUpTodayAsync(int userId)
+		{
+			var today = _appClock.ToAppTime(_appClock.UtcNow).Date; // UTC+8
+			var todayFirstLevelUpCode = $"PET-FIRST-LEVELUP-{today:yyyy-MM-dd}";
+
+			// 1. 檢查今天是否已經完成過首次升級
+			var hasFirstLevelUpToday = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == todayFirstLevelUpCode
+							&& !wh.IsDeleted);
+
+			if (hasFirstLevelUpToday)
+			{
+				// 今天已完成首次升級，允許正常升級
+				return true;
+			}
+
+			// 2. 今天尚未完成首次升級，需檢查觸發條件
+			// 檢查條件A：今日是否簽到且獲得經驗值
+			var hasSignInExpToday = await CheckHasSignedInWithExpTodayAsync(userId, today);
+
+			// 檢查條件B：今日是否達成五屬性全滿
+			var hasFullStatsToday = await CheckHasFullStatsTodayAsync(userId, today);
+
+			// 滿足任一觸發條件即可升級
+			return hasSignInExpToday || hasFullStatsToday;
+		}
+
+		/// <summary>
+		/// 檢查條件A：今日是否簽到且獲得寵物經驗值
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="today">今日日期（UTC+8）</param>
+		/// <returns>是否滿足條件A</returns>
+		private async Task<bool> CheckHasSignedInWithExpTodayAsync(int userId, DateTime today)
+		{
+			// 計算今日的UTC時間範圍
+			var utcTodayStart = _appClock.ToUtc(today);
+			var utcTodayEnd = _appClock.ToUtc(today.AddDays(1).AddTicks(-1));
+
+			// 檢查 UserSignInStats 表中今日簽到記錄的 ExpGained 欄位
+			var todaySignIn = await _context.UserSignInStats
+				.Where(s => s.UserId == userId
+						&& s.SignTime >= utcTodayStart
+						&& s.SignTime <= utcTodayEnd
+						&& !s.IsDeleted)
+				.FirstOrDefaultAsync();
+
+			return todaySignIn != null && todaySignIn.ExpGained > 0;
+		}
+
+		/// <summary>
+		/// 檢查條件B：今日是否達成五屬性全滿
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="today">今日日期（UTC+8）</param>
+		/// <returns>是否滿足條件B</returns>
+		private async Task<bool> CheckHasFullStatsTodayAsync(int userId, DateTime today)
+		{
+			// 檢查 WalletHistory 中今日是否有全滿獎勵記錄
+			var fullStatsItemCode = $"PET-FULLSTATS-{today:yyyy-MM-dd}";
+
+			var hasFullStatsToday = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == fullStatsItemCode
+							&& !wh.IsDeleted);
+
+			return hasFullStatsToday;
+		}
+
+		/// <summary>
+		/// 記錄今日首次升級標記
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		private async Task MarkFirstLevelUpTodayAsync(int userId)
+		{
+			var today = _appClock.ToAppTime(_appClock.UtcNow).Date; // UTC+8
+			var todayFirstLevelUpCode = $"PET-FIRST-LEVELUP-{today:yyyy-MM-dd}";
+
+			// 再次檢查，避免重複記錄
+			var exists = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == todayFirstLevelUpCode
+							&& !wh.IsDeleted);
+
+			if (!exists)
+			{
+				var firstLevelUpHistory = new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = 0, // 不涉及點數變動，只是標記
+					ItemCode = todayFirstLevelUpCode,
+					Description = $"今日首次升級已完成",
+					ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+					IsDeleted = false
+				};
+
+				_context.WalletHistories.Add(firstLevelUpHistory);
 			}
 		}
 
