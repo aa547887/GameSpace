@@ -41,8 +41,8 @@
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <h4 class="mb-0">排行榜</h4>
                     <div class="btn-group">
-                        @* <button class="btn btn-outline-dark active" data-tri="latest">最新上架</button> *@
-                        <button class="btn btn-outline-dark" data-tri="favorite">收藏排行</button>
+                        <button class="btn btn-outline-dark active" data-tri="latest">最新上架</button>
+                        <button class="btn btn-outline-dark active" data-tri="favorite">收藏排行</button>
                         <button class="btn btn-outline-dark" data-tri="click">點擊排行</button>
                     </div>
                 </div>
@@ -337,16 +337,23 @@
                     </li>`).join('');
             }
 
-            const triState = { tab: 'latest' };
+            const triState = { tab: 'favorite' }; // Default to favorite ranking
             async function loadTri(){
                 let list = [];
-                if (triState.tab === 'latest') {
-                    const data = await fetch(`${apiBase}/products?sort=newest&pageSize=10`).then(r=>r.json());
-                    list = data.items;
-                } else {
-                    const type = triState.tab;
-                    const url  = `${apiBase}/rankings?type=${type}&period=daily&take=10`;
-                    list = await fetch(url).then(r=>r.json());
+                try {
+                    if (triState.tab === 'latest') { // This branch is currently not used as 'latest' button is commented out
+                        const data = await fetch(`${apiBase}/products?sort=newest&pageSize=10`).then(r=>r.json());
+                        list = data.items ?? []; // Ensure it's an array
+                    } else {
+                        const type = triState.tab;
+                        // Backend API needs to support 'type=favorite' for this endpoint to return favorite ranking data.
+                        const url  = `${apiBase}/rankings?type=${type}&period=daily&take=10`;
+                        const data = await fetch(url).then(r=>r.json());
+                        list = data ?? []; // Ensure it's an array
+                    }
+                } catch (error) {
+                    console.error(`Error loading ${triState.tab} ranking:`, error);
+                    list = []; // Fallback to empty array on error
                 }
                 renderTop3AndList(list, '#triTop3', '#triList');
             }
@@ -360,8 +367,15 @@
 
             const salesState = { period: 'daily' };
             async function loadSales(){
-                const url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
-                const list = await fetch(url).then(r=>r.json());
+                let list = [];
+                try {
+                    const url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
+                    const data = await fetch(url).then(r=>r.json());
+                    list = data ?? []; // Ensure it's an array
+                } catch (error) {
+                    console.error(`Error loading sales ranking:`, error);
+                    list = []; // Fallback to empty array on error
+                }
                 renderTop3AndList(list, '#salesTop3', '#salesList');
             }
             $('#salesRank .btn-group').addEventListener('click', (e)=>{

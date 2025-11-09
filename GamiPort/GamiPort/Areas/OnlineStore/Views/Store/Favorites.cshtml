@@ -16,11 +16,6 @@
             padding-left: 15mm !important;
             padding-right: 15mm !important;
         }
-
-        .col-5-per-row {
-            flex: 0 0 20%;
-            max-width: 20%;
-        }
     </style>
 }
 
@@ -74,7 +69,7 @@
           const name = escapeHtml(x.productName);
 
           return `
-          <div class="col-6 col-md-4 col-lg-4 col-xxl-3">
+          <div class="col-2">
             <div class="card h-100 position-relative">
               <a class="badge-fav" href="javascript:void(0)" title="移除收藏" data-action="fav" data-id="${x.productId}"><i class="bi bi-heart-fill text-danger"></i></a>
               <a class="card-img-hold d-block" href="${detailUrl}" title="${name}"><img src="${escapeHtml(img)}" alt="${name}" onerror="this.src='${PLACEHOLDER}'"></a>
