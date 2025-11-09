@@ -831,7 +831,20 @@ namespace GamiPort.Areas.MiniGame.Services
 				.Select(s => s.ColorCode)
 				.ToListAsync();
 
-			return colorCodes.Concat(freeSkins).Distinct();
+			// 添加用戶當前套用的膚色（視為已擁有）
+			var currentSkinColor = await _context.Pets
+				.AsNoTracking()
+				.Where(p => p.UserId == userId && !p.IsDeleted)
+				.Select(p => p.SkinColor)
+				.FirstOrDefaultAsync();
+
+			var result = colorCodes.Concat(freeSkins);
+			if (!string.IsNullOrWhiteSpace(currentSkinColor))
+			{
+				result = result.Append(currentSkinColor);
+			}
+
+			return result.Distinct();
 		}
 
 		/// <summary>
@@ -862,7 +875,20 @@ namespace GamiPort.Areas.MiniGame.Services
 				.Select(s => s.BackgroundCode)
 				.ToListAsync();
 
-			return backgroundCodes.Concat(freeBackgrounds).Distinct();
+			// 添加用戶當前套用的背景（視為已擁有）
+			var currentBackground = await _context.Pets
+				.AsNoTracking()
+				.Where(p => p.UserId == userId && !p.IsDeleted)
+				.Select(p => p.BackgroundColor)
+				.FirstOrDefaultAsync();
+
+			var result = backgroundCodes.Concat(freeBackgrounds);
+			if (!string.IsNullOrWhiteSpace(currentBackground))
+			{
+				result = result.Append(currentBackground);
+			}
+
+			return result.Distinct();
 		}
 
 		/// <summary>

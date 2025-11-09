@@ -57,6 +57,10 @@
             transition: all 0.2s ease;
         }
 
+        .color-option.disabled {
+            cursor: not-allowed;
+        }
+
         .color-swatch {
             width: 80px;
             height: 80px;
@@ -102,6 +106,10 @@
             gap: 0.75rem;
             cursor: pointer;
             transition: all 0.2s ease;
+        }
+
+        .background-option.disabled {
+            cursor: not-allowed;
         }
 
         .background-swatch {
@@ -502,8 +510,8 @@
                     color: '@skin.ColorCode',
                     name: '@skin.ColorName@(isExpired ? " (限時活動限定已失效)" : "")',
                     cost: @skin.PointsCost,
-                    isExpired: @(isExpired ? "true" : "false"),
-                    isOwned: @(isOwned ? "true" : "false")
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
                 },</text>
             }
         ];
@@ -521,8 +529,8 @@
                     name: '@bg.BackgroundName@(isExpired ? " (限時活動限定已失效)" : "")',
                     cost: @bg.PointsCost,
                     image: '@Html.Raw(imagePath)',
-                    isExpired: @(isExpired ? "true" : "false"),
-                    isOwned: @(isOwned ? "true" : "false")
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
                 },</text>
             }
         ];
@@ -562,7 +570,7 @@
                 }
 
                 div.innerHTML = `
-                    <div class="color-swatch" style="background-color: ${option.color}; ${isDisabled ? 'opacity: 0.4; cursor: not-allowed;' : ''}"></div>
+                    <div class="color-swatch" style="background-color: ${option.color}; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
                     <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
                     <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
                     ${statusBadge}
@@ -593,7 +601,7 @@
                 }
 
                 div.innerHTML = `
-                    <div class="background-swatch" style="background-image: url('${option.image}'); background-size: cover; background-position: center; ${isDisabled ? 'opacity: 0.4; cursor: not-allowed;' : ''}"></div>
+                    <div class="background-swatch" style="background-image: url('${option.image}'); background-size: cover; background-position: center; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
                     <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
                     <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
                     ${statusBadge}
@@ -609,8 +617,6 @@
                         });
                     })(option, div);
                 } else {
-                    div.style.cursor = 'not-allowed';
-                    div.style.pointerEvents = 'none';
                     div.style.opacity = '0.6';
                 }
 
@@ -799,8 +805,11 @@
                         // 更新實際套用的狀態
                         appliedSkinColor = selectedSkinColor;
 
-                        // 更新按鈕狀態和擁有狀態
-                        option.isOwned = true;
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
                         btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
                         btn.disabled = true;
                         btn.dataset.action = '';
@@ -886,8 +895,11 @@
                         appliedBackgroundColor = selectedBackgroundColor;
                         appliedBackgroundImage = selectedBackgroundImage;
 
-                        // 更新按鈕狀態和擁有狀態
-                        option.isOwned = true;
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
                         btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
                         btn.disabled = true;
                         btn.dataset.action = '';
