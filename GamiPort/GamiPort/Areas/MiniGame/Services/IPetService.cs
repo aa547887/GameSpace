@@ -119,6 +119,13 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// <param name="background">背景代碼</param>
 		/// <returns>操作結果</returns>
 		Task<PetApplyResult> ApplyBackgroundAsync(int userId, string background);
+
+		/// <summary>
+		/// 應用啟動時初始化所有寵物升級狀態（處理種子數據的累積經驗）
+		/// 只在應用啟動時調用一次
+		/// </summary>
+		/// <returns>Task</returns>
+		Task InitializePetLevelsOnStartupAsync();
 	}
 
 	/// <summary>

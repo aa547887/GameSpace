@@ -491,7 +491,14 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 建立基礎查詢
 				var query = _context.WalletHistories
 					.AsNoTracking()
-					.Where(h => h.UserId == userId && !h.IsDeleted);
+					.Where(h => h.UserId == userId && !h.IsDeleted)
+					// 過濾遊戲破關獎勵（包含新舊紀錄，依用戶需求不顯示）
+					.Where(h =>
+						// 排除 ItemCode 以 GAME- 開頭的新紀錄
+						(h.ItemCode == null || !h.ItemCode.StartsWith("GAME-")) &&
+						// 排除 Description 包含小遊戲關鍵字的舊紀錄
+						(h.Description == null || !h.Description.Contains("小遊戲"))
+					);
 
 				// 篩選交易類型（支持多重分類）
 				if (!string.IsNullOrWhiteSpace(changeType))
@@ -518,6 +525,22 @@ namespace GamiPort.Areas.MiniGame.Services
 						query = query.Where(h =>
 							h.ChangeType == "EVoucher" ||
 							(h.Description != null && (h.Description.Contains("兌換電子禮券") || h.Description.Contains("兌換禮券")))
+						);
+					}
+					else if (changeType == "Pet")
+					{
+						// 寵物篩選：包含所有寵物相關交易（升級、購買膚色、購買背景、全滿獎勵）
+						query = query.Where(h =>
+							h.ChangeType == "Pet" ||
+							h.ChangeType == "PetSkinColor" ||
+							h.ChangeType == "PetBackground"
+						);
+					}
+					else if (changeType == "SignIn")
+					{
+						// 簽到篩選：通過 Description 包含「簽到」判斷
+						query = query.Where(h =>
+							h.Description != null && h.Description.Contains("簽到")
 						);
 					}
 					else
@@ -650,43 +673,111 @@ namespace GamiPort.Areas.MiniGame.Services
 				// 7. 扣除點數
 				wallet.UserPoint -= totalPointsRequired;
 
-				// 8. 生成優惠券（使用原生SQL繞過DEFAULT約束）
+				// 8. 批量生成優惠券（優化版：批量檢查 + 單次批量插入，提升性能）
 				var generatedCodes = new List<string>();
+				var tempCodes = new List<string>();
+
+				// 8.1 預生成所有代碼
 				for (int i = 0; i < quantity; i++)
 				{
-					var couponCode = await GenerateUniqueCouponCodeAsync();
-					_logger.LogDebug("生成優惠券代碼: {CouponCode}, Iteration={Iteration}", couponCode, i + 1);
-
-					// 使用原生SQL直接插入，完全控制NULL值
-					var sql = @"
-						INSERT INTO [Coupon]
-						([CouponCode], [CouponTypeId], [UserId], [IsUsed], [AcquiredTime], [UsedTime], [UsedInOrderId], [IsDeleted])
-						VALUES
-						({0}, {1}, {2}, {3}, {4}, NULL, NULL, {5})";
-
-					await _context.Database.ExecuteSqlRawAsync(
-						sql,
-						couponCode,
-						couponTypeId,
-						userId,
-						false,  // IsUsed
-						nowUtc8,
-						false   // IsDeleted
-					);
-
-					generatedCodes.Add(couponCode);
-
-					_logger.LogDebug("優惠券插入成功: CouponCode={CouponCode}, 使用原生SQL繞過DEFAULT約束", couponCode);
+					var now = _appClock.ToAppTime(_appClock.UtcNow);
+					var yearMonth = now.ToString("yyyyMM");
+					var uniqueId = Guid.NewGuid().ToString("N")[..8].ToUpper();
+					tempCodes.Add($"CPN-{yearMonth}-{uniqueId}");
 				}
 
+				// 8.2 批量檢查唯一性（一次查詢，避免多次數據庫往返）
+				var existingCodes = await _context.Coupons
+					.AsNoTracking()
+					.Where(c => tempCodes.Contains(c.CouponCode))
+					.Select(c => c.CouponCode)
+					.ToListAsync();
+
+				// 8.3 收集無衝突的代碼
+				foreach (var code in tempCodes)
+				{
+					if (!existingCodes.Contains(code))
+					{
+						generatedCodes.Add(code);
+					}
+				}
+
+				// 8.4 如果有衝突，補充生成缺少的數量
+				while (generatedCodes.Count < quantity)
+				{
+					var code = await GenerateUniqueCouponCodeAsync();
+					if (!generatedCodes.Contains(code))
+					{
+						generatedCodes.Add(code);
+						_logger.LogWarning("優惠券代碼衝突，已重新生成: Code={Code}", code);
+					}
+				}
+
+				_logger.LogDebug("批量生成 {Count} 個優惠券代碼完成", generatedCodes.Count);
+
+				// 8.5 構建批量 INSERT SQL
+				var valuesList = new List<string>();
+				var parameters = new List<object>();
+
+				for (int i = 0; i < generatedCodes.Count; i++)
+				{
+					int baseIndex = i * 6;
+					valuesList.Add($"({{{baseIndex}}}, {{{baseIndex + 1}}}, {{{baseIndex + 2}}}, {{{baseIndex + 3}}}, {{{baseIndex + 4}}}, NULL, NULL, {{{baseIndex + 5}}})");
+
+					parameters.Add(generatedCodes[i]);     // {baseIndex} - CouponCode
+					parameters.Add(couponTypeId);          // {baseIndex + 1} - CouponTypeId
+					parameters.Add(userId);                // {baseIndex + 2} - UserId
+					parameters.Add(false);                 // {baseIndex + 3} - IsUsed
+					parameters.Add(nowUtc8);               // {baseIndex + 4} - AcquiredTime
+					parameters.Add(false);                 // {baseIndex + 5} - IsDeleted
+				}
+
+				var batchSql = $@"
+					INSERT INTO [Coupon]
+					([CouponCode], [CouponTypeId], [UserId], [IsUsed], [AcquiredTime], [UsedTime], [UsedInOrderId], [IsDeleted])
+					VALUES {string.Join(", ", valuesList)}";
+
+				// 8.6 單次批量插入（大幅提升性能）
+				await _context.Database.ExecuteSqlRawAsync(batchSql, parameters.ToArray());
+
+				_logger.LogInformation("批量插入 {Count} 張優惠券成功，使用原生SQL繞過DEFAULT約束", generatedCodes.Count);
+
 				// 9. 記錄錢包歷史
+				// 生成 ItemCode（50 字符限制）- 單張顯示代碼，多張顯示數量摘要
+				string itemCode = quantity <= 1
+					? generatedCodes.First()
+					: $"{quantity} Coupons";
+
+				// 生成 Description（255 字符限制）- 包含完整代碼列表，智能截斷
+				string codesText = string.Join(", ", generatedCodes);
+				string prefix = $"兌換優惠券「{couponType.Name}」x{quantity}";
+				string description;
+
+				if (prefix.Length + codesText.Length + 2 <= 255)
+				{
+					// 完整顯示所有代碼
+					description = $"{prefix}: {codesText}";
+				}
+				else
+				{
+					// 智能截斷：保留完整代碼，避免在代碼中間截斷
+					int maxCodesLength = 255 - prefix.Length - 20; // 預留 ": " + "... 等N張" 的空間
+					string truncatedCodes = codesText.Substring(0, Math.Min(maxCodesLength, codesText.Length));
+					int lastComma = truncatedCodes.LastIndexOf(',');
+					if (lastComma > 0)
+					{
+						truncatedCodes = truncatedCodes.Substring(0, lastComma);
+					}
+					description = $"{prefix}: {truncatedCodes}, ... 等{quantity}張";
+				}
+
 				var history = new WalletHistory
 				{
 					UserId = userId,
 					ChangeType = "Point",
 					PointsChanged = -totalPointsRequired,
-					ItemCode = string.Join(", ", generatedCodes),
-					Description = $"兌換優惠券「{couponType.Name}」x{quantity}",
+					ItemCode = itemCode,
+					Description = description,
 					ChangeTime = nowUtc8,
 					IsDeleted = false
 				};
@@ -809,11 +900,36 @@ namespace GamiPort.Areas.MiniGame.Services
 					evoucherTypeToUpdate.TotalAvailable -= quantity;
 				}
 
-				// 10. 生成電子禮券
+				// 10. 生成電子禮券（改進版：檢查本地 + 數據庫，避免重複）
 				var generatedCodes = new List<string>();
 				for (int i = 0; i < quantity; i++)
 				{
-					var evoucherCode = await GenerateUniqueEVoucherCodeAsync();
+					string evoucherCode;
+					int retryCount = 0;
+					const int maxRetries = 10;
+
+					do
+					{
+						// 生成新代碼
+						var now = _appClock.ToAppTime(_appClock.UtcNow);
+						var yearMonth = now.ToString("yyyyMM");
+						var uniqueId = Guid.NewGuid().ToString("N")[..8].ToUpper();
+						evoucherCode = $"EV-{yearMonth}-{uniqueId}";
+
+						retryCount++;
+						if (retryCount > maxRetries)
+						{
+							// Fallback：使用完整時間戳
+							var fallbackCode = $"EV-{now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
+							_logger.LogError("電子禮券代碼生成失敗，使用 Fallback: Code={Code}", fallbackCode);
+							evoucherCode = fallbackCode;
+							break;
+						}
+					}
+					// 關鍵修復：同時檢查數據庫和本地已生成的代碼，避免重複
+					while (generatedCodes.Contains(evoucherCode) ||
+						   await _context.Evouchers.AsNoTracking().AnyAsync(e => e.EvoucherCode == evoucherCode));
+
 					var evoucher = new Evoucher
 					{
 						EvoucherCode = evoucherCode,
@@ -826,16 +942,46 @@ namespace GamiPort.Areas.MiniGame.Services
 					};
 					_context.Evouchers.Add(evoucher);
 					generatedCodes.Add(evoucherCode);
+
+					_logger.LogDebug("生成電子禮券: Code={Code}, Iteration={Iteration}", evoucherCode, i + 1);
 				}
 
 				// 11. 記錄錢包歷史
+				// 生成 ItemCode（50 字符限制）- 單張顯示代碼，多張顯示數量摘要
+				string itemCode = quantity <= 1
+					? generatedCodes.First()
+					: $"{quantity} EVouchers";
+
+				// 生成 Description（255 字符限制）- 包含完整代碼列表，智能截斷
+				string codesText = string.Join(", ", generatedCodes);
+				string prefix = $"兌換電子禮券「{evoucherType.Name}」x{quantity}";
+				string description;
+
+				if (prefix.Length + codesText.Length + 2 <= 255)
+				{
+					// 完整顯示所有代碼
+					description = $"{prefix}: {codesText}";
+				}
+				else
+				{
+					// 智能截斷：保留完整代碼，避免在代碼中間截斷
+					int maxCodesLength = 255 - prefix.Length - 20; // 預留 ": " + "... 等N張" 的空間
+					string truncatedCodes = codesText.Substring(0, Math.Min(maxCodesLength, codesText.Length));
+					int lastComma = truncatedCodes.LastIndexOf(',');
+					if (lastComma > 0)
+					{
+						truncatedCodes = truncatedCodes.Substring(0, lastComma);
+					}
+					description = $"{prefix}: {truncatedCodes}, ... 等{quantity}張";
+				}
+
 				var history = new WalletHistory
 				{
 					UserId = userId,
 					ChangeType = "Point",
 					PointsChanged = -totalPointsRequired,
-					ItemCode = string.Join(", ", generatedCodes),
-					Description = $"兌換電子禮券「{evoucherType.Name}」x{quantity}",
+					ItemCode = itemCode,
+					Description = description,
 					ChangeTime = nowUtc8,
 					IsDeleted = false
 				};

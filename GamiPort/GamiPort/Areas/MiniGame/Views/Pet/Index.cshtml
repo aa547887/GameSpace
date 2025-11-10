@@ -159,6 +159,16 @@
             display: block;
         }
 
+        /* Level Up Celebration Message (升級通知卡片) */
+        .level-up-celebration-message {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .level-up-celebration-message.show {
+            display: block;
+        }
+
         .interaction-result {
             background: white;
             border-radius: 16px;
@@ -818,11 +828,11 @@
                             </div>
                             <div class="compact-exp-bar-wrapper">
                                 <div class="compact-exp-bar" id="experience-bar"
-                                     style="width: @((ViewBag.DisplayExpToNext > 0 ? Math.Min(100, (ViewBag.DisplayExperience * 100.0 / ViewBag.DisplayExpToNext)) : 0).ToString("F2"))%;">
+                                     style="width: @((ViewBag.DisplayExpToNext > 0 ? Math.Min(100, (ViewBag.DisplayExperience * 100.0 / (ViewBag.DisplayExperience + ViewBag.DisplayExpToNext))) : 0).ToString("F2"))%;">
                                 </div>
                             </div>
                             <div class="compact-exp-text">
-                                <small id="experience-text">@ViewBag.DisplayExperience / @ViewBag.DisplayExpToNext</small>
+                                <small id="experience-text">@ViewBag.DisplayExperience / @(ViewBag.DisplayExperience + ViewBag.DisplayExpToNext)</small>
                             </div>
                         </div>
 
@@ -961,6 +971,28 @@
                                 <div style="margin-top: 0.75rem; font-size: 1.2rem; display: flex; justify-content: center; gap: 2rem;">
                                     <span><i class="bi bi-star-fill" style="color: #28a745; margin-right: 0.3rem;"></i>寵物經驗值 +<span id="celebrationBonusExp">0</span></span>
                                     <span><i class="bi bi-gem" style="color: #17a2b8; margin-right: 0.3rem;"></i>會員點數 +<span id="celebrationBonusPoints">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Level Up Celebration Card (升級通知卡片) -->
+                        <div class="level-up-celebration-message mt-3" id="levelUpCelebration">
+                            <div style="background: #e6e6fa;
+                                       color: #333;
+                                       font-weight: bold;
+                                       padding: 1rem 1.5rem;
+                                       border-radius: 12px;
+                                       font-size: 1.3rem;
+                                       text-align: center;
+                                       box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+                                       border: 2px solid #9370db;">
+                                <div style="margin-bottom: 0.5rem;">
+                                    <i class="bi bi-star-fill" style="color: #ffd700; font-size: 1.8rem; margin-right: 0.5rem;"></i>
+                                    <span style="font-size: 1.5rem;">恭喜<span id="levelUpPetName">寵物</span>從 Level <span id="levelUpOldLevelCard">1</span> 升級至 Level <span id="levelUpNewLevelCard">2</span></span>
+                                    <i class="bi bi-star-fill" style="color: #ffd700; font-size: 1.8rem; margin-left: 0.5rem;"></i>
+                                </div>
+                                <div style="margin-top: 0.75rem; font-size: 1.2rem;">
+                                    <span><i class="bi bi-gem" style="color: #17a2b8; margin-right: 0.3rem;"></i>獲得獎勵點數 +<span id="levelUpRewardsCard">0</span></span>
                                 </div>
                             </div>
                         </div>
@@ -1148,6 +1180,7 @@
         </div>
 
         <!-- 升級通知 Modal -->
+        @* 註解：已改用卡片通知，不再使用 Modal
         <div class="modal fade" id="levelUpNotificationModal" tabindex="-1" aria-labelledby="levelUpNotificationLabel" aria-hidden="true" data-bs-backdrop="static">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content" style="border: 3px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);">
@@ -1182,6 +1215,7 @@
                 </div>
             </div>
         </div>
+        *@
     }
 }
 
@@ -1223,6 +1257,7 @@
 
         const interactionCooldowns = {};
         let isShowingFullStatsReward = false; // 是否正在顯示五值全滿慶祝訊息（固定5秒）
+        let levelUpTimeout = null; // 升級卡片的 timeout
 
         async function interactWithPet(action, button) {
             // Disable button and show loading
@@ -1288,12 +1323,13 @@
                             petAvatar.playLevelUpEffect(result.newLevel, result.levelUpRewards);
                         }
 
-                        // 顯示升級提示
-                        showLevelUpNotification(result.oldLevel, result.newLevel, result.levelUpRewards);
+                        // 顯示升級提示（傳遞寵物名稱）
+                        const petName = result.pet?.petName || '寵物';
+                        showLevelUpNotification(petName, result.oldLevel, result.newLevel, result.levelUpRewards);
                     }
 
                     // 顯示成功消息
-                    showResult(true, finalMessage, result.statChanges, result.isFirstDailyFullStats, result.bonusExperience, result.bonusPoints);
+                    showResult(true, finalMessage, result.statChanges, result.isFirstDailyFullStats, result.bonusExperience, result.bonusPoints, result.healthRecovered, result.leveledUp);
 
                     // 更新寵物狀態(檢查pet對象是否存在且有有效數據)
                     if (result.pet && typeof result.pet.hunger === 'number') {
@@ -1317,11 +1353,11 @@
 
                 } else {
                     // 顯示錯誤消息（包括單項已滿提示、五值全滿提示等）
-                    showResult(false, result.message, null, false, 0, 0);
+                    showResult(false, result.message, null, false, 0, 0, false, false);
                 }
 
             } catch (error) {
-                showResult(false, '互動失敗,請重試', null, false, 0, 0);
+                showResult(false, '互動失敗,請重試', null, false, 0, 0, false, false);
                 console.error('Interaction error:', error);
             } finally {
                 button.disabled = false;
@@ -1480,13 +1516,15 @@
             const currentExpDisplay = document.getElementById('current-exp-display');
             const requiredExpDisplay = document.getElementById('required-exp-display');
 
-            if (experienceBar && requiredExp > 0) {
-                const percentage = Math.min(100, (currentExp * 100.0 / requiredExp));
+            const totalExp = currentExp + requiredExp;
+
+            if (experienceBar && totalExp > 0) {
+                const percentage = Math.min(100, (currentExp * 100.0 / totalExp));
                 experienceBar.style.width = percentage.toFixed(2) + '%';
             }
 
             if (experienceText) {
-                experienceText.textContent = `${currentExp} / ${requiredExp}`;
+                experienceText.textContent = `${currentExp} / ${totalExp}`;
             }
 
             // 更新等級資訊Modal的經驗值顯示
@@ -1521,7 +1559,7 @@
             }
         }
 
-        function showResult(success, message, statChanges, isFirstDailyFullStats, bonusExp, bonusPoints) {
+        function showResult(success, message, statChanges, isFirstDailyFullStats, bonusExp, bonusPoints, healthRecovered, leveledUp) {
             // 如果是首次五值全滿，顯示金色慶祝訊息（獨立容器，固定5秒）
             if (isFirstDailyFullStats && bonusExp > 0) {
                 const goldenCelebration = document.getElementById('goldenCelebration');
@@ -1544,50 +1582,63 @@
             }
 
             // 顯示普通互動訊息（在金色慶祝訊息下方）
-            const resultDiv = document.getElementById('interactionResult');
-            const resultText = document.getElementById('resultText');
-            const statChange = document.getElementById('statChange');
-            const icon = resultDiv.querySelector('.result-icon');
+            // 註解：如果是五值全滿情況（healthRecovered=true）或升級時，只顯示特殊卡片，不顯示綠色訊息
+            if (!healthRecovered && !leveledUp) {
+                const resultDiv = document.getElementById('interactionResult');
+                const resultText = document.getElementById('resultText');
+                const statChange = document.getElementById('statChange');
+                const icon = resultDiv.querySelector('.result-icon');
 
-            // Update styling
-            resultDiv.classList.remove('success', 'error');
-            resultDiv.classList.add(success ? 'success' : 'error');
+                // Update styling
+                resultDiv.classList.remove('success', 'error');
+                resultDiv.classList.add(success ? 'success' : 'error');
 
-            // Update icon
-            if (success) {
-                icon.className = 'bi bi-check-circle-fill result-icon text-success';
-            } else {
-                icon.className = 'bi bi-exclamation-circle-fill result-icon text-danger';
+                // Update icon
+                if (success) {
+                    icon.className = 'bi bi-check-circle-fill result-icon text-success';
+                } else {
+                    icon.className = 'bi bi-exclamation-circle-fill result-icon text-danger';
+                }
+
+                // Update message
+                resultText.textContent = message;
+
+                // Clear stat changes (不再顯示在此處)
+                statChange.innerHTML = '';
+
+                // Show result
+                resultDiv.classList.add('show');
+
+                // Auto-hide after 6 seconds
+                setTimeout(() => {
+                    resultDiv.classList.remove('show');
+                }, 6000);
             }
-
-            // Update message
-            resultText.textContent = message;
-
-            // Clear stat changes (不再顯示在此處)
-            statChange.innerHTML = '';
-
-            // Show result
-            resultDiv.classList.add('show');
-
-            // Auto-hide after 6 seconds
-            setTimeout(() => {
-                resultDiv.classList.remove('show');
-            }, 6000);
         }
 
         // 顯示升級通知
-        function showLevelUpNotification(oldLevel, newLevel, rewards) {
-            // 更新模態框內容
-            document.getElementById('levelUpOldLevel').textContent = oldLevel;
-            document.getElementById('levelUpNewLevel').textContent = newLevel;
-            document.getElementById('levelUpRewards').textContent = rewards;
+        // 顯示升級通知卡片（單次或多次升級共用一張卡片）
+        // 後端已處理連續升級，返回：oldLevel（最初等級）、newLevel（最終等級）、rewards（累積總點數）
+        function showLevelUpNotification(petName, oldLevel, newLevel, rewards) {
+            // 更新卡片內容
+            document.getElementById('levelUpPetName').textContent = petName;
+            document.getElementById('levelUpOldLevelCard').textContent = oldLevel;
+            document.getElementById('levelUpNewLevelCard').textContent = newLevel;
+            document.getElementById('levelUpRewardsCard').textContent = rewards;
 
-            // 顯示模態框
-            const modal = new bootstrap.Modal(document.getElementById('levelUpNotificationModal'));
-            modal.show();
+            // 顯示卡片
+            const levelUpCelebration = document.getElementById('levelUpCelebration');
+            levelUpCelebration.classList.add('show');
 
-            // 可選：添加慶祝音效（如果有的話）
-            // playSound('level-up');
+            // 清除之前的 timeout（如果有）
+            if (levelUpTimeout) {
+                clearTimeout(levelUpTimeout);
+            }
+
+            // 5 秒後自動隱藏
+            levelUpTimeout = setTimeout(() => {
+                levelUpCelebration.classList.remove('show');
+            }, 5000);
         }
 
         function getStatLabel(stat) {

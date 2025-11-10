@@ -51,15 +51,16 @@ namespace GamiPort.Areas.MiniGame.Services
 			}
 
 			// 檢查寵物健康狀態 - 任一屬性為0時無法互動
-			if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
-				pet.Cleanliness == 0 || pet.Health == 0)
-			{
-				return new PetInteractionResult
-				{
-					Success = false,
-					Message = "寵物狀態不佳，無法進行互動"
-				};
-			}
+			// 註解：已移除此限制，允許任何狀態下都可以互動
+			//if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
+			//	pet.Cleanliness == 0 || pet.Health == 0)
+			//{
+			//	return new PetInteractionResult
+			//	{
+			//		Success = false,
+			//		Message = "寵物狀態不佳，無法進行互動"
+			//	};
+			//}
 
 			// 檢查是否五值全滿 - 全滿時不允許任何互動
 			if (pet.Hunger == 100 && pet.Mood == 100 && pet.Stamina == 100 &&
@@ -192,12 +193,18 @@ namespace GamiPort.Areas.MiniGame.Services
 					}
 				}
 
+				// 註解：互動不增加經驗值（用戶要求）
+				// const int expPerInteraction = 10; // 每次互動獲得10經驗值
+				// pet.Experience += expPerInteraction;
+				// statChanges["experience"] = expPerInteraction;
+
 				// 商業規則：全滿回復
 				// 當飢餓、心情、體力、清潔四項值均達到 100 時，寵物健康值恢復至 100
 				bool healthRecovered = false;
 				bool isFirstDailyFullStats = false;
 				int bonusExp = 0;
 				int bonusPoints = 0;
+				int experienceGainedThisInteraction = 0; // 追蹤本次互動獲得的經驗值
 
 				if (pet.Hunger == 100 && pet.Mood == 100 &&
 					pet.Stamina == 100 && pet.Cleanliness == 100)
@@ -228,52 +235,10 @@ namespace GamiPort.Areas.MiniGame.Services
 						bonusPoints = 100; // 商業規則：每日狀態全滿獎勵 +100 點會員點數
 						isFirstDailyFullStats = true;
 
-						// 發放寵物經驗值
+						// 發放寵物經驗值（五值全滿獎勵）
 						pet.Experience += bonusExp;
-						statChanges["experience"] = bonusExp;
-
-						// 記錄升級前的等級
-						int oldLevel = pet.Level;
-						int totalLevelUpRewards = 0;
-
-						// 檢查升級（內嵌升級邏輯，避免重複事務）
-						var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
-						while (pet.Experience >= requiredExp && requiredExp > 0)
-						{
-							// 執行升級
-							pet.Level++;
-							pet.LevelUpTime = _appClock.UtcNow;
-							pet.Experience -= requiredExp; // 保留溢出經驗值
-
-							// 計算升級獎勵
-							var pointsReward = CalculateLevelUpReward(pet.Level);
-							wallet.UserPoint += pointsReward;
-							totalLevelUpRewards += pointsReward;
-
-							// 記錄升級獎勵到錢包歷史
-							_context.WalletHistories.Add(new WalletHistory
-							{
-								UserId = userId,
-								ChangeType = "Pet",
-								PointsChanged = pointsReward,
-								ItemCode = $"PET_LEVELUP_{pet.Level}",
-								Description = $"寵物升級至 Level {pet.Level}",
-								ChangeTime = _appClock.UtcNow,
-								IsDeleted = false
-							});
-
-							// 檢查下一級
-							requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
-						}
-
-						// 記錄升級信息到statChanges
-						if (pet.Level > oldLevel)
-						{
-							statChanges["leveledUp"] = 1;
-							statChanges["oldLevel"] = oldLevel;
-							statChanges["newLevel"] = pet.Level;
-							statChanges["levelUpRewards"] = totalLevelUpRewards;
-						}
+						experienceGainedThisInteraction = bonusExp; // 記錄本次獲得的經驗值
+						statChanges["experience"] = bonusExp; // 只有五值全滿獎勵 100
 
 						// 發放會員點數（如果有配置）
 						if (bonusPoints > 0)
@@ -289,11 +254,53 @@ namespace GamiPort.Areas.MiniGame.Services
 							PointsChanged = bonusPoints,
 							ItemCode = todayItemCode,
 							Description = $"寵物狀態全滿獎勵（經驗值+{bonusExp}，點數+{bonusPoints}）",
-							ChangeTime = _appClock.UtcNow,
+							ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
 							IsDeleted = false
 						};
 						_context.WalletHistories.Add(historyRecord);
 					}
+				}
+
+				// 檢查升級（所有互動後都檢查，不限於五值全滿）
+				int oldLevel = pet.Level;
+				int totalLevelUpRewards = 0;
+
+				var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+				while (pet.Experience >= requiredExp && requiredExp > 0)
+				{
+					// 執行升級
+					pet.Level++;
+					pet.LevelUpTime = _appClock.UtcNow;
+					pet.Experience -= requiredExp; // 保留溢出經驗值
+
+					// 計算升級獎勵
+					var pointsReward = CalculateLevelUpReward(pet.Level);
+					wallet.UserPoint += pointsReward;
+					totalLevelUpRewards += pointsReward;
+
+					// 記錄升級獎勵到錢包歷史
+					_context.WalletHistories.Add(new WalletHistory
+					{
+						UserId = userId,
+						ChangeType = "Pet",
+						PointsChanged = pointsReward,
+						ItemCode = $"PET_LEVELUP_{pet.Level}",
+						Description = $"寵物升級至 Level {pet.Level}",
+						ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+						IsDeleted = false
+					});
+
+					// 檢查下一級
+					requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+				}
+
+				// 記錄升級信息到statChanges
+				if (pet.Level > oldLevel)
+				{
+					statChanges["leveledUp"] = 1;
+					statChanges["oldLevel"] = oldLevel;
+					statChanges["newLevel"] = pet.Level;
+					statChanges["levelUpRewards"] = totalLevelUpRewards;
 				}
 
 				// 保存更改
@@ -444,24 +451,46 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 更新膚色
 				if (!string.IsNullOrWhiteSpace(skinColor) && pet.SkinColor != skinColor)
 				{
 					pet.SkinColor = skinColor;
-					pet.SkinColorChangedTime = utcNow;
+					pet.SkinColorChangedTime = nowUtc8;
 				}
 
 				// 更新背景
 				if (!string.IsNullOrWhiteSpace(background) && pet.BackgroundColor != background)
 				{
 					pet.BackgroundColor = background;
-					pet.BackgroundColorChangedTime = utcNow;
+					pet.BackgroundColorChangedTime = nowUtc8;
 				}
 
 				// 扣除點數
 				wallet.UserPoint -= totalPointCost;
+
+				// 記錄到 WalletHistory（補充遺漏的記錄）
+				var upgradeParts = new List<string>();
+				if (!string.IsNullOrWhiteSpace(skinColor) && pet.SkinColor != skinColor)
+				{
+					upgradeParts.Add("膚色");
+				}
+				if (!string.IsNullOrWhiteSpace(background) && pet.BackgroundColor != background)
+				{
+					upgradeParts.Add("背景");
+				}
+
+				_context.WalletHistories.Add(new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = -totalPointCost,
+					ItemCode = $"PET-UPGRADE-{userId}-{nowUtc8:yyyyMMddHHmmss}",
+					Description = $"寵物外觀升級（{string.Join("、", upgradeParts)}）",
+					ChangeTime = nowUtc8,
+					IsDeleted = false
+				});
 
 				// 保存更改
 				_context.Pets.Update(pet);
@@ -609,25 +638,43 @@ namespace GamiPort.Areas.MiniGame.Services
 			// 增加經驗值
 			pet.Experience += exp;
 
+			// 取得用戶ID（用於升級條件檢查）
+			var userId = pet.UserId;
+
 			// 自動檢查升級（支援跨多級升級）
 			var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+
 			while (pet.Experience >= requiredExp && requiredExp > 0)
 			{
 				// 執行升級
-				var levelUpSuccess = await LevelUpPetAsync(petId);
-				if (!levelUpSuccess)
+				pet.Level++;
+				pet.LevelUpTime = _appClock.UtcNow;
+				pet.Experience -= requiredExp;
+
+				// 計算升級獎勵
+				var pointsReward = CalculateLevelUpReward(pet.Level);
+
+				// 發放點數到錢包
+				var wallet = await _context.UserWallets
+					.FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
+
+				if (wallet != null)
 				{
-					break;
+					wallet.UserPoint += pointsReward;
+					_context.UserWallets.Update(wallet);
 				}
 
-				// 重新取得寵物資料
-				pet = await _context.Pets
-					.FirstOrDefaultAsync(p => p.PetId == petId && !p.IsDeleted);
-
-				if (pet == null)
+				// 記錄升級獎勵到錢包歷史
+				_context.WalletHistories.Add(new WalletHistory
 				{
-					break;
-				}
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = pointsReward,
+					ItemCode = $"PET_LEVELUP_{pet.Level}",
+					Description = $"寵物升級至 Level {pet.Level}",
+					ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+					IsDeleted = false
+				});
 
 				// 檢查下一級
 				requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
@@ -719,6 +766,187 @@ namespace GamiPort.Areas.MiniGame.Services
 			}
 		}
 
+		// [废弃] 移除每日首次升级限制机制 - 2025-11-10
+		/*
+		/// <summary>
+		/// 檢查今日是否可以進行升級
+		/// 規則：每天UTC+8 00:00後，第一次升級需要滿足以下條件之一：
+		/// 條件A：當天第一次簽到且有獲得寵物經驗值獎勵
+		/// 條件B：當天第一次達成五個屬性值全滿
+		/// 當天第一次升級後，後續升級恢復正常邏輯（只要經驗值足夠就升級）
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <returns>是否可以升級</returns>
+		private async Task<bool> CheckCanLevelUpTodayAsync(int userId)
+		{
+			var today = _appClock.ToAppTime(_appClock.UtcNow).Date; // UTC+8
+			var todayFirstLevelUpCode = $"PET-FIRST-LEVELUP-{today:yyyy-MM-dd}";
+
+			// 1. 檢查今天是否已經完成過首次升級
+			var hasFirstLevelUpToday = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == todayFirstLevelUpCode
+							&& !wh.IsDeleted);
+
+			if (hasFirstLevelUpToday)
+			{
+				// 今天已完成首次升級，允許正常升級
+				return true;
+			}
+
+			// 2. 今天尚未完成首次升級，需檢查觸發條件
+			// 檢查條件A：今日是否簽到且獲得經驗值
+			var hasSignInExpToday = await CheckHasSignedInWithExpTodayAsync(userId, today);
+
+			// 檢查條件B：今日是否達成五屬性全滿
+			var hasFullStatsToday = await CheckHasFullStatsTodayAsync(userId, today);
+
+			// 滿足任一觸發條件即可升級
+			return hasSignInExpToday || hasFullStatsToday;
+		}
+		*/
+
+		// [废弃] 移除每日首次升级限制机制 - 2025-11-10
+		/*
+		/// <summary>
+		/// 檢查條件A：今日是否簽到且獲得寵物經驗值
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="today">今日日期（UTC+8）</param>
+		/// <returns>是否滿足條件A</returns>
+		private async Task<bool> CheckHasSignedInWithExpTodayAsync(int userId, DateTime today)
+		{
+			// 計算今日的UTC時間範圍
+			var utcTodayStart = _appClock.ToUtc(today);
+			var utcTodayEnd = _appClock.ToUtc(today.AddDays(1).AddTicks(-1));
+
+			// 檢查 UserSignInStats 表中今日簽到記錄的 ExpGained 欄位
+			var todaySignIn = await _context.UserSignInStats
+				.Where(s => s.UserId == userId
+						&& s.SignTime >= utcTodayStart
+						&& s.SignTime <= utcTodayEnd
+						&& !s.IsDeleted)
+				.FirstOrDefaultAsync();
+
+			return todaySignIn != null && todaySignIn.ExpGained > 0;
+		}
+		*/
+
+		// [废弃] 移除每日首次升级限制机制 - 2025-11-10
+		/*
+		/// <summary>
+		/// 檢查條件B：今日是否達成五屬性全滿
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		/// <param name="today">今日日期（UTC+8）</param>
+		/// <returns>是否滿足條件B</returns>
+		private async Task<bool> CheckHasFullStatsTodayAsync(int userId, DateTime today)
+		{
+			// 檢查 WalletHistory 中今日是否有全滿獎勵記錄
+			var fullStatsItemCode = $"PET-FULLSTATS-{today:yyyy-MM-dd}";
+
+			var hasFullStatsToday = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == fullStatsItemCode
+							&& !wh.IsDeleted);
+
+			return hasFullStatsToday;
+		}
+		*/
+
+		// [废弃] 移除每日首次升级限制机制 - 2025-11-10
+		/*
+		/// <summary>
+		/// 記錄今日首次升級標記
+		/// </summary>
+		/// <param name="userId">用戶ID</param>
+		private async Task MarkFirstLevelUpTodayAsync(int userId)
+		{
+			var today = _appClock.ToAppTime(_appClock.UtcNow).Date; // UTC+8
+			var todayFirstLevelUpCode = $"PET-FIRST-LEVELUP-{today:yyyy-MM-dd}";
+
+			// 再次檢查，避免重複記錄
+			var exists = await _context.WalletHistories
+				.AnyAsync(wh => wh.UserId == userId
+							&& wh.ItemCode == todayFirstLevelUpCode
+							&& !wh.IsDeleted);
+
+			if (!exists)
+			{
+				var firstLevelUpHistory = new WalletHistory
+				{
+					UserId = userId,
+					ChangeType = "Pet",
+					PointsChanged = 0, // 不涉及點數變動，只是標記
+					ItemCode = todayFirstLevelUpCode,
+					Description = $"今日首次升級已完成",
+					ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+					IsDeleted = false
+				};
+
+				_context.WalletHistories.Add(firstLevelUpHistory);
+			}
+		}
+		*/
+
+		/// <summary>
+		/// 應用啟動時初始化所有寵物升級狀態（處理種子數據的累積經驗）
+		/// 只在應用啟動時調用一次
+		/// </summary>
+		public async Task InitializePetLevelsOnStartupAsync()
+		{
+			// 獲取所有需要升級的寵物（Experience >= 所需經驗值）
+			var allPets = await _context.Pets
+				.Where(p => !p.IsDeleted)
+				.ToListAsync();
+
+			foreach (var pet in allPets)
+			{
+				bool upgraded = false;
+				var requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+
+				// 循環升級直到經驗不足
+				while (pet.Experience >= requiredExp && requiredExp > 0)
+				{
+					pet.Level++;
+					pet.LevelUpTime = _appClock.UtcNow;
+					pet.Experience -= requiredExp;
+					upgraded = true;
+
+					// 發放升級獎勵
+					var wallet = await _context.UserWallets
+						.FirstOrDefaultAsync(w => w.UserId == pet.UserId && !w.IsDeleted);
+
+					if (wallet != null)
+					{
+						var pointsReward = CalculateLevelUpReward(pet.Level);
+						wallet.UserPoint += pointsReward;
+
+						// 記錄升級獎勵
+						_context.WalletHistories.Add(new WalletHistory
+						{
+							UserId = pet.UserId,
+							ChangeType = "Pet",
+							PointsChanged = pointsReward,
+							ItemCode = $"PET_LEVELUP_{pet.Level}",
+							Description = $"[啟動初始化] 寵物升級至 Level {pet.Level}",
+							ChangeTime = _appClock.ToAppTime(_appClock.UtcNow),
+							IsDeleted = false
+						});
+					}
+
+					requiredExp = await GetRequiredExpForLevelAsync(pet.Level + 1);
+				}
+
+				if (upgraded)
+				{
+					_context.Pets.Update(pet);
+				}
+			}
+
+			await _context.SaveChangesAsync();
+		}
+
 		/// <summary>
 		/// 獲取指定等級所需的經驗值（三級公式）
 		/// </summary>
@@ -786,8 +1014,8 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// </summary>
 		public async Task<IEnumerable<string>> GetPurchasedSkinColorsAsync(int userId)
 		{
-			// 查詢 WalletHistory 中 ItemType="PetSkinColor" 的記錄
-			var purchasedColors = await _context.WalletHistories
+			// 查詢新格式：ChangeType="PetSkinColor"，ItemCode="{UserId}-{ColorCode}"
+			var newFormatPurchases = await _context.WalletHistories
 				.AsNoTracking()
 				.Where(w => w.UserId == userId
 					&& w.ChangeType == "PetSkinColor"
@@ -796,11 +1024,27 @@ namespace GamiPort.Areas.MiniGame.Services
 				.ToListAsync();
 
 			// 提取顏色代碼（去除 "{UserId}-" 前綴）
-			var colorCodes = purchasedColors
+			var colorCodesFromNewFormat = newFormatPurchases
 				.Where(code => !string.IsNullOrWhiteSpace(code) && code.Contains('-'))
 				.Select(code => code.Split('-', 2)[1])
 				.Distinct()
 				.ToList();
+
+			// 查詢舊格式：ChangeType="Point"，ItemCode="{ColorCode}"（兼容舊版購買記錄）
+			var oldFormatPurchases = await _context.WalletHistories
+				.AsNoTracking()
+				.Where(w => w.UserId == userId
+					&& w.ChangeType == "Point"
+					&& !w.IsDeleted
+					&& (w.Description.Contains("購買寵物膚色") || w.Description.Contains("购买宠物肤色"))
+					&& w.ItemCode != null
+					&& w.ItemCode.StartsWith("#"))
+				.Select(w => w.ItemCode)
+				.Distinct()
+				.ToListAsync();
+
+			// 合併新舊格式的顏色代碼
+			var allPurchasedColors = colorCodesFromNewFormat.Concat(oldFormatPurchases).Distinct().ToList();
 
 			// 添加0點膚色（視為已購買）
 			var freeSkins = await _context.PetSkinColorCostSettings
@@ -809,7 +1053,20 @@ namespace GamiPort.Areas.MiniGame.Services
 				.Select(s => s.ColorCode)
 				.ToListAsync();
 
-			return colorCodes.Concat(freeSkins).Distinct();
+			// 添加用戶當前套用的膚色（視為已擁有）
+			var currentSkinColor = await _context.Pets
+				.AsNoTracking()
+				.Where(p => p.UserId == userId && !p.IsDeleted)
+				.Select(p => p.SkinColor)
+				.FirstOrDefaultAsync();
+
+			var result = allPurchasedColors.Concat(freeSkins);
+			if (!string.IsNullOrWhiteSpace(currentSkinColor))
+			{
+				result = result.Append(currentSkinColor);
+			}
+
+			return result.Distinct();
 		}
 
 		/// <summary>
@@ -817,8 +1074,8 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// </summary>
 		public async Task<IEnumerable<string>> GetPurchasedBackgroundsAsync(int userId)
 		{
-			// 查詢 WalletHistory 中 ItemType="PetBackground" 的記錄
-			var purchasedBackgrounds = await _context.WalletHistories
+			// 查詢新格式：ChangeType="PetBackground"，ItemCode="{UserId}-{BackgroundCode}"
+			var newFormatPurchases = await _context.WalletHistories
 				.AsNoTracking()
 				.Where(w => w.UserId == userId
 					&& w.ChangeType == "PetBackground"
@@ -827,11 +1084,27 @@ namespace GamiPort.Areas.MiniGame.Services
 				.ToListAsync();
 
 			// 提取背景代碼（去除 "{UserId}-" 前綴）
-			var backgroundCodes = purchasedBackgrounds
+			var backgroundCodesFromNewFormat = newFormatPurchases
 				.Where(code => !string.IsNullOrWhiteSpace(code) && code.Contains('-'))
 				.Select(code => code.Split('-', 2)[1])
 				.Distinct()
 				.ToList();
+
+			// 查詢舊格式：ChangeType="Point"，ItemCode="{BackgroundCode}"（兼容舊版購買記錄）
+			var oldFormatPurchases = await _context.WalletHistories
+				.AsNoTracking()
+				.Where(w => w.UserId == userId
+					&& w.ChangeType == "Point"
+					&& !w.IsDeleted
+					&& (w.Description.Contains("購買寵物背景") || w.Description.Contains("购买宠物背景"))
+					&& w.ItemCode != null
+					&& w.ItemCode.StartsWith("BG"))
+				.Select(w => w.ItemCode)
+				.Distinct()
+				.ToListAsync();
+
+			// 合併新舊格式的背景代碼
+			var allPurchasedBackgrounds = backgroundCodesFromNewFormat.Concat(oldFormatPurchases).Distinct().ToList();
 
 			// 添加0點背景（視為已購買）
 			var freeBackgrounds = await _context.PetBackgroundCostSettings
@@ -840,7 +1113,20 @@ namespace GamiPort.Areas.MiniGame.Services
 				.Select(s => s.BackgroundCode)
 				.ToListAsync();
 
-			return backgroundCodes.Concat(freeBackgrounds).Distinct();
+			// 添加用戶當前套用的背景（視為已擁有）
+			var currentBackground = await _context.Pets
+				.AsNoTracking()
+				.Where(p => p.UserId == userId && !p.IsDeleted)
+				.Select(p => p.BackgroundColor)
+				.FirstOrDefaultAsync();
+
+			var result = allPurchasedBackgrounds.Concat(freeBackgrounds);
+			if (!string.IsNullOrWhiteSpace(currentBackground))
+			{
+				result = result.Append(currentBackground);
+			}
+
+			return result.Distinct();
 		}
 
 		/// <summary>
@@ -848,6 +1134,9 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// </summary>
 		private async Task<bool> CheckSkinColorPurchasedAsync(int userId, string colorHex)
 		{
+			// 標準化為大寫，避免大小寫匹配問題
+			colorHex = colorHex?.ToUpperInvariant() ?? string.Empty;
+
 			// 檢查是否為0點膚色
 			var skinSetting = await _context.PetSkinColorCostSettings
 				.AsNoTracking()
@@ -858,14 +1147,30 @@ namespace GamiPort.Areas.MiniGame.Services
 				return true; // 0點膚色視為已購買
 			}
 
-			// 檢查 WalletHistory 是否有購買記錄
+			// 檢查 WalletHistory 是否有購買記錄（新格式）
 			var itemCode = $"{userId}-{colorHex}";
-			return await _context.WalletHistories
+			var hasNewFormatPurchase = await _context.WalletHistories
 				.AsNoTracking()
 				.AnyAsync(w => w.UserId == userId
 					&& w.ChangeType == "PetSkinColor"
 					&& w.ItemCode == itemCode
 					&& !w.IsDeleted);
+
+			if (hasNewFormatPurchase)
+			{
+				return true;
+			}
+
+			// 檢查 WalletHistory 是否有購買記錄（舊格式：兼容舊版）
+			var hasOldFormatPurchase = await _context.WalletHistories
+				.AsNoTracking()
+				.AnyAsync(w => w.UserId == userId
+					&& w.ChangeType == "Point"
+					&& w.ItemCode == colorHex
+					&& (w.Description.Contains("購買寵物膚色") || w.Description.Contains("购买宠物肤色"))
+					&& !w.IsDeleted);
+
+			return hasOldFormatPurchase;
 		}
 
 		/// <summary>
@@ -873,6 +1178,9 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// </summary>
 		private async Task<bool> CheckBackgroundPurchasedAsync(int userId, string backgroundCode)
 		{
+			// 標準化為大寫，避免大小寫匹配問題
+			backgroundCode = backgroundCode?.ToUpper() ?? string.Empty;
+
 			// 檢查是否為0點背景
 			var backgroundSetting = await _context.PetBackgroundCostSettings
 				.AsNoTracking()
@@ -883,14 +1191,30 @@ namespace GamiPort.Areas.MiniGame.Services
 				return true; // 0點背景視為已購買
 			}
 
-			// 檢查 WalletHistory 是否有購買記錄
+			// 檢查 WalletHistory 是否有購買記錄（新格式）
 			var itemCode = $"{userId}-{backgroundCode}";
-			return await _context.WalletHistories
+			var hasNewFormatPurchase = await _context.WalletHistories
 				.AsNoTracking()
 				.AnyAsync(w => w.UserId == userId
 					&& w.ChangeType == "PetBackground"
 					&& w.ItemCode == itemCode
 					&& !w.IsDeleted);
+
+			if (hasNewFormatPurchase)
+			{
+				return true;
+			}
+
+			// 檢查 WalletHistory 是否有購買記錄（舊格式：兼容舊版）
+			var hasOldFormatPurchase = await _context.WalletHistories
+				.AsNoTracking()
+				.AnyAsync(w => w.UserId == userId
+					&& w.ChangeType == "Point"
+					&& w.ItemCode == backgroundCode
+					&& (w.Description.Contains("購買寵物背景") || w.Description.Contains("购买宠物背景"))
+					&& !w.IsDeleted);
+
+			return hasOldFormatPurchase;
 		}
 
 		/// <summary>
@@ -907,6 +1231,9 @@ namespace GamiPort.Areas.MiniGame.Services
 					Message = "膚色代碼不能為空"
 				};
 			}
+
+			// 標準化為大寫，避免大小寫匹配問題
+			colorHex = colorHex.ToUpperInvariant();
 
 			// 獲取膚色設置
 			var skinSetting = await _context.PetSkinColorCostSettings
@@ -973,7 +1300,7 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 扣除點數
 				wallet.UserPoint -= skinSetting.PointsCost;
@@ -987,7 +1314,7 @@ namespace GamiPort.Areas.MiniGame.Services
 					PointsChanged = -skinSetting.PointsCost,
 					ItemCode = itemCode,
 					Description = $"購買寵物膚色：{skinSetting.ColorName}",
-					ChangeTime = utcNow,
+					ChangeTime = nowUtc8,
 					IsDeleted = false
 				});
 
@@ -1029,6 +1356,9 @@ namespace GamiPort.Areas.MiniGame.Services
 					Message = "背景代碼不能為空"
 				};
 			}
+
+			// 標準化為大寫，避免大小寫匹配問題
+			backgroundCode = backgroundCode.ToUpper();
 
 			// 獲取背景設置
 			var backgroundSetting = await _context.PetBackgroundCostSettings
@@ -1095,7 +1425,7 @@ namespace GamiPort.Areas.MiniGame.Services
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				var utcNow = _appClock.UtcNow;
+				var nowUtc8 = _appClock.ToAppTime(_appClock.UtcNow);
 
 				// 扣除點數
 				wallet.UserPoint -= backgroundSetting.PointsCost;
@@ -1109,7 +1439,7 @@ namespace GamiPort.Areas.MiniGame.Services
 					PointsChanged = -backgroundSetting.PointsCost,
 					ItemCode = itemCode,
 					Description = $"購買寵物背景：{backgroundSetting.BackgroundName}",
-					ChangeTime = utcNow,
+					ChangeTime = nowUtc8,
 					IsDeleted = false
 				});
 
@@ -1151,6 +1481,9 @@ namespace GamiPort.Areas.MiniGame.Services
 					Message = "膚色代碼不能為空"
 				};
 			}
+
+			// 標準化為大寫，避免大小寫匹配問題
+			colorHex = colorHex.ToUpperInvariant();
 
 			// 獲取膚色設置
 			var skinSetting = await _context.PetSkinColorCostSettings
@@ -1243,6 +1576,9 @@ namespace GamiPort.Areas.MiniGame.Services
 					Message = "背景代碼不能為空"
 				};
 			}
+
+			// 標準化為大寫，避免大小寫匹配問題
+			backgroundCode = backgroundCode.ToUpper();
 
 			// 獲取背景設置
 			var backgroundSetting = await _context.PetBackgroundCostSettings

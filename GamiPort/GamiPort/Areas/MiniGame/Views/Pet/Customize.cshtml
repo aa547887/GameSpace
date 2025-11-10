@@ -57,6 +57,10 @@
             transition: all 0.2s ease;
         }
 
+        .color-option.disabled {
+            cursor: not-allowed;
+        }
+
         .color-swatch {
             width: 80px;
             height: 80px;
@@ -104,6 +108,10 @@
             transition: all 0.2s ease;
         }
 
+        .background-option.disabled {
+            cursor: not-allowed;
+        }
+
         .background-swatch {
             width: 80px;
             height: 80px;
@@ -136,45 +144,88 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            min-height: 350px;
         }
 
         .preview-header {
-            color: #2c3e50;
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            color: white;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            background: #17a2b8;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: none;
+            border: none;
+            z-index: 10;
+        }
+
+        .preview-header i {
             font-size: 1.125rem;
-            background: rgba(255, 255, 255, 0.9);
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
         }
 
         .preview-pet-avatar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 100px;
             height: 100px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
             font-size: 3rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border: 4px solid white;
+            border: 4px solid transparent;
         }
 
         .preview-pet-name {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
             font-weight: 700;
-            color: #2c3e50;
+            color: white;
             font-size: 1.25rem;
             margin-bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, rgba(255, 107, 129, 0.95) 0%, rgba(255, 159, 67, 0.95) 100%);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .preview-pet-name:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-pet-name .pet-emoji {
+            font-size: 1.5rem;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @@keyframes wave {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-10deg);
+            }
+            75% {
+                transform: rotate(10deg);
+            }
         }
 
         .info-banner {
@@ -299,6 +350,29 @@
             .customize-card-body {
                 padding: 1.5rem;
             }
+
+            .preview-header {
+                top: 1rem;
+                left: 1rem;
+                font-size: 0.875rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .preview-header i {
+                font-size: 1rem;
+            }
+
+            .preview-pet-name {
+                top: 1rem;
+                right: 1rem;
+                font-size: 1rem;
+                padding: 0.5rem 1rem;
+                max-width: calc(100% - 8rem);
+            }
+
+            .preview-pet-name .pet-emoji {
+                font-size: 1.25rem;
+            }
         }
     </style>
 
@@ -331,12 +405,18 @@
 
             <!-- Preview Card -->
             <div class="preview-card" id="previewCard" style="background-image: url('@Html.Raw($"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{currentBackgroundColor}.png")');">
-                <div class="preview-header">預覽</div>
-                <div class="preview-pet-avatar" style="border-color: white;">
+                <div class="preview-pet-name" id="previewPetName">
+                    <span class="pet-emoji">🐾</span>
+                    <span>嗨! 我是@(Model?.PetName ?? "我的寵物")</span>
+                </div>
+                <div class="preview-header">
+                    <i class="bi bi-eye-fill"></i>
+                    <span>預覽</span>
+                </div>
+                <div class="preview-pet-avatar" style="border-color: transparent;">
                     <!-- SVG Pet Avatar Container -->
                     <div id="customizePetAvatarContainer" style="width: 100%; height: 100%;"></div>
                 </div>
-                <div class="preview-pet-name" id="previewPetName">@(Model?.PetName ?? "我的寵物")</div>
             </div>
 
             <!-- Skin Color Customization -->
@@ -430,8 +510,8 @@
                     color: '@skin.ColorCode',
                     name: '@skin.ColorName@(isExpired ? " (限時活動限定已失效)" : "")',
                     cost: @skin.PointsCost,
-                    isExpired: @(isExpired ? "true" : "false"),
-                    isOwned: @(isOwned ? "true" : "false")
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
                 },</text>
             }
         ];
@@ -449,8 +529,8 @@
                     name: '@bg.BackgroundName@(isExpired ? " (限時活動限定已失效)" : "")',
                     cost: @bg.PointsCost,
                     image: '@Html.Raw(imagePath)',
-                    isExpired: @(isExpired ? "true" : "false"),
-                    isOwned: @(isOwned ? "true" : "false")
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
                 },</text>
             }
         ];
@@ -490,7 +570,7 @@
                 }
 
                 div.innerHTML = `
-                    <div class="color-swatch" style="background-color: ${option.color}; ${isDisabled ? 'opacity: 0.4; cursor: not-allowed;' : ''}"></div>
+                    <div class="color-swatch" style="background-color: ${option.color}; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
                     <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
                     <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
                     ${statusBadge}
@@ -521,7 +601,7 @@
                 }
 
                 div.innerHTML = `
-                    <div class="background-swatch" style="background-image: url('${option.image}'); background-size: cover; background-position: center; ${isDisabled ? 'opacity: 0.4; cursor: not-allowed;' : ''}"></div>
+                    <div class="background-swatch" style="background-image: url('${option.image}'); background-size: cover; background-position: center; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
                     <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
                     <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
                     ${statusBadge}
@@ -537,8 +617,6 @@
                         });
                     })(option, div);
                 } else {
-                    div.style.cursor = 'not-allowed';
-                    div.style.pointerEvents = 'none';
                     div.style.opacity = '0.6';
                 }
 
@@ -727,8 +805,11 @@
                         // 更新實際套用的狀態
                         appliedSkinColor = selectedSkinColor;
 
-                        // 更新按鈕狀態和擁有狀態
-                        option.isOwned = true;
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
                         btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
                         btn.disabled = true;
                         btn.dataset.action = '';
@@ -814,8 +895,11 @@
                         appliedBackgroundColor = selectedBackgroundColor;
                         appliedBackgroundImage = selectedBackgroundImage;
 
-                        // 更新按鈕狀態和擁有狀態
-                        option.isOwned = true;
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
                         btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
                         btn.disabled = true;
                         btn.dataset.action = '';

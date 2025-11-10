@@ -62,9 +62,11 @@
 						<label for="changeType" class="form-label">交易類型</label>
 						<select class="form-select" id="changeType" name="changeType">
 							<option value="">全部類型</option>
-							<option value="Point" selected="@(changeType == "Point")">點數交易</option>
-							<option value="Coupon" selected="@(changeType == "Coupon")">優惠券</option>
-							<option value="EVoucher" selected="@(changeType == "EVoucher")">電子禮券</option>
+							<option value="Point" selected="@(changeType == "Point")">💰 點數交易</option>
+							<option value="Coupon" selected="@(changeType == "Coupon")">🎫 優惠券</option>
+							<option value="EVoucher" selected="@(changeType == "EVoucher")">🎁 電子禮券</option>
+							<option value="Pet" selected="@(changeType == "Pet")">🐾 寵物</option>
+							<option value="SignIn" selected="@(changeType == "SignIn")">✅ 簽到</option>
 						</select>
 					</div>
 
@@ -157,16 +159,58 @@
 
 								<tr>
 									<td class="text-nowrap">
-										<small>@(((DateTime?)item.ChangeTime)?.ToUtc8String("yyyy-MM-dd") ?? "-")</small><br />
-										<small class="text-muted">@(((DateTime?)item.ChangeTime)?.ToUtc8String("HH:mm:ss") ?? "-")</small>
+										<small>@(((DateTime?)item.ChangeTime)?.ToString("yyyy-MM-dd") ?? "-")</small><br />
+										<small class="text-muted">@(((DateTime?)item.ChangeTime)?.ToString("HH:mm:ss") ?? "-")</small>
 									</td>
 									<td>
 										@{
 											var description = item.Description ?? "";
+											var itemCode = item.ItemCode ?? "";
 											var isExchangeCoupon = description.Contains("兌換優惠券") || description.Contains("兌換商城優惠券");
 											var isExchangeEVoucher = description.Contains("兌換電子禮券") || description.Contains("兌換禮券");
+											var isSignIn = description.Contains("簽到");
+											// 寵物判斷：ChangeType 或 ItemCode 以 PET- 開頭 或 Description 包含「寵物」
+											var isPet = item.ChangeType == "Pet"
+												|| item.ChangeType == "PetSkinColor"
+												|| item.ChangeType == "PetBackground"
+												|| itemCode.StartsWith("PET-")
+												|| itemCode.StartsWith("PET_")
+												|| description.Contains("寵物");
 										}
-										@if (isExchangeCoupon)
+										@if (isSignIn && item.ChangeType == "Point")
+										{
+											@* 簽到獎勵（點數）：顯示簽到 + 點數 *@
+											<span class="badge bg-success me-1">
+												<i class="fas fa-check-circle"></i> 簽到
+											</span>
+											<span class="badge bg-primary">
+												<i class="fas fa-coins"></i> 點數
+											</span>
+										}
+										else if (isSignIn && item.ChangeType == "Coupon")
+										{
+											@* 簽到獎勵（優惠券）：顯示簽到 + 優惠券 *@
+											<span class="badge bg-success me-1">
+												<i class="fas fa-check-circle"></i> 簽到
+											</span>
+											<span class="badge bg-warning text-dark">
+												<i class="fas fa-ticket-alt"></i> 優惠券
+											</span>
+										}
+										else if (isPet)
+										{
+											@* 寵物相關：顯示寵物 badge *@
+											<span class="badge bg-info me-1">
+												<i class="fas fa-paw"></i> 寵物
+											</span>
+											@if (item.PointsChanged != 0)
+											{
+												<span class="badge bg-primary">
+													<i class="fas fa-coins"></i> 點數
+												</span>
+											}
+										}
+										else if (isExchangeCoupon)
 										{
 											@* 兌換優惠券：同時顯示點數 + 優惠券 *@
 											<span class="badge bg-primary me-1">
@@ -182,7 +226,7 @@
 											<span class="badge bg-primary me-1">
 												<i class="fas fa-coins"></i> 點數
 											</span>
-											<span class="badge bg-info">
+											<span class="badge bg-danger">
 												<i class="fas fa-gift"></i> 電子禮券
 											</span>
 										}
@@ -200,7 +244,7 @@
 										}
 										else if (item.ChangeType == "EVoucher")
 										{
-											<span class="badge bg-info">
+											<span class="badge bg-danger">
 												<i class="fas fa-gift"></i> 電子禮券
 											</span>
 										}

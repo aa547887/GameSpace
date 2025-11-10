@@ -224,7 +224,11 @@ namespace GamiPort.Areas.MiniGame.Controllers
 				healthRecovered = result.HealthRecovered,
 				isFirstDailyFullStats = result.IsFirstDailyFullStats,
 				bonusExperience = result.BonusExperience,
-				bonusPoints = result.BonusPoints
+				bonusPoints = result.BonusPoints,
+				leveledUp = result.LeveledUp,
+				oldLevel = result.OldLevel,
+				newLevel = result.NewLevel,
+				levelUpRewards = result.LevelUpRewards
 			});
 		}
 
