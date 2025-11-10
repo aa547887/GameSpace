@@ -203,6 +203,12 @@ namespace GamiPort.Areas.MiniGame.Services
 				return await _context.WalletHistories
 					.AsNoTracking()
 					.Where(h => h.UserId == userId && !h.IsDeleted)
+					// 過濾遊戲破關獎勵和商城訂單回饋（依用戶需求不顯示）
+					.Where(h =>
+						(h.ItemCode == null || !h.ItemCode.StartsWith("GAME-")) &&
+						(h.ItemCode == null || !h.ItemCode.StartsWith("ORD-")) &&
+						(h.Description == null || !h.Description.Contains("小遊戲"))
+					)
 					.OrderByDescending(h => h.ChangeTime)
 					.Take(pageSize)
 					.ToListAsync();
@@ -225,6 +231,12 @@ namespace GamiPort.Areas.MiniGame.Services
 				var history = await _context.WalletHistories
 					.AsNoTracking()
 					.Where(h => h.UserId == userId && !h.IsDeleted)
+					// 過濾遊戲破關獎勵和商城訂單回饋（依用戶需求不顯示）
+					.Where(h =>
+						(h.ItemCode == null || !h.ItemCode.StartsWith("GAME-")) &&
+						(h.ItemCode == null || !h.ItemCode.StartsWith("ORD-")) &&
+						(h.Description == null || !h.Description.Contains("小遊戲"))
+					)
 					.ToListAsync();
 
 				var totalEarned = history
@@ -492,10 +504,12 @@ namespace GamiPort.Areas.MiniGame.Services
 				var query = _context.WalletHistories
 					.AsNoTracking()
 					.Where(h => h.UserId == userId && !h.IsDeleted)
-					// 過濾遊戲破關獎勵（包含新舊紀錄，依用戶需求不顯示）
+					// 過濾遊戲破關獎勵和商城訂單回饋（依用戶需求不顯示）
 					.Where(h =>
 						// 排除 ItemCode 以 GAME- 開頭的新紀錄
 						(h.ItemCode == null || !h.ItemCode.StartsWith("GAME-")) &&
+						// 排除 ItemCode 以 ORD- 開頭的訂單回饋紀錄
+						(h.ItemCode == null || !h.ItemCode.StartsWith("ORD-")) &&
 						// 排除 Description 包含小遊戲關鍵字的舊紀錄
 						(h.Description == null || !h.Description.Contains("小遊戲"))
 					);
