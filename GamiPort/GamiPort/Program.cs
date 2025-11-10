@@ -272,6 +272,15 @@ namespace GamiPort
 				filter.ReloadAsync().GetAwaiter().GetResult();
 			}
 
+			// ------------------------------------------------------------
+			// 初始化寵物升級狀態（處理種子數據）
+			// ------------------------------------------------------------
+			using (var scope = app.Services.CreateScope())
+			{
+				var petService = scope.ServiceProvider.GetRequiredService<GamiPort.Areas.MiniGame.Services.IPetService>();
+				petService.InitializePetLevelsOnStartupAsync().GetAwaiter().GetResult();
+			}
+
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();  // 預設根目錄 wwwroot
 
