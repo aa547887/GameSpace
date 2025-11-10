@@ -9,7 +9,7 @@
 <div class="container py-4" style="max-width:480px;">
     <h3 class="mb-3 text-center">@ViewData["Title"]</h3>
 
-    <form asp-area="Login" asp-controller="Register" asp-action="Step1" method="post" class="card p-4 shadow-sm">
+    <form asp-area="Login" asp-controller="Register" asp-action="Step1" method="post" class="card p-4 shadow-sm" >
         @Html.AntiForgeryToken()
 
         <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
@@ -18,7 +18,7 @@
             <label asp-for="UserName" class="form-label"></label>
             <input asp-for="UserName"
                    class="form-control"
-                   maxlength="10"
+                   maxlength="20"
                    autocomplete="nickname" />
             <span asp-validation-for="UserName" class="text-danger"></span>
         </div>

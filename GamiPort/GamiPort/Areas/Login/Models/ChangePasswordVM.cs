@@ -11,7 +11,7 @@ namespace GamiPort.Areas.Login.Models
 
 		[Required(ErrorMessage = "請輸入新密碼")]
 		[DataType(DataType.Password)]
-		[StringLength(32, MinimumLength = 8, ErrorMessage = "密碼長度需介於 8~32 字元")]
+		[StringLength(20, MinimumLength = 8, ErrorMessage = "密碼長度需介於 8~20 字元")]
 		[Display(Name = "新密碼")]
 		public string NewPassword { get; set; } = null!;
 

@@ -12,8 +12,11 @@ namespace GamiPort.Areas.Login.Models
 		[Display(Name = "性別")]
 		public string Gender { get; set; } = null!;
 
-		[Required, Phone, StringLength(20)]
+		[Required(ErrorMessage = "請輸入手機號碼")]
+		[RegularExpression(@"^09\d{8}$", ErrorMessage = "請輸入正確的手機號碼格式（09 開頭，共 10 碼）")]
+		[StringLength(10, MinimumLength = 10, ErrorMessage = "手機號碼必須為 10 碼")]
 		[Display(Name = "手機號碼")]
+		[DataType(DataType.PhoneNumber)]
 		public string Cellphone { get; set; } = null!;
 
 		[Required, StringLength(200)]

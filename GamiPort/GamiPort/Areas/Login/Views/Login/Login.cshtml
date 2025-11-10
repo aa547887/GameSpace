@@ -28,27 +28,24 @@
 
             <div class="form-check mb-3">
                 <input asp-for="RememberMe" class="form-check-input" />
-                <label class="form-check-label" asp-for="RememberMe"></label>
+                <label class="form-check-label" for="RememberMe">記住我</label>
             </div>
 
             <button type="submit" class="btn btn-primary w-100">登入</button>
 
-
+            <div class="d-flex gap-2 mt-3">
             <environment include="Development">
-                <button type="button" id="Member1" class="btn btn-outline-secondary">使用者1</button>
-                <button type="button" id="Member2" class="btn btn-outline-secondary">使用者 #10000002</button>
-                <button type="button" id="Member200" class="btn btn-outline-secondary">使用者 #10000200</button>
+                    <button type="button" id="Member1" class="btn btn-outline-secondary flex-fill">會員1號</button>
+                    <button type="button" id="Member2" class="btn btn-outline-secondary flex-fill">會員2號</button>
+                    <button type="button" id="Member3" class="btn btn-outline-secondary flex-fill">新的會員</button>
             </environment>
+            </div>
 
         </form>
 
-        <div class="text-center mt-3">
+        <div class="text-center mt-3 d-flex justify-content-center gap-3">
             <a asp-area="Login" asp-controller="Register" asp-action="Step1">註冊會員</a>
-        </div>
-        <div class="text-center mt-3">
-            <a asp-area="Login" asp-controller="ForgotPassword" asp-action="Start">
-                忘記密碼？
-            </a>
+            <a asp-area="Login" asp-controller="ForgotPassword" asp-action="Start">忘記密碼？</a>
         </div>
     </div>
 </div>
@@ -77,13 +74,13 @@
                     acc?.focus();
                     });
         })();
-        (function () {
-            const btn = document.getElementById('Member200');
+                 (function () {
+            const btn = document.getElementById('Member3');
                 btn?.addEventListener('click', function () {
                             const acc = document.getElementById('UserAccount');
                         const pwd = document.getElementById('UserPassword');
-                        if (acc) acc.value = 'mexican_chef_85';
-                        if (pwd) pwd.value = 'TacoMaster200[';
+                        if (acc) acc.value = 'ji32k75;4cl4';
+                        if (pwd) pwd.value = 'ji32k7au4a83';
                     acc?.focus();
                     });
         })();

@@ -58,4 +58,11 @@ namespace GamiPort.Areas.MemberManagement.ViewModels
 		public int UserId { get; set; }
 		public string NickName { get; set; } = "";
 	}
+	public class ThreadLiteVM                                         
+	{                                                                 
+		public int ThreadId { get; set; }                             
+		public string? Title { get; set; }                            
+		public DateTime? CreatedAt { get; set; }                      
+		public int Replies { get; set; }                               
+	}                                                                 
 }
