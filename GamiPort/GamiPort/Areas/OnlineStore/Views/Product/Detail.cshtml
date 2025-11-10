@@ -318,14 +318,14 @@
                     const data = await res.json();
                     const items = Array.isArray(data.items)? data.items : [];
                     const html = items.map(r=>{
-                        const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.rating||0);
-                        const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.rating||0));
+                        const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.Rating||0);
+                        const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.Rating||0));
                         return `<div class="p-3 border rounded">\
                             <div class=\"d-flex justify-content-between align-items-center mb-1\">\
                                 <div class=\"text-warning\">${starFilled}${starEmpty}</div>\
-                                <small class=\"text-muted\">#${r.userId} · ${new Date(r.createdAt).toLocaleString('zh-TW')}</small>\
+                                <small class=\"text-muted\">#${r.UserId} · ${new Date(r.CreatedAt).toLocaleString('zh-TW')}</small>\
                             </div>\
-                            ${r.reviewText ? `<div class=\"text-secondary\">${r.reviewText}</div>` : ''}\
+                            ${r.ReviewText ? `<div class=\"text-secondary\">${r.ReviewText}</div>` : ''}\
                         </div>`;
                     }).join('');
                     if(reset) host.innerHTML = '';
@@ -336,30 +336,48 @@
                 }
 
                 async function loadRelated(){
-                    const pid = initialData.ProductId;
-                    let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
-                    const isGame = (initialData.ProductType||'').toLowerCase()==='game';
-                    if(isGame && initialData.GenreName){
-                        url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.GenreName)}&sort=random&page=1&pageSize=4`;
-                    } else if(!isGame && initialData.MerchTypeId){
-                        url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.MerchTypeId)}&sort=random&page=1&pageSize=4`;
-                    }
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    const items = (data.items||data||[]).filter(x=>x.ProductId!==pid).slice(0,4);
                     const host = document.getElementById('related');
-                    host.innerHTML = items.map(x=>{
-                        const detailUrl = `/OnlineStore/Product/Detail/${x.ProductCode}`;
-                        const img = x.CoverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
-                        return `<div class=\"col-6 col-md-4 col-lg-3\">\
-                            <div class=\"card h-100 position-relative\">\
-                                <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
-                                <div class=\"card-body p-2\">\
-                                    <div class=\"small text-truncate\" title=\"${x.ProductName}\">${x.ProductName}</div>\
+                    try {
+                        const pid = initialData.ProductId;
+                        let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
+                        const isGame = (initialData.ProductType||'').toLowerCase()==='game';
+                        if(isGame && initialData.GenreName){
+                            url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.GenreName)}&sort=random&page=1&pageSize=4`;
+                        } else if(!isGame && initialData.MerchTypeId){
+                            url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.MerchTypeId)}&sort=random&page=1&pageSize=4`;
+                        }
+                        console.log('loadRelated URL:', url); // Log the URL
+
+                        const res = await fetch(url);
+                        console.log('loadRelated response status:', res.status); // Log status
+
+                        if (!res.ok) {
+                            console.error('loadRelated response not OK', await res.text()); // Log body text on error
+                            throw new Error(`API request failed with status ${res.status}`);
+                        }
+
+                        const data = await res.json();
+                        console.log('loadRelated data:', data); // Log the parsed data
+
+                        const items = (data.items||data||[]).filter(x=>x.ProductId!==pid).slice(0,4);
+                        console.log('loadRelated items:', items); // Log the final items array
+
+                        host.innerHTML = items.map(x=>{
+                            const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
+                            const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
+                            return `<div class=\"col-6 col-md-4 col-lg-3\">\
+                                <div class=\"card h-100 position-relative\">\
+                                    <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
+                                    <div class=\"card-body p-2\">\
+                                        <div class=\"small text-truncate\" title=\"${(x.productName || '').trim()}\">${(x.productName || '').trim()}</div>\
+                                    </div>\
                                 </div>\
-                            </div>\
-                        </div>`;
-                    }).join('');
+                            </div>`;
+                        }).join('');
+                    } catch (error) {
+                        console.error('Error in loadRelated:', error);
+                        host.innerHTML = '<div class="text-danger">無法載入推薦商品。</div>'; // Show an error message
+                    }
                 }
 
                 // 新增：燈箱功能
