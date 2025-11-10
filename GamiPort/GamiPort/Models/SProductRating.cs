@@ -22,4 +22,8 @@ public partial class SProductRating
     public DateTime? ApprovedAt { get; set; }
 
     public int? ApprovedBy { get; set; }
+
+    public virtual ManagerDatum? ApprovedByNavigation { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

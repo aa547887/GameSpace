@@ -481,18 +481,13 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 			}
 			else if (type == "click")
 			{
-				var ranked = _db.SVRankingClicks.AsNoTracking()
-					.Where(r => r.PeriodType == periodType)
-					.OrderBy(r => r.RankingPosition)
-					.Select(r => new { r.ProductId, r.RankingPosition })
+				// 改為以 SProductInfos.ClickCount 排名（不分日/週/月）
+				query = _db.SProductInfos
+					.AsNoTracking()
+					.Where(p => !p.IsDeleted)
+					.OrderByDescending(p => p.ClickCount)
+					.ThenBy(p => p.ProductId)
 					.Take(take);
-
-				query =
-					from r in ranked
-					join p in _db.SProductInfos.AsNoTracking().Where(p => !p.IsDeleted)
-						on r.ProductId equals p.ProductId
-					orderby r.RankingPosition
-					select p;
 			}
 			else if (type == "favorite")
 			{
