@@ -39,17 +39,44 @@
 
     <style>
         /* StoreBar 動畫效果 */
-        .store-bar {
+        #store-bar-wrapper {
             position: sticky;
-            top: 64px;
-            z-index: 1020;
-            padding: 0.25rem 0;
+            /* z-index: 1010; /* Below modals (1050+) but above general content */ */
+            padding: 0;
             background-color: var(--bs-body-bg);
-            transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); /* 動畫回到容器本身 */
+            transition: transform 0.22s ease-in-out, opacity 0.18s ease-in-out; /* From Default.cshtml */
+            will-change: transform, opacity; /* From Default.cshtml */
+            overflow: visible; /* From Default.cshtml */
         }
 
-        .store-bar-hidden {
-            transform: translateY(-100%); /* 讓整個容器向上移出 */
+        /* 往下滾動時隱藏（上滑再顯示） */
+        #store-bar-wrapper.hide-on-scroll { /* From Default.cshtml */
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 讓下拉選單可超出 StoreBar 顯示，並保持可滾動 */
+        #store-bar-wrapper .container-xxl, #store-bar-wrapper .nav-cats { overflow: visible !important; } /* From Default.cshtml */
+
+        #store-bar-wrapper .hover-dd { position: relative; } /* From Default.cshtml */
+        #store-bar-wrapper .hover-dd > .dropdown-menu { /* From Default.cshtml */
+            position: absolute;
+            top: calc(100% + .5rem);
+            left: 0;
+            z-index: 1100; /* This z-index is for the dropdown *within* the store bar, so it should be higher than the store bar itself */
+        }
+
+        #store-bar-wrapper .dropdown-menu { /* From Default.cshtml */
+            max-height: 60vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        #store-bar-wrapper .suppliers-menu { /* From Default.cshtml */
+            max-height: 50vh;
+            overflow-y: auto;
+            min-width: 260px;
         }
 
         /* 修正 hover 下拉選單樣式 */
@@ -116,6 +143,10 @@
             max-height: 60vh;
             overflow-y: auto;
         }
+
+        .layout-main {
+            overflow: visible !important; /* Override to ensure sticky positioning works for child elements */
+        }
     </style>
 
 </head>
@@ -137,7 +168,14 @@
 
         <main class="layout-main">
             <!-- 動態分類列 -->
-            @* @await Component.InvokeAsync("StoreBar") *@
+            @{
+                var currentController = ViewContext.RouteData.Values["controller"] as string;
+                var orderRelatedControllers = new List<string> { "Cart", "Checkout", "Ecpay", "Orders", "Payment" };
+            }
+            @if (!orderRelatedControllers.Contains(currentController))
+            {
+                @await Component.InvokeAsync("StoreBar")
+            } 
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
@@ -213,6 +251,25 @@
                 }
                 lastScrollTop = st;
             }, false);
+        })();
+    </script>
+    <script>
+        // Dynamically adjust StoreBar top position
+        (function () {
+            function adjustStoreBarTop() {
+                const topbar = document.querySelector('.topbar1');
+                const storeBar = document.getElementById('store-bar-wrapper');
+                if (topbar && storeBar) {
+                    const topbarHeight = topbar.getBoundingClientRect().height;
+                    storeBar.style.top = `${topbarHeight}px`;
+                }
+            }
+
+            // Run on initial load
+            document.addEventListener('DOMContentLoaded', adjustStoreBarTop);
+
+            // Run on window resize
+            window.addEventListener('resize', adjustStoreBarTop);
         })();
     </script>
 
