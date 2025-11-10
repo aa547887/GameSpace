@@ -456,7 +456,14 @@
                     if(act==='add-cart'){
                       alert(`已加入購物車（商品ID: ${initialData.ProductId}）`);
                     }else if(act==='buy-now'){
-                      location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.ProductId}`;
+                      (async () => {
+                        if(!(await ensureAuthenticated())){
+                          ensureLoginPrompt();
+                          new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
+                          return;
+                        }
+                        location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.ProductId}`;
+                      })();
                     }else if(act==='fav'){
                       if(!initialData?.ProductId){ return; }
                       btn.disabled = true;
