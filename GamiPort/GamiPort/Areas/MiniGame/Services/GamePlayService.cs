@@ -154,20 +154,20 @@ namespace GamiPort.Areas.MiniGame.Services
 					return (false, "用戶無寵物資料", null, 0);
 				}
 
-				// 商業規則：冒險開始前檢查寵物狀態
-				// 若飢餓、心情、體力、清潔、健康任一屬性值為 0，則無法開始冒險
-				if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
-					pet.Cleanliness == 0 || pet.Health == 0)
-				{
-					var statusList = new List<string>();
-					if (pet.Hunger == 0) statusList.Add("飢餓");
-					if (pet.Mood == 0) statusList.Add("心情");
-					if (pet.Stamina == 0) statusList.Add("體力");
-					if (pet.Cleanliness == 0) statusList.Add("清潔");
-					if (pet.Health == 0) statusList.Add("健康");
-
-					return (false, $"寵物狀態不佳（{string.Join("、", statusList)}值為0），請先進行互動恢復寵物狀態", null, 0);
-				}
+				// 商業規則：冒險開始前檢查寵物狀態（已移除限制）
+				// 註解：已移除此限制，允許任何狀態下都可以開始冒險
+				//if (pet.Hunger == 0 || pet.Mood == 0 || pet.Stamina == 0 ||
+				//	pet.Cleanliness == 0 || pet.Health == 0)
+				//{
+				//	var statusList = new List<string>();
+				//	if (pet.Hunger == 0) statusList.Add("飢餓");
+				//	if (pet.Mood == 0) statusList.Add("心情");
+				//	if (pet.Stamina == 0) statusList.Add("體力");
+				//	if (pet.Cleanliness == 0) statusList.Add("清潔");
+				//	if (pet.Health == 0) statusList.Add("健康");
+				//
+				//	return (false, $"寵物狀態不佳（{string.Join("、", statusList)}值為0），請先進行互動恢復寵物狀態", null, 0);
+				//}
 
 				// 建立遊戲記錄
 				var game = new Models.MiniGame
