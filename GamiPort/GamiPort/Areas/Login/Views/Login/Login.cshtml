@@ -37,6 +37,7 @@
             <environment include="Development">
                     <button type="button" id="Member1" class="btn btn-outline-secondary flex-fill">會員1號</button>
                     <button type="button" id="Member2" class="btn btn-outline-secondary flex-fill">會員2號</button>
+                    <button type="button" id="Member3" class="btn btn-outline-secondary flex-fill">新的會員</button>
             </environment>
             </div>
 
@@ -70,6 +71,16 @@
                         const pwd = document.getElementById('UserPassword');
                         if (acc) acc.value = 'tech_guru_92';
                         if (pwd) pwd.value = 'SecurePass002#';
+                    acc?.focus();
+                    });
+        })();
+                 (function () {
+            const btn = document.getElementById('Member3');
+                btn?.addEventListener('click', function () {
+                            const acc = document.getElementById('UserAccount');
+                        const pwd = document.getElementById('UserPassword');
+                        if (acc) acc.value = 'ji32k75;4cl4';
+                        if (pwd) pwd.value = 'ji32k7au4a83';
                     acc?.focus();
                     });
         })();

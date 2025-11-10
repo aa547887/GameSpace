@@ -15,16 +15,24 @@ public partial class UserIntroduceVM
 	[Display(Name = "性別")]
 	public string Gender { get; set; } = null!;
 
-	[Required, StringLength(20)]
+	[Required(ErrorMessage = "請輸入身分證字號")]
+	[RegularExpression(@"^[A-Z][12]\d{8}$", ErrorMessage = "請輸入正確的身分證字號格式（英文大寫開頭，共 10 碼）")]
+	[StringLength(10, MinimumLength = 10, ErrorMessage = "身分證字號必須為 10 碼")]
 	[Display(Name = "身分證字號")]
 	public string IdNumber { get; set; } = null!;
 
-	[Required, Phone]
+	[Required(ErrorMessage = "請輸入手機號碼")]
+	[RegularExpression(@"^09\d{8}$", ErrorMessage = "請輸入正確的手機號碼格式（09 開頭，共 10 碼）")]
+	[StringLength(10, MinimumLength = 10, ErrorMessage = "手機號碼必須為 10 碼")]
 	[Display(Name = "手機號碼")]
+	[DataType(DataType.PhoneNumber)]
 	public string Cellphone { get; set; } = null!;
 
-	[Required, EmailAddress]
+	[Required(ErrorMessage = "請輸入電子信箱")]
+	[EmailAddress(ErrorMessage = "請輸入有效的電子信箱格式")]
+	[StringLength(100, ErrorMessage = "電子信箱長度不得超過 100 個字元")]
 	[Display(Name = "電子信箱")]
+	[DataType(DataType.EmailAddress)]
 	public string Email { get; set; } = null!;
 
 	[Required, StringLength(200)]
