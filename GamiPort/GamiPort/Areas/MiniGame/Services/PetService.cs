@@ -357,6 +357,12 @@ namespace GamiPort.Areas.MiniGame.Services
 		/// </summary>
 		public async Task<PetUpdateAppearanceResult> UpdatePetAppearanceAsync(int userId, string skinColor, string background)
 		{
+			// 標準化處理，避免大小寫匹配問題
+			if (!string.IsNullOrWhiteSpace(skinColor))
+				skinColor = skinColor.ToUpperInvariant();
+			if (!string.IsNullOrWhiteSpace(background))
+				background = background.ToUpperInvariant();
+
 			// 獲取用戶的寵物
 			var pet = await _context.Pets
 				.FirstOrDefaultAsync(p => p.UserId == userId && !p.IsDeleted);
