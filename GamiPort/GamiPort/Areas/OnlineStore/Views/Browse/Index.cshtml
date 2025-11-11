@@ -5,6 +5,7 @@
 
 @section Styles {
     <style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" >
         /* 版頭搜尋＋工具列 */
         .tools-sticky {
             position: sticky;
@@ -55,6 +56,7 @@
             border-radius: 1rem;
             box-shadow: 0 0 0 0 rgba(0,153,255,.25);
             animation: pulse 1s ease-out;
+            z-index: -1;
         }
 
         @@keyframes pulse {
@@ -79,6 +81,12 @@
             transform: translateY(8px);
             transition: all .18s ease;
             pointer-events: none;
+        }
+
+        .quick-ops .btn:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
         }
 
         .card:hover .quick-ops {
@@ -200,6 +208,32 @@
         .cute-bounce-animation {
             animation: cute-bounce 0.3s ease-in-out;
         }
+
+
+
+        /* Swal 小動畫：購物車 wiggle */
+        @@keyframes cart-wiggle {
+            0%, 100%
+
+        {
+            transform: rotate(0);
+        }
+
+        25% {
+            transform: rotate(-12deg);
+        }
+
+        75% {
+            transform: rotate(12deg);
+        }
+
+        }
+
+        .swal-cart {
+            display: inline-block;
+            font-size: 42px;
+            animation: cart-wiggle .6s ease-in-out infinite;
+        }
     </style>
 }
 
@@ -281,9 +315,11 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const api = "/OnlineStore/api/StoreApi/products";
         const API_BASE = "/OnlineStore/api/StoreApi";
+        const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json"; // Lottie animation for cart
         const favSet = new Set();
 
         async function syncFavHighlight(){
@@ -352,374 +388,276 @@
           state.merchTypeId = 1;
         }
         if(state.q) document.getElementById("q").value = state.q;
+                // === 事件監聽 ===
+        document.getElementById("btnSearch").addEventListener("click", () => {
+          state.q = document.getElementById("q").value.trim();
+          state.page = 1;
+          load();
+        });
+
+        document.getElementById("sort").addEventListener("change", (e) => {
+          state.sort = e.target.value;
+          state.page = 1;
+          load();
+        });
+
+        document.getElementById("pageSize").addEventListener("change", (e) => {
+          state.pageSize = parseInt(e.target.value, 10) || 40;
+          state.page = 1;
+          load();
+        });
+
+        // === 金額格式化 ===
+        function money(v, c = "TWD") {
+          const code = (c ?? "TWD").toString().trim().toUpperCase();
+          const currency = /^[A-Z]{3}$/.test(code) ? code : "TWD";
+          const value = Number.isFinite(v) ? v : parseFloat(v) || 0;
+
+          if (value === 0) return "免費下載";
+
+          try {
+            return new Intl.NumberFormat("zh-TW", {
+              style: "currency",
+              currency,
+              minimumFractionDigits: 0,
+            }).format(value);
+          } catch {
+            return new Intl.NumberFormat("zh-TW", {
+              style: "currency",
+              currency: "TWD",
+              minimumFractionDigits: 0,
+            }).format(value);
+          }
+        }
+
+        // === 卡片副標（平台 / 類型 / 周邊分類）===
+        function tagLine(x) {
+          // 遊戲優先顯示 平台 / 類型；周邊顯示 周邊分類
+          if (x.productType === "game") {
+            const a = x.platformName
+              ? `<span class="tag-pill tag-pill--platform">${x.platformName}</span>`
+              : "";
+            const g =
+              Array.isArray(x.genreNames) && x.genreNames.length
+                ? x.genreNames
+                    .filter(Boolean)
+                    .map(
+                      (n) =>
+                        `<span class="tag-pill tag-pill--genre">${n}</span>`
+                    )
+                    .join("")
+                : "";
+            return a + (g ? ` ${g}` : "");
+          } else {
+            const nm = x.peripheralTypeName || x.merchTypeName;
+            return nm
+              ? `<span class="tag-pill tag-pill--merch">${nm}</span>`
+              : "";
+          }
+        }
+
+        // === 商品卡片模板 ===
+        function cardCol(x) {
+          const detailUrl = `/OnlineStore/Product/Detail/${x.productId}`;
+          const img = x.coverUrl || PLACEHOLDER;
+
+          return `
+          <div class="col-6 col-md-4 col-lg-3 col-xxl-3">
+            <div class="card h-100 position-relative">
+
+              <!-- 收藏愛心 -->
+              <a class="badge-fav"
+                 href="javascript:void(0)"
+                 title="加入收藏"
+                 data-action="fav"
+                 data-id="${x.productId}">
+                <i class="bi bi-heart"></i>
+              </a>
+
+              <!-- 圖片 -->
+              <a class="card-img-hold d-block"
+                 href="${detailUrl}"
+                 title="${x.productName}">
+                <img src="${img}"
+                     alt="${x.productName}"
+                     onerror="this.src='${PLACEHOLDER}'">
+                ${
+                  x.productType
+                    ? `<span class="badge rounded-pill text-bg-dark badge-type">${x.productType}</span>`
+                    : ""
+                }
+              </a>
+
+              <!-- 卡片內容 -->
+              <div class="card-body d-flex flex-column p-3">
+                <div class="mb-2">
+                  ${tagLine(x)}
+                  ${
+                    x.isPreorder
+                      ? '<span class="badge text-bg-danger ms-1">預購</span>'
+                      : ""
+                  }
+                </div>
+
+                <h6 class="card-title text-truncate mb-1"
+                    title="${x.productName?.trim?.() || ""}">
+                  ${x.productName?.trim?.() || ""}
+                </h6>
+
+                <div class="fw-bold mb-3">
+                  ${
+                    x.price === 0
+                      ? "免費下載"
+                      : money(x.price, x.currencyCode || "TWD")
+                  }
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="quick-ops">
+                  <button class="btn btn-sm btn-outline-dark flex-fill"
+                          data-action="buy-now"
+                          data-id="${x.productId}">
+                    立即購買
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-dark flex-fill"
+                          data-action="add-cart"
+                          data-id="${x.productId}">
+                    加入購物車
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        // === 分頁 ===
+        function pager(total, page, size) {
+          const host = document.getElementById("pager");
+          const pages = Math.max(1, Math.ceil(total / size));
+
+          const mk = (p, t, disabled = false, active = false) =>
+            `<li class="page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}">
+               <a class="page-link" href="#" data-page="${p}">${t}</a>
+             </li>`;
+
+          const items = [mk(page - 1, "&laquo;", page <= 1)];
+          const start = Math.max(1, page - 3);
+          const end = Math.min(pages, page + 3);
+
+          for (let i = start; i <= end; i++) items.push(mk(i, i, false, i === page));
+          items.push(mk(page + 1, "&raquo;", page >= pages));
+
+          host.innerHTML = items.join("");
+
+          host.querySelectorAll("a.page-link").forEach((a) =>
+            a.addEventListener("click", (e) => {
+              e.preventDefault();
+              const p = parseInt(a.dataset.page, 10);
+              if (!isNaN(p)) {
+                state.page = p;
+                load();
+              }
+            })
+          );
+        }
+
+        // === 載入資料 ===
+        async function load() {
+          const qs = new URLSearchParams({
+            q:           state.q || "",
+            type:        state.type || "",
+            platformId:  state.platformId || "",
+            genreId:     state.genreId || "",
+            merchTypeId: state.merchTypeId || "",
+            supplierId:  state.supplierId || "",
+            platform:    state.platform || "",
+            genre:       state.genre || "",
+            sort:        state.sort || "newest",
+            page:        state.page,
+            pageSize:    state.pageSize,
+          });
+
+          const res  = await fetch(`${api}?${qs.toString()}`);
+          const data = await res.json();
+
+           document.getElementById("product-list").innerHTML =
+            (data.items || []).map(cardCol).join("");
+
+            await syncFavHighlight();
+            pager(data.totalCount || 0, state.page, state.pageSize);
+            }
 
-                        document.getElementById("btnSearch").addEventListener("click", ()=>{ state.q=document.getElementById("q").value.trim(); state.page=1; load(); });
-
-                        document.getElementById("sort").addEventListener("change", e=>{ state.sort=e.target.value; state.page=1; load(); });
-
-                        document.getElementById("pageSize").addEventListener("change", e=>{ state.pageSize=parseInt(e.target.value,10)||40; state.page=1; load(); });
-
-
-
-                        function money(v, c = "TWD"){
-                          const code = (c ?? "TWD").toString().trim().toUpperCase();
-                          const currency = /^[A-Z]{3}$/.test(code) ? code : "TWD";
-                          const value = Number.isFinite(v) ? v : (parseFloat(v) || 0);
-
-                          if (value === 0) {
-                              return "免費下載";
-                          }
-
-                          try {
-                            return new Intl.NumberFormat('zh-TW', { style:'currency', currency, minimumFractionDigits:0 }).format(value);
-                          } catch {
-                            return new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(value);
-                          }
-                        }
-
-
-
-                        function tagLine(x){
-
-                          // 遊戲優先顯示 平台 / 類型；周邊顯示 周邊分類
-
-                          if(x.productType === "game"){
-
-                            const a = x.platformName ? `<span class=\"tag-pill tag-pill--platform\">${x.platformName}</span>` : "";
-                            const g = Array.isArray(x.genreNames) && x.genreNames.length
-                              ? x.genreNames.filter(Boolean).map(n => `<span class=\"tag-pill tag-pill--genre\">${n}</span>`).join("")
-                              : "";
-                            return a + (g?` ${g}`:"");
-
-                          }else{
-
-                            const nm = x.peripheralTypeName || x.merchTypeName;
-                            return nm ? `<span class=\"tag-pill tag-pill--merch\">${nm}</span>` : "";
-
-                          }
-
-                        }
-
-
-
-                                                                        function cardCol(x){
-
-
-
-                                                
-
-
-
-                                                                          const detailUrl = `/OnlineStore/Product/Detail/${x.productId}`;
-
-
-
-                                                
-
-
-
-                                                                          const img = x.coverUrl || PLACEHOLDER;
-
-
-
-                                                
-
-
-
-                                                                          return `<div class="col-6 col-md-4 col-lg-3 col-xxl-3">
-
-
-
-                                                
-
-
-
-                                                                            <div class="card h-100 position-relative">
-
-
-
-                                                
-
-
-
-                                                                              <a class="badge-fav" href="javascript:void(0)" title="加入收藏" data-action="fav" data-id="${x.productId}">
-
-
-
-                                                                                <i class="bi bi-heart"></i>
-
-
-
-                                                                              </a>
-
-
-
-                                                
-
-
-
-                                                                              <a class="card-img-hold d-block" href="${detailUrl}" title="${x.productName}">
-
-
-
-                                                
-
-
-
-                                                                                <img src="${img}" alt="${x.productName}" onerror="this.src='${PLACEHOLDER}'">
-
-
-
-                                                
-
-
-
-                                                                                ${x.productType ? `<span class="badge rounded-pill text-bg-dark badge-type">${x.productType}</span>` : ""}
-
-
-
-                                                
-
-
-
-                                                                              </a>
-
-
-
-                                                
-
-
-
-                                                                              <div class="card-body d-flex flex-column p-3">
-
-
-
-                                                
-
-
-
-                                                                                <div class="mb-2">${tagLine(x)} ${x.isPreorder?'<span class="badge text-bg-danger ms-1">預購</span>':''}</div>
-
-
-
-                                                
-
-
-
-                                                                                <h6 class="card-title text-truncate mb-1" title="${x.productName?.trim?.()||''}">${x.productName?.trim?.()||''}</h6>
-
-
-
-                                                
-
-
-
-                                                                                <div class="fw-bold mb-3">${(x.price===0) ? '免費下載' : money(x.price, x.currencyCode||'TWD')}</div>
-
-
-
-                                                
-
-
-
-                                                
-
-
-
-                                                
-
-
-
-                                                                                <div class="quick-ops">
-
-
-
-                                                
-
-
-
-                                                                                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="buy-now" data-id="${x.productId}">
-
-
-
-                                                                                    立即購買
-
-
-
-                                                                                  </button>
-
-
-
-                                                
-
-
-
-                                                                                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="add-cart" data-id="${x.productId}">
-
-
-
-                                                                                    加入購物車
-
-
-
-                                                                                  </button>
-
-
-
-                                                
-
-
-
-                                                                                </div>
-
-
-
-                                                
-
-
-
-                                                                              </div>
-
-
-
-                                                
-
-
-
-                                                                            </div>
-
-
-
-                                                
-
-
-
-                                                                          </div>`;
-
-
-
-                                                
-
-
-
-                                                                        }
-
-
-
-                        function pager(total,page,size){
-
-                          const host = document.getElementById("pager");
-
-                          const pages = Math.max(1, Math.ceil(total/size));
-
-                          const mk=(p,t,d=false,a=false)=>`<li class="page-item ${d?'disabled':''} ${a?'active':''}">
-
-                            <a class="page-link" href="#" data-page="${p}">${t}</a></li>`;
-
-                          const items=[mk(page-1,"&laquo;",page<=1)];
-
-                          let start = Math.max(1, page-3), end = Math.min(pages, page+3);
-
-                          for(let i=start;i<=end;i++) items.push(mk(i,i,false,i===page));
-
-                          items.push(mk(page+1,"&raquo;",page>=pages));
-
-                          host.innerHTML = items.join("");
-
-                          host.querySelectorAll("a.page-link").forEach(a=>a.addEventListener("click",e=>{
-
-                            e.preventDefault(); const p=parseInt(a.dataset.page,10); if(!isNaN(p)){ state.page=p; load(); }
-
-                          }));
-
-                        }
-
-
-
-                                async function load(){
-
-
-
-                                  const qs = new URLSearchParams({
-
-
-
-                                    q: state.q||"", type: state.type||"", platformId: state.platformId||"",
-
-
-
-                                    genreId: state.genreId||"",
-                                    merchTypeId: state.merchTypeId||"",
-                                    supplierId: state.supplierId||"",
-
-                                    platform: state.platform||"",
-
-                                    genre: state.genre||"",
-
-
-
-                                    sort: state.sort||"newest", page: state.page, pageSize: state.pageSize
-
-
-
-                                  });
-
-
-
-                                  const res = await fetch(`${api}?${qs.toString()}`);
-
-
-
-                                  const data = await res.json();
-
-
-
-                                            document.getElementById("product-list").innerHTML = (data.items||[]).map(cardCol).join("");
-
-                                            await syncFavHighlight();
-
-
-
-                                  pager(data.totalCount||0, state.page, state.pageSize);
-
-
-
-                                }
 
         // 快速操作（購物車/收藏/立即購買）
         document.addEventListener('click', (e)=>{
           const btn = e.target.closest('[data-action]');
-          if(!btn) return;
+          
+          // If the click was not on a button with data-action, do nothing.
+          if (!btn) {
+              return;
+          }
+
+          // If it's a link, prevent default navigation.
+          if (btn.tagName === 'A') {
+              e.preventDefault();
+          }
+
           const id = btn.getAttribute('data-id');
           const act = btn.getAttribute('data-action');
           if(act==='add-cart'){
-            // Prevent re-clicking if already processing
-            if (btn.dataset.action === 'added') return;
-
-            const originalText = btn.innerHTML;
-            const originalClasses = btn.className;
-            const originalAction = btn.dataset.action;
-
-            // Add cute animation
-            btn.classList.add('cute-bounce-animation');
-
-            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> 已將商品加入購物車';
-            btn.className = 'btn btn-sm btn-success flex-fill disabled'; // Change to success color and disable
-            btn.dataset.action = 'added'; // Prevent re-clicking during animation
-
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.className = originalClasses;
-                btn.dataset.action = originalAction;
-            }, 1500); // Revert after 1.5 seconds
-
-            // Remove animation class after it finishes
-            setTimeout(() => {
-                btn.classList.remove('cute-bounce-animation');
-            }, 300);
-          }else if(act==='buy-now'){
-            location.href = `/OnlineStore/Checkout/CreateOrder?productId=${id}`;
-          }else if(act==='fav'){
+            if (window.Swal) {
+                Swal.fire({
+                    title: '已加入購物車',
+                    html: `
+                      <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
+                      <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: '看購物車',
+                    cancelButtonText: '再逛逛',
+                    heightAuto: false,
+                    didOpen: () => {
+                        const mount = document.getElementById('cartLottie');
+                        if (window.lottie && mount) {
+                            if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
+                            window._cartAnim = lottie.loadAnimation({
+                                container: mount,
+                                renderer: 'svg',
+                                loop: true,
+                                autoplay: true,
+                                path: CART_LOTTIE
+                            });
+                        } else if (mount) {
+                            mount.outerHTML = '<div class="swal-cart">🛒</div>';
+                        }
+                    },
+                    willClose: () => {
+                        if (window._cartAnim && window._cartAnim.destroy) {
+                            window._cartAnim.destroy();
+                            window._cartAnim = null;
+                        }
+                    }
+                }).then(r => {
+                    if (r.isConfirmed) location.href = '/OnlineStore/Cart';
+                });
+            } else {
+                alert('已加入購物車'); // Fallback for browsers where Swal is not available
+            }
+                         } else if(act==='buy-now'){
+                             if (window.Swal) {
+                                 Swal.fire({
+                                     title: '哎呀，請先完成登入唷！',
+                                     html: '<div style="font-size: 5rem;">🙅‍♀️</div><p>您需要登入才能購買商品喔</p>',
+                                     icon: 'warning', // Using 'warning' icon for a softer rejection
+                                     confirmButtonText: '好的',
+                                     heightAuto: false
+                                 });
+                             } else {
+                                 // Fallback if Swal is not available
+                                 alert('請先完成登入唷！');
+                             }
+                         } else if(act==='fav'){
             const pid = parseInt(id,10);
             if(!pid || isNaN(pid)) return;
             btn.classList.add('disabled');

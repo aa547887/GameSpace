@@ -140,7 +140,10 @@
 </section>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script>
+                const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json"; // Lottie animation for cart
                 const initialData = @Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions { PropertyNamingPolicy = null }));
                 const API_BASE = "/OnlineStore/api/StoreApi";
                 let currentRating = 0;
@@ -454,15 +457,117 @@
                     if(!btn) return;
                     const act = btn.getAttribute('data-action');
                     if(act==='add-cart'){
-                      alert(`已加入購物車（商品ID: ${initialData.ProductId}）`);
+                        if (window.Swal) {
+                            Swal.fire({
+                                title: '已加入購物車',
+                                html: `
+                                  <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
+                                  <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: '看購物車',
+                                cancelButtonText: '再逛逛',
+                                heightAuto: false,
+                                didOpen: () => {
+                                    const mount = document.getElementById('cartLottie');
+                                    if (window.lottie && mount) {
+                                        if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
+                                        window._cartAnim = lottie.loadAnimation({
+                                            container: mount,
+                                            renderer: 'svg',
+                                            loop: true,
+                                            autoplay: true,
+                                            path: CART_LOTTIE
+                                        });
+                                    } else if (mount) {
+                                        mount.outerHTML = '<div class="swal-cart">🛒</div>';
+                                    }
+                                },
+                                willClose: () => {
+                                    if (window._cartAnim && window._cartAnim.destroy) {
+                                        window._cartAnim.destroy();
+                                        window._cartAnim = null;
+                                    }
+                                }
+                            }).then(r => {
+                                if (r.isConfirmed) location.href = '/OnlineStore/Cart';
+                            });
+                        } else {
+                            alert('已加入購物車'); // Fallback for browsers where Swal is not available
+                        }
                     }else if(act==='buy-now'){
                       (async () => {
-                        if(!(await ensureAuthenticated())){
-                          ensureLoginPrompt();
-                          new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
-                          return;
+                        // First, check if the user is authenticated.
+                        if (!(await ensureAuthenticated())) {
+                            // SCENARIO 1: USER NOT LOGGED IN
+                            Swal.fire({
+                                title: '哎呀，請先完成登入唷！',
+                                html: '<div style="font-size: 5rem;">🙅‍♀️</div><p>您需要登入才能購買商品喔</p>',
+                                icon: 'warning',
+                                confirmButtonText: '好的',
+                                heightAuto: false
+                            });
+                            return;
                         }
-                        location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.ProductId}`;
+
+                        // SCENARIO 2: USER IS LOGGED IN
+                        // Stage 1: "Good Taste" popup
+                        Swal.fire({
+                            title: '你真有眼光！',
+                            html: `
+                                <style>
+                                    .swal-star-container {
+                                        position: relative;
+                                        height: 120px;
+                                        display: grid;
+                                        place-items: center;
+                                    }
+                                    .swal-star {
+                                        position: absolute;
+                                        opacity: 0;
+                                        animation: twinkle 1.8s ease-in-out infinite;
+                                    }
+                                    .swal-star.thumb {
+                                        font-size: 4rem;
+                                        animation-delay: 0s;
+                                    }
+                                    .swal-star.s1 { font-size: 1.5rem; top: 20%; left: 20%; animation-delay: 0.2s; }
+                                    .swal-star.s2 { font-size: 1.2rem; top: 30%; left: 80%; animation-delay: 0.5s; }
+                                    .swal-star.s3 { font-size: 1.8rem; top: 70%; left: 30%; animation-delay: 0.8s; }
+                                    .swal-star.s4 { font-size: 1.4rem; top: 80%; left: 70%; animation-delay: 1.1s; }
+
+                                    @@keyframes twinkle {
+                                        0%, 100% { opacity: 0; transform: scale(0.5) rotate(-30deg); }
+                                        50% { opacity: 1; transform: scale(1.2) rotate(10deg); }
+                                    }
+                                </style>
+                                <div class="swal-star-container">
+                                    <div class="swal-star thumb">👍</div>
+                                    <div class="swal-star s1">✨</div>
+                                    <div class="swal-star s2">✨</div>
+                                    <div class="swal-star s3">✨</div>
+                                    <div class="swal-star s4">✨</div>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: '立即前往結帳',
+                            showDenyButton: true,
+                            denyButtonText: '我好像猶豫了',
+                            heightAuto: false
+                        }).then((result) => {
+                            // Stage 2: Handle the button click from Stage 1
+                            if (result.isDenied) {
+                                // User clicked "I'm hesitating"
+                                Swal.fire({
+                                    title: '再考慮一下嗎？',
+                                    html: '<div style="font-size: 5rem;">🤔</div>',
+                                    showConfirmButton: false,
+                                    timer: 2000, // Auto-close after 2 seconds
+                                    heightAuto: false
+                                });
+                            }
+                            // If result.isConfirmed (user clicked "Go to checkout"), do nothing as it's a fake button.
+                        });
                       })();
                     }else if(act==='fav'){
                       if(!initialData?.ProductId){ return; }
@@ -475,6 +580,29 @@
                             btn.setAttribute('aria-pressed','true');
                             icon?.classList.remove('bi-heart');
                             icon?.classList.add('bi-heart-fill');
+
+                            // Show "Thank you" popup
+                            Swal.fire({
+                                title: '感謝你收藏！',
+                                html: `
+                                    <style>
+                                        .pulse-heart {
+                                            font-size: 4rem;
+                                            animation: pulse-heart-anim 1.2s ease-in-out infinite;
+                                        }
+                                        @@keyframes pulse-heart-anim {
+                                            0% { transform: scale(1); }
+                                            50% { transform: scale(1.3); }
+                                            100% { transform: scale(1); }
+                                        }
+                                    </style>
+                                    <div class="pulse-heart">❤️</div>
+                                `,
+                                showConfirmButton: false,
+                                timer: 1500, // Auto-close after 1.5 seconds
+                                heightAuto: false
+                            });
+
                           }else{
                             btn.classList.remove('text-danger');
                             btn.setAttribute('aria-pressed','false');

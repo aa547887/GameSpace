@@ -30,6 +30,32 @@
         }
         .tag-pill--platform { color: #0b5ed7; border-color: rgba(13,110,253,.25); background: rgba(13,110,253,.08); }
         .tag-pill--merch { color: #b23a48; border-color: rgba(214,51,132,.25); background: rgba(214,51,132,.08); }
+
+        @@keyframes cart-wiggle {
+            0%,100%
+
+        {
+            transform: rotate(0);
+        }
+
+        25% {
+            transform: rotate(-12deg);
+        }
+
+        75% {
+            transform: rotate(12deg);
+        }
+
+        }
+
+        .swal-cart {
+            display: inline-block;
+            font-size: 42px;
+            animation: cart-wiggle .6s ease-in-out infinite;
+        }
+
+    
+            
     </style>
 }
 
@@ -45,10 +71,14 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const API_BASE = "/OnlineStore/api/StoreApi";
         const PLACEHOLDER = "/images/onlinestoreNOPic/nophoto.jpg";
         let currentPage = 1, pageSize = 12;
+        const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json";
+
 
         // Simple HTML escape function to prevent XSS
         function escapeHtml(unsafe) {
@@ -172,68 +202,70 @@
           }
         }
 
-        document.addEventListener('click', (e)=>{
-          const target = e.target;
-          const pagerLink = target.closest('a.page-link[data-page]');
-          if (pagerLink) {
-              e.preventDefault();
-              const p = parseInt(pagerLink.dataset.page, 10);
-              if (!isNaN(p) && p !== currentPage) {
-                  currentPage = p;
-                  load();
-                  window.scrollTo(0, 0);
-              }
-              return;
-          }
-
-          const btn = target.closest('[data-action]');
-          if(!btn) return;
-
-          const id = btn.getAttribute('data-id');
-          const act = btn.getAttribute('data-action');
-
-          if(act === 'add-cart'){
-            // Placeholder for your cart logic
-            alert(`已加入購物車 (商品ID: ${id})`);
-          } else if(act === 'buy-now'){
-            location.href = `/OnlineStore/Checkout/CreateOrder?productId=${id}`;
-          } else if(act === 'fav'){
-            const productId = parseInt(id, 10);
-            if(!productId || isNaN(productId)) return;
-
-            btn.classList.add('disabled');
-            fetch(`${API_BASE}/products/${productId}/favorite`, { method:'POST' })
-            .then(r=>{ 
-                if(!r.ok){ const err = new Error(`Request failed: ${r.statusText}`); err.status = r.status; throw err; } 
-                return r.json(); 
-            })
-            .then(data => {
-                // If unfavoriting, remove the item from the view instantly
-                if (data && data.isFavorited === false) {
-                    const cardToRemove = btn.closest('.col-6');
-                    if (cardToRemove) {
-                        cardToRemove.style.transition = 'opacity 0.3s ease-out';
-                        cardToRemove.style.opacity = '0';
-                        setTimeout(() => cardToRemove.remove(), 300);
-                    }
-                } else {
-                    load(); // Or just update the button state if you prefer
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const pagerLink = target.closest('a.page-link[data-page]');
+            if (pagerLink) {
+                e.preventDefault();
+                const p = parseInt(pagerLink.dataset.page, 10);
+                if (!isNaN(p) && p !== currentPage) {
+                    currentPage = p;
+                    load();
+                    window.scrollTo(0, 0);
                 }
-            })
-            .catch(err=>{ 
-                if(err?.status === 401){ 
-                    ensureLoginPrompt(); 
-                    const m = new bootstrap.Modal(document.getElementById('loginPromptModal')); 
-                    m.show(); 
-                } else { 
-                    alert('操作失敗，請稍後再試'); 
-                } 
-            })
-            .finally(()=> {
-                // The button might be removed from the DOM, so check if it still exists
-                if (btn) btn.classList.remove('disabled');
-            });
-          }
+                return;
+            }
+
+            const btn = target.closest('[data-action]');
+            if (!btn) return;
+
+            const id = btn.getAttribute('data-id');
+            const act = btn.getAttribute('data-action');
+
+            if (act === 'add-cart') {
+                if (window.Swal) {
+                    Swal.fire({
+                        title: '已加入購物車',
+                        html: `
+                          <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
+                          <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '看購物車',
+                        cancelButtonText: '再逛逛',
+                        heightAuto: false,
+                        didOpen: () => {
+                            const mount = document.getElementById('cartLottie');
+                            if (window.lottie && mount) {
+                                if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
+                                window._cartAnim = lottie.loadAnimation({
+                                    container: mount,
+                                    renderer: 'svg',
+                                    loop: true,
+                                    autoplay: true,
+                                    path: CART_LOTTIE
+                                });
+                            } else if (mount) {
+                                mount.outerHTML = '<div class="swal-cart">🛒</div>';
+                            }
+                        },
+                        willClose: () => {
+                            if (window._cartAnim && window._cartAnim.destroy) {
+                                window._cartAnim.destroy();
+                                window._cartAnim = null;
+                            }
+                        }
+                    }).then(r => {
+                        if (r.isConfirmed) location.href = '/OnlineStore/Cart';
+                    });
+                } else {
+                    alert('已加入購物車'); // Fallback for browsers where Swal is not available
+                }
+            } else if (act === 'buy-now') {
+                // TODO: 執行立即購買的邏輯，例如跳轉到結帳頁面
+                console.log('Buy now clicked for product:', id);
+                // location.href = `/OnlineStore/Checkout?productId=${id}`;
+            }
         });
 
         load();
