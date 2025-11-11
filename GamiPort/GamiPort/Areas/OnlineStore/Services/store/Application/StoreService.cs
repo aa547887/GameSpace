@@ -488,6 +488,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				query = _db.SProductInfos
 					.AsNoTracking()
 					.Where(p => !p.IsDeleted)
+					.Include(p => p.Genres)
 					.OrderByDescending(p => p.ClickCount)
 					.ThenBy(p => p.ProductId)
 					.Take(take);
@@ -538,6 +539,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 			{
 				query = _db.SProductInfos.AsNoTracking()
 					.Where(p => !p.IsDeleted)
+					.Include(p => p.Genres)
 					.OrderByDescending(p => p.CreatedAt)
 					.Take(take);
 			}
@@ -887,7 +889,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 			var query =
 				from f in favBase
-				join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages) on f.ProductId equals p.ProductId
+				join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages).Include(p => p.Genres) on f.ProductId equals p.ProductId
 				where !p.IsDeleted
 				orderby f.CreatedAt descending, p.ProductId
 				select new ProductCardDto
@@ -907,7 +909,8 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 						 join mt in _db.SMerchTypes on d.MerchTypeId equals mt.MerchTypeId
 						 where d.ProductId == p.ProductId && !d.IsDeleted
 						 select mt.MerchTypeName).FirstOrDefault(),
-					IsPreorder = p.IsPreorderEnabled
+					IsPreorder = p.IsPreorderEnabled,
+					GenreNames = p.ProductType == "game" ? p.Genres.Select(g => g.GenreName).ToArray() : Array.Empty<string>()
 				};
 
 			var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

@@ -30,7 +30,7 @@
 
         .card-img-hold {
             position: relative;
-            padding-top: 100%;
+            padding-top: 80%;
             background: #f6f6f8;
         }
 
@@ -109,7 +109,11 @@
 
         /* 預留底部空間，避免浮現按鈕遮住資訊 */
         #product-list .card .card-body {
-            padding-bottom: 4rem; /* Increased padding to prevent overlap */
+            padding-bottom: 4rem; /* Reverted padding */
+        }
+
+        .badge-fav.is-favorited .bi-heart-fill {
+            color: #e83e8c; /* Pink color for favorited heart */
         }
 
         .sticky-side {
@@ -199,7 +203,7 @@
     </style>
 }
 
-<div class=" container-xxl py-3">
+<div class=" py-3">
     <!--container-xxl- ->這是會影響大小切換時有沒有全滿面-->
     <div class="row g-3">
         <!-- 側邊分類（保留位） -->
@@ -292,11 +296,11 @@
               const id = parseInt(a.dataset.id,10);
               const icon = a.querySelector('i');
               if(favSet.has(id)){
-                a.classList.add('text-danger');
+                a.classList.add('is-favorited');
                 icon?.classList.add('bi-heart-fill');
                 icon?.classList.remove('bi-heart');
               }else{
-                a.classList.remove('text-danger');
+                a.classList.remove('is-favorited');
                 icon?.classList.remove('bi-heart-fill');
                 icon?.classList.add('bi-heart');
               }
@@ -398,63 +402,207 @@
 
 
 
-                        function cardCol(x){
-
-                          const detailUrl = `/OnlineStore/Product/Detail/${x.productId}`;
-
-                          const img = x.coverUrl || PLACEHOLDER;
-
-                          return `<div class="col-6 col-md-4 col-lg-3 col-xxl-3">
-
-                            <div class="card h-100 position-relative">
-
-                              <a class="badge-fav" href="javascript:void(0)" title="加入收藏" data-action="fav" data-id="${x.productId}">
-
-                                <i class="bi bi-heart"></i>
-
-                              </a>
-
-                              <a class="card-img-hold d-block" href="${detailUrl}" title="${x.productName}">
-
-                                <img src="${img}" alt="${x.productName}" onerror="this.src='${PLACEHOLDER}'">
-
-                                ${x.productType ? `<span class="badge rounded-pill text-bg-dark badge-type">${x.productType}</span>` : ""}
-
-                              </a>
-
-                              <div class="card-body d-flex flex-column p-3">
-
-                                <div class="mb-2">${tagLine(x)} ${x.isPreorder?'<span class="badge text-bg-danger ms-1">預購</span>':''}</div>
-
-                                <h6 class="card-title text-truncate mb-1" title="${x.productName?.trim?.()||''}">${x.productName?.trim?.()||''}</h6>
-
-                                <div class="fw-bold mb-3">${(x.price===0) ? '免費下載' : money(x.price, x.currencyCode||'TWD')}</div>
+                                                                        function cardCol(x){
 
 
 
-                                <div class="quick-ops">
+                                                
 
-                                                                    <button class="btn btn-sm btn-dark flex-fill" data-action="buy-now" data-id="${x.productId}">
 
-                                                                      立即購買
 
-                                                                    </button>
+                                                                          const detailUrl = `/OnlineStore/Product/Detail/${x.productId}`;
 
-                                                                    <button class="btn btn-sm btn-outline-dark flex-fill" data-action="add-cart" data-id="${x.productId}">
 
-                                                                      加入購物車
 
-                                                                    </button>
+                                                
 
-                                </div>
 
-                              </div>
 
-                            </div>
+                                                                          const img = x.coverUrl || PLACEHOLDER;
 
-                          </div>`;
 
-                        }
+
+                                                
+
+
+
+                                                                          return `<div class="col-6 col-md-4 col-lg-3 col-xxl-3">
+
+
+
+                                                
+
+
+
+                                                                            <div class="card h-100 position-relative">
+
+
+
+                                                
+
+
+
+                                                                              <a class="badge-fav" href="javascript:void(0)" title="加入收藏" data-action="fav" data-id="${x.productId}">
+
+
+
+                                                                                <i class="bi bi-heart"></i>
+
+
+
+                                                                              </a>
+
+
+
+                                                
+
+
+
+                                                                              <a class="card-img-hold d-block" href="${detailUrl}" title="${x.productName}">
+
+
+
+                                                
+
+
+
+                                                                                <img src="${img}" alt="${x.productName}" onerror="this.src='${PLACEHOLDER}'">
+
+
+
+                                                
+
+
+
+                                                                                ${x.productType ? `<span class="badge rounded-pill text-bg-dark badge-type">${x.productType}</span>` : ""}
+
+
+
+                                                
+
+
+
+                                                                              </a>
+
+
+
+                                                
+
+
+
+                                                                              <div class="card-body d-flex flex-column p-3">
+
+
+
+                                                
+
+
+
+                                                                                <div class="mb-2">${tagLine(x)} ${x.isPreorder?'<span class="badge text-bg-danger ms-1">預購</span>':''}</div>
+
+
+
+                                                
+
+
+
+                                                                                <h6 class="card-title text-truncate mb-1" title="${x.productName?.trim?.()||''}">${x.productName?.trim?.()||''}</h6>
+
+
+
+                                                
+
+
+
+                                                                                <div class="fw-bold mb-3">${(x.price===0) ? '免費下載' : money(x.price, x.currencyCode||'TWD')}</div>
+
+
+
+                                                
+
+
+
+                                                
+
+
+
+                                                
+
+
+
+                                                                                <div class="quick-ops">
+
+
+
+                                                
+
+
+
+                                                                                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="buy-now" data-id="${x.productId}">
+
+
+
+                                                                                    立即購買
+
+
+
+                                                                                  </button>
+
+
+
+                                                
+
+
+
+                                                                                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="add-cart" data-id="${x.productId}">
+
+
+
+                                                                                    加入購物車
+
+
+
+                                                                                  </button>
+
+
+
+                                                
+
+
+
+                                                                                </div>
+
+
+
+                                                
+
+
+
+                                                                              </div>
+
+
+
+                                                
+
+
+
+                                                                            </div>
+
+
+
+                                                
+
+
+
+                                                                          </div>`;
+
+
+
+                                                
+
+
+
+                                                                        }
 
 
 
@@ -581,12 +729,12 @@
             .then(({isFavorited})=>{
               const icon = btn.querySelector('i');
               if(isFavorited){
-                btn.classList.add('text-danger');
+                btn.classList.add('is-favorited');
                 icon?.classList.add('bi-heart-fill');
                 icon?.classList.remove('bi-heart');
                 favSet.add(pid);
               }else{
-                btn.classList.remove('text-danger');
+                btn.classList.remove('is-favorited');
                 icon?.classList.remove('bi-heart-fill');
                 icon?.classList.add('bi-heart');
                 favSet.delete(pid);
