@@ -41,6 +41,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 				.Include(p => p.SProductCode)
 				.Include(p => p.SProductImages)
 				.Include(p => p.SGameProductDetail).ThenInclude(d => d.Platform)
+				.Include(p => p.Genres)
 				.Where(p => !p.IsDeleted);
 
 			// 如果僅傳入名稱（相容舊連結），轉成對應的 Id
@@ -161,7 +162,8 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 							where d.ProductId == p.ProductId && !d.IsDeleted
 							select mt.MerchTypeName
 						).FirstOrDefault(),
-						IsPreorder = p.IsPreorderEnabled
+						IsPreorder = p.IsPreorderEnabled,
+						GenreNames = p.ProductType == "game" ? p.Genres.Select(g => g.GenreName).ToArray() : Array.Empty<string>()
 					})
 					.ToListAsync();
 
@@ -207,7 +209,8 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 						where d.ProductId == p.ProductId && !d.IsDeleted
 						select mt.MerchTypeName
 					).FirstOrDefault(),
-					IsPreorder = p.IsPreorderEnabled
+					IsPreorder = p.IsPreorderEnabled,
+					GenreNames = p.ProductType == "game" ? p.Genres.Select(g => g.GenreName).ToArray() : Array.Empty<string>()
 				})
 				.ToListAsync();
 
@@ -474,7 +477,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 				query =
 					from r in ranked
-					join p in _db.SProductInfos.AsNoTracking().Where(p => !p.IsDeleted)
+					join p in _db.SProductInfos.AsNoTracking().Where(p => !p.IsDeleted).Include(p => p.Genres)
 						on r.ProductId equals p.ProductId
 					orderby r.RankingPosition
 					select p;
@@ -502,7 +505,7 @@ namespace GamiPort.Areas.OnlineStore.Services.store.Application
 
 				var itemsFav = await (
 					from r in ranked
-					join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages) on r.ProductId equals p.ProductId
+					join p in _db.SProductInfos.AsNoTracking().Include(p => p.SProductImages).Include(p => p.Genres) on r.ProductId equals p.ProductId
 					where !p.IsDeleted
 					orderby r.Cnt descending, r.ProductId
 					select new ProductCardDto

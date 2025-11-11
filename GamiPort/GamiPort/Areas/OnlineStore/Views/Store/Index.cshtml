@@ -8,7 +8,7 @@
     <div class="carousel-wrapper">
         <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
             <div class="carousel-inner hero-inner">
-                <div class="carousel-item active"><img src="~/images/onlinestoreCM/01廣告，GamiStoreBirth.png" alt=""></div>
+                <div class="carousel-item active"><img src="~/images/onlinestorecm/01廣告，gamistorebirth.png" alt="" /></div>
                 <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt=""></div>
                 <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt=""></div>
                 <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></div>
@@ -291,6 +291,7 @@
             border-radius: 12px;
             margin: 0 1rem;
             transition: background-color 0.2s ease;
+            z-index: 11;
         }
 
             #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover {
@@ -586,16 +587,20 @@
                     let newTransform = 'translateX(200%)'; // Hide far away
                     let newOpacity = 0.5;
                     let newFilter = 'grayscale(1)';
+                    let zIndex = 1; // Default z-index for hidden slides
 
                     if (i === activeIndex) { // Active slide
                         newTransform = 'translateX(0) scale(1)';
                         newOpacity = 1;
                         newFilter = 'grayscale(0)';
                         item.classList.add('active');
+                        zIndex = 10; // Highest z-index for active slide
                     } else if (i === (activeIndex + 1) % items.length) { // Next slide
                         newTransform = 'translateX(55%) scale(0.8)';
+                        zIndex = 5; // Lower z-index for adjacent slides
                     } else if (i === (activeIndex - 1 + items.length) % items.length) { // Previous slide
                         newTransform = 'translateX(-55%) scale(0.8)';
+                        zIndex = 5; // Lower z-index for adjacent slides
                     } else { // Hidden slides
                         newOpacity = 0;
                     }
@@ -603,6 +608,7 @@
                     item.style.transform = newTransform;
                     item.style.opacity = newOpacity;
                     item.style.filter = newFilter;
+                    item.style.zIndex = zIndex; // Apply z-index
                 });
             }
 
