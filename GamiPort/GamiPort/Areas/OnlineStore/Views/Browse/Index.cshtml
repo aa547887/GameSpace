@@ -319,7 +319,6 @@
     <script>
         const api = "/OnlineStore/api/StoreApi/products";
         const API_BASE = "/OnlineStore/api/StoreApi";
-        const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json"; // Lottie animation for cart
         const favSet = new Set();
 
         async function syncFavHighlight(){
@@ -610,34 +609,25 @@
                 Swal.fire({
                     title: '已加入購物車',
                     html: `
-                      <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
-                      <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                        <style>
+                            .swal-cart-anim {
+                                font-size: 5rem;
+                                animation: cart-bounce 0.8s ease-in-out;
+                            }
+                            @@keyframes cart-bounce {
+                                0%, 100% { transform: translateY(0) rotate(0); }
+                                25% { transform: translateY(-10px) rotate(-5deg); }
+                                50% { transform: translateY(0) rotate(0); }
+                                75% { transform: translateY(-5px) rotate(5deg); }
+                            }
+                        </style>
+                        <div class="swal-cart-anim">🛒</div>
+                        <div class="mt-1 text-muted">商品已成功加入購物車</div>
                     `,
                     showCancelButton: true,
                     confirmButtonText: '看購物車',
                     cancelButtonText: '再逛逛',
-                    heightAuto: false,
-                    didOpen: () => {
-                        const mount = document.getElementById('cartLottie');
-                        if (window.lottie && mount) {
-                            if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
-                            window._cartAnim = lottie.loadAnimation({
-                                container: mount,
-                                renderer: 'svg',
-                                loop: true,
-                                autoplay: true,
-                                path: CART_LOTTIE
-                            });
-                        } else if (mount) {
-                            mount.outerHTML = '<div class="swal-cart">🛒</div>';
-                        }
-                    },
-                    willClose: () => {
-                        if (window._cartAnim && window._cartAnim.destroy) {
-                            window._cartAnim.destroy();
-                            window._cartAnim = null;
-                        }
-                    }
+                    heightAuto: false
                 }).then(r => {
                     if (r.isConfirmed) location.href = '/OnlineStore/Cart';
                 });

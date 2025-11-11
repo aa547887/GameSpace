@@ -141,9 +141,7 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script>
-                const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json"; // Lottie animation for cart
                 const initialData = @Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions { PropertyNamingPolicy = null }));
                 const API_BASE = "/OnlineStore/api/StoreApi";
                 let currentRating = 0;
@@ -294,12 +292,45 @@
                         new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
                         return;
                     }
-                    if(currentRating < 1 || currentRating > 5){ alert('請先選擇 1-5 顆星的評分'); return; }
+                    // VALIDATION LOGIC
+                    if(currentRating < 1 || currentRating > 5){
+                        Swal.fire({
+                            title: '請先選擇星等評價唷！',
+                            html: `
+                                <style>
+                                    .twinkling-stars {
+                                        font-size: 3rem;
+                                        animation: twinkle-stars 1.5s ease-in-out infinite alternate;
+                                        margin: 1rem auto;
+                                    }
+                                    @@keyframes twinkle-stars {
+                                        0% { opacity: 0.5; transform: scale(1); }
+                                        100% { opacity: 1; transform: scale(1.1); }
+                                    }
+                                </style>
+                                <div class="twinkling-stars">⭐⭐⭐⭐⭐</div>
+                            `,
+                            showConfirmButton: false,
+                            timer: 5000,
+                            heightAuto: false
+                        });
+                        return;
+                    }
                     const body = { rating: currentRating, review: document.getElementById('reviewText').value?.trim() || null };
                     const pid = initialData.ProductId;
                     const res = await fetch(`${API_BASE}/products/${pid}/rate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
                     if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
-                    if(!res.ok){ alert('送出評價失敗，請稍後再試'); return; }
+                    if(!res.ok){
+                        Swal.fire({
+                            icon: 'error',
+                            title: '送出評價失敗',
+                            text: '請稍後再試',
+                            timer: 5000,
+                            showConfirmButton: false,
+                            heightAuto: false
+                        });
+                        return;
+                    }
                     try{
                         const detail = await (await fetch(`${API_BASE}/${pid}`)).json();
                         document.getElementById('rating').textContent = (detail.ratingAvg ?? 0).toFixed(1);
@@ -307,7 +338,15 @@
                     }catch{}
                     document.getElementById('reviewText').value = '';
                     loadReviews(true);
-                    alert('已送出評價，感謝你的回饋！');
+                    
+                    // SUCCESS LOGIC
+                    Swal.fire({
+                        title: '感謝你的評價！',
+                        html: '<div style="font-size: 5rem;">😉</div>',
+                        showConfirmButton: false,
+                        timer: 5000,
+                        heightAuto: false
+                    });
                 }
 
                 async function loadReviews(reset=false){
@@ -461,34 +500,25 @@
                             Swal.fire({
                                 title: '已加入購物車',
                                 html: `
-                                  <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
-                                  <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                                    <style>
+                                        .swal-cart-anim {
+                                            font-size: 5rem;
+                                            animation: cart-bounce 0.8s ease-in-out;
+                                        }
+                                        @@keyframes cart-bounce {
+                                            0%, 100% { transform: translateY(0) rotate(0); }
+                                            25% { transform: translateY(-10px) rotate(-5deg); }
+                                            50% { transform: translateY(0) rotate(0); }
+                                            75% { transform: translateY(-5px) rotate(5deg); }
+                                        }
+                                    </style>
+                                    <div class="swal-cart-anim">🛒</div>
+                                    <div class="mt-1 text-muted">商品已成功加入購物車</div>
                                 `,
                                 showCancelButton: true,
                                 confirmButtonText: '看購物車',
                                 cancelButtonText: '再逛逛',
-                                heightAuto: false,
-                                didOpen: () => {
-                                    const mount = document.getElementById('cartLottie');
-                                    if (window.lottie && mount) {
-                                        if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
-                                        window._cartAnim = lottie.loadAnimation({
-                                            container: mount,
-                                            renderer: 'svg',
-                                            loop: true,
-                                            autoplay: true,
-                                            path: CART_LOTTIE
-                                        });
-                                    } else if (mount) {
-                                        mount.outerHTML = '<div class="swal-cart">🛒</div>';
-                                    }
-                                },
-                                willClose: () => {
-                                    if (window._cartAnim && window._cartAnim.destroy) {
-                                        window._cartAnim.destroy();
-                                        window._cartAnim = null;
-                                    }
-                                }
+                                heightAuto: false
                             }).then(r => {
                                 if (r.isConfirmed) location.href = '/OnlineStore/Cart';
                             });
