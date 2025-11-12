@@ -1,0 +1,248 @@
+@using GameSpace.Areas.MiniGame.Helpers
+@model GameSpace.Models.SystemSetting
+
+@{
+    ViewData["Title"] = "設定詳情";
+}
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-eye"></i> 設定詳情
+        </h1>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.SettingId" class="btn btn-warning">
+                <i class="fas fa-edit"></i> 編輯
+            </a>
+            @if (!Model.IsReadOnly)
+            {
+                <a asp-action="Delete" asp-route-id="@Model.SettingId" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> 刪除
+                </a>
+            }
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 基本資訊卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-info-circle"></i> 基本資訊
+            </h6>
+            <span class="badge badge-info">ID: @Model.SettingId</span>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3 text-sm-right">設定鍵 (SettingKey)</dt>
+                <dd class="col-sm-9">
+                    <code class="text-dark" style="font-size: 1.1em;">@Model.SettingKey</code>
+                </dd>
+
+                <dt class="col-sm-3 text-sm-right">類別 (Category)</dt>
+                <dd class="col-sm-9">
+                    <span class="badge badge-info badge-lg">@Model.Category</span>
+                </dd>
+
+                <dt class="col-sm-3 text-sm-right">設定類型 (SettingType)</dt>
+                <dd class="col-sm-9">
+                    <span class="badge badge-secondary badge-lg">@Model.SettingType</span>
+                </dd>
+
+                <dt class="col-sm-3 text-sm-right">狀態</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge badge-success badge-lg">
+                            <i class="fas fa-check-circle"></i> 啟用中
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-secondary badge-lg">
+                            <i class="fas fa-times-circle"></i> 已停用
+                        </span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3 text-sm-right">唯讀</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsReadOnly)
+                    {
+                        <span class="badge badge-warning badge-lg">
+                            <i class="fas fa-lock"></i> 唯讀設定
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-light badge-lg">
+                            <i class="fas fa-unlock"></i> 可編輯
+                        </span>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- 設定值卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-code"></i> 設定值 (SettingValue)
+            </h6>
+        </div>
+        <div class="card-body">
+            @if (string.IsNullOrWhiteSpace(Model.SettingValue))
+            {
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle"></i> 此設定尚未設定值
+                </p>
+            }
+            else if (Model.SettingType == "JSON")
+            {
+                <pre class="bg-light p-3 mb-0" style="max-height: 400px; overflow-y: auto;"><code>@Model.SettingValue</code></pre>
+            }
+            else
+            {
+                <div class="alert alert-light border mb-0">
+                    <strong>@Model.SettingValue</strong>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 描述卡片 -->
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-comment-alt"></i> 描述 (Description)
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">@Model.Description</p>
+            </div>
+        </div>
+    }
+
+    <!-- 時間戳記卡片 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-clock"></i> 時間戳記
+            </h6>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3 text-sm-right">建立時間</dt>
+                <dd class="col-sm-9">
+                    <i class="fas fa-calendar-plus text-success"></i>
+                    @Model.CreatedAt.ToUtc8String("yyyy年MM月dd日 HH:mm:ss") UTC+8
+                </dd>
+
+                @if (Model.UpdatedAt != null)
+                {
+                    <dt class="col-sm-3 text-sm-right">最後更新時間</dt>
+                    <dd class="col-sm-9">
+                        <i class="fas fa-calendar-check text-info"></i>
+                        @Model.UpdatedAt.ToUtc8String("yyyy年MM月dd日 HH:mm:ss") UTC+8
+                    </dd>
+                }
+                else
+                {
+                    <dt class="col-sm-3 text-sm-right">最後更新時間</dt>
+                    <dd class="col-sm-9">
+                        <span class="text-muted">尚未更新</span>
+                    </dd>
+                }
+
+                @if (Model.UpdatedBy != null)
+                {
+                    <dt class="col-sm-3 text-sm-right">更新者 ID</dt>
+                    <dd class="col-sm-9">@Model.UpdatedBy</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <!-- 使用說明 -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4 border-left-info">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-lightbulb"></i> 使用方式
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>在程式中讀取此設定：</h6>
+                    <pre class="bg-light p-3 mb-0"><code>// 透過 ISystemSettingsService
+var value = await _settingsService
+    .GetSettingIntAsync("@Model.SettingKey", defaultValue);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4 border-left-warning">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 注意事項
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>設定修改後會在 30 分鐘內生效</li>
+                        <li>停用的設定不會被程式讀取</li>
+                        @if (Model.IsReadOnly)
+                        {
+                            <li class="text-danger"><strong>此為唯讀設定，請謹慎修改</strong></li>
+                        }
+                        <li>JSON 類型請確保格式正確</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-cog"></i> 快速操作
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a asp-action="Edit" asp-route-id="@Model.SettingId" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> 編輯設定
+                </a>
+                @if (!Model.IsReadOnly)
+                {
+                    <a asp-action="Delete" asp-route-id="@Model.SettingId" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> 刪除設定
+                    </a>
+                }
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> 新增設定
+                </a>
+                <a asp-action="Index" asp-route-category="@Model.Category" class="btn btn-info">
+                    <i class="fas fa-filter"></i> 查看同類別設定
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .badge-lg {
+            font-size: 0.95em;
+            padding: 0.5em 0.75em;
+        }
+    </style>
+}

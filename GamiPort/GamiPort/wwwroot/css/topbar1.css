@@ -25,3 +25,13 @@
     box-shadow: none;
     border-color: #86b7fe
 }
+
+/* Nick鐘新增：調整我的小屋 icon 大小（稍微放大） */
+.topbar1 .nav-link .bi-house-heart {
+    font-size: 1.15rem !important;
+}
+
+/* Nick鐘新增：調整購物車 icon 大小（放大） */
+.topbar1 .nav-link .bi-cart-plus {
+    font-size: 1.2rem !important;
+}

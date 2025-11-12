@@ -1,45 +1,187 @@
-﻿@* Views/Shared/_Layout.cshtml *@
+﻿@* Views/Shared/_Layout.cshtml (OnlineStore 區域版型) *@
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+@{
+    // ✅ 與根版型一致：產生 Anti-Forgery Token（寫 cookie + 提供 RequestToken）
+    var af = Xsrf.GetAndStoreTokens(Context);
+}
+@* ===============================
+   商城專用 Layout（Area/OnlineStore）
+   =============================== *@
+@{
+    var areaName = (ViewContext.RouteData.Values["area"] as string) ?? "";
+}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"]</title>
+    <title>@ViewData["Title"] - GamiStore</title>
+
+    <!-- ✅ Anti-Forgery：前端 fetch 可從這個 meta 讀 token，夾到 RequestVerificationToken header -->
+    <meta name="request-verification-token" content="@af.RequestToken" />
 
     <!-- 基底套件 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <!-- 全站共用樣式（用 Layout 載入，partial 不要宣告 section） -->
+    <!-- 全站共用樣式 -->
     <link href="~/css/layout-shell.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar1.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/topbar2.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/right-rail.css" rel="stylesheet" asp-append-version="true" />
 
-    @RenderSection("Styles", required: false) @* 頁面額外樣式才用這個 *@
+    <!-- Lightbox -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.css" />
+
+    @RenderSection("Styles", required: false)
+
+    <style>
+        /* StoreBar 動畫效果 */
+        #store-bar-wrapper {
+            position: sticky;
+            z-index: 1010; /* Below modals (1050+) but above general content */ 
+            padding: 0;
+            background-color: var(--bs-body-bg);
+            transition: transform 0.22s ease-in-out, opacity 0.18s ease-in-out; /* From Default.cshtml */
+            will-change: transform, opacity; /* From Default.cshtml */
+            overflow: visible; /* From Default.cshtml */
+        }
+
+        /* 往下滾動時隱藏（上滑再顯示） */
+        #store-bar-wrapper.hide-on-scroll { /* From Default.cshtml */
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 讓下拉選單可超出 StoreBar 顯示，並保持可滾動 */
+        #store-bar-wrapper .container-xxl, #store-bar-wrapper .nav-cats { overflow: visible !important; } /* From Default.cshtml */
+
+        #store-bar-wrapper .hover-dd { position: relative; } /* From Default.cshtml */
+        #store-bar-wrapper .hover-dd > .dropdown-menu { /* From Default.cshtml */
+            position: absolute;
+            top: calc(100% + .5rem);
+            left: 0;
+            z-index: 1100; /* This z-index is for the dropdown *within* the store bar, so it should be higher than the store bar itself */
+        }
+
+        #store-bar-wrapper .dropdown-menu { /* From Default.cshtml */
+            max-height: 60vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        #store-bar-wrapper .suppliers-menu { /* From Default.cshtml */
+            max-height: 50vh;
+            overflow-y: auto;
+            min-width: 260px;
+        }
+
+        /* 修正 hover 下拉選單樣式 */
+        .hover-dd:hover > .dropdown-menu {
+            display: block;
+        }
+        .hover-dd > .dropdown-menu {
+            margin-top: 0;
+        }
+
+        /* 分類導覽列樣式 */
+        .nav-cats {
+            display: flex;
+            justify-content: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            margin: 0;
+            padding: 0.25rem 0;
+            list-style: none;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .nav-cats::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-cats li {
+            flex-shrink: 0;
+        }
+
+        .cats-pill {
+            display: block;
+            padding: 0.4rem 1rem;
+            margin: 0 0.3rem;
+            border-radius: 50px;
+            background-color: #f0f2f5;
+            color: #333;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), inset 0 1px 1px #fff;
+            transition: all 0.2s ease-out;
+        }
+
+        .cats-pill:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15), inset 0 1px 1px #fff;
+            color: #007bff;
+            background-color: #fff;
+        }
+
+        .cats-pill:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1), inset 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        .cats-pill.dropdown-toggle::after {
+            margin-left: .5em;
+        }
+
+        .store-bar .dropdown-menu {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .layout-main {
+            overflow: visible !important; /* Override to ensure sticky positioning works for child elements */
+        }
+    </style>
+
 </head>
 <body>
-    @await Html.PartialAsync("_TopbarLevel1")
+    <!-- 商城頂部 Default -->
+    @await Html.PartialAsync(
+    "/Areas/OnlineStore/Views/Shared/Components/TopbarLevel1/Default.cshtml",
+    new GamiPort.Models.ViewModels.TopbarVM {
+        IsAuthenticated = User?.Identity?.IsAuthenticated ?? false,
+        NickName = User?.Identity?.Name ?? "訪客"
+    })
 
+    <!-- 主體 -->
     <div class="layout-wrap">
+        <!-- 側欄 -->
         <aside class="layout-sidebar d-none d-lg-block">
-            @await Html.PartialAsync("_Sidebar")
+            @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_Sidebar.cshtml")
         </aside>
 
         <main class="layout-main">
-            @await Html.PartialAsync("_TopbarLevel2")
+            <!-- 動態分類列 -->
+            @{
+                var currentController = ViewContext.RouteData.Values["controller"] as string;
+                var orderRelatedControllers = new List<string> { "Cart", "Checkout", "Ecpay", "Orders", "Payment" };
+            }
+            @if (!orderRelatedControllers.Contains(currentController))
+            {
+                @await Component.InvokeAsync("StoreBar")
+            } 
 
             <div class="container-fluid py-3">
                 <div class="row g-4">
-                    <div class="col-12 col-xxl-9">
+                    <div class="col-12">
                         @RenderBody()
                     </div>
-                    <aside class="col-xl-3 d-none d-xl-block">
-                        <div class="right-rail">
-                            @await Html.PartialAsync("_RightRailAds")
-                        </div>
-                    </aside>
                 </div>
             </div>
         </main>
@@ -49,12 +191,89 @@
         @await Html.PartialAsync("_Footer")
     </footer>
 
-    @await Html.PartialAsync("_MiniDock")
+    <!-- ✅ 先載入 jQuery（正確 SRI 值） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 
+    <!-- Bootstrap（含 Popper） -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SignalR 客戶端庫 -->
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
+
+    <!-- SignalR ChatHub 連線管理器 -->
+    <script src="~/js/social_hub/chat-connection-manager.js" asp-append-version="true"></script>
+
+    @* 建議：只有登入後才載入聊天 UI *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_QuickFab")
+        @await Html.PartialAsync("_FriendDock")
+        @await Html.PartialAsync("_FloatingDock")
+    }
+
     <!-- 全站共用腳本 -->
     <script src="~/js/sidebar.js" asp-append-version="true"></script>
+    <script src="~/js/social_hub/supportHub.js" asp-append-version="true"></script>
+
+    <!-- Lightbox -->
+    <script src="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.js"></script>
 
     @RenderSection("Scripts", required: false)
+    
+    <script>
+        // StoreBar 動畫腳本
+        (function() {
+            const storeBar = document.getElementById('store-bar-wrapper');
+            if (!storeBar) return;
+
+            let lastScrollTop = 0;
+            const delta = 5; // 滾動靈敏度
+
+            window.addEventListener('scroll', function() {
+                const st = window.pageYOffset || document.documentElement.scrollTop;
+
+                // 確保在頁面頂部時總是顯示
+                if (st <= 0) {
+                    storeBar.classList.remove('store-bar-hidden');
+                    lastScrollTop = st;
+                    return;
+                }
+
+                // 忽略小幅度的滾動
+                if (Math.abs(lastScrollTop - st) <= delta) {
+                    return;
+                }
+
+                if (st < lastScrollTop) { // 向上滾動
+                    storeBar.classList.remove('store-bar-hidden'); // 顯示 StoreBar
+                } else if (st > lastScrollTop) { // 向下滾動
+                    storeBar.classList.add('store-bar-hidden'); // 隱藏 StoreBar
+                }
+                lastScrollTop = st;
+            }, false);
+        })();
+    </script>
+    <script>
+        // Dynamically adjust StoreBar top position
+        (function () {
+            function adjustStoreBarTop() {
+                const topbar = document.querySelector('.topbar1');
+                const storeBar = document.getElementById('store-bar-wrapper');
+                if (topbar && storeBar) {
+                    const topbarHeight = topbar.getBoundingClientRect().height;
+                    storeBar.style.top = `${topbarHeight}px`;
+                }
+            }
+
+            // Run on initial load
+            document.addEventListener('DOMContentLoaded', adjustStoreBarTop);
+
+            // Run on window resize
+            window.addEventListener('resize', adjustStoreBarTop);
+        })();
+    </script>
+
+    @* 🔧 不報錯處理 HideCats section *@
+    @try { IgnoreSection("HideCats"); } catch { }
 </body>
 </html>

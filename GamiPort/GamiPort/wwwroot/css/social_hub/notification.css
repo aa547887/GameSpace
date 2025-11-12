@@ -1,0 +1,73 @@
+/* 通知中心共用樣式（社群中心） */
+
+.notif-table th,
+.notif-table td {
+  vertical-align: middle;
+}
+
+.col-slim {
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* 單行省略（避免標題/內容撐爆） */
+.title-line {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 未讀列輕微底色，與 Bootstrap table-warning 區別度較低的版本 */
+/* 未讀列：直接套用到每個儲存格，並提高優先度 */
+.unread-row > td {
+  background-color: #fff7e6 !important; /* 更明顯的淡橘底色，強調未讀 */
+}
+
+.notif-table tbody tr.unread-row:hover > td {
+  background-color: #ffefcc !important; /* hover 時稍微加深 */
+}
+
+.unread-row > td:first-child {
+  border-left: 4px solid #ffc107; /* 左側強調條 */
+}
+
+/* 詳情頁內文區塊 */
+.content-block {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  border: 1px dashed #e9ecef;
+  border-radius: .375rem;
+  background: #fff;
+  padding: .75rem .875rem;
+}
+
+/* 狀態徽章（帶小圓點） */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+.badge-status .dot {
+  display: inline-block;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge-status.read { background: #198754; }
+.badge-status.read .dot { background: #fff; }
+.badge-status.unread { background: #ffc107; color: #000; }
+.badge-status.unread .dot { background: #000; }
+
+/* 與 layout-shell 的 hover-lift 搭配使用 */
+.notice-card {
+  border-radius: .5rem;
+}
+
+/* 寄送者身分徽章 */
+.badge-role { font-weight: 500; }
+.badge-role.user { background: #0d6efd; }
+.badge-role.manager { background: #ffc107; color: #000; }
+.badge-role.system { background: #6c757d; }

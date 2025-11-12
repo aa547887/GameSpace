@@ -1,0 +1,111 @@
+﻿@model GamiPort.Areas.Login.Models.UserIntroduceVM
+@using GamiPort.Services
+@{
+    ViewData["Title"] = "我的個人資料";
+
+    // 與 Edit 一致的頭像處理
+    var defaultAvatar = Url.Content("~/images/預設人物.png");
+    string? imgSrc = null;
+    if (Model?.UserPicture != null && Model.UserPicture.Length > 0)
+    {
+        var b64 = Convert.ToBase64String(Model.UserPicture);
+        imgSrc = $"data:image/*;base64,{b64}";
+    }
+}
+
+<div class="container py-4" style="max-width: 980px;">
+    <!-- 頁首：與 Edit 對齊 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">@ViewData["Title"]</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="~/">返回首頁</a>
+            <a class="btn btn-primary" asp-area="Login" asp-controller="Introduce" asp-action="Edit">編輯資料</a>
+        </div>
+    </div>
+
+    @if (TempData["Info"] is string info)
+    {
+        <div class="alert alert-info">@info</div>
+    }
+
+    <!-- 主要卡片：上半部頭像區與 Edit 一致 -->
+    <div class="card shadow-sm overflow-hidden">
+        <div class="position-relative bg-light" style="min-height: 130px;">
+            <div class="position-absolute bottom-0 start-0 p-3 d-flex align-items-center gap-3 w-100">
+                <img src="@(imgSrc ?? defaultAvatar)" alt="頭像"
+                     class="rounded-circle border bg-black"
+                     style="width:96px;height:96px;object-fit:cover;" />
+                <div class="pb-2">
+                    <div class="fw-semibold fs-5">@Model.UserNickName</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下半部：每個欄位一行（標籤：值） -->
+        <div class="card-body">
+            <div class="vstack gap-2">
+                @* 統一標籤寬度，讓冒號對齊 *@
+                @{
+                    var labelStyle = "width: 90px;"; // 可依需求調整
+                    string GenderText = Model.Gender == "M" ? "男性" : "女性";
+                    // 遮蔽身分證字號後五碼
+                    string IdNumberMasked = string.IsNullOrEmpty(Model.IdNumber)
+                    ? "—"
+                    : (Model.IdNumber.Length > 5
+                    ? Model.IdNumber.Substring(0, Model.IdNumber.Length - 5) + "*****"
+                    : new string('*', Model.IdNumber.Length));
+                }
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">使用者編號</div>
+                    <div class="ms-4 flex-fill ">@Model.UserId</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">暱稱</div>
+                    <div class="ms-4 flex-fill ">@Model.UserNickName</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">性別</div>
+                    <div class="ms-4 flex-fill">@GenderText</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">手機號碼</div>
+                    <div class="ms-4 flex-fill">@Model.Cellphone</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">信箱</div>
+                    <div class="ms-4 flex-fill">@Model.Email</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">身分證字號</div>
+                    <div class="ms-4 flex-fill">@IdNumberMasked</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">地址</div>
+                    <div class="ms-4 flex-fill">@Model.Address</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">生日</div>
+                    <div class="ms-4 flex-fill">@Model.DateOfBirth.ToString("yyyy-MM-dd")</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">帳號建立</div>
+                    <div class="ms-4 flex-fill">@Model.CreateAccount.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                </div>
+
+                <div class="d-flex align-items-baseline border-top pt-2">
+                    <div class="text-muted fw-semibold" style="@labelStyle">自我介紹</div>
+                    <div class="ms-4 flex-fill" style="white-space: pre-line;">@(string.IsNullOrWhiteSpace(Model.UserIntroduce1) ? "—" : Model.UserIntroduce1)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

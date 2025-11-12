@@ -1,0 +1,77 @@
+﻿@* ================================================================
+   _QuickFab.cshtml — 右下角 +（Speed Dial）
+   重點：
+   1) 次級 FAB 統一 .gp-mini-fab（44x44）
+   2) 入場動畫 / ripple / 交錯延遲
+   3) 客訴下拉卡採「靜態定位」
+   4) 提供 gp-quickfab-close 事件讓子元件可關閉 Speed Dial
+   5) ★ 修正：.fab-tip 不吃滑鼠事件，避免擋住下拉卡的兩顆圓鈕
+   ================================================================ *@
+<link href="~/css/social_hub/quickfab.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="gp-fab" id="QuickFab" aria-hidden="false">
+    <!-- 主「＋」 -->
+    <button class="fab-main" id="fabMain" aria-expanded="false" title="快速動作"><i class="bi bi-plus-lg"></i></button>
+
+    <div class="fab-actions" aria-hidden="true">
+        <!-- 動作1：好友清單 -->
+        <div class="fab-wrap">
+            <button class="gp-mini-fab" id="fabFriends" aria-label="好友清單"><i class="bi bi-people-fill"></i></button>
+            <div class="fab-tip">好友清單</div>
+        </div>
+
+        <!-- 動作3：通知 -->
+        <div class="fab-wrap">
+            <button class="gp-mini-fab" id="fabNotifications" aria-label="通知"><i class="bi bi-bell-fill"></i></button>
+            <div class="fab-tip">通知</div>
+        </div>
+
+        <!-- 動作2：客訴（子 partial 會畫主鈕與下拉卡） -->
+        <div class="fab-wrap" id="fabSupportWrap">
+            @await Html.PartialAsync("_QuickFabSupport")
+            <div class="fab-tip">客訴</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+      const fab  = document.getElementById('QuickFab');
+      const main = document.getElementById('fabMain');
+      const btnF = document.getElementById('fabFriends');
+      const btnN = document.getElementById('fabNotifications'); // 新增通知按鈕
+
+      function setOpen(open){
+        fab.classList.toggle('open', open);
+        main.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+
+      // 主 +：展開/收合
+      main.addEventListener('click', (e)=>{ e.stopPropagation(); setOpen(!fab.classList.contains('open')); });
+
+      // 點頁面其他處：收合
+      document.addEventListener('click', ()=> setOpen(false));
+
+      // 讓子元件可要求關閉（例如選了「投訴/我的紀錄」）
+      window.addEventListener('gp-quickfab-close', ()=> setOpen(false));
+
+      // 好友清單：切換 FriendDock（未就緒時等待事件）
+      btnF.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(window.FriendDock?.toggle){ window.FriendDock.toggle(); }
+        else{
+          // 若 FriendDock 尚未就緒，等到它發出 gp-friend-ready 再觸發一次
+          const once = ()=>{ window.removeEventListener('gp-friend-ready', once); window.FriendDock?.toggle?.(); };
+          window.addEventListener('gp-friend-ready', once, { once:true });
+        }
+        setOpen(false);
+      }, { passive:true });
+
+      // 通知按鈕：導向通知頁面
+      btnN.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        window.location.href = '/social_hub/Notification'; // 導向通知頁面
+        setOpen(false);
+      }, { passive:true });
+    })();
+</script>

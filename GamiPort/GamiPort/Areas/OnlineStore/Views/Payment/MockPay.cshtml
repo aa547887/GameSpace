@@ -1,0 +1,33 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "模擬綠界付款";
+    var code = (string)ViewBag.PaymentCode;
+}
+
+<h3 class="mb-3">模擬綠界付款</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div>訂單：@Model.OrderCode (#@Model.OrderId)</div>
+        <div>應付金額：<strong>@String.Format("{0:N0}", Model.GrandTotal)</strong></div>
+        <div class="text-muted small">付款代碼：@code</div>
+    </div>
+</div>
+
+<form asp-action="MockSuccess" method="post" class="d-inline">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="code" value="@code" />
+    <input type="hidden" name="id" value="@Model.OrderId" />
+    <button class="btn btn-success">模擬：付款成功</button>
+</form>
+
+<form asp-action="MockFail" method="post" class="d-inline ms-2">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="code" value="@code" />
+    <input type="hidden" name="id" value="@Model.OrderId" />
+    <button class="btn btn-outline-danger">模擬：付款失敗</button>
+</form>
+
+<a class="btn btn-link ms-2" asp-area="OnlineStore" asp-controller="Checkout" asp-action="Success" asp-route-id="@Model.OrderId">
+    回訂單
+</a>

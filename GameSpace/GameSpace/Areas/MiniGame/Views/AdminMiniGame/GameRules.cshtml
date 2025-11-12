@@ -1,0 +1,579 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.GameRulesConfigViewModel
+@{
+    ViewData["Title"] = "遊戲規則設定";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Navigation Tabs -->
+<partial name="_MiniGameAdminTabs" />
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-gamepad text-primary me-2"></i>遊戲規則設定
+        </h1>
+        <div class="text-muted">
+            <i class="fas fa-clock me-1"></i>最後更新：@(Model.LastUpdated?.ToString("yyyy-MM-dd HH:mm:ss") ?? "未知")
+        </div>
+    </div>
+
+    <!-- TempData Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">總遊戲次數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalGamesPlayed.ToString("N0")</div>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-gamepad fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">今日遊戲次數</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@Model.TodayGamesPlayed.ToString("N0")</div>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-calendar-day fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">每日次數限制</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                @Model.DailyPlayLimit 次
+                            </div>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-stopwatch fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">遊戲狀態</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success rounded-pill">啟用中</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary rounded-pill">已停用</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-toggle-on fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Basic Settings Section -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-start border-primary border-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-cog me-2"></i>基本設定
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">遊戲名稱</label>
+                                <div class="form-control-plaintext">@Model.GameName</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">每日遊戲次數限制</label>
+                                <div class="input-group">
+                                    <input type="number" id="dailyLimitInput" class="form-control" value="@Model.DailyPlayLimit" min="1" max="100" />
+                                    <button type="button" class="btn btn-primary" onclick="updateDailyLimit()">
+                                        <i class="fas fa-save me-1"></i>儲存
+                                    </button>
+                                </div>
+                                <small class="text-muted">每位會員每日最多可遊玩的次數（1-100次）</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">遊戲說明</label>
+                            <div class="form-control-plaintext bg-light p-3 rounded">@Model.Description</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Configuration Section - 3 Levels -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-start border-success border-4">
+                <div class="card-header bg-gradient-success text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-layer-group me-2"></i>關卡難度設定（3 關卡系統）
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>難度進程：</strong>冒險首次從第 1 關開始。若當前關卡勝利，則下次冒險提升至下一關；若失敗則留在同一關卡（最高第 3 關）
+                    </p>
+
+                    <div class="row">
+                        @for (int i = 0; i < Model.LevelConfigs.Count; i++)
+                        {
+                            var level = Model.LevelConfigs[i];
+                            var borderColor = level.Level == 1 ? "info" : level.Level == 2 ? "warning" : "danger";
+
+                            <div class="col-lg-4 mb-3">
+                                <div class="card border-@borderColor h-100">
+                                    <div class="card-header bg-@borderColor text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-trophy me-1"></i>第 @level.Level 關
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="levelForm@(level.Level)">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="Level" value="@level.Level" />
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">怪物數量</label>
+                                                <input type="number" name="MonsterCount" class="form-control" value="@level.MonsterCount" min="1" max="50" required />
+                                                <small class="text-muted">需要擊敗的怪物數量</small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">移動速度倍率</label>
+                                                <input type="number" name="SpeedMultiplier" class="form-control" value="@level.SpeedMultiplier" min="0.1" max="10" step="0.1" required />
+                                                <small class="text-muted">怪物移動速度（1.0 = 正常速度）</small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">寵物經驗值獎勵</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-star text-warning"></i></span>
+                                                    <input type="number" name="ExperienceReward" class="form-control" value="@level.ExperienceReward" min="0" max="10000" required />
+                                                </div>
+                                                <small class="text-muted">勝利時獲得的寵物經驗值</small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">會員點數獎勵</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-coins text-warning"></i></span>
+                                                    <input type="number" name="PointsReward" class="form-control" value="@level.PointsReward" min="0" max="10000" required />
+                                                </div>
+                                                <small class="text-muted">勝利時獲得的會員點數</small>
+                                            </div>
+
+                                            @if (level.Level == 3)
+                                            {
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input type="checkbox" name="HasCoupon" class="form-check-input" id="hasCoupon@(level.Level)" @(level.HasCoupon ? "checked" : "") />
+                                                        <label class="form-check-label fw-bold" for="hasCoupon@(level.Level)">
+                                                            <i class="fas fa-gift text-danger me-1"></i>額外獎勵優惠券
+                                                        </label>
+                                                    </div>
+                                                    <small class="text-muted">第3關專屬：勝利時額外獲得 1 張商城優惠券</small>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">優惠券類型代碼</label>
+                                                    <input type="text" name="CouponType" class="form-control" value="@level.CouponType" placeholder="例如：GAME_LEVEL3_BONUS" maxlength="50" />
+                                                    <small class="text-muted">優惠券類型的系統代碼</small>
+                                                </div>
+                                            }
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-@borderColor" onclick="updateLevelConfig(@level.Level); return false;">
+                                                    <i class="fas fa-save me-1"></i>儲存第 @level.Level 關設定
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adventure Result Impact Section -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card shadow-sm border-start border-success border-4 h-100">
+                <div class="card-header bg-gradient-success text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-smile-beam me-2"></i>冒險勝利 - 寵物狀態變化
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="winImpactForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ResultType" value="Win" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-drumstick-bite text-danger me-1"></i>飽食度變化
+                            </label>
+                            <input type="number" name="HungerDelta" class="form-control" value="@Model.WinImpact.HungerDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.WinImpact.HungerDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-heart text-danger me-1"></i>心情值變化
+                            </label>
+                            <input type="number" name="MoodDelta" class="form-control" value="@Model.WinImpact.MoodDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.WinImpact.MoodDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-running text-primary me-1"></i>體力值變化
+                            </label>
+                            <input type="number" name="StaminaDelta" class="form-control" value="@Model.WinImpact.StaminaDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.WinImpact.StaminaDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-shower text-info me-1"></i>清潔度變化
+                            </label>
+                            <input type="number" name="CleanlinessDelta" class="form-control" value="@Model.WinImpact.CleanlinessDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.WinImpact.CleanlinessDelta）</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success" onclick="updateAdventureImpact('Win'); return false;">
+                                <i class="fas fa-save me-1"></i>儲存勝利影響設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card shadow-sm border-start border-danger border-4 h-100">
+                <div class="card-header bg-gradient-danger text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-frown me-2"></i>冒險失敗 - 寵物狀態變化
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="loseImpactForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ResultType" value="Lose" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-drumstick-bite text-danger me-1"></i>飽食度變化
+                            </label>
+                            <input type="number" name="HungerDelta" class="form-control" value="@Model.LoseImpact.HungerDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.LoseImpact.HungerDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-heart text-danger me-1"></i>心情值變化
+                            </label>
+                            <input type="number" name="MoodDelta" class="form-control" value="@Model.LoseImpact.MoodDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.LoseImpact.MoodDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-running text-primary me-1"></i>體力值變化
+                            </label>
+                            <input type="number" name="StaminaDelta" class="form-control" value="@Model.LoseImpact.StaminaDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.LoseImpact.StaminaDelta）</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-shower text-info me-1"></i>清潔度變化
+                            </label>
+                            <input type="number" name="CleanlinessDelta" class="form-control" value="@Model.LoseImpact.CleanlinessDelta" min="-100" max="100" required />
+                            <small class="text-muted">正數增加，負數減少（當前：@Model.LoseImpact.CleanlinessDelta）</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger" onclick="updateAdventureImpact('Lose'); return false;">
+                                <i class="fas fa-save me-1"></i>儲存失敗影響設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Check Threshold Section -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-start border-warning border-4">
+                <div class="card-header bg-gradient-warning text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-heartbeat me-2"></i>健康狀態檢查設定
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>@Model.HealthCheckThreshold.Message</strong>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p class="text-muted mb-3">
+                                冒險開始前會檢查寵物的以下狀態，若任一屬性值為 0，則無法開始冒險：
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-drumstick-bite fa-2x text-danger mb-2"></i>
+                                <div class="fw-bold">飽食度</div>
+                                <div class="text-muted">≥ @Model.HealthCheckThreshold.MinHunger</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-heart fa-2x text-danger mb-2"></i>
+                                <div class="fw-bold">心情值</div>
+                                <div class="text-muted">≥ @Model.HealthCheckThreshold.MinMood</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-running fa-2x text-primary mb-2"></i>
+                                <div class="fw-bold">體力值</div>
+                                <div class="text-muted">≥ @Model.HealthCheckThreshold.MinStamina</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-shower fa-2x text-info mb-2"></i>
+                                <div class="fw-bold">清潔度</div>
+                                <div class="text-muted">≥ @Model.HealthCheckThreshold.MinCleanliness</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-heartbeat fa-2x text-success mb-2"></i>
+                                <div class="fw-bold">健康值</div>
+                                <div class="text-muted">≥ @Model.HealthCheckThreshold.MinHealth</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center p-3 bg-success text-white rounded">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <div class="fw-bold">可開始冒險</div>
+                                <div>所有值 > 0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- State Machine Information -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card shadow-sm border-start border-info border-4">
+                <div class="card-header bg-gradient-info text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-user-circle me-2"></i>用戶狀態機
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-3">
+                        <div class="d-flex justify-content-center align-items-center">
+                            <div class="badge bg-success p-3 fs-6">正常</div>
+                            <i class="fas fa-arrow-right fa-2x text-muted mx-3"></i>
+                            <div class="badge bg-danger p-3 fs-6">停權</div>
+                            <i class="fas fa-arrow-right fa-2x text-muted mx-3"></i>
+                            <div class="badge bg-success p-3 fs-6">正常</div>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>管理員可透過後台操作變更用戶狀態</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card shadow-sm border-start border-purple border-4" style="border-color: #6f42c1 !important;">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #6f42c1 0%, #9561e2 100%);">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-gamepad me-2"></i>遊戲狀態機
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-3">
+                        <div class="d-flex justify-content-center align-items-center flex-wrap">
+                            <div class="badge bg-secondary p-3 fs-6">準備</div>
+                            <i class="fas fa-arrow-right fa-2x text-muted mx-2"></i>
+                            <div class="badge bg-primary p-3 fs-6">進行中</div>
+                            <i class="fas fa-arrow-right fa-2x text-muted mx-2"></i>
+                            <div class="badge bg-success p-3 fs-6 me-1">Win</div>
+                            <div class="badge bg-danger p-3 fs-6 me-1">Lose</div>
+                            <div class="badge bg-warning p-3 fs-6">Abort</div>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>遊戲進行過程的狀態轉換</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+        });
+
+        // Update Daily Limit
+        function updateDailyLimit() {
+            const dailyLimit = parseInt($('#dailyLimitInput').val());
+
+            if (isNaN(dailyLimit) || dailyLimit < 1 || dailyLimit > 100) {
+                alert('每日次數必須在1-100之間');
+                return;
+            }
+
+            const token = $('input[name="__RequestVerificationToken"]').first().val();
+
+            $.ajax({
+                url: '@Url.Action("UpdateGameDailyLimit", "AdminMiniGame")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    dailyLimit: dailyLimit
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('每日次數限制更新成功');
+                        location.reload();
+                    } else {
+                        alert('更新失敗：' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('更新時發生錯誤，請稍後再試');
+                }
+            });
+        }
+
+        // Update Level Config
+        function updateLevelConfig(level) {
+            const form = $('#levelForm' + level);
+            const formData = form.serialize();
+
+            $.ajax({
+                url: '@Url.Action("UpdateLevelConfig", "AdminMiniGame")',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        alert('第' + level + '關設定更新成功');
+                        location.reload();
+                    } else {
+                        alert('更新失敗：' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('更新時發生錯誤，請稍後再試');
+                }
+            });
+        }
+
+        // Update Adventure Impact (Win/Lose)
+        function updateAdventureImpact(resultType) {
+            const form = $('#' + (resultType === 'Win' ? 'winImpactForm' : 'loseImpactForm'));
+            const formData = form.serialize();
+
+            $.ajax({
+                url: '@Url.Action("UpdateAdventureImpact", "AdminMiniGame")',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        alert('冒險' + (resultType === 'Win' ? '勝利' : '失敗') + '影響設定更新成功');
+                        location.reload();
+                    } else {
+                        alert('更新失敗：' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('更新時發生錯誤，請稍後再試');
+                }
+            });
+        }
+    </script>
+}

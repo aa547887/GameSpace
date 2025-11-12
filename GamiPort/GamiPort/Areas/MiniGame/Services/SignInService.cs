@@ -1,0 +1,488 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using GamiPort.Areas.MiniGame.Helpers;
+using GamiPort.Infrastructure.Time;
+using GamiPort.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace GamiPort.Areas.MiniGame.Services
+{
+	/// <summary>
+	/// 簽到服務實現 - 處理簽到相關業務邏輯
+	/// </summary>
+	public class SignInService : ISignInService
+	{
+		private readonly GameSpacedatabaseContext _context;
+		private readonly IAppClock _appClock;
+		private readonly IPetService _petService;
+
+		public SignInService(GameSpacedatabaseContext context, IAppClock appClock, IPetService petService)
+		{
+			_context = context ?? throw new ArgumentNullException(nameof(context));
+			_appClock = appClock ?? throw new ArgumentNullException(nameof(appClock));
+			_petService = petService ?? throw new ArgumentNullException(nameof(petService));
+		}
+
+		/// <summary>
+		/// 取得目前簽到狀態
+		/// </summary>
+		public async Task<SignInStatusDto> GetCurrentSignInStatusAsync(int userId)
+		{
+			// 取得 UTC+8 時間
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			var todayStart = appNow.Date;
+			var todayEnd = todayStart.AddDays(1).AddTicks(-1);
+
+			// 轉回 UTC 以供資料庫查詢
+			var utcTodayStart = _appClock.ToUtc(todayStart);
+			var utcTodayEnd = _appClock.ToUtc(todayEnd);
+
+			// 查詢用戶的所有簽到記錄（未刪除）
+			var userSignIns = await _context.UserSignInStats
+				.Where(x => x.UserId == userId && !x.IsDeleted)
+				.OrderByDescending(x => x.SignTime)
+				.ToListAsync();
+
+			// 檢查今天是否已簽到
+			var isSignedInToday = userSignIns.Any(x =>
+				x.SignTime >= utcTodayStart && x.SignTime <= utcTodayEnd);
+
+			// 如果今天已簽到，取得今日簽到記錄（用於顯示實際獲得的獎勵）
+			var todaySignInRecord = isSignedInToday
+				? userSignIns.FirstOrDefault(x => x.SignTime >= utcTodayStart && x.SignTime <= utcTodayEnd)
+				: null;
+
+			// 計算總簽到天數
+			int totalSignInDays = userSignIns.Count;
+
+			// 計算當前連續簽到天數與最長連續簽到天數
+			var (currentConsecutiveDays, maxConsecutiveDays) = CalculateConsecutiveDays(userSignIns, appNow.Date);
+
+			// 獲取今天的簽到日序號和獎勵
+			int todaySignInDay = currentConsecutiveDays + (isSignedInToday ? 0 : 1);
+			var todayRule = await GetSignInRuleByDayAsync(todaySignInDay);
+
+			int todayPoints = todayRule?.Points ?? 0;
+			int todayExperience = todayRule?.Experience ?? 0;
+			bool todayHasCoupon = todayRule?.HasCoupon ?? false;
+
+			// 上次簽到時間
+			var lastSignIn = userSignIns.FirstOrDefault();
+			var lastSignInTime = lastSignIn?.SignTime.ToUtc8();
+
+			return new SignInStatusDto
+			{
+				IsSignedInToday = isSignedInToday,
+				CurrentConsecutiveDays = currentConsecutiveDays,
+				MaxConsecutiveDays = maxConsecutiveDays,
+				TotalSignInDays = totalSignInDays,
+				TodaySignInDay = todaySignInDay,
+				TodayPoints = todayPoints,
+				TodayExperience = todayExperience,
+				TodayHasCoupon = todayHasCoupon,
+				ActualPointsGained = todaySignInRecord?.PointsGained,
+				ActualExpGained = todaySignInRecord?.ExpGained,
+				ActualCouponGained = todaySignInRecord?.CouponGained,
+				LastSignInTime = lastSignInTime,
+				UpdatedAt = appNow.ToUtc8()
+			};
+		}
+
+		/// <summary>
+		/// 執行簽到
+		/// </summary>
+		public async Task<SignInResultDto> CheckInAsync(int userId)
+		{
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			var todayStart = appNow.Date;
+			var todayEnd = todayStart.AddDays(1).AddTicks(-1);
+
+			var utcTodayStart = _appClock.ToUtc(todayStart);
+			var utcTodayEnd = _appClock.ToUtc(todayEnd);
+
+			// 檢查今天是否已簽到
+			var existingSignIn = await _context.UserSignInStats
+				.Where(x => x.UserId == userId && !x.IsDeleted)
+				.Where(x => x.SignTime >= utcTodayStart && x.SignTime <= utcTodayEnd)
+				.FirstOrDefaultAsync();
+
+			if (existingSignIn != null)
+			{
+				return new SignInResultDto
+				{
+					Success = false,
+					Message = "今天已經簽到過了",
+					SignInTime = appNow.ToUtc8()
+				};
+			}
+
+			// 取得用戶所有簽到記錄，計算連續簽到天數
+			var userSignIns = await _context.UserSignInStats
+				.Where(x => x.UserId == userId && !x.IsDeleted)
+				.OrderByDescending(x => x.SignTime)
+				.ToListAsync();
+
+			var (currentConsecutiveDays, _) = CalculateConsecutiveDays(userSignIns, todayStart);
+			int nextSignInDay = currentConsecutiveDays + 1;
+
+			// 取得簽到規則（根據日序號）
+			var signInRule = await GetSignInRuleByDayAsync(nextSignInDay);
+			if (signInRule == null)
+			{
+				return new SignInResultDto
+				{
+					Success = false,
+					Message = $"簽到日 {nextSignInDay} 無對應規則",
+					SignInTime = appNow.ToUtc8()
+				};
+			}
+
+			// 開始交易：記錄簽到、更新用戶錢包
+			using var transaction = await _context.Database.BeginTransactionAsync();
+			try
+			{
+				var utcNow = _appClock.UtcNow;
+				var appNowForHistory = _appClock.ToAppTime(utcNow);
+
+				// 1. 建立簽到記錄
+				var signInStat = new UserSignInStat
+				{
+					UserId = userId,
+					SignTime = utcNow,
+					PointsGained = signInRule.Points,
+					PointsGainedTime = utcNow,
+					ExpGained = signInRule.Experience,
+					ExpGainedTime = utcNow,
+					CouponGained = signInRule.HasCoupon ? (signInRule.CouponTypeCode ?? string.Empty) : string.Empty,
+					CouponGainedTime = utcNow,
+					IsDeleted = false
+				};
+
+				_context.UserSignInStats.Add(signInStat);
+				await _context.SaveChangesAsync();
+
+				// 2. 更新用戶錢包（點數）
+				var wallet = await _context.UserWallets
+					.FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
+
+				if (wallet != null)
+				{
+					wallet.UserPoint += signInRule.Points;
+					_context.UserWallets.Update(wallet);
+					await _context.SaveChangesAsync();
+				}
+
+				// 3. 添加WalletHistory記錄 - 點數獎勵
+				if (signInRule.Points > 0 && wallet != null)
+				{
+					// 決定簽到類型和描述
+					string itemCode;
+					string itemName;
+
+					if (nextSignInDay % 30 == 0 && nextSignInDay > 0)
+					{
+						itemCode = "SIGNIN-MONTHLY-PERFECT";
+						itemName = "全勤獎勵";
+					}
+					else if (nextSignInDay % 7 == 0 && nextSignInDay > 0)
+					{
+						itemCode = "SIGNIN-CONSECUTIVE-7";
+						itemName = "連續7天獎勵";
+					}
+					else
+					{
+						itemCode = "SIGNIN-DAILY";
+						itemName = "每日簽到獎勵";
+					}
+
+					var pointHistory = new WalletHistory
+					{
+						UserId = userId,
+						ChangeType = "Point",
+						PointsChanged = signInRule.Points,
+						ItemCode = itemCode,
+						Description = $"{itemName} (第{nextSignInDay}天)",
+						ChangeTime = appNowForHistory,
+						IsDeleted = false
+					};
+					_context.WalletHistories.Add(pointHistory);
+				}
+
+				// 4. 添加WalletHistory記錄 - 優惠券獎勵（如果有）
+				if (signInRule.HasCoupon && !string.IsNullOrEmpty(signInRule.CouponTypeCode))
+				{
+					var couponHistory = new WalletHistory
+					{
+						UserId = userId,
+						ChangeType = "Coupon",
+						PointsChanged = 1,
+						ItemCode = signInRule.CouponTypeCode,
+						Description = $"簽到獎勵優惠券 (第{nextSignInDay}天)",
+						ChangeTime = appNowForHistory,
+						IsDeleted = false
+					};
+					_context.WalletHistories.Add(couponHistory);
+				}
+
+				await _context.SaveChangesAsync();
+				await transaction.CommitAsync();
+
+				// 更新寵物經驗值並觸發升級檢查（在事務外執行）
+				if (signInRule.Experience > 0)
+				{
+					try
+					{
+						var pet = await _context.Pets
+							.AsNoTracking()
+							.FirstOrDefaultAsync(p => p.UserId == userId && !p.IsDeleted);
+
+						if (pet != null)
+						{
+							await _petService.AddExperienceAsync(pet.PetId, signInRule.Experience);
+						}
+					}
+					catch (Exception)
+					{
+						// 不影響簽到結果，僅記錄失敗（可選擇性加入日誌）
+					}
+				}
+
+				return new SignInResultDto
+				{
+					Success = true,
+					Message = "簽到成功",
+					PointsGained = signInRule.Points,
+					ExpGained = signInRule.Experience,
+					CouponGained = signInRule.HasCoupon ? (signInRule.CouponTypeCode ?? string.Empty) : string.Empty,
+					SignInTime = appNow.ToUtc8(),
+					ConsecutiveDays = nextSignInDay
+				};
+			}
+			catch (Exception ex)
+			{
+				await transaction.RollbackAsync();
+				return new SignInResultDto
+				{
+					Success = false,
+					Message = $"簽到失敗: {ex.Message}",
+					SignInTime = appNow.ToUtc8()
+				};
+			}
+		}
+
+		/// <summary>
+		/// 取得指定月份的簽到日曆資料
+		/// </summary>
+		public async Task<SignInCalendarDto> GetMonthlyCalendarAsync(int userId, int year, int month)
+		{
+			// 驗證月份
+			var appNow = _appClock.ToAppTime(_appClock.UtcNow);
+			if (month < 1 || month > 12)
+				month = appNow.Month;
+			if (year < 1900)
+				year = appNow.Year;
+
+			var monthStart = new DateTime(year, month, 1);
+			var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+
+			// 轉成 UTC 以查詢資料庫
+			var utcMonthStart = _appClock.ToUtc(monthStart);
+			var utcMonthEnd = _appClock.ToUtc(monthEnd);
+
+			// 查詢該月的所有簽到記錄
+			var signIns = await _context.UserSignInStats
+				.Where(x => x.UserId == userId && !x.IsDeleted)
+				.Where(x => x.SignTime >= utcMonthStart && x.SignTime <= utcMonthEnd)
+				.ToListAsync();
+
+			var daysInMonth = DateTime.DaysInMonth(year, month);
+			var days = new List<SignInDayDto>();
+
+			for (int day = 1; day <= daysInMonth; day++)
+			{
+				var dayDate = new DateTime(year, month, day);
+				var dayUtcStart = _appClock.ToUtc(dayDate.Date);
+				var dayUtcEnd = _appClock.ToUtc(dayDate.Date.AddDays(1).AddTicks(-1));
+
+				var signIn = signIns.FirstOrDefault(x => x.SignTime >= dayUtcStart && x.SignTime <= dayUtcEnd);
+
+				var dayDto = new SignInDayDto
+				{
+					Day = day,
+					IsSignedIn = signIn != null,
+					SignInTime = signIn?.SignTime.ToUtc8(),
+					PointsGained = signIn?.PointsGained,
+					ExpGained = signIn?.ExpGained,
+					HasCoupon = !string.IsNullOrEmpty(signIn?.CouponGained),
+					SignInDayNumber = null
+				};
+
+				days.Add(dayDto);
+			}
+
+			return new SignInCalendarDto
+			{
+				Year = year,
+				Month = month,
+				Days = days
+			};
+		}
+
+		/// <summary>
+		/// 分頁取得簽到歷史記錄
+		/// </summary>
+		public async Task<SignInHistoryPageDto> GetSignInHistoryAsync(int userId, int page, int pageSize, int? year = null, int? month = null)
+		{
+			var query = _context.UserSignInStats
+				.Where(x => x.UserId == userId && !x.IsDeleted)
+				.AsQueryable();
+
+			// 若指定了年月，進行過濾
+			if (year.HasValue && month.HasValue)
+			{
+				var monthStart = new DateTime(year.Value, month.Value, 1);
+				var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+
+				var utcMonthStart = _appClock.ToUtc(monthStart);
+				var utcMonthEnd = _appClock.ToUtc(monthEnd);
+
+				query = query.Where(x => x.SignTime >= utcMonthStart && x.SignTime <= utcMonthEnd);
+			}
+
+			// 計算總數
+			int totalCount = await query.CountAsync();
+			int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+			// 確保頁碼有效
+			if (page < 1) page = 1;
+			if (page > totalPages && totalPages > 0) page = totalPages;
+
+			// 排序並分頁
+			var items = await query
+				.OrderByDescending(x => x.SignTime)
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			// 轉換為 DTO
+			var historyItems = items.Select((item, index) => new SignInHistoryItemDto
+			{
+				LogId = item.LogId,
+				SignTime = item.SignTime.ToUtc8(),
+				PointsGained = item.PointsGained,
+				ExpGained = item.ExpGained,
+				CouponGained = item.CouponGained,
+				SignInDayNumber = (page - 1) * pageSize + index + 1
+			}).ToList();
+
+			return new SignInHistoryPageDto
+			{
+				TotalCount = totalCount,
+				TotalPages = totalPages,
+				CurrentPage = page,
+				PageSize = pageSize,
+				Items = historyItems
+			};
+		}
+
+		/// <summary>
+		/// 根據簽到日序號取得對應的規則
+		/// </summary>
+		private async Task<SignInRule?> GetSignInRuleByDayAsync(int signInDay)
+		{
+			return await _context.SignInRules
+				.Where(x => x.SignInDay == signInDay && x.IsActive && !x.IsDeleted)
+				.FirstOrDefaultAsync();
+		}
+
+		/// <summary>
+		/// 計算當前連續簽到天數與最長連續簽到天數
+		/// </summary>
+		private (int currentConsecutive, int maxConsecutive) CalculateConsecutiveDays(
+			List<UserSignInStat> signIns, DateTime today)
+		{
+			if (signIns.Count == 0)
+				return (0, 0);
+
+			// 將 UTC 簽到時間轉成 UTC+8 日期
+			var signInDates = signIns
+				.Select(x => x.SignTime.ToUtc8().Date)
+				.Distinct()
+				.OrderByDescending(x => x)
+				.ToList();
+
+			// === 計算當前連續簽到天數 ===
+			int currentConsecutive = 0;
+			DateTime expectedDate = today;
+
+			foreach (var date in signInDates)
+			{
+				if (date == expectedDate)
+				{
+					currentConsecutive++;
+					expectedDate = expectedDate.AddDays(-1);
+				}
+				else if (date < expectedDate)
+				{
+					// 發現 gap，停止計算當前連續
+					break;
+				}
+			}
+
+			// === 計算歷史最長連續簽到天數 ===
+			int maxConsecutive = 0;
+			int tempConsecutive = 1;
+
+			for (int i = 1; i < signInDates.Count; i++)
+			{
+				var prevDate = signInDates[i - 1];
+				var currDate = signInDates[i];
+
+				if (prevDate.AddDays(-1) == currDate)
+				{
+					tempConsecutive++;
+				}
+				else
+				{
+					maxConsecutive = Math.Max(maxConsecutive, tempConsecutive);
+					tempConsecutive = 1;
+				}
+			}
+
+			maxConsecutive = Math.Max(maxConsecutive, tempConsecutive);
+			maxConsecutive = Math.Max(maxConsecutive, currentConsecutive);
+
+			return (currentConsecutive, maxConsecutive);
+		}
+
+	/// <summary>
+	/// 取得所有活動的簽到規則（供使用者查看獎勵表）
+	/// </summary>
+	/// <returns>所有活動簽到規則列表（按日序號排序）</returns>
+	public async Task<List<SignInRuleDto>> GetAllActiveRulesAsync()
+	{
+		// 查詢所有活動且未刪除的簽到規則
+		var rules = await _context.SignInRules
+			.AsNoTracking()
+			.Where(r => r.IsActive && !r.IsDeleted)
+			.OrderBy(r => r.SignInDay)
+			.ToListAsync();
+
+		// 轉換為 DTO
+		var dtos = rules.Select(r => new SignInRuleDto
+		{
+			Id = r.Id,
+			SignInDay = r.SignInDay,
+			Points = r.Points,
+			Experience = r.Experience,
+			HasCoupon = r.HasCoupon,
+			CouponTypeCode = r.CouponTypeCode,
+			Description = r.Description
+		}).ToList();
+
+		return dtos;
+	}
+	}
+}

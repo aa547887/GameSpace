@@ -1,0 +1,273 @@
+@{
+    ViewData["Title"] = "我的收藏";
+    Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        #fav-list .card { border: none; border-radius: 1rem; overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,.07); }
+        .card-img-hold { position: relative; padding-top: 80%; background: #f6f6f8; }
+        .card-img-hold img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+        .badge-fav { position:absolute; top:.5rem; right:.5rem; background:rgba(255,255,255,.9); width:36px; height:36px; display:grid; place-items:center; border-radius:999px; box-shadow:0 3px 8px rgba(0,0,0,.15); }
+        .quick-ops { position:absolute; left:.5rem; right:.5rem; bottom:.5rem; display:flex; gap:.5rem; }
+        #fav-list .card .card-body { padding-bottom: 5rem; }
+
+        .px-15mm {
+            padding-left: 15mm !important;
+            padding-right: 15mm !important;
+        }
+        /* Pills (果凍感標籤) */
+        .tag-pill {
+            display: inline-block;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.65);
+            backdrop-filter: blur(6px) saturate(120%);
+            border: 1px solid rgba(0,0,0,.06);
+            box-shadow: 0 2px 6px rgba(0,0,0,.06) inset, 0 1px 3px rgba(0,0,0,.05);
+            font-size: .75rem;
+            line-height: 1;
+        }
+        .tag-pill--platform { color: #0b5ed7; border-color: rgba(13,110,253,.25); background: rgba(13,110,253,.08); }
+        .tag-pill--merch { color: #b23a48; border-color: rgba(214,51,132,.25); background: rgba(214,51,132,.08); }
+
+        @@keyframes cart-wiggle {
+            0%,100%
+
+        {
+            transform: rotate(0);
+        }
+
+        25% {
+            transform: rotate(-12deg);
+        }
+
+        75% {
+            transform: rotate(12deg);
+        }
+
+        }
+
+        .swal-cart {
+            display: inline-block;
+            font-size: 42px;
+            animation: cart-wiggle .6s ease-in-out infinite;
+        }
+
+    
+            
+    </style>
+}
+
+<div class=" py-3 px-15mm">
+    <!--container-xxl 拿掉--> 
+   
+  <h3 class="fw-bold mb-3">我的收藏</h3>
+  <div id="fav-list" class="row g-3"></div>
+  <nav class="mt-3"><ul class="pagination pagination-sm justify-content-center" id="pager"></ul></nav>
+  <div id="empty" class="text-center text-muted py-5 d-none"><h3>目前沒有收藏項目</h3><p>快去商城逛逛吧！</p></div>
+  <div id="error" class="text-center text-danger py-5 d-none"><h3>載入失敗</h3><p>抱歉，載入收藏時發生錯誤，請稍後再試一次。</p></div>
+  <div id="loading" class="text-center text-secondary py-5"><h3>載入中...</h3></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const API_BASE = "/OnlineStore/api/StoreApi";
+        const PLACEHOLDER = "/images/onlinestoreNOPic/nophoto.jpg";
+        let currentPage = 1, pageSize = 12;
+        const CART_LOTTIE = "https://assets4.lottiefiles.com/packages/lf20_zyquagfl.json";
+
+
+        // Simple HTML escape function to prevent XSS
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function money(v, c = "TWD"){
+          const code = (c ?? "TWD").toString().trim().toUpperCase();
+          const value = Number.isFinite(v) ? v : (parseFloat(v) || 0);
+          if (value === 0) return '免費下載';
+          try { return new Intl.NumberFormat('zh-TW', { style:'currency', currency:code, minimumFractionDigits:0 }).format(value); } catch { return new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(value); }
+        }
+
+        function tagLine(x){
+          const isGame = (x.productType||'').toLowerCase()==='game';
+          if (isGame){
+            const name = x.platformName || '';
+            return name ? `<span class=\"tag-pill tag-pill--platform\">${escapeHtml(name)}</span>` : '';
+          }
+          const merch = x.peripheralTypeName || x.merchTypeName || '';
+          return merch ? `<span class=\"tag-pill tag-pill--merch\">${escapeHtml(merch)}</span>` : '';
+        }
+
+        function cardCol(x){
+          const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
+          const img = x.coverUrl || PLACEHOLDER;
+          const name = escapeHtml(x.productName);
+
+          return `
+          <div class="col-2">
+            <div class="card h-100 position-relative">
+              <a class="card-img-hold d-block" href="${detailUrl}" title="${name}"><img src="${escapeHtml(img)}" alt="${name}" onerror="this.src='${PLACEHOLDER}'"></a>
+              <div class="card-body d-flex flex-column p-3">
+                <div class="mb-2">${tagLine(x)}</div>
+                <h6 class="card-title text-truncate mb-1" title="${name}">${name}</h6>
+                <div class="fw-bold mb-3">${x.price===0 ? '免費下載' : money(x.price, x.currencyCode)}</div>
+                <div class="quick-ops mt-auto">
+                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="buy-now" data-id="${x.productId}">立即購買</button>
+                  <button class="btn btn-sm btn-outline-dark flex-fill" data-action="add-cart" data-id="${x.productId}">加入購物車</button>
+                
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        function renderPager(total){
+          const pages = Math.max(1, Math.ceil(total/pageSize));
+          const host = document.getElementById('pager');
+          if (!host) return;
+
+          const mk = (p, text, disabled = false, active = false) => {
+              const classList = ['page-item'];
+              if (disabled) classList.push('disabled');
+              if (active) classList.push('active');
+              return `<li class="${classList.join(' ')}"><a class="page-link" href="#" data-page="${p}">${text}</a></li>`;
+          }
+
+          const items=[mk(currentPage - 1, '&laquo;', currentPage <= 1)];
+          let s = Math.max(1, currentPage - 2), e = Math.min(pages, currentPage + 2);
+          if (s > 1) items.push(mk(1, '1'), '<li class="page-item disabled"><span class="page-link">...</span></li>');
+          for(let i = s; i <= e; i++) items.push(mk(i, i, false, i === currentPage));
+          if (e < pages) items.push('<li class="page-item disabled"><span class="page-link">...</span></li>', mk(pages, pages));
+          items.push(mk(currentPage + 1, '&raquo;', currentPage >= pages));
+
+          host.innerHTML = items.join('');
+        }
+
+        function ensureLoginPrompt(){
+          if(document.getElementById('loginPromptModal')) return;
+          const el = document.createElement('div');
+          el.innerHTML = `
+            <div class="modal fade" id="loginPromptModal" tabindex="-1">
+              <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">請先登入</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><p class="mb-0">此功能需要登入後才能使用。</p></div>
+                <div class="modal-footer"><a class="btn btn-dark" href="/Login/Login/Login">前往登入</a><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">稍後再說</button></div>
+              </div></div>
+            </div>`;
+          document.body.appendChild(el.firstElementChild);
+        }
+
+        async function load(){
+          document.getElementById('loading')?.classList.remove('d-none');
+          document.getElementById('error')?.classList.add('d-none');
+          document.getElementById('empty')?.classList.add('d-none');
+          document.getElementById('fav-list').innerHTML = '';
+          document.getElementById('pager').innerHTML = '';
+
+          try{
+            const res = await fetch(`${API_BASE}/favorites?page=${currentPage}&pageSize=${pageSize}`);
+            if(res.status === 401){
+                ensureLoginPrompt();
+                const m = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+                m.show();
+                document.getElementById('error')?.classList.remove('d-none');
+                return;
+            }
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+
+            const data = await res.json();
+            const items = data.items || [];
+            document.getElementById('fav-list').innerHTML = items.map(cardCol).join('');
+            renderPager(data.totalCount || 0);
+
+            if(items.length === 0) {
+                document.getElementById('empty')?.classList.remove('d-none');
+            }
+          } catch(err){
+            console.error('Failed to load favorites:', err);
+            document.getElementById('error')?.classList.remove('d-none');
+          } finally{
+            document.getElementById('loading')?.classList.add('d-none');
+          }
+        }
+
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const pagerLink = target.closest('a.page-link[data-page]');
+            if (pagerLink) {
+                e.preventDefault();
+                const p = parseInt(pagerLink.dataset.page, 10);
+                if (!isNaN(p) && p !== currentPage) {
+                    currentPage = p;
+                    load();
+                    window.scrollTo(0, 0);
+                }
+                return;
+            }
+
+            const btn = target.closest('[data-action]');
+            if (!btn) return;
+
+            const id = btn.getAttribute('data-id');
+            const act = btn.getAttribute('data-action');
+
+            if (act === 'add-cart') {
+                if (window.Swal) {
+                    Swal.fire({
+                        title: '已加入購物車',
+                        html: `
+                          <div id="cartLottie" style="width:140px;height:140px;margin:6px auto;"></div>
+                          <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '看購物車',
+                        cancelButtonText: '再逛逛',
+                        heightAuto: false,
+                        didOpen: () => {
+                            const mount = document.getElementById('cartLottie');
+                            if (window.lottie && mount) {
+                                if (window._cartAnim && window._cartAnim.destroy) window._cartAnim.destroy();
+                                window._cartAnim = lottie.loadAnimation({
+                                    container: mount,
+                                    renderer: 'svg',
+                                    loop: true,
+                                    autoplay: true,
+                                    path: CART_LOTTIE
+                                });
+                            } else if (mount) {
+                                mount.outerHTML = '<div class="swal-cart">🛒</div>';
+                            }
+                        },
+                        willClose: () => {
+                            if (window._cartAnim && window._cartAnim.destroy) {
+                                window._cartAnim.destroy();
+                                window._cartAnim = null;
+                            }
+                        }
+                    }).then(r => {
+                        if (r.isConfirmed) location.href = '/OnlineStore/Cart';
+                    });
+                } else {
+                    alert('已加入購物車'); // Fallback for browsers where Swal is not available
+                }
+            } else if (act === 'buy-now') {
+                // TODO: 執行立即購買的邏輯，例如跳轉到結帳頁面
+                console.log('Buy now clicked for product:', id);
+                // location.href = `/OnlineStore/Checkout?productId=${id}`;
+            }
+        });
+
+        load();
+    </script>
+}

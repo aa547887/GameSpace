@@ -1,0 +1,28 @@
+﻿@* 右側欄 *@
+<aside class="card shadow-sm">
+    <div class="card-body p-3">
+        <h6 class="mb-3 text-muted">熱度排行榜</h6>
+
+        <!-- Vue 掛載點：可用 data-* 參數傳入 limit / date -->
+        <div id="leaderboard-app" data-limit="10"></div>
+    </div>
+</aside>
+
+
+<!-- 直接在 partial 中用 ES Module 載入（可行） -->
+<script type="module">
+    import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js';
+    import LeaderboardWidget from '/js/forum/leaderboard-widget.js';
+     
+   
+
+    const el = document.getElementById('leaderboard-app');
+    const limit = Number(el?.dataset?.limit ?? 10);
+
+    // 也可從資料屬性帶日期：data-date="2025-11-20"
+    const date = el?.dataset?.date || null;
+
+    createApp(LeaderboardWidget, { limit, date }).mount('#leaderboard-app');
+</script>
+    
+

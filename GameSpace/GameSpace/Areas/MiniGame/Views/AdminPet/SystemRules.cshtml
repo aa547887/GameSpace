@@ -1,0 +1,568 @@
+@model GameSpace.Areas.MiniGame.Models.ViewModels.PetSystemRulesInputModel
+@{
+    ViewData["Title"] = "寵物系統規則設定";
+    Layout = "~/Areas/MiniGame/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Navigation Tabs -->
+<partial name="_MiniGameAdminTabs" />
+
+<div class="container-fluid">
+    <!-- 頁面標題 -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-paw text-primary me-2"></i>寵物系統規則設定
+        </h1>
+    </div>
+
+    <!-- TempData Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+
+    <form asp-action="UpdateSystemRules" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="row">
+            <!-- 左側配置區域 -->
+            <div class="col-lg-8">
+                <!-- 寵物系統配置 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-cog me-2"></i>寵物系統配置</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="form-floating mb-3">
+                            <input asp-for="LevelUpFormula" class="form-control rounded" readonly style="background-color: #f8f9fc;" />
+                            <label asp-for="LevelUpFormula">
+                                <i class="fas fa-calculator me-1"></i>升級經驗值公式
+                            </label>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>升級公式說明：</strong><br>
+                            <strong>Level 1-10:</strong> 40×level+60<br>
+                            <strong>Level 11-100:</strong> 0.8×level²+380<br>
+                            <strong>Level 101+:</strong> 285.69×1.06^level
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 互動獎勵設定 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="fas fa-heart me-2"></i>互動獎勵設定</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="FeedBonus" class="form-control rounded" placeholder="請輸入餵食獎勵值" />
+                                    <label asp-for="FeedBonus">
+                                        <i class="fas fa-utensils me-1"></i>餵食獎勵值(飢餓) *
+                                    </label>
+                                    <span asp-validation-for="FeedBonus" class="text-danger"></span>
+                                </div>
+                                <small class="form-text text-muted d-block mb-3">餵食增加的飢餓度</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="PlayBonus" class="form-control rounded" placeholder="請輸入玩耍獎勵值" />
+                                    <label asp-for="PlayBonus">
+                                        <i class="fas fa-gamepad me-1"></i>玩耍獎勵值(心情) *
+                                    </label>
+                                    <span asp-validation-for="PlayBonus" class="text-danger"></span>
+                                </div>
+                                <small class="form-text text-muted d-block mb-3">玩耍增加的心情值</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="CleanBonus" class="form-control rounded" placeholder="請輸入清潔獎勵值" />
+                                    <label asp-for="CleanBonus">
+                                        <i class="fas fa-shower me-1"></i>清潔獎勵值(洗澡) *
+                                    </label>
+                                    <span asp-validation-for="CleanBonus" class="text-danger"></span>
+                                </div>
+                                <small class="form-text text-muted d-block mb-3">洗澡增加的清潔度</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="SleepBonus" class="form-control rounded" placeholder="請輸入哄睡獎勵值" />
+                                    <label asp-for="SleepBonus">
+                                        <i class="fas fa-bed me-1"></i>哄睡獎勵值(體力) *
+                                    </label>
+                                    <span asp-validation-for="SleepBonus" class="text-danger"></span>
+                                </div>
+                                <small class="form-text text-muted d-block mb-3">哄睡增加的體力值</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 寵物膚色選項調整 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-palette me-2"></i>寵物膚色選項調整</h4>
+                        <button type="button" class="btn btn-light btn-sm" onclick="addNewSkinColor()">
+                            <i class="fas fa-plus"></i> 增加新膚色
+                        </button>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="skinColorTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="35%">膚色選項</th>
+                                        <th width="25%">所需會員點數</th>
+                                        <th width="15%">是否啟用</th>
+                                        <th width="25%">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="skinColorList">
+                                    <!-- Will be populated by JavaScript from database -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 寵物背景選項調整 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-image me-2"></i>寵物背景選項調整</h4>
+                        <button type="button" class="btn btn-light btn-sm" onclick="addNewBackground()">
+                            <i class="fas fa-plus"></i> 增加新背景
+                        </button>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="backgroundTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="35%">背景選項</th>
+                                        <th width="25%">所需會員點數</th>
+                                        <th width="15%">是否啟用</th>
+                                        <th width="25%">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="backgroundList">
+                                    <!-- Will be populated by JavaScript from database -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側資訊區域 -->
+            <div class="col-lg-4">
+                <!-- 規則說明 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-gradient-success text-white">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-info-circle me-2"></i>規則說明
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                升級經驗值決定寵物等級
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                互動獎勵影響寵物屬性成長
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                外觀變更需要消耗點數
+                            </li>
+                        </ul>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            修改後立即生效,影響所有寵物
+                        </div>
+
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            顏色代碼格式: #RRGGBB
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 每日狀態衰減 -->
+                <div class="card shadow-sm mb-4 border-start border-danger border-4">
+                    <div class="card-header bg-gradient-danger text-white">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-calendar-minus me-2"></i>每日狀態衰減
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">寵物狀態每日自動衰減（可調整）：</p>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <div class="form-floating">
+                                    <input asp-for="DailyDecayHunger" class="form-control form-control-sm rounded" />
+                                    <label asp-for="DailyDecayHunger">
+                                        <span class="badge bg-danger">飽食度</span> 每日衰減
+                                    </label>
+                                    <span asp-validation-for="DailyDecayHunger" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-floating">
+                                    <input asp-for="DailyDecayMood" class="form-control form-control-sm rounded" />
+                                    <label asp-for="DailyDecayMood">
+                                        <span class="badge bg-warning text-dark">心情</span> 每日衰減
+                                    </label>
+                                    <span asp-validation-for="DailyDecayMood" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-floating">
+                                    <input asp-for="DailyDecayStamina" class="form-control form-control-sm rounded" />
+                                    <label asp-for="DailyDecayStamina">
+                                        <span class="badge bg-primary">體力</span> 每日衰減
+                                    </label>
+                                    <span asp-validation-for="DailyDecayStamina" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-floating">
+                                    <input asp-for="DailyDecayCleanliness" class="form-control form-control-sm rounded" />
+                                    <label asp-for="DailyDecayCleanliness">
+                                        <span class="badge bg-info">清潔度</span> 每日衰減
+                                    </label>
+                                    <span asp-validation-for="DailyDecayCleanliness" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-success mt-3 mb-0 py-2 px-3">
+                            <small>
+                                <i class="fas fa-star text-warning"></i>
+                                <strong>全滿獎勵：</strong>所有狀態達100時，每日額外獲得 <strong class="text-success">+100 經驗值</strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部按鈕 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-end mb-4">
+                    <button type="submit" class="btn btn-primary btn-lg me-2 rounded-pill">
+                        <i class="fas fa-save me-2"></i>儲存設定
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-lg rounded-pill" onclick="location.reload()">
+                        <i class="fas fa-redo me-2"></i>重置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        let skinColors = [];
+        let backgrounds = [];
+
+        $(document).ready(function() {
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+
+            // Load skin colors and backgrounds
+            loadSkinColors();
+            loadBackgrounds();
+
+            // Form validation
+            $('form').on('submit', function(e) {
+                // Validate interaction bonuses
+                var feedBonus = parseInt($('#FeedBonus').val());
+                var cleanBonus = parseInt($('#CleanBonus').val());
+                var playBonus = parseInt($('#PlayBonus').val());
+                var sleepBonus = parseInt($('#SleepBonus').val());
+
+                if (isNaN(feedBonus) || feedBonus < 0 || isNaN(cleanBonus) || cleanBonus < 0 ||
+                    isNaN(playBonus) || playBonus < 0 || isNaN(sleepBonus) || sleepBonus < 0) {
+                    e.preventDefault();
+                    alert('互動獎勵值必須為正數');
+                    return false;
+                }
+
+                // Validate exp bonus
+                var expBonus = parseInt($('#ExpBonus').val());
+                if (isNaN(expBonus) || expBonus < 1 || expBonus > 10) {
+                    e.preventDefault();
+                    alert('經驗值倍數必須在 1-10 之間');
+                    return false;
+                }
+
+                // Final confirmation
+                return confirm('確定要儲存寵物系統規則設定嗎？\n\n修改後將立即生效，請確認設定無誤。');
+            });
+        });
+
+        // Load skin colors from database
+        function loadSkinColors() {
+            $.get('@Url.Action("GetSkinColors", "AdminPet")', function(data) {
+                skinColors = data;
+                renderSkinColors();
+            }).fail(function() {
+                alert('載入膚色選項失敗');
+            });
+        }
+
+        // Load backgrounds from database
+        function loadBackgrounds() {
+            $.get('@Url.Action("GetBackgrounds", "AdminPet")', function(data) {
+                backgrounds = data;
+                renderBackgrounds();
+            }).fail(function() {
+                alert('載入背景選項失敗');
+            });
+        }
+
+        // Render skin colors table
+        function renderSkinColors() {
+            const tbody = $('#skinColorList');
+            tbody.empty();
+
+            skinColors.forEach(function(color) {
+                const row = `
+                    <tr>
+                        <td>
+                            <div style="display: inline-block; width: 30px; height: 30px; background-color: ${color.colorHex || color.colorCode}; border: 1px solid #ddd; border-radius: 4px; vertical-align: middle;"></div>
+                            <strong class="ms-2">${color.colorCode}</strong> (${color.colorName})
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" value="${color.pointsCost}"
+                                   onchange="updateSkinColorPoints(${color.settingId}, this.value)" min="0" />
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" ${color.isActive ? 'checked' : ''}
+                                       onchange="toggleSkinColorActive(${color.settingId}, this.checked)" />
+                            </div>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="editSkinColor(${color.settingId})">
+                                <i class="fas fa-edit"></i> 編輯
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteSkinColor(${color.settingId})">
+                                <i class="fas fa-trash"></i> 刪除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        // Render backgrounds table
+        function renderBackgrounds() {
+            const tbody = $('#backgroundList');
+            tbody.empty();
+
+            backgrounds.forEach(function(bg) {
+                const row = `
+                    <tr>
+                        <td>
+                            <strong>${bg.backgroundCode}</strong> (${bg.backgroundName})
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" value="${bg.pointsCost}"
+                                   onchange="updateBackgroundPoints(${bg.settingId}, this.value)" min="0" />
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" ${bg.isActive ? 'checked' : ''}
+                                       onchange="toggleBackgroundActive(${bg.settingId}, this.checked)" />
+                            </div>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="editBackground(${bg.settingId})">
+                                <i class="fas fa-edit"></i> 編輯
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteBackground(${bg.settingId})">
+                                <i class="fas fa-trash"></i> 刪除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        // Add new skin color
+        function addNewSkinColor() {
+            const colorCode = prompt('請輸入膚色代碼 (格式: #RRGGBB):');
+            if (!colorCode) return;
+
+            const colorName = prompt('請輸入膚色名稱:');
+            if (!colorName) return;
+
+            const pointsCost = prompt('請輸入所需會員點數:', '2000');
+            if (!pointsCost) return;
+
+            $.post('@Url.Action("AddSkinColor", "AdminPet")', {
+                colorCode: colorCode,
+                colorName: colorName,
+                pointsCost: parseInt(pointsCost)
+            }, function(result) {
+                if (result.success) {
+                    alert('膚色新增成功');
+                    loadSkinColors();
+                } else {
+                    alert('膚色新增失敗: ' + result.message);
+                }
+            }).fail(function() {
+                alert('膚色新增失敗');
+            });
+        }
+
+        // Add new background
+        function addNewBackground() {
+            const bgCode = prompt('請輸入背景代碼 (格式: BG###):');
+            if (!bgCode) return;
+
+            const bgName = prompt('請輸入背景名稱:');
+            if (!bgName) return;
+
+            const pointsCost = prompt('請輸入所需會員點數:', '2000');
+            if (!pointsCost) return;
+
+            $.post('@Url.Action("AddBackground", "AdminPet")', {
+                backgroundCode: bgCode,
+                backgroundName: bgName,
+                pointsCost: parseInt(pointsCost)
+            }, function(result) {
+                if (result.success) {
+                    alert('背景新增成功');
+                    loadBackgrounds();
+                } else {
+                    alert('背景新增失敗: ' + result.message);
+                }
+            }).fail(function() {
+                alert('背景新增失敗');
+            });
+        }
+
+        // Update skin color points
+        function updateSkinColorPoints(settingId, points) {
+            $.post('@Url.Action("UpdateSkinColorPoints", "AdminPet")', {
+                settingId: settingId,
+                pointsCost: parseInt(points)
+            }, function(result) {
+                if (!result.success) {
+                    alert('更新失敗: ' + result.message);
+                    loadSkinColors();
+                }
+            });
+        }
+
+        // Update background points
+        function updateBackgroundPoints(settingId, points) {
+            $.post('@Url.Action("UpdateBackgroundPoints", "AdminPet")', {
+                settingId: settingId,
+                pointsCost: parseInt(points)
+            }, function(result) {
+                if (!result.success) {
+                    alert('更新失敗: ' + result.message);
+                    loadBackgrounds();
+                }
+            });
+        }
+
+        // Toggle skin color active status
+        function toggleSkinColorActive(settingId, isActive) {
+            $.post('@Url.Action("ToggleSkinColorActive", "AdminPet")', {
+                settingId: settingId,
+                isActive: isActive
+            }, function(result) {
+                if (!result.success) {
+                    alert('更新失敗: ' + result.message);
+                    loadSkinColors();
+                }
+            });
+        }
+
+        // Toggle background active status
+        function toggleBackgroundActive(settingId, isActive) {
+            $.post('@Url.Action("ToggleBackgroundActive", "AdminPet")', {
+                settingId: settingId,
+                isActive: isActive
+            }, function(result) {
+                if (!result.success) {
+                    alert('更新失敗: ' + result.message);
+                    loadBackgrounds();
+                }
+            });
+        }
+
+        // Edit skin color (placeholder)
+        function editSkinColor(settingId) {
+            alert('編輯功能即將推出');
+        }
+
+        // Edit background (placeholder)
+        function editBackground(settingId) {
+            alert('編輯功能即將推出');
+        }
+
+        // Delete skin color
+        function deleteSkinColor(settingId) {
+            if (!confirm('確定要刪除此膚色選項嗎？')) return;
+
+            $.post('@Url.Action("DeleteSkinColor", "AdminPet")', {
+                settingId: settingId
+            }, function(result) {
+                if (result.success) {
+                    alert('刪除成功');
+                    loadSkinColors();
+                } else {
+                    alert('刪除失敗: ' + result.message);
+                }
+            });
+        }
+
+        // Delete background
+        function deleteBackground(settingId) {
+            if (!confirm('確定要刪除此背景選項嗎？')) return;
+
+            $.post('@Url.Action("DeleteBackground", "AdminPet")', {
+                settingId: settingId
+            }, function(result) {
+                if (result.success) {
+                    alert('刪除成功');
+                    loadBackgrounds();
+                } else {
+                    alert('刪除失敗: ' + result.message);
+                }
+            });
+        }
+    </script>
+}

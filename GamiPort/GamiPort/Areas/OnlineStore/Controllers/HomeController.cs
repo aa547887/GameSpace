@@ -2,12 +2,10 @@
 
 namespace GamiPort.Areas.OnlineStore.Controllers
 {
-	public class HomeController : Controller
-	{
-		[Area("OnlineStore")]
-		public IActionResult Index()
-		{
-			return View();
-		}
-	}
+    [Area("OnlineStore")]
+    public class HomeController : Controller
+    {
+        // 商城首頁（輪播、熱門排行、精選卡片等）
+        public IActionResult Index() => View();
+    }
 }

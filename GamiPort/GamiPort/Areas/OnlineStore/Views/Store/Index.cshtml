@@ -1,0 +1,720 @@
+@{
+    ViewData["Title"] = "GamiStore";
+}
+
+<div class="container-xxl py-3">
+
+    <!-- Carousel Wrapper -->
+    <div class="carousel-wrapper">
+        <div id="storeHero" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
+            <div class="carousel-inner hero-inner">
+                <div class="carousel-item active"><img src="~/images/onlinestorecm/01廣告，gamistorebirth.png" alt="" /></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/02廣告，卡比.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/03廣告，NINJA.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/04廣告，絕對摩拳.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestoreCM/05廣告，無雙戰技.jpg" alt=""></div>
+                <div class="carousel-item"><img src="~/images/onlinestorecm/06廣告，英雄聯盟.jpg" /></div>
+                <div class="carousel-item"><img src="~/images/onlinestorecm/07廣告，動物派對.jpg" /></div>
+                
+            </div>
+            <button class="carousel-control-prev hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="prev"><i class="bi bi-chevron-left"></i></button>
+            <button class="carousel-control-next hero-ctrl" type="button" data-bs-target="#storeHero" data-bs-slide="next"><i class="bi bi-chevron-right"></i></button>
+            <div class="hero-indicators"><div class="hero-progress"><span></span></div></div>
+            <div class="hero-fade hero-fade-left"></div>
+            <div class="hero-fade hero-fade-right"></div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-stretch" style="gap: 1.5rem; margin-top: 1.5rem; margin-bottom: 2rem;">
+        <!-- Marquee -->
+        <div id="announcement-marquee" style="cursor: pointer; background-color: rgba(255,255,255,.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,.08); box-shadow: 0 8px 24px rgba(0,0,0,.1); border-radius: 16px; padding: 10px 12px; flex: 1; display: flex; align-items: center;">
+            <marquee behavior="scroll" direction="left" scrollamount="5">
+                <span style="color: #d9534f; font-weight: bold;">&lt;雙十一活動&gt;</span> 歡迎來到Gami商城，歡慶GAMIPORT一周年，商城消費滿1111元，隨機送出一款單身狗御守乙個，數量有限送完為止。
+            </marquee>
+        </div>
+
+        <!-- Search -->
+        <div class="hero-search" style="flex: 1; margin: 0;">
+            <i class="bi bi-search"></i>
+            <input id="heroQ" placeholder="搜尋遊戲、周邊、點數卡…" />
+            <button class="btn btn-primary btn-sm" id="heroGo"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+
+    <!-- Content and Ads (Two Columns) -->
+    <div class="row g-4">
+        <!-- Main Content Column -->
+        <div class="col-lg-9">
+            <!-- ✳️ 區塊 A：『最新 / 收藏 / 點擊』三切換排行榜 -->
+            <section class="my-5 content-block content-accent-a" id="triRank">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">排行榜</h4>
+                    <div class="d-flex align-items-center">
+                        <span id="triRankUpdateTime" class="small text-muted me-3"></span>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-dark active" data-tri="favorite">收藏排行</button>
+                            <button class="btn btn-outline-dark" data-tri="click">點擊排行</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-8"><div class="row g-3" id="triTop3"></div></div>
+                    <div class="col-lg-4"><ol class="list-group rank-list" id="triList" style="--bs-list-group-border-color:transparent;"></ol></div>
+                </div>
+            </section>
+
+            <!-- ✳️ 區塊 B：『熱銷排行』五切換 -->
+            <section class="my-5 content-block content-accent-a" id="salesRank">
+                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                    <h4 class="mb-0">熱銷排行</h4>
+                                                    <div class="d-flex align-items-center">
+                                                        <span id="salesRankUpdateTime" class="small text-muted me-3"></span>
+                                                        <input type="date" id="rank-date" class="form-control form-control-sm me-3" style="width: auto;">
+                                                        <div class="btn-group">
+                                                            <button class="btn btn-outline-primary active" data-sales="daily">日</button>
+                                                            <button class="btn btn-outline-primary" data-sales="weekly">週</button>
+                                                            <button class="btn btn-outline-primary" data-sales="monthly">月</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-3 mt-3">                    <div class="col-lg-8"><div class="row g-3" id="salesTop3"></div></div>
+                    <div class="col-lg-4"><ol class="list-group rank-list" id="salesList" style="--bs-list-group-border-color:transparent;"></ol></div>
+                </div>
+            </section>
+
+            <!-- ✳️ 區塊 C：『最新上架』 -->
+            <section class="my-5 content-block content-accent-b" id="latest5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">最新上架</h4>
+                    <a class="small" href="/OnlineStore/Store/Browse?sort=newest">更多…</a>
+                </div>
+                <div class="row g-3" id="latestRow"></div>
+            </section>
+
+            <!-- ✳️ 區塊 D：『三顆分類 + 5×3 隨機小卡』 -->
+            <section class="my-5 content-block content-accent-b" id="categoryRandom">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="mb-0">探索更多</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary active" data-cat="game">遊戲商品</button>
+                        <button class="btn btn-outline-secondary" data-cat="notgame">周邊商品</button>
+                        <button class="btn btn-outline-secondary" data-cat="pointcard">點數卡</button>
+                    </div>
+                </div>
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3" id="catGrid"></div>
+                <div class="text-end mt-3">
+                    <a class="small me-2" href="/OnlineStore/Store/Browse?type=game">更多…</a>
+                    
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Ad Column -->
+        <aside class="col-lg-3 d-none d-lg-block">
+            <div class="ad-rail">
+                @await Html.PartialAsync("/Areas/OnlineStore/Views/Shared/_RightRailAds.v2.cshtml")
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- Amulet Modal -->
+<div class="modal fade" id="amuletModal" tabindex="-1" aria-labelledby="amuletModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="amuletModalLabel">單身狗御守</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="amuletCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        <button type="button" data-bs-target="#amuletCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#amuletCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                        <button type="button" data-bs-target="#amuletCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                        <button type="button" data-bs-target="#amuletCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+                    </div>
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <img src="/images/onlinestore1111CM/1.png" class="d-block w-100" alt="單身狗御守 1">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/onlinestore1111CM/2.png" class="d-block w-100" alt="單身狗御守 2">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/onlinestore1111CM/3.png" class="d-block w-100" alt="單身狗御守 3">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/onlinestore1111CM/4.png" class="d-block w-100" alt="單身狗御守 4">
+                        </div>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#amuletCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#amuletCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .ad-rail {
+            position: sticky;
+            top: 80px;
+        }
+
+        .hero-search-wrapper {
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-block {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .hero-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: min(720px, 94%);
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,.1);
+            transition: background .2s;
+        }
+
+            .hero-search:hover {
+                background: rgba(255,255,255,.9);
+            }
+
+            .hero-search input {
+                border: 0;
+                background: transparent;
+                outline: none;
+                width: 100%;
+                font-size: 1.05rem;
+            }
+
+            .hero-search .btn {
+                border-radius: 10px;
+            }
+
+        /* Card styles for rankings and product previews */
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fff;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 28px rgba(0,0,0,.1);
+            }
+
+            .card .ratio {
+                background-color: #f5f5f5;
+            }
+
+            .card .card-body {
+                padding: 1rem;
+            }
+
+            .card .card-title {
+                font-weight: 600;
+                font-size: 1rem;
+                line-height: 1.3;
+                height: 2.6em;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                margin-bottom: .5rem;
+            }
+
+            .card .fw-semibold {
+                font-weight: 700;
+            }
+
+        .list-group-item {
+            border-bottom: 1px dashed rgba(0,0,0,.06);
+        }
+        /* Pills (果凍感標籤) */
+        .tag-pill {
+            display: inline-block;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.65);
+            backdrop-filter: blur(6px) saturate(120%);
+            border: 1px solid rgba(0,0,0,.06);
+            box-shadow: 0 2px 6px rgba(0,0,0,.06) inset, 0 1px 3px rgba(0,0,0,.05);
+            font-size: .75rem;
+            line-height: 1;
+        }
+        .tag-pill + .tag-pill { margin-left: .25rem; }
+        .tag-pill--platform { color: #0b5ed7; border-color: rgba(13,110,253,.25); background: rgba(13,110,253,.08); }
+        .tag-pill--genre { color: #0a7d2b; border-color: rgba(25,135,84,.25); background: rgba(25,135,84,.08); }
+        .tag-pill--merch { color: #b23a48; border-color: rgba(214,51,132,.25); background: rgba(214,51,132,.08); }
+        /* 商品卡連結取消底線（名稱與金額位於 anchor 內） */
+        a.product-link { text-decoration: none; color: inherit; }
+        a.product-link:hover { text-decoration: none; color: inherit; }
+        a.product-link .card-title, a.product-link .fw-semibold { text-decoration: none; }
+        /* 右側條列的名稱也保證無底線 */
+        .rank-list a { text-decoration: none; color: inherit; }
+        /* 自訂右側列表數字圓點與名稱截斷 */
+        .rank-no {
+            display: inline-grid;
+            place-items: center;
+            width: 28px; height: 28px;
+            border-radius: 999px;
+            background: #dc3545; /* Bootstrap danger */
+            color: #fff;
+            font-weight: 700;
+            font-size: .85rem;
+            flex: 0 0 28px;
+        }
+        .rank-list .name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Accents for main sections */
+        /* 四大區塊統一淡灰底色 + 呼吸陰影效果 */
+        .content-accent-a,
+        .content-accent-b {
+            background-color: #F5F6F7; /* 淡灰 */
+            border: 1px solid rgba(0,0,0,.06);
+        }
+        /* 區塊立體陰影（作為動畫的起點） */
+        .content-block { box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+        @@keyframes breathe {
+            0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+            50%      { box-shadow: 0 14px 28px rgba(0,0,0,.12); }
+        }
+
+            .list-group-item:last-child {
+                border-bottom: 0;
+            }
+
+        /* Advanced Center-Mode Carousel */
+        .carousel-wrapper {
+            position: relative;
+            background-color: #f0f2f5;
+            border-radius: 16px;
+            padding: 2rem 0;
+            overflow: hidden;
+        }
+
+        #storeHero {
+            overflow: visible;
+        }
+
+        .carousel-inner {
+            overflow: visible;
+            height: 380px;
+        }
+
+        #storeHero .carousel-item {
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s ease, opacity 0.6s ease, filter 0.6s ease;
+        }
+
+            #storeHero .carousel-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        #storeHero .carousel-control-prev, #storeHero .carousel-control-next {
+            width: 5%;
+            background: rgba(0,0,0,0.1);
+            border-radius: 12px;
+            margin: 0 1rem;
+            transition: background-color 0.2s ease;
+            z-index: 11;
+        }
+
+            #storeHero .carousel-control-prev:hover, #storeHero .carousel-control-next:hover {
+                background: rgba(0,0,0,0.3);
+            }
+        /* Carousel progress segments (FA) */
+        #storeHero .hero-indicators {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -36px;
+            display: flex;
+            gap: 10px;
+            padding: 0 24px;
+        }
+
+        .hero-seg {
+            flex: 1 1 0;
+            height: 6px;
+            background: #e6ebf2;
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);
+        }
+
+        .hero-seg-bar {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: #0d6efd;
+            transition: width 5s linear;
+        }
+
+        .home-row .card {
+            border: none;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0,0,0,.07);
+        }
+
+        .home-row .card-img-wrap {
+            position: relative;
+            padding-top: 100%;
+            background: #f6f6f8;
+        }
+
+            .home-row .card-img-wrap img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform .2s ease;
+            }
+
+        .home-row .card:hover .card-img-wrap img {
+            transform: scale(1.05);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const POINTCARD_MERCHTYPE_ID = 1; // 調整為 1：點數卡類別
+
+            // ===== Helper Functions =====
+            const $  = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+            const fmtCurrency = (n) => new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(n ?? 0);
+            const fmtPrice = (n) => (Number(n) === 0 ? '免費下載' : fmtCurrency(n));
+            const img = (u) => u || '/images/placeholder-4x3.png.png';
+            const tagLine = (p) => {
+                const isGame = (p.productType ?? '').toLowerCase() === 'game';
+                if (isGame){
+                    const plat = p.platformName ? `<span class="tag-pill tag-pill--platform">${p.platformName}</span>` : '';
+                    const genres = Array.isArray(p.genreNames) && p.genreNames.length
+                        ? p.genreNames.filter(Boolean).map(n => `<span class="tag-pill tag-pill--genre">${n}</span>`).join('')
+                        : '';
+                    return plat + (genres ? ` ${genres}` : '');
+                }
+                const merchName = p.merchTypeName ?? p.peripheralTypeName;
+                return merchName ? `<span class="tag-pill tag-pill--merch">${merchName}</span>` : '';
+            };
+            const apiBase = '/OnlineStore/api/StoreApi';
+            // 移除不再使用的『最新』切換鈕
+            document.querySelector('#triRank .btn-group [data-tri="latest"]')?.remove();
+
+            const updateTime = () => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                return `更新時間: ${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            };
+
+            // ===== Ranking & Product Loading Logic =====
+            function renderTop3AndList(items, top3Sel, listSel){
+                const top3 = items.slice(0,3);
+                const rest = items.slice(3,10);
+                $(top3Sel).innerHTML = top3.map((p,i)=>`
+                    <div class="col-12 col-md-4">
+                        <a href="/OnlineStore/Product/Detail/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:contain; background-position:center;"></div>
+                            <div class="card-body">
+                                <span class="badge bg-dark me-2">No.${i+1}</span>
+                                <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                <h6 class="card-title mt-1" title="${p.productName}">${p.productName}</h6>
+                                <div class="fw-semibold">${fmtPrice(p.price)}</div>
+                            </div>
+                        </a>
+                    </div>`).join('');
+                $(listSel).innerHTML = rest.map((p,i)=>`
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        <span class="rank-no">${i+4}</span>
+                        <a class="name flex-grow-1 text-decoration-none text-dark" href="/OnlineStore/Product/Detail/${p.productCode}" title="${p.productName}">${p.productName}</a>
+                        <span class="small text-muted ms-2 d-none d-md-inline">${tagLine(p) || ''}</span>
+                    </li>`).join('');
+            }
+
+            const triState = { tab: 'favorite' }; // Default to favorite ranking
+            async function loadTri(){
+                let list = [];
+                try {
+                    if (triState.tab === 'favorite') {
+                        const url  = `${apiBase}/rankings?type=favorite&take=10`;
+                        const data = await fetch(url).then(r=>r.json());
+                        list = data ?? [];
+                    } else if (triState.tab === 'click') {
+                        // 改為呼叫後端 ClickCount 排名
+                        const url  = `${apiBase}/rankings?type=click&take=10`;
+                        const data = await fetch(url).then(r=>r.json());
+                        list = data ?? [];
+                    }
+                } catch (error) {
+                    console.error(`Error loading ${triState.tab} ranking:`, error);
+                    list = []; // Fallback to empty array on error
+                }
+                renderTop3AndList(list, '#triTop3', '#triList');
+                $('#triRankUpdateTime').textContent = updateTime();
+            }
+            $('#triRank .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-tri]'); if (!btn) return;
+                $$('#triRank .btn-group .btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                triState.tab = btn.getAttribute('data-tri');
+                loadTri();
+            });
+
+            const salesState = { period: 'daily', date: null };
+            async function loadSales(){
+                let list = [];
+                try {
+                    let url  = `${apiBase}/rankings?type=sales&period=${salesState.period}&take=10`;
+                    if (salesState.date) {
+                        url += `&date=${encodeURIComponent(salesState.date)}`; // yyyy-mm-dd
+                    }
+                    const data = await fetch(url).then(r=>r.json());
+                    list = data ?? []; // Ensure it's an array
+                } catch (error) {
+                    console.error(`Error loading sales ranking:`, error);
+                    list = []; // Fallback to empty array on error
+                }
+                renderTop3AndList(list, '#salesTop3', '#salesList');
+                $('#salesRankUpdateTime').textContent = updateTime();
+            }
+            $('#salesRank .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-sales]'); if (!btn) return;
+                $$('#salesRank .btn-group .btn').forEach(b=>b.classList.remove('active','btn-primary'));
+                btn.classList.add('active','btn-primary');
+                salesState.period = btn.getAttribute('data-sales');
+                // 切換日/週/月時清除日期條件（回到最新）
+                salesState.date = null;
+                loadSales();
+            });
+
+            // 日期選擇器：選擇日期後載入該日（預設視為日排行），並將切換鈕重置到『日』
+            const rankDateEl = document.getElementById('rank-date');
+            if (rankDateEl) {
+                rankDateEl.addEventListener('change', () => {
+                    const val = (rankDateEl.value || '').trim();
+                    if (!val) return;
+                    // 設定日期並強制回到『日』類別
+                    salesState.date = val; // yyyy-mm-dd
+                    salesState.period = 'daily';
+                    const btns = document.querySelectorAll('#salesRank .btn-group .btn');
+                    btns.forEach(b=>b.classList.remove('active','btn-primary'));
+                    const dailyBtn = document.querySelector('#salesRank .btn-group [data-sales="daily"]');
+                    dailyBtn?.classList.add('active','btn-primary');
+                    loadSales();
+                });
+            }
+
+            async function loadLatest5(){
+                const data = await fetch(`${apiBase}/products?sort=newest&pageSize=5`).then(r=>r.json());
+                const latestRowEl = $('#latestRow');
+                if (!latestRowEl) { console.warn('[Warn] #latestRow not found'); return; }
+                latestRowEl.innerHTML = (data.items ?? []).map(p=>`
+                    <div class="col">
+                        <a href="/OnlineStore/Product/Detail/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                            <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
+                            <div class="card-body">
+                                <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                <h6 class="card-title text-truncate" title="${p.productName}">${p.productName}</h6>
+                                <div class="fw-semibold">${fmtPrice(p.price)}</div>
+                            </div>
+                        </a>
+                    </div>`).join('');
+            }
+
+            const catState = { tab: 'game' };
+            async function loadCategoryRandom(){
+                console.log('[Debug] Initializing category randomizer...');
+                let url = `${apiBase}/products?page=1&pageSize=15&sort=random`;
+                if (catState.tab === 'game') url += '&type=game';
+                if (catState.tab === 'notgame') url += `&type=notgame&excludeMerchTypeId=${POINTCARD_MERCHTYPE_ID}`;
+                if (catState.tab === 'pointcard') url += `&type=notgame&merchTypeId=${POINTCARD_MERCHTYPE_ID}`;
+
+                console.log('[Debug] Fetching random products from URL:', url);
+                try {
+                    const data = await fetch(url).then(r=>r.json());
+                    console.log('[Debug] Data received from API:', data);
+
+                    if (!data || !data.items || data.items.length === 0) {
+                        console.log('[Debug] No items found. Displaying empty message.');
+                        const grid = $('#catGrid');
+                        if (!grid) { console.warn('[Warn] #catGrid not found'); return; }
+                        grid.innerHTML = '<p class="text-muted">此分類暫無商品。</p>';
+                        return;
+                    }
+
+                    console.log(`[Debug] Rendering ${data.items.length} cards...`);
+                    const grid = $('#catGrid');
+                    if (!grid) { console.warn('[Warn] #catGrid not found'); return; }
+                    grid.innerHTML = (data.items ?? []).map(p=>`
+                        <div class="col">
+                            <a href="/OnlineStore/Product/Detail/${p.productCode}" class="card h-100 shadow-sm border-0 product-link" data-product-id="${p.productId}">
+                                <div class="ratio ratio-4x3 bg-light rounded-top" style="background-image:url('${img(p.coverUrl)}'); background-size:cover; background-position:center;"></div>
+                                <div class="card-body">
+                                    <div class="small text-muted">${tagLine(p) || '&nbsp;'}</div>
+                                    <h6 class="card-title text-truncate" title="${p.productName}">${p.productName}</h6>
+                                    <div class="fw-semibold">${fmtPrice(p.price)}</div>
+                                </div>
+                            </a>
+                        </div>`).join('');
+                    console.log('[Debug] Card rendering complete.');
+                } catch (error) {
+                    console.error('[Debug] Error in loadCategoryRandom:', error);
+                    const grid = $('#catGrid');
+                    if (grid) grid.innerHTML = '<p class="text-danger">載入商品時發生錯誤。</p>';
+                }
+            }
+            $('#categoryRandom .btn-group').addEventListener('click', (e)=>{
+                const btn = e.target.closest('button[data-cat]'); if (!btn) return;
+                $$('#categoryRandom .btn-group .btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                catState.tab = btn.getAttribute('data-cat');
+                console.log('[Debug] Category tab changed to:', catState.tab);
+                loadCategoryRandom();
+            });
+
+            document.body.addEventListener('click', function(e){
+                const link = e.target.closest('.product-link');
+                if (link?.dataset.productId){
+                    const pid = link.dataset.productId;
+                    const clickUrl = `${apiBase}/products/${pid}/click`;
+                    const body = 'null';
+                    if (navigator.sendBeacon){
+                        navigator.sendBeacon(clickUrl, new Blob([body], { type: 'application/json' }));
+                    } else {
+                        fetch(clickUrl, { method:'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive:true });
+                    }
+                }
+            });
+
+            // ===== init =====
+            loadTri().catch(console.error);
+            loadSales().catch(console.error);
+            loadLatest5().catch(console.error);
+            loadCategoryRandom().catch(console.error);
+
+            // ===== Advanced Carousel Logic =====
+            const carousel = document.getElementById('storeHero');
+            const items = Array.from(carousel.querySelectorAll('.carousel-item'));
+
+            function updateCarouselClasses(activeIndex) {
+                items.forEach((item, i) => {
+                    item.classList.remove('active');
+
+                    let newTransform = 'translateX(200%)'; // Hide far away
+                    let newOpacity = 0.5;
+                    let newFilter = 'grayscale(1)';
+                    let zIndex = 1; // Default z-index for hidden slides
+
+                    if (i === activeIndex) { // Active slide
+                        newTransform = 'translateX(0) scale(1)';
+                        newOpacity = 1;
+                        newFilter = 'grayscale(0)';
+                        item.classList.add('active');
+                        zIndex = 10; // Highest z-index for active slide
+                    } else if (i === (activeIndex + 1) % items.length) { // Next slide
+                        newTransform = 'translateX(55%) scale(0.8)';
+                        zIndex = 5; // Lower z-index for adjacent slides
+                    } else if (i === (activeIndex - 1 + items.length) % items.length) { // Previous slide
+                        newTransform = 'translateX(-55%) scale(0.8)';
+                        zIndex = 5; // Lower z-index for adjacent slides
+                    } else { // Hidden slides
+                        newOpacity = 0;
+                    }
+
+                    item.style.transform = newTransform;
+                    item.style.opacity = newOpacity;
+                    item.style.filter = newFilter;
+                    item.style.zIndex = zIndex; // Apply z-index
+                });
+            }
+
+            const interval = parseInt(carousel.getAttribute('data-bs-interval')) || 5000;
+            const indicatorContainer = carousel.querySelector('.hero-indicators');
+            indicatorContainer.innerHTML = ''; // build progress segments
+            const segBars = items.map(() => {
+                const seg = document.createElement('div');
+                seg.className = 'hero-seg';
+                const bar = document.createElement('span');
+                bar.className = 'hero-seg-bar';
+                seg.appendChild(bar);
+                indicatorContainer.appendChild(seg);
+                return bar;
+            });
+            function startProgress(idx){
+                segBars.forEach(b => { b.style.transition = 'none'; b.style.width = '0%'; });
+                void segBars[idx].offsetWidth; // reflow
+                segBars[idx].style.transition = `width ${interval}ms linear`;
+                segBars[idx].style.width = '100%';
+            }
+
+            carousel.addEventListener('slide.bs.carousel', function (e) {
+                updateCarouselClasses(e.to);
+            });
+            carousel.addEventListener('slid.bs.carousel', function (e) { startProgress(e.to); });
+
+            const initialActiveIndex = items.findIndex(item => item.classList.contains('active'));
+            updateCarouselClasses(initialActiveIndex > -1 ? initialActiveIndex : 0);
+            startProgress(initialActiveIndex > -1 ? initialActiveIndex : 0);
+            // Home hero search routes to Browse
+            const heroInput = document.getElementById('heroQ');
+            const heroBtn = document.getElementById('heroGo');
+            function goBrowse(){
+                const q = (heroInput?.value || '').trim();
+                const url = q ? `/OnlineStore/Store/Browse?q=${encodeURIComponent(q)}` : '/OnlineStore/Store/Browse';
+                location.href = url;
+            }
+            heroBtn?.addEventListener('click', goBrowse);
+            heroInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ goBrowse(); }});
+
+            // ===== Marquee Modal Logic =====
+            const marqueeElement = document.getElementById('announcement-marquee');
+            const amuletModalElement = document.getElementById('amuletModal');
+            if (marqueeElement && amuletModalElement) {
+                const amuletModal = new bootstrap.Modal(amuletModalElement);
+                marqueeElement.addEventListener('click', () => {
+                    amuletModal.show();
+                });
+            }
+        });
+    </script>
+}

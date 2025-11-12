@@ -25,6 +25,8 @@ public partial class User
 
     public DateTime? UserLockoutEnd { get; set; }
 
+    public DateTime CreateAccount { get; set; }
+
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<Coupon> Coupons { get; set; } = new List<Coupon>();
@@ -71,6 +73,12 @@ public partial class User
 
     public virtual ICollection<Relation> RelationUserIdSmallNavigations { get; set; } = new List<Relation>();
 
+    public virtual ICollection<SProductRating> SProductRatings { get; set; } = new List<SProductRating>();
+
+    public virtual ICollection<SUserFavorite> SUserFavorites { get; set; } = new List<SUserFavorite>();
+
+    public virtual ICollection<SoOrderInfo> SoOrderInfos { get; set; } = new List<SoOrderInfo>();
+
     public virtual ICollection<SupportTicketMessage> SupportTicketMessages { get; set; } = new List<SupportTicketMessage>();
 
     public virtual ICollection<SupportTicket> SupportTickets { get; set; } = new List<SupportTicket>();
@@ -78,6 +86,8 @@ public partial class User
     public virtual ICollection<ThreadPost> ThreadPosts { get; set; } = new List<ThreadPost>();
 
     public virtual ICollection<Thread> Threads { get; set; } = new List<Thread>();
+
+    public virtual UserHome? UserHome { get; set; }
 
     public virtual UserIntroduce? UserIntroduce { get; set; }
 

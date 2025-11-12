@@ -1,0 +1,37 @@
+<div class="right-rail-ads">
+    <!-- 上：300x250（呼吸 + 掃光） -->
+
+    <a class="ad-box ad-280x220 ad-hover-sheen"
+       href="https://www.youtube.com/watch?v=JD8yDfTkpuk"
+       target="_blank" rel="noopener noreferrer sponsored"
+       aria-label="觀看 神奇寶貝 宣傳影片">
+        <img src="~/images/onlinestorerightad/05神奇寶貝.jpg"
+             alt="神奇寶貝 廣告"
+             onerror="this.onerror=null;this.src='/images/onlinestoreNOPic/nophoto.jpg'"
+             loading="lazy" asp-append-version="true" />
+    </a>
+
+    <br />
+    <a class="ad-box ad-280x280 ad-hover-sheen ad-breathe mb-4"
+       href="https://www.youtube.com/watch?v=9piIzw26GVQ"
+       target="_blank" rel="noopener noreferrer sponsored"
+       aria-label="觀看 因素小子 宣傳影片">
+        <img src="~/images/onlinestorerightad/01因素小子.jpg"
+             alt="因素小子 廣告"
+             onerror="this.onerror=null;this.src='/images/onlinestoreNOPic/nophoto.jpg'"
+             loading="lazy" asp-append-version="true" />
+    </a>
+</div>
+
+<style>
+    .right-rail-ads .ad-box { display:block; width:100%; border-radius:12px; overflow:hidden; background:#f3f4f6; box-shadow:0 10px 30px rgba(0,0,0,.08); }
+    .ad-300x250 { aspect-ratio:300/250; }
+    .ad-300x600 { aspect-ratio:300/600; }
+    .right-rail-ads img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .25s ease; }
+    .right-rail-ads .ad-box:hover img { transform:scale(1.03); }
+    .ad-hover-sheen { position:relative; }
+    .ad-hover-sheen::after { content:""; position:absolute; top:0; left:-150%; width:50%; height:100%; background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 50%, transparent 100%); transform:skewX(-20deg); transition:left .55s ease; pointer-events:none; }
+    .ad-hover-sheen:hover::after { left:130%; }
+    .ad-breathe { animation:breathe 2.8s ease-in-out infinite; }
+    @@keyframes breathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.015); } }
+</style>

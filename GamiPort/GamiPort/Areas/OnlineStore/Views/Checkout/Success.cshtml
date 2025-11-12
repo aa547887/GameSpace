@@ -1,0 +1,107 @@
+﻿@model dynamic
+@{
+    ViewData["Title"] = "訂單成立";
+    string payStatus = (string)(Model?.PaymentStatus ?? "");
+    bool paid = payStatus == "已付款" || payStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+    string Fm(decimal? v) => v.HasValue ? string.Format("{0:N0}", v.Value) : "0";
+}
+
+<!-- ★ 窄版置中容器：同時包住標題、綠色提示與卡片，確保寬度一致 -->
+<div class="success-narrow mx-auto">
+
+    <h2 class="mb-3 text-center">訂單成立</h2>
+
+    @if (paid)
+    {
+        <div class="alert alert-success mb-3">
+            ✅ 付款成功！我們已收到款項並開始處理您的訂單。
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning mb-3">
+            ⏳ 付款處理中：系統尚未收到金流完成通知。您可稍候片刻，或點選下方「重新付款」。
+        </div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="vstack gap-2">
+                <div><strong>單號：</strong>@Model.OrderCode</div>
+                <div><strong>成立時間：</strong>@(Model?.OrderDate?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                <div><strong>付款狀態：</strong>@payStatus</div>
+                @if (Model?.PaymentAt != null)
+                {
+                    <div><strong>入帳時間：</strong>@(((DateTime)Model.PaymentAt).ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                }
+
+                <hr class="my-2" />
+
+                <div><strong>應付金額：</strong>@Fm(Model?.GrandTotal)</div>
+                <div><strong>付款方式：</strong>@(ViewBag.PayMethodName ?? "-")</div>
+                <div><strong>收件人：</strong>@Model.Recipient　@Model.Phone</div>
+                <div><strong>收件地址：</strong>@Model.Address1 @Model.Address2</div>
+                <div><strong>商品總數：</strong>@(ViewBag.ItemCount ?? 0)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        @* <a class="btn btn-primary"
+           asp-area="OnlineStore" asp-controller="Orders" asp-action="Detail"
+           asp-route-orderCode="@Model.OrderCode">查看此筆訂單</a> *@
+
+        <a class="btn btn-outline-primary"
+           asp-area="OnlineStore" asp-controller="Orders" asp-action="Index">回到我的訂單</a>
+
+        @if (!paid)
+        {
+            <a class="btn btn-warning"
+               asp-area="OnlineStore" asp-controller="Orders" asp-action="RetryPay"
+               asp-route-orderCode="@Model.OrderCode">重新付款</a>
+            <button type="button" class="btn btn-outline-dark" onclick="location.reload()">重新整理</button>
+        }
+    </div>
+</div>
+
+<!-- 只影響本頁的樣式 -->
+<style>
+    /* ★ 藍框示意的窄版寬度 */
+    .success-narrow {
+        max-width: 960px; /* 需要更窄就改 900/880/840 */
+        width: 100%;
+    }
+    @@media (min-width: 1400px) {
+        .success-narrow
+
+    {
+        max-width: 920px;
+    }
+
+    }
+    @@media (min-width: 1600px) {
+        .success-narrow
+
+    {
+        max-width: 900px;
+    }
+
+    }
+    @@media (max-width: 575.98px) {
+        .success-narrow
+
+    {
+        padding-left: .75rem;
+        padding-right: .75rem;
+    }
+
+    }
+
+    /* ★ 確保 alert 與 card 都吃滿容器寬度（避免與容器寬度不一致） */
+    .success-narrow .alert,
+    .success-narrow .card {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+</style>

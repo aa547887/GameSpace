@@ -1,8 +1,118 @@
 ﻿@* Views/Shared/_TopbarLevel2.cshtml *@
+<style>
+    /* Applying .hero-box styles to the carousel */
+    .carousel-wrapper.hero-box {
+        aspect-ratio: var(--banner-aspect);
+        max-height: var(--banner-max-h);
+        width: 100%;
+        border-radius: .75rem;
+        overflow: hidden;
+        clip-path: inset(0 round .75rem);
+        padding: 0; /* Reset padding */
+        background-color: #fff; /* from hero-box */
+        position: relative;
+    }
+
+    #storeHero {
+        height: 100%;
+    }
+
+    .carousel-inner {
+        height: 100%;
+        border-radius: .75rem; /* Match wrapper */
+    }
+
+    #storeHero .carousel-item {
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.6s ease-in-out; /* Changed to transform transition */
+        transform: translateX(100%); /* Default position for non-active items */
+        left: 0;
+        top: 0;
+    }
+
+    #storeHero .carousel-item.active {
+        transform: translateX(0); /* Active item is in view */
+    }
+
+    /* Next and previous items (before they become active) */
+    #storeHero .carousel-item-next,
+    #storeHero .carousel-item-prev {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        transform: translateX(0); /* Reset transform for these states */
+    }
+
+    #storeHero .carousel-item-next {
+        transform: translateX(100%); /* Starts from the right */
+    }
+
+    #storeHero .carousel-item-prev {
+        transform: translateX(-100%); /* Starts from the left */
+    }
+
+    /* Active item sliding out */
+    #storeHero .active.carousel-item-left {
+        transform: translateX(-100%); /* Active item slides left out */
+    }
+
+    #storeHero .active.carousel-item-right {
+        transform: translateX(100%); /* Active item slides right out */
+    }
+
+    /* New active item sliding in */
+    #storeHero .carousel-item-next.carousel-item-left,
+    #storeHero .carousel-item-prev.carousel-item-right {
+        transform: translateX(0); /* New active item slides into view */
+    }
+
+    #storeHero .carousel-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Changed from contain to cover */
+    }
+
+    #storeHero .carousel-control-prev, #storeHero .carousel-control-next {
+        z-index: 11;
+    }
+
+</style>
 <div class="topbar-2">
     <div class="container-fluid">
-        <div class="hero-box"
-             style="background-image:url('@Url.Content("~/images/測試用圖.jpg")');">
+        <!-- Carousel Wrapper with hero-box class -->
+        <div class="carousel-wrapper hero-box">
+            <div id="storeHero" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+                <div class="carousel-inner">
+                    <div class="carousel-item active"><img src="~/images/top2/top2專用圖(1).png" alt="" /></div>
+                    <div class="carousel-item"><img src="~/images/top2/top2專用圖(2).png" alt=""></div>
+                    <div class="carousel-item"><img src="~/images/top2/top2專用圖(3).png" alt=""></div>
+                    <div class="carousel-item"><img src="~/images/top2/top2專用圖(4).png" alt=""></div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#storeHero" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#storeHero" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
+<script>
+    // Simple script to initialize the carousel if it's not already handled by a global script
+    document.addEventListener('DOMContentLoaded', function () {
+        var myCarousel = document.querySelector('#storeHero');
+        if (myCarousel) {
+            // Use the standard Bootstrap carousel initialization
+            var carousel = new bootstrap.Carousel(myCarousel, {
+                interval: 5000,
+                ride: 'carousel'
+            });
+        }
+    });
+</script>

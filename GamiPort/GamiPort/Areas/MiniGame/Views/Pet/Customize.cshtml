@@ -1,0 +1,1059 @@
+@using GamiPort.Areas.MiniGame.Helpers
+@model GamiPort.Models.Pet
+@{
+    ViewData["Title"] = "寵物訂製";
+    var wallet = ViewBag.Wallet as GamiPort.Models.UserWallet;
+    var userPoints = wallet?.UserPoint ?? 0;
+    var skins = ViewBag.Skins as IEnumerable<GamiPort.Models.PetSkinColorCostSetting> ?? new List<GamiPort.Models.PetSkinColorCostSetting>();
+    var backgrounds = ViewBag.Backgrounds as IEnumerable<GamiPort.Models.PetBackgroundCostSetting> ?? new List<GamiPort.Models.PetBackgroundCostSetting>();
+    var purchasedSkinColors = ViewBag.PurchasedSkinColors as IEnumerable<string> ?? new List<string>();
+    var purchasedBackgrounds = ViewBag.PurchasedBackgrounds as IEnumerable<string> ?? new List<string>();
+    var currentSkinColor = Model?.SkinColor ?? "#FFFFFF";
+    var currentBackgroundColor = Model?.BackgroundColor ?? "BG001";
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @Html.AntiForgeryToken()
+    <style>
+        .customize-page-bg {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .customize-card {
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: none;
+            margin-bottom: 2rem;
+        }
+
+        .customize-card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border-radius: 24px 24px 0 0 !important;
+            padding: 1.25rem 1.5rem;
+            border: none;
+        }
+
+        .customize-card-body {
+            padding: 2rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .color-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .color-option.disabled {
+            cursor: not-allowed;
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #ddd;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-option.selected .color-swatch {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.25);
+            transform: scale(1.1);
+        }
+
+        .color-option:hover .color-swatch {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-label {
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .color-cost {
+            display: inline-block;
+            background: #e0f2f1;
+            color: #17a2b8;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .background-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .background-option.disabled {
+            cursor: not-allowed;
+        }
+
+        .background-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            border: 4px solid #ddd;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .background-option.selected .background-swatch {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.25);
+            transform: scale(1.1);
+        }
+
+        .background-option:hover .background-swatch {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .preview-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px solid #e8f0f4;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 350px;
+        }
+
+        .preview-header {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            background: #17a2b8;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: none;
+            border: none;
+            z-index: 10;
+        }
+
+        .preview-header i {
+            font-size: 1.125rem;
+        }
+
+        .preview-pet-avatar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 4px solid transparent;
+        }
+
+        .preview-pet-name {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-weight: 700;
+            color: white;
+            font-size: 1.25rem;
+            margin-bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 107, 129, 0.95) 0%, rgba(255, 159, 67, 0.95) 100%);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .preview-pet-name:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-pet-name .pet-emoji {
+            font-size: 1.5rem;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @@keyframes wave {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-10deg);
+            }
+            75% {
+                transform: rotate(10deg);
+            }
+        }
+
+        .info-banner {
+            background: #e0f2f1;
+            border-left: 4px solid #17a2b8;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .info-banner i {
+            color: #17a2b8;
+            font-size: 1.25rem;
+        }
+
+        .info-banner small {
+            color: #0d9488;
+            font-weight: 500;
+        }
+
+        .points-display {
+            background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .points-amount {
+            font-size: 1.75rem;
+            font-weight: bold;
+        }
+
+        .points-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-confirm:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0a7d72 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-confirm:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            background: #f0f4f8;
+            color: #2c3e50;
+            border: 2px solid #e8f0f4;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-cancel:hover {
+            border-color: #17a2b8;
+            color: #17a2b8;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e8f0f4, transparent);
+            margin: 2rem 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .success-message.show {
+            display: flex;
+        }
+
+        @@media (max-width: 768px) {
+            .color-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .customize-card-body {
+                padding: 1.5rem;
+            }
+
+            .preview-header {
+                top: 1rem;
+                left: 1rem;
+                font-size: 0.875rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .preview-header i {
+                font-size: 1rem;
+            }
+
+            .preview-pet-name {
+                top: 1rem;
+                right: 1rem;
+                font-size: 1rem;
+                padding: 0.5rem 1rem;
+                max-width: calc(100% - 8rem);
+            }
+
+            .preview-pet-name .pet-emoji {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+
+    <div class="customize-page-bg">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-palette-fill text-info fs-2 me-3"></i>
+                    <div>
+                        <h2 class="mb-0">寵物訂製</h2>
+                        <p class="text-muted mb-0">自訂您寵物的外觀風格</p>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div style="background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);">
+                        <div style="font-size: 0.75rem; font-weight: 600; opacity: 0.9; margin-bottom: 0.25rem;">
+                            <i class="bi bi-coin me-1"></i>會員點數餘額
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: bold;" id="userPointsDisplay">@userPoints</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="success-message" id="successMessage">
+                <i class="bi bi-check-circle-fill"></i>
+                <span id="successText">訂製成功！</span>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="preview-card" id="previewCard" style="background-image: url('@Html.Raw($"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{currentBackgroundColor}.png")');">
+                <div class="preview-pet-name" id="previewPetName">
+                    <span class="pet-emoji">🐾</span>
+                    <span>嗨! 我是@(Model?.PetName ?? "我的寵物")</span>
+                </div>
+                <div class="preview-header">
+                    <i class="bi bi-eye-fill"></i>
+                    <span>預覽</span>
+                </div>
+                <div class="preview-pet-avatar" style="border-color: transparent;">
+                    <!-- SVG Pet Avatar Container -->
+                    <div id="customizePetAvatarContainer" style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Skin Color Customization -->
+            <div class="customize-card">
+                <div class="customize-card-header">
+                    <h5 class="mb-0"><i class="bi bi-palette me-2"></i>膚色訂製</h5>
+                </div>
+                <div class="customize-card-body">
+                    <div class="info-banner">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <small>選擇您喜歡的膚色，點擊進行更換</small>
+                    </div>
+
+                    <div class="color-grid" id="skinColorGrid">
+                        <!-- Skin colors will be populated here -->
+                    </div>
+
+                    <div class="points-display">
+                        <div class="points-label">點數成本</div>
+                        <div class="points-amount" id="skinColorCost">0</div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-confirm" id="confirmSkinColor" disabled>
+                            <i class="bi bi-check-lg me-2"></i>確認更換膚色
+                        </button>
+                        <button class="btn-cancel" onclick="resetSkinColorSelection()">
+                            <i class="bi bi-x-lg me-2"></i>取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Background Customization -->
+            <div class="customize-card">
+                <div class="customize-card-header">
+                    <h5 class="mb-0"><i class="bi bi-image me-2"></i>背景訂製</h5>
+                </div>
+                <div class="customize-card-body">
+                    <div class="info-banner">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <small>選擇背景顏色，點擊進行更換</small>
+                    </div>
+
+                    <div class="color-grid" id="backgroundColorGrid">
+                        <!-- Background colors will be populated here -->
+                    </div>
+
+                    <div class="points-display">
+                        <div class="points-label">點數成本</div>
+                        <div class="points-amount" id="backgroundColorCost">0</div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-confirm" id="confirmBackgroundColor" disabled>
+                            <i class="bi bi-check-lg me-2"></i>確認更換背景
+                        </button>
+                        <button class="btn-cancel" onclick="resetBackgroundColorSelection()">
+                            <i class="bi bi-x-lg me-2"></i>取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="text-center mt-4">
+                <a href="/MiniGame/Pet/Index" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>返回寵物頁面
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pet Avatar SVG Renderer -->
+    <script src="/MiniGame/js/pet-avatar.js"></script>
+
+    <script>
+        // Pet Avatar Instance for Preview
+        let previewPetAvatar = null;
+
+        // Load skin color options from server (all 11 colors from database)
+        const skinColorOptions = [
+            @foreach (var skin in skins)
+            {
+                var isLastItem = skin.SettingId == skins.Max(s => s.SettingId);
+                var isExpired = isLastItem; // 最後一個為限時活動限定已失效
+                var isOwned = purchasedSkinColors.Contains(skin.ColorCode);
+                <text>{
+                    color: '@skin.ColorCode',
+                    name: '@skin.ColorName@(isExpired ? " (限時活動限定已失效)" : "")',
+                    cost: @skin.PointsCost,
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
+                },</text>
+            }
+        ];
+
+        // Load background options from server (all 11 backgrounds from database)
+        const backgroundColorOptions = [
+            @foreach (var bg in backgrounds)
+            {
+                var isLastItem = bg.SettingId == backgrounds.Max(b => b.SettingId);
+                var isExpired = isLastItem; // 最後一個為限時活動限定已失效
+                var isOwned = purchasedBackgrounds.Contains(bg.BackgroundCode);
+                var imagePath = $"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{bg.BackgroundCode}.png";
+                <text>{
+                    code: '@bg.BackgroundCode',
+                    name: '@bg.BackgroundName@(isExpired ? " (限時活動限定已失效)" : "")',
+                    cost: @bg.PointsCost,
+                    image: '@Html.Raw(imagePath)',
+                    isExpired: @Html.Raw(isExpired ? "true" : "false"),
+                    isOwned: @Html.Raw(isOwned ? "true" : "false")
+                },</text>
+            }
+        ];
+
+        let selectedSkinColor = '@currentSkinColor';
+        let selectedBackgroundColor = '@currentBackgroundColor';
+        let selectedBackgroundImage = '@Html.Raw($"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{currentBackgroundColor}.png")';
+
+        // 追蹤實際套用的狀態（用於取消按鈕）
+        let appliedSkinColor = '@currentSkinColor';
+        let appliedBackgroundColor = '@currentBackgroundColor';
+        let appliedBackgroundImage = '@Html.Raw($"/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/{currentBackgroundColor}.png")';
+
+        function initializeSkinColors() {
+            const grid = document.getElementById('skinColorGrid');
+            grid.innerHTML = '';
+            skinColorOptions.forEach(option => {
+                const div = document.createElement('div');
+                const isSelected = option.color === selectedSkinColor;
+                const isDisabled = option.isExpired;
+                const isCurrent = option.color === appliedSkinColor;
+
+                div.className = `color-option ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
+                div.dataset.color = option.color;
+                div.dataset.cost = option.cost;
+                div.dataset.owned = option.isOwned;
+
+                if (!isDisabled) {
+                    div.onclick = () => selectSkinColor(option.color, option.cost, option.isOwned, option.name);
+                }
+
+                let statusBadge = '';
+                if (isCurrent) {
+                    statusBadge = '<span style="display: inline-block; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.7rem; margin-top: 0.25rem;">目前套用</span>';
+                } else if (option.isOwned) {
+                    statusBadge = '<span style="display: inline-block; background: #17a2b8; color: white; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.7rem; margin-top: 0.25rem;">已擁有</span>';
+                }
+
+                div.innerHTML = `
+                    <div class="color-swatch" style="background-color: ${option.color}; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
+                    <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
+                    <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
+                    ${statusBadge}
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function initializeBackgroundColors() {
+            const grid = document.getElementById('backgroundColorGrid');
+            grid.innerHTML = '';
+            backgroundColorOptions.forEach(option => {
+                const div = document.createElement('div');
+                const isSelected = option.code === selectedBackgroundColor;
+                const isDisabled = option.isExpired;
+                const isCurrent = option.code === appliedBackgroundColor;
+
+                div.className = `background-option ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
+                div.dataset.code = option.code;
+                div.dataset.cost = option.cost;
+                div.dataset.owned = option.isOwned;
+
+                let statusBadge = '';
+                if (isCurrent) {
+                    statusBadge = '<span style="display: inline-block; background: #28a745; color: white; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.7rem; margin-top: 0.25rem;">目前套用</span>';
+                } else if (option.isOwned) {
+                    statusBadge = '<span style="display: inline-block; background: #17a2b8; color: white; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.7rem; margin-top: 0.25rem;">已擁有</span>';
+                }
+
+                div.innerHTML = `
+                    <div class="background-swatch" style="background-image: url('${option.image}'); background-size: cover; background-position: center; ${isDisabled ? 'opacity: 0.4;' : ''}"></div>
+                    <div class="color-label" style="${isDisabled ? 'color: #999;' : ''}">${option.name}</div>
+                    <div class="color-cost" style="${isDisabled ? 'background: #e0e0e0; color: #999;' : ''}">${option.cost} 點</div>
+                    ${statusBadge}
+                `;
+
+                // 只為未禁用的選項綁定點擊事件
+                if (!isDisabled) {
+                    (function(opt, element) {
+                        element.addEventListener('click', function(event) {
+                            selectBackgroundColor(opt.code, opt.cost, opt.image, opt.isOwned, opt.name, element);
+                            event.preventDefault();
+                            event.stopPropagation();
+                        });
+                    })(option, div);
+                } else {
+                    div.style.opacity = '0.6';
+                }
+
+                grid.appendChild(div);
+            });
+        }
+
+        function selectSkinColor(color, cost, isOwned, name) {
+            selectedSkinColor = color;
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            event.target.closest('.color-option').classList.add('selected');
+            document.getElementById('skinColorCost').textContent = cost;
+
+            // Update preview pet avatar SVG with new skin color
+            if (previewPetAvatar) {
+                previewPetAvatar.updateSkinColor(color);
+            }
+
+            // Update button text based on ownership
+            const confirmBtn = document.getElementById('confirmSkinColor');
+            confirmBtn.disabled = false;
+
+            if (color === appliedSkinColor) {
+                confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                confirmBtn.disabled = true;
+            } else if (isOwned) {
+                confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>套用';
+                confirmBtn.dataset.action = 'apply';
+            } else {
+                confirmBtn.innerHTML = `<i class="bi bi-cart-plus me-2"></i>確認購買 ${cost} 點`;
+                confirmBtn.dataset.action = 'purchase';
+            }
+
+            confirmBtn.dataset.colorName = name;
+        }
+
+        function selectBackgroundColor(code, cost, image, isOwned, name, clickedElement) {
+            selectedBackgroundColor = code;
+            selectedBackgroundImage = image;
+
+            // 更新選中狀態
+            document.querySelectorAll('.background-option').forEach(el => el.classList.remove('selected'));
+            if (clickedElement) {
+                clickedElement.classList.add('selected');
+            }
+
+            // 更新成本顯示
+            document.getElementById('backgroundColorCost').textContent = cost;
+
+            // 立即更新預覽卡的背景圖片
+            const previewCard = document.getElementById('previewCard');
+
+            // 確保路徑正確
+            let imagePath = image;
+            if (!imagePath.startsWith('/')) {
+                imagePath = '/' + imagePath;
+            }
+
+            console.log('Setting background image:', imagePath);
+            console.log('Preview card element:', previewCard);
+
+            // 直接設置背景圖（不使用編碼，直接使用原始路徑）
+            previewCard.style.setProperty('background-image', `url('${imagePath}')`, 'important');
+            previewCard.style.setProperty('background-size', 'cover', 'important');
+            previewCard.style.setProperty('background-position', 'center', 'important');
+            previewCard.style.setProperty('background-repeat', 'no-repeat', 'important');
+
+            // 調試：輸出當前樣式
+            console.log('Applied styles:', {
+                backgroundImage: previewCard.style.backgroundImage,
+                backgroundSize: previewCard.style.backgroundSize,
+                backgroundPosition: previewCard.style.backgroundPosition
+            });
+
+            // Update button text based on ownership
+            const confirmBtn = document.getElementById('confirmBackgroundColor');
+            confirmBtn.disabled = false;
+
+            if (code === appliedBackgroundColor) {
+                confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                confirmBtn.disabled = true;
+            } else if (isOwned) {
+                confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>套用';
+                confirmBtn.dataset.action = 'apply';
+            } else {
+                confirmBtn.innerHTML = `<i class="bi bi-cart-plus me-2"></i>確認購買 ${cost} 點`;
+                confirmBtn.dataset.action = 'purchase';
+            }
+
+            confirmBtn.dataset.backgroundName = name;
+        }
+
+        function resetSkinColorSelection() {
+            // 恢復到實際套用的膚色
+            selectedSkinColor = appliedSkinColor;
+
+            // 更新預覽
+            if (previewPetAvatar) {
+                previewPetAvatar.updateSkinColor(appliedSkinColor);
+            }
+
+            // 重新初始化選項以更新選中狀態
+            initializeSkinColors();
+
+            // 重置按鈕狀態
+            const confirmBtn = document.getElementById('confirmSkinColor');
+            confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+            confirmBtn.disabled = true;
+            confirmBtn.dataset.action = '';
+
+            // 更新成本顯示
+            const option = skinColorOptions.find(o => o.color === appliedSkinColor);
+            if (option) {
+                document.getElementById('skinColorCost').textContent = option.cost;
+            }
+        }
+
+        function resetBackgroundColorSelection() {
+            // 恢復到實際套用的背景
+            selectedBackgroundColor = appliedBackgroundColor;
+            selectedBackgroundImage = appliedBackgroundImage;
+
+            // 更新預覽卡背景
+            const previewCard = document.getElementById('previewCard');
+            let imagePath = appliedBackgroundImage;
+            if (!imagePath.startsWith('/')) {
+                imagePath = '/' + imagePath;
+            }
+
+            console.log('Resetting to:', imagePath);
+
+            // 直接設置背景圖
+            previewCard.style.setProperty('background-image', `url('${imagePath}')`, 'important');
+            previewCard.style.setProperty('background-size', 'cover', 'important');
+            previewCard.style.setProperty('background-position', 'center', 'important');
+            previewCard.style.setProperty('background-repeat', 'no-repeat', 'important');
+
+            // 重新初始化選項以更新選中狀態
+            initializeBackgroundColors();
+
+            // 重置按鈕狀態
+            const confirmBtn = document.getElementById('confirmBackgroundColor');
+            confirmBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+            confirmBtn.disabled = true;
+            confirmBtn.dataset.action = '';
+
+            // 更新成本顯示
+            const option = backgroundColorOptions.find(o => o.code === appliedBackgroundColor);
+            if (option) {
+                document.getElementById('backgroundColorCost').textContent = option.cost;
+            }
+        }
+
+        // Confirm buttons click handlers
+        document.getElementById('confirmSkinColor').addEventListener('click', async function () {
+            const btn = this;
+            const action = btn.dataset.action;
+            const colorName = btn.dataset.colorName;
+            const option = skinColorOptions.find(o => o.color === selectedSkinColor);
+
+            if (action === 'purchase') {
+                // 購買流程
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const response = await fetch('/MiniGame/Pet/PurchaseSkinColor', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token || ''
+                        },
+                        body: `colorHex=${encodeURIComponent(selectedSkinColor)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 更新點數顯示
+                        document.getElementById('userPointsDisplay').textContent = result.remainingPoints;
+
+                        // 顯示購買成功彈窗
+                        showPurchaseSuccessModal(colorName, result.pointsSpent, result.remainingPoints);
+
+                        // 自動套用
+                        await applySkinColorAfterPurchase(selectedSkinColor);
+
+                        // 更新實際套用的狀態
+                        appliedSkinColor = selectedSkinColor;
+
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
+                        btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                        btn.disabled = true;
+                        btn.dataset.action = '';
+
+                        // 重新初始化以更新「目前套用」和「已擁有」標籤
+                        initializeSkinColors();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Purchase error:', error);
+                    alert('購買失敗，請重試');
+                }
+            } else if (action === 'apply') {
+                // 套用流程
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const response = await fetch('/MiniGame/Pet/ApplySkinColor', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token || ''
+                        },
+                        body: `colorHex=${encodeURIComponent(selectedSkinColor)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccessMessage(result.message);
+
+                        // 更新實際套用的狀態
+                        appliedSkinColor = selectedSkinColor;
+
+                        btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                        btn.disabled = true;
+                        btn.dataset.action = '';
+
+                        // 重新初始化以更新「目前套用」標籤
+                        initializeSkinColors();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Apply error:', error);
+                    alert('套用失敗，請重試');
+                }
+            }
+        });
+
+        document.getElementById('confirmBackgroundColor').addEventListener('click', async function () {
+            const btn = this;
+            const action = btn.dataset.action;
+            const backgroundName = btn.dataset.backgroundName;
+            const option = backgroundColorOptions.find(o => o.code === selectedBackgroundColor);
+
+            if (action === 'purchase') {
+                // 購買流程
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const response = await fetch('/MiniGame/Pet/PurchaseBackground', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token || ''
+                        },
+                        body: `backgroundCode=${encodeURIComponent(selectedBackgroundColor)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 更新點數顯示
+                        document.getElementById('userPointsDisplay').textContent = result.remainingPoints;
+
+                        // 顯示購買成功彈窗
+                        showPurchaseSuccessModal(backgroundName, result.pointsSpent, result.remainingPoints);
+
+                        // 自動套用
+                        await applyBackgroundAfterPurchase(selectedBackgroundColor);
+
+                        // 更新實際套用的狀態
+                        appliedBackgroundColor = selectedBackgroundColor;
+                        appliedBackgroundImage = selectedBackgroundImage;
+
+                        // 更新按鈕狀態和擁有狀態（確保布爾值類型）
+                        if (option) {
+                            option.isOwned = true;
+                            option.isExpired = false;
+                        }
+                        btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                        btn.disabled = true;
+                        btn.dataset.action = '';
+
+                        // 重新初始化以更新「目前套用」和「已擁有」標籤
+                        initializeBackgroundColors();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Purchase error:', error);
+                    alert('購買失敗，請重試');
+                }
+            } else if (action === 'apply') {
+                // 套用流程
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const response = await fetch('/MiniGame/Pet/ApplyBackground', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token || ''
+                        },
+                        body: `backgroundCode=${encodeURIComponent(selectedBackgroundColor)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccessMessage(result.message);
+
+                        // 更新實際套用的狀態
+                        appliedBackgroundColor = selectedBackgroundColor;
+                        appliedBackgroundImage = selectedBackgroundImage;
+
+                        btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>已套用';
+                        btn.disabled = true;
+                        btn.dataset.action = '';
+
+                        // 重新初始化以更新「目前套用」標籤
+                        initializeBackgroundColors();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    console.error('Apply error:', error);
+                    alert('套用失敗，請重試');
+                }
+            }
+        });
+
+        async function applySkinColorAfterPurchase(colorHex) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const response = await fetch('/MiniGame/Pet/ApplySkinColor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token || ''
+                    },
+                    body: `colorHex=${encodeURIComponent(colorHex)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                });
+
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('Auto-apply error:', error);
+                return false;
+            }
+        }
+
+        async function applyBackgroundAfterPurchase(backgroundCode) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const response = await fetch('/MiniGame/Pet/ApplyBackground', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token || ''
+                    },
+                    body: `backgroundCode=${encodeURIComponent(backgroundCode)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                });
+
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('Auto-apply error:', error);
+                return false;
+            }
+        }
+
+        function showPurchaseSuccessModal(itemName, pointsSpent, remainingPoints) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 2rem; border-radius: 20px; max-width: 400px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                    <div style="font-size: 3rem; color: #28a745; margin-bottom: 1rem;">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">購買成功！</h4>
+                    <p style="margin-bottom: 0.5rem; color: #555;">項目名稱：<strong>${itemName}</strong></p>
+                    <p style="margin-bottom: 0.5rem; color: #555;">花費點數：<strong>${pointsSpent}</strong> 點</p>
+                    <p style="margin-bottom: 1.5rem; color: #555;">剩餘點數：<strong>${remainingPoints}</strong> 點</p>
+                    <button onclick="this.closest('div').parentElement.remove()" style="background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                        確定
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 3秒後自動關閉
+            setTimeout(() => {
+                if (modal.parentElement) {
+                    modal.remove();
+                }
+            }, 3000);
+        }
+
+
+        function showSuccessMessage(message) {
+            const messageEl = document.getElementById('successMessage');
+            document.getElementById('successText').textContent = message;
+            messageEl.classList.add('show');
+            setTimeout(() => messageEl.classList.remove('show'), 3000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Pet Avatar for Preview
+            const petData = {
+                hunger: @(Model?.Hunger ?? 50),
+                mood: @(Model?.Mood ?? 50),
+                stamina: @(Model?.Stamina ?? 50),
+                cleanliness: @(Model?.Cleanliness ?? 50),
+                health: @(Model?.Health ?? 50),
+                skinColor: '@currentSkinColor',
+                level: @(Model?.Level ?? 1)
+            };
+
+            previewPetAvatar = new PetAvatar('customizePetAvatarContainer', petData);
+
+            initializeSkinColors();
+            initializeBackgroundColors();
+        });
+    </script>
+}
+else
+{
+    <div class="container py-5 text-center">
+        <i class="bi bi-lock fs-1 text-muted mb-3 d-block"></i>
+        <h4 class="text-muted">請先登入</h4>
+        <p class="text-muted">登入後即可定制您的寵物</p>
+        <a href="/Login" class="btn btn-primary">前往登入</a>
+    </div>
+}

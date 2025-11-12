@@ -1,0 +1,1755 @@
+@using GamiPort.Areas.MiniGame.Helpers
+@model GamiPort.Models.Pet
+@{
+    ViewData["Title"] = "我的寵物";
+    var userPoints = ViewBag.UserPoints ?? 0;
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @Html.AntiForgeryToken()
+    <style>
+        .pet-card {
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: none;
+        }
+
+        .pet-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .pet-card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border-radius: 24px 24px 0 0 !important;
+            padding: 1.25rem 1.5rem;
+            border: none;
+        }
+
+        .pet-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #f5f5dc; /* 淺米黃色 beige */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 4rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+        }
+
+        .stat-card {
+            background: #f0f4f8;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .progress {
+            height: 24px;
+            border-radius: 12px;
+            background-color: #e8f0f4;
+        }
+
+        .progress-bar {
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action {
+            border-radius: 16px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 2px solid;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-teal {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-teal:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0a7d72 100%);
+            color: white;
+        }
+
+        .btn-outline-teal {
+            color: #17a2b8;
+            border-color: #17a2b8;
+        }
+
+        .btn-outline-teal:hover {
+            background-color: #17a2b8;
+            color: white;
+            border-color: #17a2b8;
+        }
+
+        .info-card {
+            background: #e0f2f1;
+            border-left: 4px solid #17a2b8;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+        }
+
+        .customize-btn {
+            border-radius: 12px;
+            padding: 0.625rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .page-background {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title i {
+            color: #17a2b8;
+        }
+
+        /* Golden Celebration Message (固定顯示5秒) */
+        .golden-celebration-message {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .golden-celebration-message.show {
+            display: block;
+        }
+
+        /* Level Up Celebration Message (升級通知卡片) */
+        .level-up-celebration-message {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .level-up-celebration-message.show {
+            display: block;
+        }
+
+        .interaction-result {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #17a2b8;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .interaction-result.show {
+            display: block;
+        }
+
+        .interaction-result.success {
+            border-left-color: #28a745;
+            background: #f0fdf4;
+        }
+
+        .interaction-result.error {
+            border-left-color: #dc3545;
+            background: #fdf0f0;
+        }
+
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-icon {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+        }
+
+        .result-text {
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .pet-action-btn {
+            position: relative;
+        }
+
+        .pet-action-btn .btn-cost {
+            display: block;
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-top: 0.25rem;
+        }
+
+        .pet-action-btn .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .pet-action-btn.loading .btn-text {
+            opacity: 0;
+        }
+
+        .pet-action-btn.loading .loading-spinner {
+            display: inline-block;
+        }
+
+        .cooldown-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #000;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .customize-link {
+            color: #17a2b8;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .customize-link:hover {
+            color: #0d9488;
+            text-decoration: underline;
+        }
+
+        /* Start Adventure Button - Fixed Bottom Right */
+        .start-adventure-btn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff9f43 0%, #ffa500 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 24px rgba(255, 159, 67, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.125rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .start-adventure-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 32px rgba(255, 159, 67, 0.6);
+            background: linear-gradient(135deg, #ffa500 0%, #ff8c00 100%);
+            color: white;
+            text-decoration: none;
+        }
+
+        .start-adventure-btn:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .start-adventure-btn .adventure-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            animation: bounce 1.5s ease-in-out infinite;
+        }
+
+        .start-adventure-btn .adventure-text {
+            font-size: 1rem;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 8px 24px rgba(255, 159, 67, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(255, 159, 67, 0.6);
+            }
+        }
+
+        @@keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .start-adventure-btn {
+                width: 100px;
+                height: 100px;
+                bottom: 24px;
+                right: 24px;
+                font-size: 0.875rem;
+            }
+
+            .start-adventure-btn .adventure-icon {
+                font-size: 1.75rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .start-adventure-btn .adventure-text {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* ========== NEW LAYOUT STYLES ========== */
+
+        /* Top-right Toolbar - 固定在互動操作區域上方 */
+        .pet-toolbar {
+            position: absolute;
+            top: -60px;
+            right: 0;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        .tool-icon-btn {
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.75);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .tool-icon-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        .tool-icon-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Main Container */
+        .pet-main-container {
+            margin-top: 1rem;
+        }
+
+        /* Compact Experience Card */
+        .compact-exp-card {
+            background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .compact-exp-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .compact-exp-header i {
+            color: #ffd700;
+        }
+
+        .compact-exp-bar-wrapper {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .compact-exp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+        }
+
+        .compact-exp-text {
+            text-align: center;
+            font-size: 0.75rem;
+            opacity: 0.95;
+        }
+
+        /* Stats List (Vertical) */
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .stat-item-header i {
+            font-size: 1.125rem;
+            color: #17a2b8;
+        }
+
+        .stat-name {
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #17a2b8;
+            font-size: 0.875rem;
+        }
+
+        .stat-progress-wrapper {
+            width: 100%;
+            height: 18px;
+            background: #e8f0f4;
+            border-radius: 9px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .stat-progress-bar {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .stat-status {
+            display: block;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        /* Pet Display Card (Center) */
+        .pet-display-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .pet-background {
+            width: 100%;
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .pet-avatar-container-new {
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+
+        .pet-info-section {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .pet-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .pet-details {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .pet-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .pet-detail-item i {
+            color: #17a2b8;
+            font-size: 1.125rem;
+        }
+
+        .edit-name-btn {
+            margin-top: 0.5rem;
+            margin-left: 10px;
+        }
+
+        /* Interaction Menu (Right) */
+        .interaction-menu {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 16px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .interaction-menu-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .interaction-menu-title i {
+            color: #17a2b8;
+        }
+
+        .interaction-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .interaction-btn {
+            background: rgba(0, 0, 0, 0.75);
+            border: none;
+            border-radius: 16px;
+            padding: 16px 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .interaction-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .interaction-btn:active {
+            transform: translateX(2px);
+        }
+
+        .interaction-btn-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .interaction-btn-text {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .interaction-btn-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .interaction-btn.loading .interaction-btn-icon,
+        .interaction-btn.loading .interaction-btn-text {
+            opacity: 0.3;
+        }
+
+        /* Specific button colors */
+        .feed-btn:hover {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .bath-btn:hover {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+
+        .play-btn:hover {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        }
+
+        .sleep-btn:hover {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        /* Bottom Adventure Button (NEW) */
+        .adventure-go-btn {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 40px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+            text-decoration: none;
+            animation: pulseAdventure 2s ease-in-out infinite;
+            margin-top: 2rem;
+        }
+
+        .adventure-go-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(255, 107, 53, 0.6);
+            background: linear-gradient(135deg, #f7931e 0%, #ff6b35 100%);
+            color: white;
+            text-decoration: none;
+        }
+
+        .adventure-go-btn:active {
+            transform: translateY(-2px);
+        }
+
+        .adventure-go-btn i {
+            font-size: 1.5rem;
+            animation: bounceIcon 1.5s ease-in-out infinite;
+        }
+
+        @@keyframes pulseAdventure {
+            0%, 100% {
+                box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(255, 107, 53, 0.6);
+            }
+        }
+
+        @@keyframes bounceIcon {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 992px) {
+            .pet-toolbar {
+                top: -55px;
+                right: 0;
+            }
+
+            .tool-icon-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.125rem;
+            }
+
+            .pet-background {
+                height: 300px;
+            }
+
+            .pet-avatar-container-new {
+                width: 160px;
+                height: 160px;
+            }
+
+            .adventure-go-btn {
+                padding: 14px 32px;
+                font-size: 1.125rem;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .pet-toolbar {
+                top: -50px;
+                right: 0;
+                gap: 8px;
+            }
+
+            .tool-icon-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .pet-background {
+                height: 250px;
+            }
+
+            .pet-avatar-container-new {
+                width: 140px;
+                height: 140px;
+            }
+
+            .pet-details {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .adventure-go-btn {
+                padding: 12px 28px;
+                font-size: 1rem;
+            }
+
+            .adventure-go-btn i {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+
+    <div class="page-background">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-heart-fill text-danger fs-2 me-3"></i>
+                    <div>
+                        <h2 class="mb-0">我的寵物</h2>
+                        <p class="text-muted mb-0">與您的寵物互動,一起成長冒險吧!</p>
+                    </div>
+                </div>
+            </div>
+
+
+            @if (Model != null)
+            {
+                <!-- Main 3-Column Layout -->
+                <div class="row g-3 pet-main-container">
+                    <!-- Left Column: Compact Exp + Stats List -->
+                    <div class="col-lg-3 col-md-12">
+                        <!-- Compact Experience Card -->
+                        <div class="compact-exp-card mb-3">
+                            <div class="compact-exp-header">
+                                <i class="bi bi-star-fill"></i>
+                                <span>LV. @ViewBag.DisplayLevel</span>
+                            </div>
+                            <div class="compact-exp-bar-wrapper">
+                                <div class="compact-exp-bar" id="experience-bar"
+                                     style="width: @((ViewBag.DisplayExpToNext > 0 ? Math.Min(100, (ViewBag.DisplayExperience * 100.0 / (ViewBag.DisplayExperience + ViewBag.DisplayExpToNext))) : 0).ToString("F2"))%;">
+                                </div>
+                            </div>
+                            <div class="compact-exp-text">
+                                <small id="experience-text">@ViewBag.DisplayExperience / @(ViewBag.DisplayExperience + ViewBag.DisplayExpToNext)</small>
+                            </div>
+                        </div>
+
+                        <!-- Stats List (Vertical) -->
+                        <div class="stats-list">
+                            <!-- Hunger -->
+                            <div class="stat-item">
+                                <div class="stat-item-header">
+                                    <i class="bi bi-cup-straw"></i>
+                                    <span class="stat-name">飢餓值</span>
+                                    <span class="stat-value" id="hunger-value">@Model.Hunger%</span>
+                                </div>
+                                <div class="stat-progress-wrapper">
+                                    <div class="stat-progress-bar @(Model.Hunger < 20 ? "bg-danger" : Model.Hunger < 50 ? "bg-warning" : "bg-success")"
+                                         id="hunger-bar"
+                                         style="width: @Model.Hunger%;">
+                                    </div>
+                                </div>
+                                <small class="stat-status" id="hunger-status">@(Model.Hunger < 20 ? "飢餓" : Model.Hunger >= 50 ? "飽食" : "有點餓")</small>
+                            </div>
+
+                            <!-- Mood -->
+                            <div class="stat-item">
+                                <div class="stat-item-header">
+                                    <i class="bi bi-emoji-smile"></i>
+                                    <span class="stat-name">心情值</span>
+                                    <span class="stat-value" id="mood-value">@Model.Mood%</span>
+                                </div>
+                                <div class="stat-progress-wrapper">
+                                    <div class="stat-progress-bar @(Model.Mood < 20 ? "bg-danger" : Model.Mood < 50 ? "bg-warning" : "bg-success")"
+                                         id="mood-bar"
+                                         style="width: @Model.Mood%;">
+                                    </div>
+                                </div>
+                                <small class="stat-status" id="mood-status">@(Model.Mood < 20 ? "難過" : Model.Mood >= 50 ? "開心" : "普通")</small>
+                            </div>
+
+                            <!-- Stamina -->
+                            <div class="stat-item">
+                                <div class="stat-item-header">
+                                    <i class="bi bi-lightning"></i>
+                                    <span class="stat-name">體力值</span>
+                                    <span class="stat-value" id="stamina-value">@Model.Stamina%</span>
+                                </div>
+                                <div class="stat-progress-wrapper">
+                                    <div class="stat-progress-bar @(Model.Stamina < 20 ? "bg-danger" : Model.Stamina < 50 ? "bg-warning" : "bg-success")"
+                                         id="stamina-bar"
+                                         style="width: @Model.Stamina%;">
+                                    </div>
+                                </div>
+                                <small class="stat-status" id="stamina-status">@(Model.Stamina < 20 ? "很累" : Model.Stamina >= 50 ? "充分休息" : "有點累")</small>
+                            </div>
+
+                            <!-- Cleanliness -->
+                            <div class="stat-item">
+                                <div class="stat-item-header">
+                                    <i class="bi bi-droplet"></i>
+                                    <span class="stat-name">清潔值</span>
+                                    <span class="stat-value" id="cleanliness-value">@Model.Cleanliness%</span>
+                                </div>
+                                <div class="stat-progress-wrapper">
+                                    <div class="stat-progress-bar @(Model.Cleanliness < 20 ? "bg-danger" : Model.Cleanliness < 50 ? "bg-warning" : "bg-success")"
+                                         id="cleanliness-bar"
+                                         style="width: @Model.Cleanliness%;">
+                                    </div>
+                                </div>
+                                <small class="stat-status" id="cleanliness-status">@(Model.Cleanliness < 20 ? "身體很臭" : Model.Cleanliness >= 50 ? "身體乾淨" : "有點臭")</small>
+                            </div>
+
+                            <!-- Health -->
+                            <div class="stat-item">
+                                <div class="stat-item-header">
+                                    <i class="bi bi-heart-pulse"></i>
+                                    <span class="stat-name">健康值</span>
+                                    <span class="stat-value" id="health-value">@Model.Health%</span>
+                                </div>
+                                <div class="stat-progress-wrapper">
+                                    <div class="stat-progress-bar @(Model.Health < 20 ? "bg-danger" : Model.Health < 50 ? "bg-warning" : "bg-success")"
+                                         id="health-bar"
+                                         style="width: @Model.Health%;">
+                                    </div>
+                                </div>
+                                <small class="stat-status" id="health-status">@(Model.Health < 20 ? "生病" : Model.Health >= 50 ? "很健康" : "有點不舒服")</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Center Column: Pet Display -->
+                    <div class="col-lg-6 col-md-12">
+                        <!-- Pet Display Card -->
+                        <div class="pet-display-card">
+                            <div class="pet-background" style="background-image: url('/MiniGame/PetBackgroundCostSettings表格_種子資料_圖片/@(Model.BackgroundColor).png');">
+                                <!-- Pet Avatar - SVG Rendered -->
+                                <div id="petAvatarContainer" class="pet-avatar-container-new">
+                                    <!-- SVG Pet will be rendered here by pet-avatar.js -->
+                                </div>
+                            </div>
+
+                            <!-- Pet Info Section -->
+                            <div class="pet-info-section">
+                                <h3 class="pet-name" style="display: inline;">@Model.PetName</h3>
+                                <button class="btn btn-sm btn-outline-teal edit-name-btn" data-bs-toggle="modal" data-bs-target="#updateNameModal">
+                                    <i class="bi bi-pencil"></i> 修改寵物名稱
+                                </button>
+
+                                <!-- Basic Info: Owner & Birthday -->
+                                <div class="pet-details" style="margin-top: 1rem;">
+                                    <div class="pet-detail-item">
+                                        <i class="bi bi-person-fill"></i>
+                                        <span>主人:@(ViewBag.UserName ?? "未知")</span>
+                                    </div>
+                                    <div class="pet-detail-item">
+                                        <i class="bi bi-calendar-heart"></i>
+                                        <span>生日:@(ViewBag.RegistrationDate ?? "未知")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Golden Celebration Message (Fixed for 5 seconds) -->
+                        <div class="golden-celebration-message mt-3" id="goldenCelebration">
+                            <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+                                       color: #333;
+                                       font-weight: bold;
+                                       padding: 1rem 1.5rem;
+                                       border-radius: 12px;
+                                       font-size: 1.3rem;
+                                       text-align: center;
+                                       box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+                                       border: 2px solid #ffd700;">
+                                <div style="margin-bottom: 0.5rem;">
+                                    <i class="bi bi-trophy-fill" style="color: #ff6b6b; font-size: 1.8rem; margin-right: 0.5rem;"></i>
+                                    <span style="font-size: 1.5rem;">恭喜！今日首次達成寵物狀態值全滿</span>
+                                    <i class="bi bi-trophy-fill" style="color: #ff6b6b; font-size: 1.8rem; margin-left: 0.5rem;"></i>
+                                </div>
+                                <div style="margin-top: 0.75rem; font-size: 1.2rem; display: flex; justify-content: center; gap: 2rem;">
+                                    <span><i class="bi bi-star-fill" style="color: #28a745; margin-right: 0.3rem;"></i>寵物經驗值 +<span id="celebrationBonusExp">0</span></span>
+                                    <span><i class="bi bi-gem" style="color: #17a2b8; margin-right: 0.3rem;"></i>會員點數 +<span id="celebrationBonusPoints">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Level Up Celebration Card (升級通知卡片) -->
+                        <div class="level-up-celebration-message mt-3" id="levelUpCelebration">
+                            <div style="background: #e6e6fa;
+                                       color: #333;
+                                       font-weight: bold;
+                                       padding: 1rem 1.5rem;
+                                       border-radius: 12px;
+                                       font-size: 1.3rem;
+                                       text-align: center;
+                                       box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+                                       border: 2px solid #9370db;">
+                                <div style="margin-bottom: 0.5rem;">
+                                    <i class="bi bi-star-fill" style="color: #ffd700; font-size: 1.8rem; margin-right: 0.5rem;"></i>
+                                    <span style="font-size: 1.5rem;">恭喜<span id="levelUpPetName">寵物</span>從 Level <span id="levelUpOldLevelCard">1</span> 升級至 Level <span id="levelUpNewLevelCard">2</span></span>
+                                    <i class="bi bi-star-fill" style="color: #ffd700; font-size: 1.8rem; margin-left: 0.5rem;"></i>
+                                </div>
+                                <div style="margin-top: 0.75rem; font-size: 1.2rem;">
+                                    <span><i class="bi bi-gem" style="color: #17a2b8; margin-right: 0.3rem;"></i>獲得獎勵點數 +<span id="levelUpRewardsCard">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interaction Result Area -->
+                        <div class="interaction-result mt-3" id="interactionResult">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill result-icon text-success"></i>
+                                <div>
+                                    <p class="result-text" id="resultText">互動成功!</p>
+                                    <div class="stat-change" id="statChange"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Adventure Button (Below Pet Card) -->
+                        @* 暫時註解：出發冒險按鈕
+                        <div class="d-flex justify-content-center">
+                            <a href="/MiniGame/Game/Index" class="adventure-go-btn" title="開始冒險遊戲">
+                                <i class="bi bi-rocket-takeoff"></i>
+                                <span>出發冒險 GO!</span>
+                            </a>
+                        </div>
+                        *@
+                    </div>
+
+                    <!-- Right Column: Interaction Menu -->
+                    <div class="col-lg-3 col-md-12">
+                        <div class="interaction-menu">
+                            <!-- Toolbar位於互動操作上方 -->
+                            <div class="pet-toolbar">
+                                <button class="tool-icon-btn" id="levelInfoBtn" type="button" data-bs-toggle="modal" data-bs-target="#levelInfoModal" title="等級資訊">
+                                    <i class="bi bi-info-circle"></i>
+                                </button>
+                                <a href="/MiniGame/Pet/Customize" class="tool-icon-btn" title="外觀定制">
+                                    <i class="bi bi-gear"></i>
+                                </a>
+                            </div>
+
+                            <h5 class="interaction-menu-title">
+                                <i class="bi bi-hand-index-thumb"></i> 互動操作
+                            </h5>
+                            <div class="interaction-buttons">
+                                <!-- Feed Button -->
+                                <button class="interaction-btn feed-btn" id="feedBtn" onclick="interactWithPet('feed', this)">
+                                    <div class="interaction-btn-icon">
+                                        <i class="bi bi-cup-straw"></i>
+                                    </div>
+                                    <div class="interaction-btn-text">餵食</div>
+                                    <div class="interaction-btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    </div>
+                                </button>
+
+                                <!-- Play Button -->
+                                <button class="interaction-btn play-btn" id="playBtn" onclick="interactWithPet('play', this)">
+                                    <div class="interaction-btn-icon">
+                                        <i class="bi bi-dice-5"></i>
+                                    </div>
+                                    <div class="interaction-btn-text">玩耍</div>
+                                    <div class="interaction-btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    </div>
+                                </button>
+
+                                <!-- Sleep Button -->
+                                <button class="interaction-btn sleep-btn" id="sleepBtn" onclick="interactWithPet('sleep', this)">
+                                    <div class="interaction-btn-icon">
+                                        <i class="bi bi-moon-stars"></i>
+                                    </div>
+                                    <div class="interaction-btn-text">哄睡</div>
+                                    <div class="interaction-btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    </div>
+                                </button>
+
+                                <!-- Bath Button -->
+                                <button class="interaction-btn bath-btn" id="bathBtn" onclick="interactWithPet('bath', this)">
+                                    <div class="interaction-btn-icon">
+                                        <i class="bi bi-droplet"></i>
+                                    </div>
+                                    <div class="interaction-btn-text">洗澡</div>
+                                    <div class="interaction-btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- No Pet Found -->
+                <div class="card pet-card text-center py-5">
+                    <div class="card-body">
+                        <i class="bi bi-egg fs-1 text-muted mb-3 d-block"></i>
+                        <h4 class="text-muted">您還沒有寵物</h4>
+                        <p class="text-muted">請先建立您的第一隻寵物吧!</p>
+                        <button class="btn btn-teal btn-action mt-3">
+                            <i class="bi bi-plus-circle me-2"></i>建立寵物
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Update Name Modal -->
+    @if (Model != null)
+    {
+        <div class="modal fade" id="updateNameModal" tabindex="-1" aria-labelledby="updateNameModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%); color: white;">
+                        <h5 class="modal-title" id="updateNameModalLabel">
+                            <i class="bi bi-pencil-square me-2"></i>修改寵物名稱
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newPetName" class="form-label fw-bold">新名稱</label>
+                            <input type="text" class="form-control" id="newPetName" placeholder="請輸入新的寵物名稱" maxlength="20" value="@Model.PetName">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                寵物名稱長度限制為 1-20 字元
+                            </div>
+                        </div>
+                        <div id="updateNameAlert" class="alert d-none" role="alert"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-teal" id="confirmUpdateNameBtn" onclick="updatePetName()">
+                            <i class="bi bi-check-circle me-1"></i>確認修改
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Info Modal -->
+        <div class="modal fade" id="levelInfoModal" tabindex="-1" aria-labelledby="levelInfoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%); color: white;">
+                        <h5 class="modal-title" id="levelInfoModalLabel">
+                            <i class="bi bi-trophy me-2"></i>等級資訊
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <div class="level-badge" style="font-size: 1.5rem; padding: 1rem 2rem;">
+                                等級 @ViewBag.DisplayLevel
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="stat-label">當前經驗值</span>
+                                <span class="fw-bold text-teal" id="current-exp-display">@ViewBag.DisplayExperience</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="stat-label">升級所須經驗值</span>
+                                <span class="fw-bold text-teal" id="required-exp-display">@ViewBag.DisplayExpToNext</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="stat-label">最後升級時間</span>
+                                <span class="fw-bold">@Model.LevelUpTime.ToUtc8String("yyyy/MM/dd")</span>
+                            </div>
+                        </div>
+                        @if (Model.PointsGainedLevelUp > 0)
+                        {
+                            <div class="alert alert-success mt-3 mb-0" role="alert">
+                                <i class="bi bi-gift-fill me-2"></i>
+                                <small>升級獎勵:@Model.PointsGainedLevelUp 點數</small>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 升級通知 Modal -->
+        @* 註解：已改用卡片通知，不再使用 Modal
+        <div class="modal fade" id="levelUpNotificationModal" tabindex="-1" aria-labelledby="levelUpNotificationLabel" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border: 3px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #333; border: none;">
+                        <h5 class="modal-title w-100 text-center" id="levelUpNotificationLabel" style="font-weight: bold; font-size: 1.8rem;">
+                            <i class="bi bi-star-fill me-2" style="color: #ff6b6b;"></i>
+                            LEVEL UP!
+                            <i class="bi bi-star-fill ms-2" style="color: #ff6b6b;"></i>
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-center align-items-center" style="font-size: 2rem; font-weight: bold;">
+                                <span id="levelUpOldLevel" style="color: #666;">1</span>
+                                <i class="bi bi-arrow-right mx-3" style="color: #17a2b8;"></i>
+                                <span id="levelUpNewLevel" style="color: #ff6b6b; font-size: 2.5rem;">2</span>
+                            </div>
+                        </div>
+                        <div class="alert alert-success mb-0" style="background-color: #d4edda; border-color: #c3e6cb;">
+                            <i class="bi bi-gift-fill me-2" style="color: #28a745;"></i>
+                            <span style="font-size: 1.2rem; font-weight: bold;">獲得獎勵</span>
+                            <div class="mt-2" style="font-size: 1.5rem; color: #ff6b6b;">
+                                +<span id="levelUpRewards">0</span> 會員點數
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center" style="border: none;">
+                        <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal" style="background: linear-gradient(135deg, #17a2b8 0%, #0d9488 100%); border: none; padding: 0.5rem 2rem;">
+                            <i class="bi bi-check-circle me-2"></i>太棒了！
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        *@
+    }
+}
+
+    <!-- 引入可愛寵物 SVG 渲染器 -->
+    <script src="/MiniGame/js/pet-avatar.js"></script>
+
+    <script>
+        // 全局變量:寵物實例
+        let petAvatar = null;
+
+        // 頁面加載時初始化寵物
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('petAvatarContainer')) {
+                // 根據當前寵物數據創建 SVG 寵物
+                petAvatar = new PetAvatar('petAvatarContainer', {
+                    skinColor: '@Model.SkinColor',
+                    backgroundColor: 'beige',
+                    size: 180,
+                    animated: true,
+                    enableEyeTracking: true,
+                    enableBreathing: true,
+                    hunger: @Model.Hunger,
+                    mood: @Model.Mood,
+                    stamina: @Model.Stamina,
+                    cleanliness: @Model.Cleanliness,
+                    health: @Model.Health,
+                    level: @ViewBag.DisplayLevel
+                });
+            }
+        });
+
+        // 互動配置(僅用於前端提示)
+        const interactionConfig = {
+            feed: { icon: 'bi-cup-straw', message: '您給寵物餵食了!', type: 'feed' },
+            bath: { icon: 'bi-droplet', message: '您給寵物洗澡了!', type: 'bath' },
+            play: { icon: 'bi-dice-5', message: '您和寵物一起玩耍了!', type: 'play' },
+            sleep: { icon: 'bi-moon-stars', message: '寵物睡覺了,狀態恢復中...', type: 'sleep' }
+        };
+
+        const interactionCooldowns = {};
+        let isShowingFullStatsReward = false; // 是否正在顯示五值全滿慶祝訊息（固定5秒）
+        let levelUpTimeout = null; // 升級卡片的 timeout
+
+        async function interactWithPet(action, button) {
+            // Disable button and show loading
+            button.disabled = true;
+            button.classList.add('loading');
+
+            try {
+                // 獲取 anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                // 調用實際 API
+                const response = await fetch('/MiniGame/Pet/Interact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token || ''
+                    },
+                    body: `action=${encodeURIComponent(action)}&__RequestVerificationToken=${encodeURIComponent(token || '')}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 播放互動動畫
+                    if (petAvatar) {
+                        petAvatar.playInteraction(action);
+                    }
+
+                    // 構建完整的顯示消息
+                    let displayMessages = [];
+
+                    // 1. 基本數值變化
+                    if (result.statChanges && Object.keys(result.statChanges).length > 0) {
+                        for (const [key, value] of Object.entries(result.statChanges)) {
+                            if (key !== 'experience' && key !== 'health') {
+                                const label = getStatLabel(key);
+                                const changeStr = value > 0 ? `+${value}` : value;
+                                displayMessages.push(`${label}${changeStr}`);
+                            }
+                        }
+                    }
+
+                    // 2. 健康值回復邏輯
+                    if (result.healthRecovered) {
+                        displayMessages.push('健康值回復至100');
+                    }
+
+                    // 3. 每日首次五值全滿獎勵
+                    if (result.isFirstDailyFullStats) {
+                        displayMessages.push(`寵物經驗值+${result.bonusExperience}`);
+                        displayMessages.push(`會員點數+${result.bonusPoints}`);
+                    }
+
+                    // 構建最終消息
+                    const finalMessage = displayMessages.length > 0
+                        ? displayMessages.join('、')
+                        : result.message;
+
+                    // 檢查是否升級
+                    if (result.leveledUp && result.newLevel > result.oldLevel) {
+                        // 播放升級動畫
+                        if (petAvatar) {
+                            petAvatar.playLevelUpEffect(result.newLevel, result.levelUpRewards);
+                        }
+
+                        // 顯示升級提示（傳遞寵物名稱）
+                        const petName = result.pet?.petName || '寵物';
+                        showLevelUpNotification(petName, result.oldLevel, result.newLevel, result.levelUpRewards);
+                    }
+
+                    // 顯示成功消息
+                    showResult(true, finalMessage, result.statChanges, result.isFirstDailyFullStats, result.bonusExperience, result.bonusPoints, result.healthRecovered, result.leveledUp);
+
+                    // 更新寵物狀態(檢查pet對象是否存在且有有效數據)
+                    if (result.pet && typeof result.pet.hunger === 'number') {
+                        updatePetStats(result.pet);
+
+                        // 更新寵物 SVG
+                        if (petAvatar) {
+                            petAvatar.updateStats({
+                                hunger: result.pet.hunger,
+                                mood: result.pet.mood,
+                                stamina: result.pet.stamina,
+                                cleanliness: result.pet.cleanliness,
+                                health: result.pet.health
+                            });
+                        }
+                    } else {
+                        // 如果後端沒有返回pet數據,重新加載頁面以獲取最新狀態
+                        console.log('Pet data not returned, reloading page...');
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
+
+                } else {
+                    // 顯示錯誤消息（包括單項已滿提示、五值全滿提示等）
+                    showResult(false, result.message, null, false, 0, 0, false, false);
+                }
+
+            } catch (error) {
+                showResult(false, '互動失敗,請重試', null, false, 0, 0, false, false);
+                console.error('Interaction error:', error);
+            } finally {
+                button.disabled = false;
+                button.classList.remove('loading');
+            }
+        }
+
+        // 更新寵物狀態 UI
+        function updatePetStats(pet) {
+            // 更新進度條
+            updateProgressBar('Hunger', pet.hunger);
+            updateProgressBar('Mood', pet.mood);
+            updateProgressBar('Stamina', pet.stamina);
+            updateProgressBar('Cleanliness', pet.cleanliness);
+            updateProgressBar('Health', pet.health);
+
+            // 更新狀態描述
+            updateStatusDescription('hunger', pet.hunger);
+            updateStatusDescription('mood', pet.mood);
+            updateStatusDescription('stamina', pet.stamina);
+            updateStatusDescription('cleanliness', pet.cleanliness);
+            updateStatusDescription('health', pet.health);
+
+            // 更新經驗值和等級(如果後端有返回)
+            if (typeof pet.experience === 'number' && typeof pet.level === 'number') {
+                // 模擬升級計算顯示值（與Controller.Index邏輯一致）
+                let displayLevel = pet.level;
+                let displayExperience = pet.experience;
+
+                while (true) {
+                    const requiredExp = getRequiredExpForLevel(displayLevel + 1);
+                    if (requiredExp > 0 && displayExperience >= requiredExp) {
+                        displayLevel++;
+                        displayExperience -= requiredExp;
+                    } else {
+                        break;
+                    }
+                }
+
+                // 計算顯示用的下一級經驗需求
+                const expToNext = getRequiredExpForLevel(displayLevel + 1);
+
+                // 使用計算後的顯示值更新UI
+                updateExperienceBar(displayExperience, expToNext);
+                updateLevel(displayLevel);
+            }
+
+            // 更新健康狀態文字
+            if (pet.healthStatus) {
+                const healthStatusElement = document.querySelector('.pet-health-status');
+                if (healthStatusElement) {
+                    healthStatusElement.textContent = pet.healthStatus;
+                }
+            }
+        }
+
+        // 更新狀態描述
+        function updateStatusDescription(attrName, attrValue) {
+            const statusElement = document.getElementById(`${attrName}-status`);
+            if (!statusElement) return;
+
+            const description = getStatusDescription(attrName, attrValue);
+            statusElement.textContent = description;
+        }
+
+        // 獲取狀態描述文字
+        function getStatusDescription(attrName, attrValue) {
+            const statusMap = {
+                hunger: { low: '飢餓', mid: '有點餓', high: '飽食' },
+                mood: { low: '難過', mid: '普通', high: '開心' },
+                stamina: { low: '很累', mid: '有點累', high: '充分休息' },
+                cleanliness: { low: '身體很臭', mid: '有點臭', high: '身體乾淨' },
+                health: { low: '生病', mid: '有點不舒服', high: '很健康' }
+            };
+
+            const status = statusMap[attrName];
+            if (!status) return '';
+
+            if (attrValue < 20) return status.low;
+            if (attrValue < 50) return status.mid;
+            return status.high;
+        }
+
+        // 更新進度條
+        function updateProgressBar(statName, value) {
+            // 將統一的首字母大寫格式轉換為小寫ID格式
+            const statId = statName.toLowerCase();
+            const bar = document.getElementById(statId + '-bar');
+            const valueSpan = document.getElementById(statId + '-value');
+
+            if (bar) {
+                bar.style.width = value + '%';
+
+                // 更新顏色(使用新的stat-progress-bar類名)
+                bar.className = 'stat-progress-bar';
+                if (value < 20) {
+                    bar.classList.add('bg-danger');
+                } else if (value < 50) {
+                    bar.classList.add('bg-warning');
+                } else {
+                    bar.classList.add('bg-success');
+                }
+            }
+
+            // 更新數值顯示
+            if (valueSpan) {
+                valueSpan.textContent = value + '%';
+            }
+        }
+
+        // 獲取狀態中文標籤
+        function getStatLabelText(statName) {
+            const labels = {
+                'Hunger': '飢餓值',
+                'Mood': '心情值',
+                'Stamina': '體力值',
+                'Cleanliness': '清潔值',
+                'Health': '健康值'
+            };
+            return labels[statName] || statName;
+        }
+
+        // 獲取指定等級所需的經驗值（與後端邏輯一致）
+        function getRequiredExpForLevel(level) {
+            if (level < 1) {
+                return 0;
+            }
+
+            if (level > 250) {
+                // 超過250級視為最高等級
+                return 0;
+            }
+
+            // 三級經驗值公式
+            if (level <= 10) {
+                // Level 1-10: 線性公式
+                // EXP = 40 * level + 60
+                return 40 * level + 60;
+            }
+            else if (level <= 100) {
+                // Level 11-100: 二次公式
+                // EXP = 0.8 * level^2 + 380
+                return Math.floor(0.8 * level * level + 380);
+            }
+            else {
+                // Level 101+: 指數公式
+                // EXP = 285.69 * (1.06 ^ level)
+                return Math.floor(285.69 * Math.pow(1.06, level));
+            }
+        }
+
+        // 更新經驗值條
+        function updateExperienceBar(currentExp, requiredExp) {
+            const experienceBar = document.getElementById('experience-bar');
+            const experienceText = document.getElementById('experience-text');
+            const currentExpDisplay = document.getElementById('current-exp-display');
+            const requiredExpDisplay = document.getElementById('required-exp-display');
+
+            const totalExp = currentExp + requiredExp;
+
+            if (experienceBar && totalExp > 0) {
+                const percentage = Math.min(100, (currentExp * 100.0 / totalExp));
+                experienceBar.style.width = percentage.toFixed(2) + '%';
+            }
+
+            if (experienceText) {
+                experienceText.textContent = `${currentExp} / ${totalExp}`;
+            }
+
+            // 更新等級資訊Modal的經驗值顯示
+            if (currentExpDisplay) {
+                currentExpDisplay.textContent = currentExp;
+            }
+
+            if (requiredExpDisplay) {
+                requiredExpDisplay.textContent = requiredExp;
+            }
+        }
+
+        // 更新等級顯示
+        function updateLevel(level) {
+            // 更新左側compact-exp-card的等級顯示
+            const compactExpHeader = document.querySelector('.compact-exp-header span');
+            if (compactExpHeader) {
+                compactExpHeader.textContent = 'LV. ' + level;
+            }
+
+            // 更新等級資訊Modal的等級徽章
+            const levelBadges = document.querySelectorAll('.level-badge');
+            levelBadges.forEach(badge => {
+                if (badge.textContent.includes('等級')) {
+                    badge.textContent = '等級 ' + level;
+                }
+            });
+
+            // 如果寵物SVG存在,更新寵物的等級
+            if (petAvatar) {
+                petAvatar.updateStats({ level: level });
+            }
+        }
+
+        function showResult(success, message, statChanges, isFirstDailyFullStats, bonusExp, bonusPoints, healthRecovered, leveledUp) {
+            // 如果是首次五值全滿，顯示金色慶祝訊息（獨立容器，固定5秒）
+            if (isFirstDailyFullStats && bonusExp > 0) {
+                const goldenCelebration = document.getElementById('goldenCelebration');
+                const celebrationBonusExp = document.getElementById('celebrationBonusExp');
+                const celebrationBonusPoints = document.getElementById('celebrationBonusPoints');
+
+                // 更新獎勵數值
+                celebrationBonusExp.textContent = bonusExp;
+                celebrationBonusPoints.textContent = bonusPoints;
+
+                // 顯示金色慶祝訊息
+                goldenCelebration.classList.add('show');
+                isShowingFullStatsReward = true;
+
+                // 5秒後自動隱藏
+                setTimeout(() => {
+                    goldenCelebration.classList.remove('show');
+                    isShowingFullStatsReward = false;
+                }, 5000);
+            }
+
+            // 顯示普通互動訊息（在金色慶祝訊息下方）
+            // 註解：如果是五值全滿情況（healthRecovered=true）或升級時，只顯示特殊卡片，不顯示綠色訊息
+            if (!healthRecovered && !leveledUp) {
+                const resultDiv = document.getElementById('interactionResult');
+                const resultText = document.getElementById('resultText');
+                const statChange = document.getElementById('statChange');
+                const icon = resultDiv.querySelector('.result-icon');
+
+                // Update styling
+                resultDiv.classList.remove('success', 'error');
+                resultDiv.classList.add(success ? 'success' : 'error');
+
+                // Update icon
+                if (success) {
+                    icon.className = 'bi bi-check-circle-fill result-icon text-success';
+                } else {
+                    icon.className = 'bi bi-exclamation-circle-fill result-icon text-danger';
+                }
+
+                // Update message
+                resultText.textContent = message;
+
+                // Clear stat changes (不再顯示在此處)
+                statChange.innerHTML = '';
+
+                // Show result
+                resultDiv.classList.add('show');
+
+                // Auto-hide after 6 seconds
+                setTimeout(() => {
+                    resultDiv.classList.remove('show');
+                }, 6000);
+            }
+        }
+
+        // 顯示升級通知
+        // 顯示升級通知卡片（單次或多次升級共用一張卡片）
+        // 後端已處理連續升級，返回：oldLevel（最初等級）、newLevel（最終等級）、rewards（累積總點數）
+        function showLevelUpNotification(petName, oldLevel, newLevel, rewards) {
+            // 更新卡片內容
+            document.getElementById('levelUpPetName').textContent = petName;
+            document.getElementById('levelUpOldLevelCard').textContent = oldLevel;
+            document.getElementById('levelUpNewLevelCard').textContent = newLevel;
+            document.getElementById('levelUpRewardsCard').textContent = rewards;
+
+            // 顯示卡片
+            const levelUpCelebration = document.getElementById('levelUpCelebration');
+            levelUpCelebration.classList.add('show');
+
+            // 清除之前的 timeout（如果有）
+            if (levelUpTimeout) {
+                clearTimeout(levelUpTimeout);
+            }
+
+            // 5 秒後自動隱藏
+            levelUpTimeout = setTimeout(() => {
+                levelUpCelebration.classList.remove('show');
+            }, 5000);
+        }
+
+        function getStatLabel(stat) {
+            const labels = {
+                hunger: '飢餓值',
+                mood: '心情值',
+                stamina: '體力值',
+                cleanliness: '清潔值',
+                health: '健康值',
+                experience: '經驗值'
+            };
+            return labels[stat] || stat;
+        }
+
+        function setInteractionCooldown(action, cooldown) {
+            interactionCooldowns[action] = cooldown;
+            const button = document.getElementById(action + 'Btn');
+            const costElement = button.querySelector('.btn-cost');
+            costElement.textContent = `冷卻中 (${cooldown}s)`;
+            costElement.style.display = 'block';
+
+            let remaining = cooldown;
+            const interval = setInterval(() => {
+                remaining--;
+                costElement.textContent = `冷卻中 (${remaining}s)`;
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    delete interactionCooldowns[action];
+                    costElement.style.display = 'none';
+                    button.disabled = false;
+                }
+            }, 1000);
+        }
+
+        // Optional: Load cooldown status on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // TODO: Fetch cooldown status from server
+            // /MiniGame/Pet/GetCooldownStatus
+        });
+
+        // Update pet name function
+        async function updatePetName() {
+            const newName = document.getElementById('newPetName').value.trim();
+            const alertDiv = document.getElementById('updateNameAlert');
+            const confirmBtn = document.getElementById('confirmUpdateNameBtn');
+
+            // Validate name
+            if (!newName) {
+                showNameUpdateAlert('danger', '寵物名稱不能為空');
+                return;
+            }
+
+            if (newName.length < 1 || newName.length > 20) {
+                showNameUpdateAlert('danger', '寵物名稱長度必須為 1-20 字元');
+                return;
+            }
+
+            // Disable button and show loading
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>更新中...';
+
+            try {
+                const response = await fetch('/MiniGame/Pet/UpdateName', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `newName=${encodeURIComponent(newName)}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update UI - find the h3 with pet name
+                    const petNameElement = document.querySelector('.pet-name');
+                    if (petNameElement) {
+                        petNameElement.textContent = result.pet.petName;
+                    }
+
+                    // Show success message
+                    showNameUpdateAlert('success', result.message);
+
+                    // Close modal after 1.5 seconds
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('updateNameModal'));
+                        modal.hide();
+                        alertDiv.classList.add('d-none');
+                    }, 1500);
+                } else {
+                    showNameUpdateAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Update name error:', error);
+                showNameUpdateAlert('danger', '名稱更新失敗,請重試');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>確認修改';
+            }
+        }
+
+        function showNameUpdateAlert(type, message) {
+            const alertDiv = document.getElementById('updateNameAlert');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.classList.remove('d-none');
+        }
+
+        // Clear alert when modal is opened
+        document.getElementById('updateNameModal')?.addEventListener('show.bs.modal', function () {
+            document.getElementById('updateNameAlert').classList.add('d-none');
+        });
+    </script>
+

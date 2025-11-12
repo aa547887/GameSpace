@@ -105,14 +105,25 @@
 
     </script>
 
+
     @* 2) Bootstrap（不依賴 jQuery，但放後面無妨） *@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     @* 3) 其他共用腳本 *@
     <script src="~/font-awesome/js/all.min.js"></script>
 
-    @* SignalR（不依賴 jQuery，可保留原本位置） *@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.7/signalr.min.js"></script>
+
+    <!-- 一定要在 supportHub.js 之前載入 -->
+    <script src='@("https://cdn.jsdelivr.net/npm/@microsoft/signalr@8/dist/browser/signalr.min.js")'></script>
+
+    <!-- 2) 指定要連的前台 Hub（跨站） -->
+    <script>
+        // ★ 指向「前台」:7160 的 SupportHub
+        window.GP_SUPPORT_HUB_URL = "https://localhost:7160/hubs/support";
+    </script>
+
+    <!-- 3) 載入前端單例：supportHub.js（建議也從前台拿，避免版本不一致） -->
+    <script src="https://localhost:7160/js/social_hub/supportHub.js"></script>
 
     @* 你的共用腳本（若用到 $，現在已可安全使用） *@
     <script src="~/js/test.js"></script>

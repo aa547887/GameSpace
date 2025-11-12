@@ -20,4 +20,14 @@ public partial class EvoucherType
     public int TotalAvailable { get; set; }
 
     public string? Description { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public int? DeletedBy { get; set; }
+
+    public string? DeleteReason { get; set; }
+
+    public virtual ICollection<Evoucher> Evouchers { get; set; } = new List<Evoucher>();
 }

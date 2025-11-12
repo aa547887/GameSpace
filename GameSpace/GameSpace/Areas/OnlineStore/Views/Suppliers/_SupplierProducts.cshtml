@@ -1,37 +1,38 @@
 ﻿@model IEnumerable<GameSpace.Areas.OnlineStore.ViewModels.SupplierProductVM>
-
-@if (!Model.Any())
+@{
+    var list = Model?.ToList() ?? new List<GameSpace.Areas.OnlineStore.ViewModels.SupplierProductVM>();
+}
+@if (!list.Any())
 {
-    <div class="alert alert-info mb-0">所選供應商目前沒有商品。</div>
+    <div class="text-muted">沒有找到符合的商品。</div>
 }
 else
 {
     <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
+        <table class="table table-sm table-bordered align-middle">
             <thead class="table-light">
                 <tr>
-                    <th style="width:120px;">供應商編號</th>
-                    <th style="width:220px;">供應商名稱</th>
-                    <th style="width:120px;">商品類別</th>
-                    <th style="width:140px;">商品編號</th>
-                    <th>商品名稱</th>
+                    <th style="width:120px;">供應商ID</th>
+                    <th>供應商</th>
                     <th style="width:120px;">商品ID</th>
+                    <th style="width:160px;">商品代碼</th>
+                    <th>商品名稱</th>
+                    <th style="width:120px;">類別</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var x in Model)
+                @foreach (var x in list)
                 {
                     <tr>
-                        <td>@x.SupplierId</td>
+                        <td>#@x.SupplierId</td>
                         <td>@x.SupplierName</td>
-                        <td>@x.Category</td>
+                        <td>#@x.ProductId</td>
                         <td>@(string.IsNullOrWhiteSpace(x.ProductCode) ? "-" : x.ProductCode)</td>
                         <td>@x.ProductName</td>
-                        <td>@x.ProductId</td>
+                        <td>@x.Category</td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-}
 }

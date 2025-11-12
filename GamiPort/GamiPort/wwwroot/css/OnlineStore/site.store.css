@@ -1,0 +1,43 @@
+:root {
+    --gs-primary: #6C5CE7;
+    --gs-accent: #00D2D3;
+    --gs-bg: #0f1115;
+    --gs-card: #161a22;
+    --gs-text: #e8ecf1;
+    --gs-muted: #93a1b3;
+    --gs-radius: 1rem;
+    --gs-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.store-card {
+    background: var(--gs-card);
+    border: 0;
+    border-radius: var(--gs-radius);
+    box-shadow: var(--gs-shadow);
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+    .store-card:hover {
+        transform: translateY(-2px);
+    }
+
+.badge-platform {
+    background: #243048;
+    color: var(--gs-text);
+    border-radius: .5rem;
+    padding: .15rem .5rem
+}
+
+.placeholder-wave {
+    background: linear-gradient(110deg,#1c2230 8%,#232a3a 18%,#1c2230 33%);
+    background-size: 200% 100%;
+    animation: 1.2s shine linear infinite;
+    border-radius: var(--gs-radius);
+}
+
+@keyframes shine {
+    to {
+        background-position-x: -200%;
+    }
+}

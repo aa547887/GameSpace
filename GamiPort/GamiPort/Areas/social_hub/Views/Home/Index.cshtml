@@ -1,1 +1,155 @@
-﻿交友
+@* ============================================================
+   頁面：社群 Hub 的通知測試頁（程式化發送版）
+   功能：
+     - 所有通知發送都透過 JavaScript 程式碼，呼叫 window.sendNotification 函式。
+     - 不再使用按鈕上的 data-* 屬性來聲明式地定義通知參數。
+     - 以 fetch() POST JSON 給 /social_hub/notifications/ajax
+     - 後端服務層（NotificationStore）做驗證，通過就寫入資料庫
+     - 通知發送核心邏輯由 ~/js/social_hub/notify.js 提供，並將 window.sendNotification 函式暴露到全域。
+   注意：
+     1) Anti-Forgery：
+        - 若控制器動作有 [ValidateAntiForgeryToken]，就必須在 Header 帶 Token
+        - Program.cs 需設定：builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+        - 頁面需輸出：@Html.AntiForgeryToken()
+     2) JSON 鍵名大小寫：
+        - 這頁 JavaScript 以小駝峰鍵名處理（notificationId / reason）
+        - 控制器也會以小駝峰輸出，避免前後端對不上
+     3) 同站 Cookie：
+        - fetch 設 credentials: 'same-origin'，能帶上同站 Cookie（若將來開啟授權/認證很重要）
+   ============================================================ *@
+@{
+    ViewData["Title"] = "通知測試（程式化發送）";
+
+    // 用 Url.Action 產生 API 的正確路徑（避免部署在虛擬目錄時，相對路徑出錯）
+    var ajaxUrl = Url.Action("Ajax", "Notifications", new { area = "social_hub" });
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">通知測試（程式化發送）</h2>
+
+    @* 只有在控制器動作有 [ValidateAntiForgeryToken] 時才需要
+       - 這行會在頁面上生成隱藏欄位 __RequestVerificationToken
+       - 稍後 JS 會讀取它並放到自訂 Header "RequestVerificationToken" *@
+    @Html.AntiForgeryToken()
+
+    <div class="d-flex flex-column gap-2">
+
+        @* 範例 1：發給「使用者」的通知 - 透過 JavaScript 程式碼觸發 *@
+        <button class="btn btn-primary" id="sendUserNotification">
+            發通知：使用者 #10000001
+        </button>
+
+        @* 範例 2：發給「管理員」的通知 - 透過 JavaScript 程式碼觸發 *@
+        <button class="btn btn-outline-primary" id="sendManagerNotification">
+            發通知：管理員 #30000001
+        </button>
+
+        @* 範例 3：發給「使用者」的通知 - 透過 JavaScript 程式碼觸發 (原先的程式化範例) *@
+        <button class="btn btn-success" id="sendProgrammaticNotification">
+            發通知：程式化發送給使用者 #10000002
+        </button>
+    </div>
+
+    <div id="status" class="mt-3 small text-muted"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/social_hub/notify.js"></script>
+             @* * ===================================================================
+                              * window.sendNotification 函式可接受的 payload 參數說明：
+                              * 這些參數將作為 JSON 傳遞給後端通知 API (NotificationsController.cs)。
+                              * 所有參數皆為可選，但至少需提供 toUserId 或 toManagerId 其中之一。
+                              * 後端服務層 (NotificationStore) 會進行存在性與長度驗證。
+                              * -------------------------------------------------------------------
+                              * param {object} payload - 通知內容的物件。
+                              * param {number} [payload.sourceId] - (int) 通知來源 ID，須存在 NotificationSources。
+                              * param {number} [payload.actionId] - (int) 通知動作 ID，須存在 NotificationActions。
+                              * param {number} [payload.toUserId] - (int?) 收件人：使用者 ID (與 toManagerId 擇一，至少要有其一)。
+                              * param {number} [payload.toManagerId] - (int?) 收件人：管理員 ID。
+                              * param {number} [payload.groupId] - (int?) 群組 ID (可省略)。
+                              * param {number} [payload.senderUserId] - (int?) 1寄件人：使用者 ID (可省略)。
+                              * param {number} [payload.senderManagerId] - (int?) 寄件人：管理員 ID (可省略)。
+                              * param {string} [payload.title] - (string) 標題 (最大長度 100)。
+                              * param {string} [payload.message] - (string) 內容 (最大長度 255，可空)。
+                              * =================================================================== *@
+    <script>
+        console.log('Index.cshtml inline script loaded.');
+        console.log('Type of window.sendNotification (before DOMContentLoaded): ', typeof window.sendNotification);
+
+        // 等待 DOM 完全載入後執行，確保按鈕元素存在
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired in Index.cshtml');
+            console.log('Type of window.sendNotification (inside DOMContentLoaded): ', typeof window.sendNotification);
+
+            // 檢查 window.sendNotification 是否為函式
+            if (typeof window.sendNotification !== 'function') {
+                console.error('錯誤：window.sendNotification 函式未定義或無法存取。請確認 notify.js 已正確載入並執行。');
+                // 如果函式不可用，則不綁定事件監聽器，避免後續錯誤
+                return;
+            }
+
+            // 從 Razor 變數獲取通知 API 的 URL
+            const ajaxUrl = '@ajaxUrl';
+
+            /**
+             * 處理通知發送的通用函式
+             */
+            async function handleSendNotification(payload) {
+                // 呼叫全域的 sendNotification 函式來發送通知
+                const result = await window.sendNotification({ url: ajaxUrl, payload: payload });
+
+                if (result.succeeded) {
+                    console.log("通知發送成功！Notification ID: " + result.notificationId);
+                } else {
+                    console.error("通知發送失敗！原因: " + result.reason);
+                }
+            }
+
+            // 監聽「發通知：使用者 #10000001」按鈕的點擊事件
+            const userBtn = document.getElementById('sendUserNotification');
+            if (userBtn) {
+                userBtn.addEventListener('click', () => {
+                    const payload = {
+                        sourceId: 1, // 通知來源 ID
+                        actionId: 1, // 通知動作 ID
+                        toUserId: 10000001, // 目標使用者 ID
+                        senderManagerId: 30000001, // 發送者管理員 ID
+                        title: "系統通知",
+                        message: "這是一則透過 JavaScript 程式碼發送給使用者的通知！"
+                    };
+                    handleSendNotification(payload);
+                });
+            }
+
+            // 監聽「發通知：管理員 #30000001」按鈕的點擊事件
+            const managerBtn = document.getElementById('sendManagerNotification');
+            if (managerBtn) {
+                managerBtn.addEventListener('click', () => {
+                    const payload = {
+                        sourceId: 1, // 通知來源 ID
+                        actionId: 2, // 通知動作 ID
+                        toManagerId: 30000001, // 目標管理員 ID
+                        title: "後台提醒",
+                        message: "這是一則透過 JavaScript 程式碼發送給管理員的通知！"
+                    };
+                    handleSendNotification(payload);
+                });
+            }
+
+            // 監聽「發通知：程式化發送給使用者 #10000002」按鈕的點擊事件 (原先的程式化範例)
+            const programmaticBtn = document.getElementById('sendProgrammaticNotification');
+            if (programmaticBtn) {
+                programmaticBtn.addEventListener('click', () => {
+                    const payload = {
+                        sourceId: 2, // 假設這是另一種通知來源 ID
+                        actionId: 3, // 假設這是另一種通知動作 ID
+                        toUserId: 10000002, // 發送給另一個使用者 ID
+                        title: "程式化通知",
+                        message: "這是一則透過 JavaScript 程式碼發送的通知！"
+                    };
+                    handleSendNotification(payload);
+                });
+            }
+        });
+    </script>
+}

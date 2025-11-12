@@ -1,0 +1,366 @@
+﻿@* 視圖模型：HomePageVM 應包含小屋主資料、關係狀態、貼文摘要等 *@
+@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
+
+@* 可能用於從 Claims 取得使用者 ID（注意：Identity 預設常為字串 GUID） *@
+@using System.Security.Claims
+
+@* 目前未直接使用，可視情況移除以減少雜訊 *@
+@using GamiPort.Areas.social_hub.Services.Abstractions
+
+@{
+    // 設定頁面標題與版型（Layout）
+    ViewData["Title"] = $"{Model.UserNickName} 的小屋";
+    Layout = "~/Areas/MemberManagement/Views/Shared/_Layout.cshtml";
+
+    // 取得目前登入者的使用者 ID：
+    // NOTE：此處假設 ClaimTypes.NameIdentifier 可解析成 int。
+    // 若系統採用 GUID（常見於 ASP.NET Identity），這裡 int.Parse 會拋例外，建議在 Controller 先轉好或改用 TryParse。
+    var currentLoggedInUserId = User.Identity.IsAuthenticated
+        ? int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0")
+        : 0;
+
+    // 小屋主（被造訪者）的使用者 ID，來自 ViewModel
+    var targetUserId = Model.OwnerUserId;
+}
+
+<div class="container" style="max-width: 1200px;">
+    <!-- 頁首：暱稱＋造訪次數 -->
+    <div class="position-relative  py-4" style="height: 85px;" right: 0px;">
+        <!-- 中間置中的標題 -->
+        <h5 class="fw-semibold text-center m-0">@Model.UserNickName 的小屋</h5>
+
+        <!-- 右下角的造訪次數 -->
+        <div class="position-absolute text-muted small"
+             style="right: 16px; bottom: 0;">
+            被造訪次數：@Model.VisitCount
+        </div>
+    </div>
+
+    @* 產出 Anti-Forgery 隱藏欄位，供 relation.js/notify.js 從 DOM 讀取並附帶在 AJAX 請求 *@
+    @Html.AntiForgeryToken()
+
+    <!-- 頭像＋背景區塊 -->
+    
+    <div class="position-relative border rounded overflow-hidden mb-3">
+        <!-- 背景主題圖：填滿寬度，固定高度 200px，溢出裁切 -->
+        <img src="@Model.ThemeSrc" alt="Theme" class="w-100" style="height: 200px; object-fit: cover;" />
+        <!-- 使用者頭像：固定大小 96x96，圓形，疊在左下角 -->
+        <div class="position-absolute" style="left: 30px; top: 30px;">
+            <img src="@Model.UserPictureSrc" alt="UserPicture"
+                 class="rounded-circle border bg-white"
+                 style="width: 150px; height: 150px; object-fit: cover;" />
+        </div>
+    </div>
+    
+
+    <!-- 關係狀態即時訊息（除錯/提示用）(先不顯示) -->
+    @* <div id="rel-status" class="mt-2 small text-muted"></div> *@
+
+    <!-- 關係動作按鈕列（由 JS 依狀態動態插入） -->
+    <div id="relation-action-bar" class="d-flex justify-content-end gap-2 mb-3"></div>
+
+
+
+@if (!Model.IsOwner && Model.IsPublic == false)
+    {
+        <div class="card text-center shadow-sm border-danger">
+            <div class="card-body py-5">
+                <h5 class="fw-semibold text-danger mb-3">
+                    <i class="bi bi-lock-fill"></i> 此小屋目前設定為不公開
+                </h5>
+                <p class="text-muted mb-0">
+                    僅屋主本人可查看貼文、好友清單與其他互動內容。
+                </p>
+            </div>
+        </div>
+    }
+    else{
+    <!-- 內容分頁（關於我／我的貼文） -->
+    <ul class="nav nav-tabs" id="homeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="about-tab" data-bs-toggle="tab" data-bs-target="#about"
+                    type="button" role="tab">
+                關於我
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts"
+                    type="button" role="tab">
+                我的貼文
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border-start border-end border-bottom p-3">
+        <!-- 關於我：以 Partial 載入，保持模組化 -->
+        <div class="tab-pane fade show active" id="about" role="tabpanel">
+            @await Html.PartialAsync("_About", Model)
+        </div>
+        <!-- 我的貼文：以 Partial 載入，便於獨立維護 -->
+        <div class="tab-pane fade" id="posts" role="tabpanel">
+            @await Html.PartialAsync("_PostsTable", Model)
+        </div>
+        </div>
+    }
+</div>
+
+
+@section Scripts {
+    <!-- 關係操作：封裝 sendRelationCommand、讀取 Anti-Forgery 等 -->
+    <script src="~/js/social_hub/relation.js"></script>
+    <!-- 通知發送：封裝 sendNotification，走後端 Notifications/Ajax -->
+    <script src="~/js/social_hub/notify.js"></script>
+
+    <script>
+        (function () {
+            // ======== 路由與識別 ========
+            // 送指令（建立/接受/拒絕/封鎖等）的端點
+            var execUrl = '@Url.Action("Exec", "Relations", new { area = "social_hub" })';
+
+            // 取得雙人關係資訊的端點（回傳 statusCode、requestedBy 等）
+            // TODO：為一致性與虛擬目錄相容，建議也改成 Url.Action("PairInfo","Relations", new { area="social_hub" })
+            var pairInfoUrl = '/social_hub/relations/pair-info';
+
+            // 目前登入者（操作者）與目標（小屋主）ID（由 Razor 注入純數字）
+            var actorUserId = @currentLoggedInUserId;
+            var targetUserId = @targetUserId;
+
+            // 通知 AJAX 端點（後端會根據 payload 建立通知資料）
+            var ntfAjaxUrl = '@Url.Action("Ajax", "Notifications", new { area = "social_hub" })';
+
+            // ======== DOM 快取 ========
+            var bar = document.getElementById('relation-action-bar'); // 按鈕容器
+            var statusEl = document.getElementById('rel-status');     // 狀態提示（除錯用）
+
+            // 顯示除錯/執行中/結果訊息（純文字，避免 XSS）
+            function setStatus(t) {
+                if (statusEl) statusEl.textContent = t || '';
+            }
+
+            // ======== UI 繪製：依關係狀態產生按鈕 ========
+            // rel 期望格式：{ statusCode: 'PENDING' | 'ACCEPTED' | ... , requestedBy: userId }
+            function renderButtons(rel) {
+                if (!bar) return;
+
+                // 1) 關係狀態：以伺服器回傳為主；若無則使用初始 Model 值（首屏）
+                var status = (rel && rel.statusCode) || '@Model.CurrentRelationStatus';
+
+                // 2) 請求發起者：若伺服器有傳用它，否則回退到 Model 值（int 或 0）
+                var requestedBy = (rel && typeof rel.requestedBy === 'number')
+                    ? rel.requestedBy
+                    : @(@Model.CurrentRelationRequestedByUserId.HasValue? Model.CurrentRelationRequestedByUserId.Value : 0);
+
+                // 3) 若為本人小屋或未登入，隱藏所有操作
+                if (@(Model.IsOwner ? "true" : "false") || actorUserId === 0) {
+                    bar.innerHTML = '';
+                    setStatus('');
+                    return;
+                }
+
+                // 顯示除錯狀態（正式環境可關）
+                setStatus(status ? ('Status: ' + status) : '');
+
+                // 4) 依狀態描繪按鈕（目前採硬編狀態機；長期建議改「allowedActions」模式）
+                var html = '';
+                switch (status) {
+                    case 'NONE':
+                        // 互不認識：可加好友、可封鎖
+                        html =
+                            '<button class="btn btn-primary btn-sm" id="addFriendBtn">加為好友</button>' +
+                            '<button class="btn btn-dark btn-sm ms-2" id="blockUserBtn">封鎖</button>';
+                        break;
+
+                    case 'PENDING':
+                        // 等待回應：視誰發起決定顯示「取消」或「接受/拒絕」
+                        if (requestedBy === actorUserId) {
+                            html = '<button class="btn btn-warning btn-sm" id="cancelFriendBtn">取消請求</button>';
+                        } else {
+                            html =
+                                '<button class="btn btn-success btn-sm" id="acceptFriendBtn">接受好友</button>' +
+                                '<button class="btn btn-danger btn-sm ms-2" id="rejectFriendBtn">拒絕好友</button>';
+                        }
+                        html += '<button class="btn btn-dark btn-sm ms-2" id="blockUserBtn">封鎖</button>';
+                        break;
+
+                    case 'ACCEPTED':
+                        // 已互為好友：可解除、可封鎖
+                        html =
+                            '<button class="btn btn-outline-danger btn-sm" id="unfriendBtn">解除好友</button>' +
+                            '<button class="btn btn-dark btn-sm ms-2" id="blockUserBtn">封鎖</button>';
+                        break;
+
+                    case 'BLOCKED':
+                        // 封鎖狀態：只允許解除封鎖
+                        html = '<button class="btn btn-secondary btn-sm" id="unblockUserBtn">解除封鎖</button>';
+                        break;
+
+                    case 'REMOVED':
+                    case 'REJECTED':
+                        // 曾經發生過關係：回到可加好友/封鎖
+                        html =
+                            '<button class="btn btn-primary btn-sm" id="addFriendBtn">加為好友</button>' +
+                            '<button class="btn btn-dark btn-sm ms-2" id="blockUserBtn">封鎖</button>';
+                        break;
+
+                    default:
+                        // 未知狀態：不顯示按鈕，避免誤操作
+                        html = '';
+                }
+
+                // 將產生的按鈕插入容器（每次重繪會覆蓋掉舊按鈕，避免事件殘留）
+                bar.innerHTML = html;
+
+                // ======== 通知：關係動作後，送訊息給對方 ========
+                function maybeNotify(action) {
+                    // 若未載入 notify.js 或未提供 sendNotification，安靜略過
+                    if (typeof window.sendNotification !== 'function') return;
+
+                    // 標題與訊息表（顯示用字串，非權限判斷）
+                    var titleMap = {
+                        friend_request: '好友邀請',
+                        accept: '好友邀請已接受',
+                        reject: '好友邀請已拒絕',
+                        cancel_request: '好友邀請已取消',
+                        unfriend: '已解除好友',
+                        block: '封鎖通知',
+                        unblock: '解除封鎖通知'
+                    };
+                    var msgMap = {
+                        friend_request: '使用者 #' + actorUserId + ' 邀請你成為好友',
+                        accept: '使用者 #' + actorUserId + ' 接受了你的好友邀請',
+                        reject: '使用者 #' + actorUserId + ' 拒絕了你的好友邀請',
+                        cancel_request: '使用者 #' + actorUserId + ' 取消了對你的好友邀請',
+                        unfriend: '使用者 #' + actorUserId + ' 將你從好友中移除',
+                        block: '使用者 #' + actorUserId + ' 封鎖了你',
+                        unblock: '使用者 #' + actorUserId + ' 已解除對你的封鎖'
+                    };
+
+                    // NOTE：此處硬編 actionId（friend_request=6, 其它=1）
+                    // TODO：依你們的「code→ID 對照」規格，應該由伺服器回傳對應表或在 notify.js 內集中解析，避免寫死。
+                    var actionId = (action === 'friend_request') ? 6 : 1;
+
+                    // payload：後端會依 sourceId/actionId 決定通知模板/類型
+                    var payload = {
+                        sourceId: 1,            // 系統來源／模組來源（此處寫死 1：公告）
+                        actionId: actionId,     // 行為 ID（TODO：避免硬編）
+                        toUserId: targetUserId, // 通知對象（小屋主）
+                        title: titleMap[action] || '通知',
+                        message: msgMap[action] || ''
+                    };
+
+                    // 實際發送（notify.js 內應附帶 Anti-Forgery）
+                    window.sendNotification({ url: ntfAjaxUrl, payload: payload });
+                }
+
+                // ======== 工具函式：繫結事件／送出指令 ========
+                function bind(id, handler) {
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('click', handler);
+                }
+
+                // 呼叫關係變更 API（relation.js 內應封裝 Anti-Forgery 與錯誤處理）
+                function sendCmd(cmd) {
+                    setStatus('Working...');
+
+                    // NOTE：目前未禁用按鈕，若要防止連點，可在此處暫時 disabled 容器內所有按鈕，完成後還原。
+                    if (typeof window.sendRelationCommand !== 'function') {
+                        setStatus('Function not loaded');
+                        return Promise.resolve({ succeeded: false });
+                    }
+
+                    return window.sendRelationCommand({ url: execUrl, command: cmd })
+                        .then(function (r) {
+                            // 顯示結果（包含 NoOp=無狀態變更）
+                            setStatus(r.succeeded
+                                ? ('Result: ' + (r.newStatusCode || '') + ' (NoOp: ' + r.noOp + ')')
+                                : ('Error: ' + r.reason));
+                            return r;
+                        })
+                        .catch(function (e) {
+                            setStatus('Error: ' + e.message);
+                            return { succeeded: false };
+                        });
+                }
+
+                // ======== 針對各按鈕的事件處理：先送指令，再必要時送通知，最後刷新狀態 ========
+                bind('addFriendBtn', function () {
+                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'friend_request' })
+                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('friend_request'); refreshRelation(); });
+                });
+
+                bind('acceptFriendBtn', function () {
+                    sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'accept' })
+                        .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('accept'); refreshRelation(); });
+                });
+
+                bind('rejectFriendBtn', function () {
+                    if (confirm('您確定要拒絕此好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'reject' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('reject'); refreshRelation(); });
+                    }
+                });
+
+                bind('cancelFriendBtn', function () {
+                    if (confirm('您確定要取消已送出的好友邀請嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'cancel_request' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('cancel_request'); refreshRelation(); });
+                    }
+                });
+
+                bind('unfriendBtn', function () {
+                    if (confirm('您確定要解除好友關係嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unfriend' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unfriend'); refreshRelation(); });
+                    }
+                });
+
+                bind('blockUserBtn', function () {
+                    if (confirm('您確定要封鎖此使用者嗎？封鎖後將無法再收到對方的訊息。')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'block' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('block'); refreshRelation(); });
+                    }
+                });
+
+                bind('unblockUserBtn', function () {
+                    if (confirm('您確定要解除封鎖此使用者嗎？')) {
+                        sendCmd({ actorUserId: actorUserId, targetUserId: targetUserId, actionCode: 'unblock' })
+                            .then(function (r) { if (r && r.succeeded && !r.noOp) maybeNotify('unblock'); refreshRelation(); });
+                    }
+                });
+            }
+
+            // ======== 從伺服器取雙人關係：用於首屏之後的真實狀態同步 ========
+            function fetchPairInfo() {
+                // 以查詢字串傳遞兩個使用者 ID；credentials:'same-origin' 會帶上 Cookie
+                var url = pairInfoUrl + '?a=' + actorUserId + '&b=' + targetUserId;
+
+                return fetch(url, { credentials: 'same-origin' })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .catch(function (err) {
+                        // 發生錯誤時回退：沿用 Model 初始狀態，避免整個 UI 中斷
+                        return {
+                            statusCode: '@Model.CurrentRelationStatus',
+                            requestedBy: @(@Model.CurrentRelationRequestedByUserId.HasValue? Model.CurrentRelationRequestedByUserId.Value : 0)
+                        };
+                    });
+            }
+
+            // ======== 刷新流程：取狀態 → 重繪按鈕 ========
+            function refreshRelation() {
+                fetchPairInfo().then(function (rel) { renderButtons(rel); });
+            }
+
+            // ======== 首屏流程：先用 Model 值快速畫一次，再向伺服器同步最新狀態 ========
+            document.addEventListener('DOMContentLoaded', function () {
+                renderButtons({
+                    statusCode: '@Model.CurrentRelationStatus',
+                    requestedBy: @(@Model.CurrentRelationRequestedByUserId.HasValue? Model.CurrentRelationRequestedByUserId.Value : 0)
+                });
+                refreshRelation();
+            });
+        })();
+    </script>
+}

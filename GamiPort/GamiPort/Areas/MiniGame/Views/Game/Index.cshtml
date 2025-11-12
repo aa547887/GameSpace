@@ -1,0 +1,948 @@
+@using GamiPort.Areas.MiniGame.Helpers
+@{
+    ViewData["Title"] = "小遊戲";
+    var todayRemainingPlays = ViewBag.TodayRemainingPlays ?? 3;
+    var totalPointsGained = ViewBag.TotalPointsGained ?? 0;
+    var gameResult = ViewBag.GameResult; // null, "win", "lose", "abort"
+    var rewardPoints = ViewBag.RewardPoints ?? 0;
+    var rewardExperience = ViewBag.RewardExperience ?? 0;
+    var selectedLevel = ViewBag.SelectedLevel ?? 0;
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <style>
+        :root {
+            --teal-primary: #0d9488;
+            --teal-secondary: #17a2b8;
+            --teal-light: #e0f2f1;
+            --teal-lighter: #f0f9f8;
+            --orange-accent: #ff9f43;
+            --success-green: #28a745;
+            --warning-yellow: #ffc107;
+            --danger-red: #e74c3c;
+            --bg-light: #f0f4f8;
+        }
+
+        /* 頁面背景 */
+        .page-background {
+            background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        /* 頁面標題區 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .page-header-left h2 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .page-header-left i {
+            color: var(--teal-primary);
+            font-size: 1.75rem;
+        }
+
+        .page-header-left p {
+            color: #7f8c8d;
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+
+        /* 今日剩餘次數卡片 */
+        .remaining-plays-card {
+            background: linear-gradient(135deg, var(--orange-accent) 0%, #ffa500 100%);
+            border-radius: 20px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 159, 67, 0.3);
+            text-align: center;
+            min-width: 200px;
+            animation: slideInRight 0.5s ease;
+        }
+
+        .remaining-plays-card .label {
+            font-size: 0.85rem;
+            opacity: 0.95;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .remaining-plays-card .number {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .remaining-plays-card .unit {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* 遊戲主容器 */
+        .game-main-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @@media (max-width: 1024px) {
+            .game-main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                flex-direction: column;
+            }
+
+            .remaining-plays-card {
+                min-width: auto;
+            }
+        }
+
+        /* 遊戲標題卡片 */
+        .game-title-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+
+        .game-title-card h3 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .game-title-card .game-icon {
+            font-size: 2rem;
+            color: var(--teal-primary);
+        }
+
+        .game-title-card p {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* 難度選擇區域 */
+        .difficulty-section {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-section h4 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .difficulty-section i {
+            color: var(--teal-primary);
+        }
+
+        .difficulty-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .difficulty-btn {
+            border: none;
+            border-radius: 16px;
+            padding: 1.25rem;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 140px;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .difficulty-btn.active {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .difficulty-btn i {
+            font-size: 2rem;
+        }
+
+        .difficulty-btn .label {
+            font-size: 0.85rem;
+            opacity: 0.95;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* 難度按鈕顏色 */
+        .btn-easy {
+            background: linear-gradient(135deg, var(--success-green) 0%, #20c997 100%);
+        }
+
+        .btn-easy:hover {
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        }
+
+        .btn-normal {
+            background: linear-gradient(135deg, var(--warning-yellow) 0%, #ffa500 100%);
+        }
+
+        .btn-normal:hover {
+            background: linear-gradient(135deg, #ffa500 0%, #ff9f43 100%);
+        }
+
+        .btn-hard {
+            background: linear-gradient(135deg, var(--danger-red) 0%, #e67e22 100%);
+        }
+
+        .btn-hard:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
+        /* 遊戲容器 */
+        .game-container-section {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        #unity-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, var(--teal-light) 0%, #f0f9f8 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-size: 1rem;
+            text-align: center;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            min-height: 360px;
+        }
+
+        /* 遊戲操作區 */
+        .game-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-game-action {
+            border-radius: 16px;
+            padding: 0.75rem 1.75rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-game-action i {
+            font-size: 1.1rem;
+        }
+
+        .btn-start-game {
+            background: linear-gradient(135deg, var(--teal-primary) 0%, var(--teal-secondary) 100%);
+            color: white;
+        }
+
+        .btn-start-game:hover {
+            background: linear-gradient(135deg, var(--teal-secondary) 0%, #0a7d72 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        }
+
+        .btn-abort-game {
+            background: #f0f4f8;
+            color: #7f8c8d;
+            border: 2px solid #dee2e6;
+        }
+
+        .btn-abort-game:hover {
+            background: #e8ecf0;
+            color: #5a6c7d;
+        }
+
+        /* 右側邊欄 */
+        .game-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* 遊戲結果卡片 */
+        .game-result-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .result-success {
+            border-top: 4px solid var(--success-green);
+        }
+
+        .result-failure {
+            border-top: 4px solid var(--danger-red);
+        }
+
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .result-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-item {
+            background: var(--teal-lighter);
+            border-radius: 12px;
+            padding: 1rem;
+            border-left: 4px solid var(--teal-primary);
+        }
+
+        .result-item-label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-item-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--teal-primary);
+        }
+
+        /* 遊戲統計卡片 */
+        .game-stats-card {
+            background: white;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .stats-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f4f8;
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        .stats-value {
+            font-weight: 700;
+            color: var(--teal-primary);
+            font-size: 1.1rem;
+        }
+
+        /* 提示卡片 */
+        .info-card {
+            background: var(--teal-lighter);
+            border-left: 4px solid var(--teal-primary);
+            border-radius: 12px;
+            padding: 1rem;
+            color: #2c3e50;
+        }
+
+        .info-card i {
+            color: var(--teal-primary);
+            margin-right: 0.5rem;
+        }
+
+        .info-card small {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* 動畫 */
+        @@keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .game-result-card {
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* 響應式設計 */
+        @@media (max-width: 768px) {
+            .page-header {
+                flex-direction: column-reverse;
+            }
+
+            .remaining-plays-card {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .game-main-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .difficulty-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .difficulty-btn {
+                min-height: 120px;
+            }
+
+            .game-sidebar {
+                order: 3;
+            }
+
+            .game-controls {
+                flex-direction: column;
+            }
+
+            .btn-game-action {
+                width: 100%;
+                justify-content: center;
+            }
+
+            #unity-container {
+                aspect-ratio: auto;
+                min-height: 250px;
+            }
+        }
+
+        /* 禁用狀態 */
+        .difficulty-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .difficulty-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 加載狀態 */
+        .loading-spinner {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <div class="page-background">
+        <div class="container">
+            <!-- 頁面標題 -->
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h2>
+                        <i class="bi bi-controller"></i>
+                        小遊戲
+                    </h2>
+                    <p>選擇難度，挑戰遊戲，贏取獎勵</p>
+                </div>
+                <div class="remaining-plays-card">
+                    <div class="label">今日剩餘次數</div>
+                    <div class="number">@todayRemainingPlays</div>
+                    <div class="unit">次</div>
+                </div>
+            </div>
+
+            <div class="game-main-container">
+                <!-- 左側: 遊戲區域 -->
+                <div>
+                    <!-- 遊戲標題卡片 -->
+                    <div class="game-title-card">
+                        <h3>
+                            <i class="bi bi-lightning-charge-fill game-icon"></i>
+                            恐龍跑酷大冒險
+                        </h3>
+                        <p>
+                            靈感來自 Chrome 離線小恐龍！按下空白鍵跳躍，躲避迎面而來的障礙物。
+                            跑得越遠得分越高，難度越高獎勵越豐厚！
+                        </p>
+                    </div>
+
+                    <!-- 難度選擇區域 -->
+                    <div class="difficulty-section">
+                        <h4>
+                            <i class="bi bi-bar-chart-line"></i>
+                            選擇難度
+                        </h4>
+                        <form method="post" asp-area="MiniGame" asp-controller="Game" asp-action="SelectDifficulty" class="difficulty-buttons">
+                            @Html.AntiForgeryToken()
+
+                            <button type="submit" name="level" value="1" class="difficulty-btn btn-easy @(selectedLevel == 1 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
+                                <i class="bi bi-sun-fill"></i>
+                                <span>輕鬆跑</span>
+                                <span class="label">速度較慢</span>
+                            </button>
+
+                            <button type="submit" name="level" value="2" class="difficulty-btn btn-normal @(selectedLevel == 2 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
+                                <i class="bi bi-lightning-fill"></i>
+                                <span>疾速跑</span>
+                                <span class="label">速度中等</span>
+                            </button>
+
+                            <button type="submit" name="level" value="3" class="difficulty-btn btn-hard @(selectedLevel == 3 ? "active" : "")" @(todayRemainingPlays == 0 ? "disabled" : "")>
+                                <i class="bi bi-fire"></i>
+                                <span>極速衝刺</span>
+                                <span class="label">速度飛快</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 遊戲容器 -->
+                    <div class="game-container-section">
+                        <div id="game-canvas-container" style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 360px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #87CEEB 0%, #E0F6FF 100%);">
+                            <canvas id="gameCanvas" style="display: block; width: 100%; height: 100%;"></canvas>
+                            <div id="game-start-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.95); z-index: 10;">
+                                <i class="bi bi-egg-fill" style="font-size: 3.5rem; color: var(--teal-primary); margin-bottom: 1rem; display: block; animation: bounce 1.5s ease-in-out infinite;"></i>
+                                <p style="font-size: 1.1rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem;">寵物跑酷遊戲區</p>
+                                @if (selectedLevel > 0)
+                                {
+                                    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 1rem;">
+                                        已選擇難度：<strong style="color: var(--teal-primary);">
+                                            @(selectedLevel == 1 ? "輕鬆跑" : selectedLevel == 2 ? "疾速跑" : "極速衝刺")
+                                        </strong>
+                                    </p>
+                                    <p style="font-size: 0.85rem; color: #95a5a6; margin-top: 0.5rem;">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        點擊「開始遊戲」後，使用空白鍵或點擊畫面讓寵物跳躍
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 1rem;">請先選擇難度開始遊戲</p>
+                                    <p style="font-size: 0.85rem; color: #95a5a6; margin-top: 0.5rem;">
+                                        <i class="bi bi-arrow-up me-1"></i>
+                                        上方選擇遊戲難度
+                                    </p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- 遊戲控制按鈕 -->
+                        @if (selectedLevel > 0 && todayRemainingPlays > 0)
+                        {
+                            <div class="game-controls">
+                                <button type="button" class="btn-game-action btn-start-game" onclick="startGame()">
+                                    <i class="bi bi-play-circle-fill"></i>
+                                    開始遊戲
+                                </button>
+
+                                <button type="button" class="btn-game-action btn-abort-game" onclick="cancelGame()">
+                                    <i class="bi bi-x-circle"></i>
+                                    取消
+                                </button>
+                            </div>
+                        }
+                        else if (todayRemainingPlays == 0)
+                        {
+                            <div class="info-card">
+                                <i class="bi bi-info-circle"></i>
+                                <small>今日遊戲次數已用完，明天再來挑戰吧！</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="info-card">
+                                <i class="bi bi-info-circle"></i>
+                                <small>請先選擇難度以開始遊戲</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- 右側: 結果與統計 -->
+                <div class="game-sidebar">
+                    @if (gameResult != null)
+                    {
+                        <!-- 遊戲結果卡片 -->
+                        <div class="game-result-card @(gameResult == "win" || gameResult == "success" ? "result-success" : "result-failure")">
+                            @if (gameResult == "win" || gameResult == "success")
+                            {
+                                <div class="result-icon">
+                                    <i class="bi bi-check-circle-fill" style="color: var(--success-green);"></i>
+                                </div>
+                                <div class="result-title" style="color: var(--success-green);">恭喜通關！</div>
+                            }
+                            else if (gameResult == "lose" || gameResult == "failure")
+                            {
+                                <div class="result-icon">
+                                    <i class="bi bi-x-circle-fill" style="color: var(--danger-red);"></i>
+                                </div>
+                                <div class="result-title" style="color: var(--danger-red);">未能通關</div>
+                            }
+                            else if (gameResult == "abort")
+                            {
+                                <div class="result-icon">
+                                    <i class="bi bi-slash-circle-fill" style="color: #95a5a6;"></i>
+                                </div>
+                                <div class="result-title" style="color: #95a5a6;">已放棄</div>
+                            }
+
+                            <div class="result-details">
+                                @if (rewardPoints > 0)
+                                {
+                                    <div class="result-item">
+                                        <div class="result-item-label">
+                                            <i class="bi bi-coin"></i> 獲得點數
+                                        </div>
+                                        <div class="result-item-value">+@rewardPoints</div>
+                                    </div>
+                                }
+
+                                @if (rewardExperience > 0)
+                                {
+                                    <div class="result-item">
+                                        <div class="result-item-label">
+                                            <i class="bi bi-star-fill"></i> 獲得經驗值
+                                        </div>
+                                        <div class="result-item-value">+@rewardExperience</div>
+                                    </div>
+                                }
+                            </div>
+
+                            <form method="post" asp-area="MiniGame" asp-controller="Game" asp-action="Index" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm" style="background: var(--teal-primary); color: white; border-radius: 12px; padding: 0.5rem 1.5rem; border: none; cursor: pointer; font-weight: 600;">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>
+                                    再玩一次
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- 遊戲統計卡片 -->
+                        <div class="game-stats-card">
+                            <div class="stats-title">
+                                <i class="bi bi-graph-up" style="color: var(--teal-primary);"></i>
+                                遊戲統計
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">今日剩餘次數</span>
+                                <span class="stats-value">@todayRemainingPlays</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">本月通關數</span>
+                                <span class="stats-value">@(ViewBag.MonthlyWins ?? 0)</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">本月獲得點數</span>
+                                <span class="stats-value">@(ViewBag.MonthlyPoints ?? 0)</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">通關率</span>
+                                <span class="stats-value">@(ViewBag.WinRate ?? "0")%</span>
+                            </div>
+                        </div>
+
+                        <!-- 提示信息 -->
+                        <div class="info-card">
+                            <i class="bi bi-lightbulb-fill"></i>
+                            <small>
+                                <strong>遊戲提示：</strong><br>
+                                每天 3 次遊戲機會，難度越高獎勵越豐厚。
+                                掌握跳躍時機，創造高分記錄，在排行榜上與其他玩家一較高下！
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- 額外信息 -->
+            @if (todayRemainingPlays > 0 && gameResult == null)
+            {
+                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--teal-lighter); border-radius: 12px; border-left: 4px solid var(--teal-primary);">
+                    <h5 style="color: #2c3e50; margin-bottom: 0.75rem;">
+                        <i class="bi bi-joystick me-2" style="color: var(--teal-primary);"></i>
+                        遊戲說明
+                    </h5>
+                    <ul style="margin-bottom: 0; padding-left: 1.5rem; color: #2c3e50; font-size: 0.95rem;">
+                        <li><strong>操作方式：</strong>按下 <kbd style="background: #2c3e50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">空白鍵</kbd> 或點擊螢幕讓恐龍跳躍</li>
+                        <li><strong>遊戲目標：</strong>躲避仙人掌和飛鳥，跑得越遠分數越高</li>
+                        <li><strong>難度選擇：</strong>輕鬆跑（速度慢）、疾速跑（速度中）、極速衝刺（速度快）</li>
+                        <li><strong>獎勵機制：</strong>達到目標分數通關可獲得點數與寵物經驗值，難度越高獎勵越豐厚</li>
+                        <li><strong>遊戲次數：</strong>每天 3 次遊戲機會，隔日 00:00 重置</li>
+                        <li><strong>特殊規則：</strong>碰到障礙物即失敗，可選擇中途放棄重新開始</li>
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="container py-5">
+        <div style="background: white; border-radius: 24px; padding: 3rem; text-align: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
+            <i class="bi bi-lock fs-1 text-muted mb-3 d-block"></i>
+            <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">請先登入</h4>
+            <p style="color: #7f8c8d; margin-bottom: 2rem;">登入後即可進行遊戲並贏取獎勵</p>
+            <a href="/Login" class="btn" style="background: linear-gradient(135deg, #0d9488 0%, #17a2b8 100%); color: white; border-radius: 16px; padding: 0.75rem 2rem; font-weight: 600; text-decoration: none; display: inline-block;">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                前往登入
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="/MiniGame/js/pet-runner-game.js"></script>
+    <script>
+        let petRunnerGame = null;
+        let currentGameSessionId = null;
+        let currentDifficulty = '@selectedLevel';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize game with selected difficulty
+            if (currentDifficulty && currentDifficulty !== '0') {
+                initializeGame(currentDifficulty);
+            }
+        });
+
+        function initializeGame(difficulty) {
+            const difficultyMap = {
+                '1': 'easy',
+                '2': 'normal',
+                '3': 'hard'
+            };
+
+            if (petRunnerGame) {
+                petRunnerGame.destroy();
+            }
+
+            petRunnerGame = new PetRunnerGame('gameCanvas', {
+                difficulty: difficultyMap[difficulty] || 'normal',
+                petColor: '@(ViewBag.PetSkinColor ?? "#ff6b6b")',
+                onGameEnd: handleGameEnd
+            });
+        }
+
+        async function startGame() {
+            try {
+                // Call backend API to start game session
+                const response = await fetch('/MiniGame/Game/StartGame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `level=${currentDifficulty}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentGameSessionId = result.sessionId;
+
+                    // Initialize game with level configuration from backend
+                    if (petRunnerGame) {
+                        petRunnerGame.destroy();
+                    }
+
+                    const baseSpeed = 3;
+                    petRunnerGame = new PetRunnerGame('gameCanvas', {
+                        level: result.level,
+                        monsterCount: result.monsterCount,
+                        gameSpeed: baseSpeed * result.speedMultiplier,
+                        petColor: '@Html.Raw(ViewBag.PetSkinColor ?? "#ff6b6b")',
+                        onGameEnd: handleGameEnd
+                    });
+
+                    // Hide overlay and start game
+                    const overlay = document.getElementById('game-start-overlay');
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                    }
+
+                    // Start the actual game
+                    if (petRunnerGame) {
+                        petRunnerGame.start();
+                    }
+                } else {
+                    alert(result.message || '遊戲啟動失敗，請重試');
+                }
+            } catch (error) {
+                console.error('Start game error:', error);
+                alert('遊戲啟動失敗，請重試');
+            }
+        }
+
+        async function handleGameEnd(gameData) {
+            if (!currentGameSessionId) {
+                console.error('No game session ID');
+                return;
+            }
+
+            try {
+                // gameData format: { result: 'win'/'lose', monstersDodged, targetCount, level }
+                // Call backend API to end game and get rewards
+                const response = await fetch('/MiniGame/Game/EndGame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `playId=${currentGameSessionId}&level=${gameData.level}&result=${gameData.result}&points=0&experience=0`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show overlay with result
+                    const overlay = document.getElementById('game-start-overlay');
+                    if (overlay) {
+                        overlay.innerHTML = `
+                            <div style="text-align: center; padding: 2rem;">
+                                <i class="bi bi-${gameData.result === 'win' ? 'trophy-fill' : 'x-circle-fill'}"
+                                   style="font-size: 4rem; color: ${gameData.result === 'win' ? '#ffd700' : '#e74c3c'}; margin-bottom: 1rem;"></i>
+                                <h3 style="color: #2c3e50; margin-bottom: 1rem;">${gameData.result === 'win' ? '🎉 恭喜過關！' : '😢 遊戲失敗'}</h3>
+                                <p style="font-size: 1.2rem; color: #495057; margin-bottom: 0.5rem;">躲過了 ${gameData.monstersDodged} / ${gameData.targetCount} 隻怪物</p>
+                                <p style="font-size: 1.1rem; color: #6c757d; margin-bottom: 1rem;">第 ${gameData.level} 關</p>
+                                ${result.rewardPoints > 0 ? `<p style="color: #28a745; font-size: 1.1rem; margin-bottom: 0.5rem;">💰 獲得點數: +${result.rewardPoints}</p>` : ''}
+                                ${result.rewardExperience > 0 ? `<p style="color: #ffa500; font-size: 1.1rem; margin-bottom: 1rem;">⭐ 獲得經驗: +${result.rewardExperience}</p>` : ''}
+                                <button onclick="location.reload()" class="btn" style="background: var(--teal-primary); color: white; border-radius: 12px; padding: 0.75rem 1.5rem; border: none; cursor: pointer; font-weight: 600;">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>
+                                    再玩一次
+                                </button>
+                            </div>
+                        `;
+                        overlay.style.display = 'flex';
+                    }
+                } else {
+                    alert(result.message || '遊戲結算失敗');
+                }
+            } catch (error) {
+                console.error('End game error:', error);
+                alert('遊戲結算失敗');
+            }
+        }
+
+        function abortGame() {
+            if (confirm('確定要放棄本局遊戲嗎？')) {
+                if (petRunnerGame) {
+                    petRunnerGame.pause();
+                }
+
+                if (currentGameSessionId) {
+                    handleGameEnd({ result: 'abort', score: 0 });
+                }
+            }
+        }
+
+        function cancelGame() {
+            // 直接返回寵物頁面，不顯示確認對話框
+            window.location.href = '/MiniGame/Pet';
+        }
+
+        // 處理難度按鈕選擇
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+            });
+        });
+    </script>
+}

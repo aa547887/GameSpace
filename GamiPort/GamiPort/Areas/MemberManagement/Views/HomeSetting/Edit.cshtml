@@ -1,0 +1,71 @@
+﻿@model GamiPort.Areas.MemberManagement.Models.HomeSettingEditVM
+@{
+    ViewData["Title"] = "編輯小屋設定";
+    Layout = "~/Areas/MemberManagement/Views/Shared/HomeSetting_Layout .cshtml";
+}
+
+<div class="container py-4" style="max-width: 860px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">@ViewData["Title"]</h3>
+        <a class="btn btn-outline-secondary" asp-area="MemberManagement" asp-controller="MyHome" asp-action="index">返回小屋</a>
+    </div>
+
+    @if (TempData["Success"] is string ok)
+    {
+        <div class="alert alert-success">@ok</div>
+    }
+
+    <form asp-area="MemberManagement" asp-controller="HomeSetting" asp-action="Edit"
+          method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
+
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"
+             style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" maxlength="100" placeholder="輸入小屋標題" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+            <input asp-for="IsPublic" class="form-check-input" />
+            <label asp-for="IsPublic" class="form-check-label">公開顯示我的小屋</label>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">目前主題狀態</label>
+            <div class="form-text">
+                @if (Model.HasTheme)
+                {
+                    <span>已上傳主題（@Model.ThemeSizeBytes 位元組）</span>
+                }
+                else
+                {
+                    <span>尚未設定主題</span>
+                }
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="ThemeFile" class="form-label"></label>
+            <input asp-for="ThemeFile" type="file" class="form-control" />
+            <span class="form-text">上傳新主題會覆蓋舊檔；勾選「移除主題」會刪除目前主題。</span>
+            <span asp-validation-for="ThemeFile" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="RemoveTheme" class="form-check-input" />
+            <label asp-for="RemoveTheme" class="form-check-label"></label>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="submit" class="btn btn-primary">儲存變更</button>
+            <span class="text-muted">最後更新：@Model.UpdatedAtText</span>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

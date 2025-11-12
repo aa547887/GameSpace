@@ -17,5 +17,17 @@ public partial class EvoucherRedeemLog
 
     public string Status { get; set; } = null!;
 
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public int? DeletedBy { get; set; }
+
+    public string? DeleteReason { get; set; }
+
+    public virtual Evoucher Evoucher { get; set; } = null!;
+
+    public virtual EvoucherToken? Token { get; set; }
+
     public virtual User User { get; set; } = null!;
 }

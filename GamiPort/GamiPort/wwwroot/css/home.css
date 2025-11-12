@@ -1,0 +1,55 @@
+/* Hero 橫幅（淡色漸層 + 下方細框） */
+.hero-banner {
+    background: linear-gradient(90deg, #d9f2ff 0%, #eafff7 100%);
+    border-bottom: 1px solid #e6e6e6;
+}
+
+/* 搜尋框外觀（左 icon、右 input 無縫銜接） */
+.hero-search .input-group-text {
+    background: #fff;
+    border-right: 0;
+}
+
+.hero-search .form-control {
+    border-left: 0;
+}
+
+    .hero-search .form-control:focus {
+        box-shadow: none;
+        border-color: #86b7fe;
+    }
+
+
+/* 圖片骨架（shimmer） */
+.card-thumb-skeleton {
+    background: linear-gradient(90deg,#e9ecef 25%, #f8f9fa 37%, #e9ecef 63%);
+    background-size: 400% 100%;
+    animation: home-skeleton 1.2s ease-in-out infinite;
+    border-top-left-radius: .375rem;
+    border-top-right-radius: .375rem;
+}
+
+@keyframes home-skeleton {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: 0 0;
+    }
+}
+
+/* 小色塊 */
+.bg-teal {
+    background: #02c39a !important;
+}
+
+/* 右欄占位（300x250 風格）—這頁暫存用 */
+.right-rail-box {
+    width: 300px;
+    height: 250px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: .5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}

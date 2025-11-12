@@ -1,0 +1,107 @@
+﻿@model GamiPort.Areas.Login.Models.UserIntroduceVM
+@using GamiPort.Services
+@{
+    ViewData["Title"] = "編輯個人資料";
+    var defaultAvatar = Url.Content("~/images/預設人物.png"); // 預設頭像
+    string? imgSrc = null;
+
+    if (Model?.UserPicture != null && Model.UserPicture.Length > 0)
+    {
+        var b64 = Convert.ToBase64String(Model.UserPicture);
+        imgSrc = $"data:image/*;base64,{b64}";
+    }
+}
+
+<div class="container py-4" style="max-width: 980px;">
+
+    <!-- 頁首：與 Details 對齊 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">@ViewData["Title"]</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">
+                返回檢視
+            </a>
+        </div>
+    </div>
+
+    @* 成功訊息 *@
+    @if (TempData["Success"] is string ok)
+    {
+        <div class="alert alert-success">@ok</div>
+    }
+
+    @* 主要卡片（與 Details 同風格外框） *@
+    <div class="card shadow-sm overflow-hidden">
+        <!-- 頭像區（與 Details 視覺一致：左下角頭像、右側基本資訊） -->
+        <div class="position-relative bg-light" style="min-height: 130px;">
+            <div class="position-absolute bottom-0 start-0 p-3 d-flex align-items-center gap-3 w-100">
+                <img src="@(imgSrc ?? defaultAvatar)" alt="頭像"
+                     class="rounded-circle border bg-black"
+                     style="width:96px;height:96px;object-fit:cover;" />
+                <div class="pb-2">
+                    <div class="fw-semibold fs-5" >@Model.UserNickName</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            @Html.AntiForgeryToken()
+            <form asp-area="Login" asp-controller="Introduce" asp-action="Edit" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Gender" />
+                @* 驗證摘要 *@
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+                <div class="row g-3">
+                    <!-- 暱稱 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">暱稱</label>
+                        <input asp-for="UserNickName" class="form-control"/>
+                        <span asp-validation-for="UserNickName" class="text-danger small"></span>
+                    </div>
+
+
+
+                    <!-- 手機 -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">手機</label>
+                        <input asp-for="Cellphone" class="form-control" />
+                        <span asp-validation-for="Cellphone" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 地址 -->
+                    <div class="col-12">
+                        <label class="form-label">地址</label>
+                        <input asp-for="Address" class="form-control" />
+                        <span asp-validation-for="Address" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 自我介紹 -->
+                    <div class="col-12">
+                        <label class="form-label">自我介紹</label>
+                        <textarea asp-for="UserIntroduce1" class="form-control" rows="4" placeholder="寫點關於你的事…"></textarea>
+                        <span asp-validation-for="UserIntroduce1" class="text-danger small"></span>
+                    </div>
+
+                    <!-- 頭像上傳 -->
+                    <div class="col-12">
+                        <label class="form-label">更新頭像（選填）</label>
+                        <input class="form-control" type="file" name="userPictureFile" accept="image/*" />
+                        <div class="form-text">建議 1:1 比例，大小 2MB 以內。</div>
+                    </div>
+                </div>
+
+                @* ❗下列欄位在 Edit 中完全不顯示：UserId、IdNumber、Email、DateOfBirth、CreateAccount *@
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">儲存變更</button>
+                    <a class="btn btn-outline-secondary" asp-area="Login" asp-controller="Introduce" asp-action="Details">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

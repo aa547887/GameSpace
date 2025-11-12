@@ -1,0 +1,6 @@
+﻿@model GamiPort.Areas.MemberManagement.ViewModels.HomePageVM
+
+<div class="mb-3">
+    <div class="fw-semibold mb-1">屋主的話語</div>
+    <div>@(string.IsNullOrWhiteSpace(Model.Title) ? "（尚未填寫）" : Model.Title)</div>
+</div>

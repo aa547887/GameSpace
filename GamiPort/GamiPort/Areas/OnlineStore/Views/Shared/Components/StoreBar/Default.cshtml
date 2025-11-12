@@ -1,0 +1,84 @@
+@model GamiPort.Areas.OnlineStore.ViewModels.store.StoreBarViewModel
+
+@{
+    // Helper to create a subset of suppliers for the main dropdown
+    var mainSuppliers = Model.Suppliers.Take(10).ToList();
+    var otherSuppliers = Model.Suppliers.Skip(10).ToList();
+}
+
+<div id="store-bar-wrapper" class="store-bar bg-body-tertiary shadow-sm">
+    <div class="container-xxl">
+        <ul class="nav-cats">
+            <!-- Random Button -->
+            <li><a class="cats-pill no-dd" href="/OnlineStore/Browse?sort=random">全商品隨機瀏覽</a></li>
+
+            <!-- Product Type -->
+            <li><a class="cats-pill no-dd" href="/OnlineStore/Browse?type=game">遊戲商品</a></li>
+            <li><a class="cats-pill no-dd" href="/OnlineStore/Browse?type=notgame">周邊商品</a></li>
+
+            <!-- Platforms -->
+            <li class="dropdown hover-dd">
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">平台分類</a>
+                <ul class="dropdown-menu show-on-hover shadow-lg">
+                    <li class="dropdown-header small text-secondary px-3">平台分類</li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse">全部平台</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    @foreach (var platform in Model.Platforms)
+                    {
+                        <li><a class="dropdown-item" href="/OnlineStore/Browse?platformId=@platform.PlatformId">@platform.PlatformName</a></li>
+                    }
+                </ul>
+            </li>
+
+            <!-- Game Genres -->
+            <li class="dropdown hover-dd">
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">遊戲類型</a>
+                <ul class="dropdown-menu show-on-hover shadow-lg">
+                    <li class="dropdown-header small text-secondary px-3">遊戲類型</li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse?type=game">全部類型</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    @foreach (var genre in Model.GameGenres)
+                    {
+                        <li><a class="dropdown-item" href="/OnlineStore/Browse?genreId=@genre.GenreId">@genre.GenreName</a></li>
+                    }
+                </ul>
+            </li>
+
+            <!-- Merch Types -->
+            <li class="dropdown hover-dd">
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">周邊分類</a>
+                <ul class="dropdown-menu show-on-hover shadow-lg">
+                    <li class="dropdown-header small text-secondary px-3">周邊分類</li>
+                    <li><a class="dropdown-item" href="/OnlineStore/Browse?type=notgame">全部周邊</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    @foreach (var merchType in Model.MerchTypes)
+                    {
+                        <li><a class="dropdown-item" href="/OnlineStore/Browse?merchTypeId=@merchType.MerchTypeId">@merchType.MerchTypeName</a></li>
+                    }
+                </ul>
+            </li>
+
+            <!-- Game Points (Special Link) -->
+            <li><a class="cats-pill no-dd" href="/OnlineStore/Browse?merchTypeId=1">遊戲點數</a></li>
+
+            <!-- Suppliers -->
+            <li class="dropdown hover-dd">
+                <a class="cats-pill dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">供應商</a>
+                <ul class="dropdown-menu show-on-hover shadow-lg suppliers-menu">
+                    <li class="dropdown-header small text-secondary px-3">品牌 / 發行商</li>
+                    @foreach (var supplier in mainSuppliers)
+                    {
+                        <li><a class="dropdown-item" href="/OnlineStore/Browse?supplierId=@supplier.SupplierId">@supplier.SupplierName</a></li>
+                    }
+                    @if (otherSuppliers.Any())
+                    {
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><a class="dropdown-item" href="/OnlineStore/Browse?supplierId=34">其他供應商 Others</a></li>
+                    }
+                </ul>
+            </li>
+        </ul>
+</div>
+</div>
+
+
