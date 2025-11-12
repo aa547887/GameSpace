@@ -10,4 +10,6 @@ public partial class SUserFavorite
     public int ProductId { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

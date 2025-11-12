@@ -35,6 +35,20 @@ public partial class SoOrderInfo
 
     public int? PayMethodId { get; set; }
 
+    public string? Recipient { get; set; }
+
+    public string? Phone { get; set; }
+
+    public string? DestZip { get; set; }
+
+    public string? Address1 { get; set; }
+
+    public string? Address2 { get; set; }
+
+    public string? CouponCode { get; set; }
+
+    public string? CouponSnapshot { get; set; }
+
     public virtual SoPayMethod? PayMethod { get; set; }
 
     public virtual SoOrderAddress? SoOrderAddress { get; set; }
