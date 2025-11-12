@@ -14,24 +14,28 @@
     <Compile Remove="Areas\NewFolder - 複製 %284%29\**" />
     <Compile Remove="Areas\NewFolder - 複製\**" />
     <Compile Remove="Areas\NewFolder\**" />
+    <Compile Remove="wwwroot\images\onlinestoreProduct\3畫冊紀錄本\**" />
     <Content Remove="Areas\Forum\Models\**" />
     <Content Remove="Areas\NewFolder - 複製 %282%29\**" />
     <Content Remove="Areas\NewFolder - 複製 %283%29\**" />
     <Content Remove="Areas\NewFolder - 複製 %284%29\**" />
     <Content Remove="Areas\NewFolder - 複製\**" />
     <Content Remove="Areas\NewFolder\**" />
+    <Content Remove="wwwroot\images\onlinestoreProduct\3畫冊紀錄本\**" />
     <EmbeddedResource Remove="Areas\Forum\Models\**" />
     <EmbeddedResource Remove="Areas\NewFolder - 複製 %282%29\**" />
     <EmbeddedResource Remove="Areas\NewFolder - 複製 %283%29\**" />
     <EmbeddedResource Remove="Areas\NewFolder - 複製 %284%29\**" />
     <EmbeddedResource Remove="Areas\NewFolder - 複製\**" />
     <EmbeddedResource Remove="Areas\NewFolder\**" />
+    <EmbeddedResource Remove="wwwroot\images\onlinestoreProduct\3畫冊紀錄本\**" />
     <None Remove="Areas\Forum\Models\**" />
     <None Remove="Areas\NewFolder - 複製 %282%29\**" />
     <None Remove="Areas\NewFolder - 複製 %283%29\**" />
     <None Remove="Areas\NewFolder - 複製 %284%29\**" />
     <None Remove="Areas\NewFolder - 複製\**" />
     <None Remove="Areas\NewFolder\**" />
+    <None Remove="wwwroot\images\onlinestoreProduct\3畫冊紀錄本\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +59,13 @@
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="Areas\social_hub\Models\" />
     <Folder Include="wwwroot\images\forum\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\Game\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\1點數卡\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\2娃娃\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\5服飾\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\4吊飾\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\6滑鼠墊\" />
+    <Folder Include="wwwroot\images\onlinestoreProduct\7杯子\" />
   </ItemGroup>
 
   <ItemGroup>

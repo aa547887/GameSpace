@@ -147,6 +147,8 @@ public partial class GameSpacedatabaseContext : DbContext
 
     public virtual DbSet<SVRankingClick> SVRankingClicks { get; set; }
 
+    public virtual DbSet<SVRankingFavorite> SVRankingFavorites { get; set; }
+
     public virtual DbSet<SVRankingRating> SVRankingRatings { get; set; }
 
     public virtual DbSet<SVRankingSale> SVRankingSales { get; set; }
@@ -1841,6 +1843,7 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.HasIndex(e => e.IsPhysical, "IX_S_ProductInfo_is_physical");
 
             entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.ClickCount).HasColumnName("click_count");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasColumnName("created_at");
@@ -1870,6 +1873,15 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.UnpublishAt).HasColumnName("unpublish_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.SProductInfoCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_S_ProductInfo_CreatedBy");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.SProductInfoUpdatedByNavigations)
+                .HasForeignKey(d => d.UpdatedBy)
+                .HasConstraintName("FK_S_ProductInfo_UpdatedBy");
 
             entity.HasMany(d => d.Genres).WithMany(p => p.Products)
                 .UsingEntity<Dictionary<string, object>>(
@@ -1910,6 +1922,14 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasDefaultValue("PENDING")
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.ApprovedByNavigation).WithMany(p => p.SProductRatings)
+                .HasForeignKey(d => d.ApprovedBy)
+                .HasConstraintName("FK_S_ProductRatings_ApprovedBy");
+
+            entity.HasOne(d => d.User).WithMany(p => p.SProductRatings)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_S_ProductRatings_User");
         });
 
         modelBuilder.Entity<SSupplier>(entity =>
@@ -1960,6 +1980,10 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasColumnName("created_at");
+
+            entity.HasOne(d => d.User).WithMany(p => p.SUserFavorites)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_S_UserFavorites_User");
         });
 
         modelBuilder.Entity<SVProductRatingStat>(entity =>
@@ -1984,6 +2008,24 @@ public partial class GameSpacedatabaseContext : DbContext
             entity.Property(e => e.ClickScore)
                 .HasColumnType("decimal(18, 4)")
                 .HasColumnName("click_score");
+            entity.Property(e => e.MetricNote)
+                .HasMaxLength(100)
+                .HasColumnName("metric_note");
+            entity.Property(e => e.PeriodType).HasColumnName("period_type");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.RankingDate).HasColumnName("ranking_date");
+            entity.Property(e => e.RankingPosition).HasColumnName("ranking_position");
+        });
+
+        modelBuilder.Entity<SVRankingFavorite>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("S_v_Ranking_Favorite");
+
+            entity.Property(e => e.FavoriteCount)
+                .HasColumnType("decimal(18, 4)")
+                .HasColumnName("favorite_count");
             entity.Property(e => e.MetricNote)
                 .HasMaxLength(100)
                 .HasColumnName("metric_note");
@@ -2042,26 +2084,6 @@ public partial class GameSpacedatabaseContext : DbContext
                 .HasColumnType("decimal(38, 2)")
                 .HasColumnName("revenue_amount");
             entity.Property(e => e.RevenueVolume).HasColumnName("revenue_volume");
-        });
-
-        modelBuilder.Entity<ShipMethod>(entity =>
-        {
-            entity.HasKey(e => e.ShipMethodId).HasName("PK__ShipMeth__ADA291E169B43D06");
-
-            entity.Property(e => e.ShipMethodId)
-                .ValueGeneratedNever()
-                .HasColumnName("ship_method_id");
-            entity.Property(e => e.AllowRemoteSurcharge).HasColumnName("allow_remote_surcharge");
-            entity.Property(e => e.BaseFee)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("base_fee");
-            entity.Property(e => e.ForStorePickup).HasColumnName("for_store_pickup");
-            entity.Property(e => e.FreeThreshold)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("free_threshold");
-            entity.Property(e => e.MethodName)
-                .HasMaxLength(50)
-                .HasColumnName("method_name");
         });
 
         modelBuilder.Entity<ShipMethod>(entity =>

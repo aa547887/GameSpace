@@ -5,13 +5,73 @@
     ViewData["Title"] = Model.ProductName;
     Layout = "~/Areas/OnlineStore/Views/Shared/_Layout.cshtml";
 }
+
+@section Styles {
+<style>
+    /* 新的縮圖樣式 */
+    .thumb-item {
+        border: 1px solid #ddd;
+        border-radius: .25rem;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .thumb-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform .2s ease;
+    }
+    .thumb-item:hover img {
+        transform: scale(1.1);
+    }
+    .thumb-item.empty {
+        cursor: default;
+    }
+    #cover {
+        cursor: pointer;
+    }
+
+    /* 燈箱樣式 */
+    .basicLightbox {
+        background-color: rgba(0, 0, 0, 0.5) !important; /* 使背景更淡 */
+    }
+    .basicLightbox__placeholder {
+        color: #fff;
+    }
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        border: none;
+        font-size: 2rem;
+        padding: 0 1rem;
+        cursor: pointer;
+        height: 100%;
+        display: flex;
+        align-items: center;
+    }
+    .lightbox-nav.prev { left: 0; border-radius: 0 5px 5px 0; }
+    .lightbox-nav.next { right: 0; border-radius: 5px 0 0 5px; }
+    .lightbox-nav:hover { background: rgba(0,0,0,0.6); }
+</style>
+}
+
 <section class="container py-4" id="app" data-pid="@Model.ProductId">
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm bg-light">
                 <img id="cover" src="/images/placeholder-cover.png" class="w-100 h-100" style="object-fit:cover;">
             </div>
-            <div id="thumbs" class="d-flex flex-nowrap gap-2 mt-2 overflow-auto"></div>
+            <!-- 修改後的四格縮圖 -->
+            <div id="thumbs" class="row g-2 mt-2">
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+                <div class="col-3"><div class="thumb-item ratio ratio-1x1"></div></div>
+            </div>
             <div id="video" class="mt-3"></div>
         </div>
 
@@ -34,7 +94,7 @@
             <div class="d-flex gap-2 mb-4">
                 <button class="btn btn-lg btn-dark flex-fill" data-action="buy-now"><i class="bi bi-bag-check me-1"></i> 立即購買</button>
                 <button class="btn btn-lg btn-outline-dark flex-fill" data-action="add-cart"><i class="bi bi-cart-plus me-1"></i> 加入購物車</button>
-                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的最愛" aria-pressed="false"><i class="bi bi-heart"></i></button>
+                <button class="btn btn-lg btn-outline-secondary" data-action="fav" title="加入我的商品蒐藏" aria-pressed="false"><i class="bi bi-heart"></i></button>
             </div>
 
             <div class="mb-3">
@@ -62,24 +122,25 @@
             </div>
         </div>
     </div>
-    }
 </section>
 
 <section class="container py-3">
+    <!-- 對調後的新版面配置 -->
     <div class="row g-3">
-        <div class="col-12 col-lg-7">
+        <div class="col-12 col-lg-8">
+            <h5 class="fw-bold mb-2">你可能也會喜歡</h5>
+            <div id="related" class="row g-2"></div>
+        </div>
+        <div class="col-12 col-lg-4">
             <h5 class="fw-bold mb-2">使用者評論</h5>
             <div id="reviews" class="vstack gap-3"></div>
             <button id="btnMoreReviews" class="btn btn-outline-secondary btn-sm mt-2 d-none">載入更多</button>
-        </div>
-        <div class="col-12 col-lg-5">
-            <h5 class="fw-bold mb-2">你可能也會喜歡</h5>
-            <div id="related" class="row g-2"></div>
         </div>
     </div>
 </section>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
                 const initialData = @Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions { PropertyNamingPolicy = null }));
                 const API_BASE = "/OnlineStore/api/StoreApi";
@@ -132,37 +193,37 @@
                   return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(v ?? 0);
                 }
 
-function renderSpecs(x){
-  const host = document.getElementById('specs');
-  if (!host) {
-      return;
-  }
-  const isGame = (x.ProductType || '').toLowerCase() === 'game';
-  let htmlContent = '';
-  if(isGame){
-    htmlContent = `
-      <ul class="list-unstyled mb-0">
-        ${x.PlatformName ? `<li>平台：${x.PlatformName}</li>` : ''}
-        ${x.GenreName ? `<li>類型：${x.GenreName}</li>` : ''}
-        ${x.PublishAt ? `<li>發售日：${new Date(x.PublishAt).toLocaleDateString('zh-TW')}</li>` : ''}
-        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
-        ${x.DownloadLink ? `<li>下載連結：<a href="${x.DownloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
-      </ul>`;
-  } else {
-    htmlContent = `
-      <ul class="list-unstyled mb-0">
-        ${x.PeripheralTypeName ? `<li>周邊分類：${x.PeripheralTypeName}</li>` : ''}
-        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
-        ${x.Size ? `<li>尺寸：${x.Size}</li>` : ''}
-        ${x.Color ? `<li>顏色：${x.Color}</li>` : ''}
-        ${x.Weight ? `<li>重量：${x.Weight}</li>` : ''}
-        ${x.Dimensions ? `<li>外觀尺寸：${x.Dimensions}</li>` : ''}
-        ${x.Material ? `<li>材質：${x.Material}</li>` : ''}
-        ${x.DigitalCode ? `<li>型號/序號：${x.DigitalCode}</li>` : ''}
-      </ul>`;
-  }
-  host.innerHTML = htmlContent;
-}
+                function renderSpecs(x){
+                  const host = document.getElementById('specs');
+                  if (!host) {
+                      return;
+                  }
+                  const isGame = (x.ProductType || '').toLowerCase() === 'game';
+                  let htmlContent = '';
+                  if(isGame){
+                    htmlContent = `
+                      <ul class="list-unstyled mb-0">
+                        ${x.PlatformName ? `<li>平台：${x.PlatformName}</li>` : ''}
+                        ${x.GenreName ? `<li>類型：${x.GenreName}</li>` : ''}
+                        ${x.PublishAt ? `<li>發售日：${new Date(x.PublishAt).toLocaleDateString('zh-TW')}</li>` : ''}
+                        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+                        ${x.DownloadLink ? `<li>下載連結：<a href="${x.DownloadLink}" target="_blank" rel="noopener">點此下載</a></li>` : ''}
+                      </ul>`;
+                  } else {
+                    htmlContent = `
+                      <ul class="list-unstyled mb-0">
+                        ${x.PeripheralTypeName ? `<li>周邊分類：${x.PeripheralTypeName}</li>` : ''}
+                        ${x.SupplierName ? `<li>供應商：${x.SupplierName}</li>` : ''}
+                        ${x.Size ? `<li>尺寸：${x.Size}</li>` : ''}
+                        ${x.Color ? `<li>顏色：${x.Color}</li>` : ''}
+                        ${x.Weight ? `<li>重量：${x.Weight}</li>` : ''}
+                        ${x.Dimensions ? `<li>外觀尺寸：${x.Dimensions}</li>` : ''}
+                        ${x.Material ? `<li>材質：${x.Material}</li>` : ''}
+                        ${x.DigitalCode ? `<li>型號/序號：${x.DigitalCode}</li>` : ''}
+                      </ul>`;
+                  }
+                  host.innerHTML = htmlContent;
+                }
 
                 function tryRenderYoutube(url){
                   if(!url) return;
@@ -181,27 +242,39 @@ function renderSpecs(x){
                     if (!x) {
                         document.getElementById('name').textContent = '查無此商品';
                         return;
-                    }document.getElementById('name').textContent = x.ProductName; // Keep the main title
-document.getElementById('price-product-name').textContent = x.ProductName; // Populate the new span
-document.getElementById('ptype').textContent = x.ProductType || '';
-document.getElementById('price').textContent = `NT ${money(x.Price)}`;                    document.getElementById('cc').textContent = x.currencyCode || 'TWD';
-                    document.getElementById('desc').textContent = x.productDescription || '';
-                    document.getElementById('rating').textContent = (x.ratingAvg ?? 0).toFixed(1);
-                    document.getElementById('ratingcnt').textContent = `(${x.ratingCount ?? 0})`;
+                    }
+                    document.getElementById('name').textContent = x.ProductName;
+                    document.getElementById('price-product-name').textContent = x.ProductName;
+                    document.getElementById('ptype').textContent = x.ProductType || '';
+                    document.getElementById('price').textContent = `NT ${money(x.Price)}`;
+                    document.getElementById('cc').textContent = x.CurrencyCode || 'TWD';
+                    document.getElementById('desc').textContent = x.ProductDescription || '';
+                    document.getElementById('rating').textContent = (x.RatingAvg ?? 0).toFixed(1);
+                    document.getElementById('ratingcnt').textContent = `(${x.RatingCount ?? 0})`;
 
-                    const cover = x.coverUrl || "/images/placeholder-cover.png";
-                    document.getElementById('cover').src = cover;
+                    const gallery = Array.isArray(x.Gallery) && x.Gallery.length > 0 ? x.Gallery : ["/images/placeholder-cover.png"];
+                    const coverEl = document.getElementById('cover');
+                    coverEl.src = gallery[0];
+                    coverEl.dataset.index = 0; // 用於燈箱
 
-                    const thumbs = x.gallery?.length ? x.gallery : [cover];
-                    document.getElementById('thumbs').innerHTML = thumbs.map(url =>
-                        `<img src="${url}" class="rounded" style="width:60px;height:60px;object-fit:cover;cursor:pointer;border:1px solid #eee">`
-                    ).join('');
-                    document.getElementById('thumbs').addEventListener('click', (e)=>{
-                        if(e.target.tagName === 'IMG'){ document.getElementById('cover').src = e.target.src; }
+                    const thumbSlots = document.querySelectorAll('#thumbs .thumb-item');
+                    thumbSlots.forEach((slot, i) => {
+                        const thumbIndex = i + 1;
+                        if (gallery[thumbIndex]) {
+                            slot.classList.remove('empty');
+                            slot.innerHTML = `<img src="${gallery[thumbIndex]}" data-index="${thumbIndex}">`;
+                            slot.firstElementChild.addEventListener('click', (e) => {
+                                coverEl.src = e.target.src;
+                                coverEl.dataset.index = e.target.dataset.index;
+                            });
+                        } else {
+                            slot.classList.add('empty');
+                            slot.innerHTML = '';
+                        }
                     });
 
                     renderSpecs(x);
-                    tryRenderYoutube(x.youtubeUrl);
+                    tryRenderYoutube(x.YoutubeUrl);
                 }
 
                 function paintStars(n){
@@ -219,12 +292,45 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                         new bootstrap.Modal(document.getElementById('loginPromptModal')).show();
                         return;
                     }
-                    if(currentRating < 1 || currentRating > 5){ alert('請先選擇 1-5 顆星的評分'); return; }
+                    // VALIDATION LOGIC
+                    if(currentRating < 1 || currentRating > 5){
+                        Swal.fire({
+                            title: '請先選擇星等評價唷！',
+                            html: `
+                                <style>
+                                    .twinkling-stars {
+                                        font-size: 3rem;
+                                        animation: twinkle-stars 1.5s ease-in-out infinite alternate;
+                                        margin: 1rem auto;
+                                    }
+                                    @@keyframes twinkle-stars {
+                                        0% { opacity: 0.5; transform: scale(1); }
+                                        100% { opacity: 1; transform: scale(1.1); }
+                                    }
+                                </style>
+                                <div class="twinkling-stars">⭐⭐⭐⭐⭐</div>
+                            `,
+                            showConfirmButton: false,
+                            timer: 5000,
+                            heightAuto: false
+                        });
+                        return;
+                    }
                     const body = { rating: currentRating, review: document.getElementById('reviewText').value?.trim() || null };
-                    const pid = initialData.productId;
+                    const pid = initialData.ProductId;
                     const res = await fetch(`${API_BASE}/products/${pid}/rate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
                     if(res.status===401){ ensureLoginPrompt(); new bootstrap.Modal(document.getElementById('loginPromptModal')).show(); return; }
-                    if(!res.ok){ alert('送出評價失敗，請稍後再試'); return; }
+                    if(!res.ok){
+                        Swal.fire({
+                            icon: 'error',
+                            title: '送出評價失敗',
+                            text: '請稍後再試',
+                            timer: 5000,
+                            showConfirmButton: false,
+                            heightAuto: false
+                        });
+                        return;
+                    }
                     try{
                         const detail = await (await fetch(`${API_BASE}/${pid}`)).json();
                         document.getElementById('rating').textContent = (detail.ratingAvg ?? 0).toFixed(1);
@@ -232,11 +338,19 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                     }catch{}
                     document.getElementById('reviewText').value = '';
                     loadReviews(true);
-                    alert('已送出評價，感謝你的回饋！');
+                    
+                    // SUCCESS LOGIC
+                    Swal.fire({
+                        title: '感謝你的評價！',
+                        html: '<div style="font-size: 5rem;">😉</div>',
+                        showConfirmButton: false,
+                        timer: 5000,
+                        heightAuto: false
+                    });
                 }
 
                 async function loadReviews(reset=false){
-                    const pid = initialData.productId;
+                    const pid = initialData.ProductId;
                     const host = document.getElementById('reviews');
                     const more = document.getElementById('btnMoreReviews');
                     const pageSize = 10;
@@ -246,14 +360,14 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                     const data = await res.json();
                     const items = Array.isArray(data.items)? data.items : [];
                     const html = items.map(r=>{
-                        const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.rating||0);
-                        const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.rating||0));
+                        const starFilled = '<i class="bi bi-star-fill text-warning"></i>'.repeat(r.Rating||0);
+                        const starEmpty = '<i class="bi bi-star"></i>'.repeat(5-(r.Rating||0));
                         return `<div class="p-3 border rounded">\
                             <div class=\"d-flex justify-content-between align-items-center mb-1\">\
                                 <div class=\"text-warning\">${starFilled}${starEmpty}</div>\
-                                <small class=\"text-muted\">#${r.userId} · ${new Date(r.createdAt).toLocaleString('zh-TW')}</small>\
+                                <small class=\"text-muted\">#${r.UserId} · ${new Date(r.CreatedAt).toLocaleString('zh-TW')}</small>\
                             </div>\
-                            ${r.reviewText ? `<div class=\"text-secondary\">${r.reviewText}</div>` : ''}\
+                            ${r.ReviewText ? `<div class=\"text-secondary\">${r.ReviewText}</div>` : ''}\
                         </div>`;
                     }).join('');
                     if(reset) host.innerHTML = '';
@@ -264,31 +378,99 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                 }
 
                 async function loadRelated(){
-                    const pid = initialData.productId;
-                    let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
-                    const isGame = (initialData.productType||'').toLowerCase()==='game';
-                    if(isGame && initialData.genreName){
-                        url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.genreName)}&page=1&pageSize=4`;
-                    } else if(!isGame && initialData.merchTypeId){
-                        url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.merchTypeId)}&page=1&pageSize=4`;
-                    }
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    const items = (data.items||data||[]).filter(x=>x.productId!==pid).slice(0,4);
                     const host = document.getElementById('related');
-                    host.innerHTML = items.map(x=>{
-                        const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
-                        const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
-                        return `<div class=\"col-6\">\
-                            <div class=\"card h-100 position-relative\">\
-                                <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
-                                <div class=\"card-body p-2\">\
-                                    <div class=\"small text-truncate\" title=\"${x.productName}\">${x.productName}</div>\
+                    try {
+                        const pid = initialData.ProductId;
+                        let url = `${API_BASE}/products?sort=random&page=1&pageSize=4`;
+                        const isGame = (initialData.ProductType||'').toLowerCase()==='game';
+                        if(isGame && initialData.GenreName){
+                            url = `${API_BASE}/products?genre=${encodeURIComponent(initialData.GenreName)}&sort=random&page=1&pageSize=4`;
+                        } else if(!isGame && initialData.MerchTypeId){
+                            url = `${API_BASE}/products?merchTypeId=${encodeURIComponent(initialData.MerchTypeId)}&sort=random&page=1&pageSize=4`;
+                        }
+                        console.log('loadRelated URL:', url); // Log the URL
+
+                        const res = await fetch(url);
+                        console.log('loadRelated response status:', res.status); // Log status
+
+                        if (!res.ok) {
+                            console.error('loadRelated response not OK', await res.text()); // Log body text on error
+                            throw new Error(`API request failed with status ${res.status}`);
+                        }
+
+                        const data = await res.json();
+                        console.log('loadRelated data:', data); // Log the parsed data
+
+                        const items = (data.items||data||[]).filter(x=>x.ProductId!==pid).slice(0,4);
+                        console.log('loadRelated items:', items); // Log the final items array
+
+                        host.innerHTML = items.map(x=>{
+                            const detailUrl = `/OnlineStore/Product/Detail/${x.productCode}`;
+                            const img = x.coverUrl || '/images/onlinestoreNOPic/nophoto.jpg';
+                            return `<div class=\"col-6 col-md-4 col-lg-3\">\
+                                <div class=\"card h-100 position-relative\">\
+                                    <a class=\"card-img-top d-block\" href=\"${detailUrl}\"><img src=\"${img}\" class=\"w-100\" style=\"aspect-ratio:1/1;object-fit:cover\" onerror=\"this.src='/images/onlinestoreNOPic/nophoto.jpg'\"></a>\
+                                    <div class=\"card-body p-2\">\
+                                        <div class=\"small text-truncate\" title=\"${(x.productName || '').trim()}\">${(x.productName || '').trim()}</div>\
+                                    </div>\
                                 </div>\
-                            </div>\
-                        </div>`;
-                    }).join('');
+                            </div>`;
+                        }).join('');
+                    } catch (error) {
+                        console.error('Error in loadRelated:', error);
+                        host.innerHTML = '<div class="text-danger">無法載入推薦商品。</div>'; // Show an error message
+                    }
                 }
+
+                // 新增：燈箱功能
+                function initLightbox() {
+                    if (typeof basicLightbox === 'undefined') {
+                        console.error('basicLightbox is not loaded.');
+                        return;
+                    }
+
+                    const gallery = initialData.Gallery;
+                    if (!Array.isArray(gallery) || gallery.length === 0) return;
+
+                    let currentInstance = null;
+
+                    const showImage = (index) => {
+                        const content = `
+                            <img src="${gallery[index]}" style="max-height: 70vh; max-width: 70vw;">
+                            ${gallery.length > 1 ? '<button class="lightbox-nav prev">&lt;</button><button class="lightbox-nav next">&gt;</button>' : ''}
+                        `;
+                        
+                        if (currentInstance) {
+                            currentInstance.element().innerHTML = content;
+                        } else {
+                            currentInstance = basicLightbox.create(content, {
+                                onClose: () => { currentInstance = null; }
+                            });
+                            currentInstance.show();
+                        }
+
+                        const prevBtn = currentInstance.element().querySelector('.prev');
+                        const nextBtn = currentInstance.element().querySelector('.next');
+
+                        if (prevBtn) {
+                            prevBtn.onclick = () => showImage((index - 1 + gallery.length) % gallery.length);
+                        }
+                        if (nextBtn) {
+                            nextBtn.onclick = () => showImage((index + 1) % gallery.length);
+                        }
+                    };
+
+                    document.getElementById('app').addEventListener('click', (e) => {
+                        const target = e.target;
+                        if (target.matches('#cover') || target.matches('.thumb-item img')) {
+                            const index = parseInt(target.dataset.index, 10);
+                            if (!isNaN(index)) {
+                                showImage(index);
+                            }
+                        }
+                    });
+                }
+
 
                 (function(){
                   renderProduct(initialData);
@@ -296,7 +478,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                   // 初始亮起收藏狀態（若已登入）
                   fetch(`${API_BASE}/favorites/ids`).then(r=>r.ok?r.json():[]).then(ids=>{
                     try{
-                      const pid = initialData?.productId;
+                      const pid = initialData?.ProductId;
                       if(!pid) return;
                       const btn = document.querySelector('button[data-action="fav"]');
                       const icon = btn?.querySelector('i');
@@ -314,13 +496,113 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                     if(!btn) return;
                     const act = btn.getAttribute('data-action');
                     if(act==='add-cart'){
-                      alert(`已加入購物車（商品ID: ${initialData.productId}）`);
+                        if (window.Swal) {
+                            Swal.fire({
+                                title: '已加入購物車',
+                                html: `
+                                    <style>
+                                        .swal-cart-anim {
+                                            font-size: 5rem;
+                                            animation: cart-bounce 0.8s ease-in-out;
+                                        }
+                                        @@keyframes cart-bounce {
+                                            0%, 100% { transform: translateY(0) rotate(0); }
+                                            25% { transform: translateY(-10px) rotate(-5deg); }
+                                            50% { transform: translateY(0) rotate(0); }
+                                            75% { transform: translateY(-5px) rotate(5deg); }
+                                        }
+                                    </style>
+                                    <div class="swal-cart-anim">🛒</div>
+                                    <div class="mt-1 text-muted">商品已成功加入購物車</div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: '看購物車',
+                                cancelButtonText: '再逛逛',
+                                heightAuto: false
+                            }).then(r => {
+                                if (r.isConfirmed) location.href = '/OnlineStore/Cart';
+                            });
+                        } else {
+                            alert('已加入購物車'); // Fallback for browsers where Swal is not available
+                        }
                     }else if(act==='buy-now'){
-                      location.href = `/OnlineStore/Checkout/CreateOrder?productId=${initialData.productId}`;
+                      (async () => {
+                        // First, check if the user is authenticated.
+                        if (!(await ensureAuthenticated())) {
+                            // SCENARIO 1: USER NOT LOGGED IN
+                            Swal.fire({
+                                title: '哎呀，請先完成登入唷！',
+                                html: '<div style="font-size: 5rem;">🙅‍♀️</div><p>您需要登入才能購買商品喔</p>',
+                                icon: 'warning',
+                                confirmButtonText: '好的',
+                                heightAuto: false
+                            });
+                            return;
+                        }
+
+                        // SCENARIO 2: USER IS LOGGED IN
+                        // Stage 1: "Good Taste" popup
+                        Swal.fire({
+                            title: '你真有眼光！',
+                            html: `
+                                <style>
+                                    .swal-star-container {
+                                        position: relative;
+                                        height: 120px;
+                                        display: grid;
+                                        place-items: center;
+                                    }
+                                    .swal-star {
+                                        position: absolute;
+                                        opacity: 0;
+                                        animation: twinkle 1.8s ease-in-out infinite;
+                                    }
+                                    .swal-star.thumb {
+                                        font-size: 4rem;
+                                        animation-delay: 0s;
+                                    }
+                                    .swal-star.s1 { font-size: 1.5rem; top: 20%; left: 20%; animation-delay: 0.2s; }
+                                    .swal-star.s2 { font-size: 1.2rem; top: 30%; left: 80%; animation-delay: 0.5s; }
+                                    .swal-star.s3 { font-size: 1.8rem; top: 70%; left: 30%; animation-delay: 0.8s; }
+                                    .swal-star.s4 { font-size: 1.4rem; top: 80%; left: 70%; animation-delay: 1.1s; }
+
+                                    @@keyframes twinkle {
+                                        0%, 100% { opacity: 0; transform: scale(0.5) rotate(-30deg); }
+                                        50% { opacity: 1; transform: scale(1.2) rotate(10deg); }
+                                    }
+                                </style>
+                                <div class="swal-star-container">
+                                    <div class="swal-star thumb">👍</div>
+                                    <div class="swal-star s1">✨</div>
+                                    <div class="swal-star s2">✨</div>
+                                    <div class="swal-star s3">✨</div>
+                                    <div class="swal-star s4">✨</div>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: '立即前往結帳',
+                            showDenyButton: true,
+                            denyButtonText: '我好像猶豫了',
+                            heightAuto: false
+                        }).then((result) => {
+                            // Stage 2: Handle the button click from Stage 1
+                            if (result.isDenied) {
+                                // User clicked "I'm hesitating"
+                                Swal.fire({
+                                    title: '再考慮一下嗎？',
+                                    html: '<div style="font-size: 5rem;">🤔</div>',
+                                    showConfirmButton: false,
+                                    timer: 2000, // Auto-close after 2 seconds
+                                    heightAuto: false
+                                });
+                            }
+                            // If result.isConfirmed (user clicked "Go to checkout"), do nothing as it's a fake button.
+                        });
+                      })();
                     }else if(act==='fav'){
-                      if(!initialData?.productId){ return; }
+                      if(!initialData?.ProductId){ return; }
                       btn.disabled = true;
-                      toggleFavorite(initialData.productId)
+                      toggleFavorite(initialData.ProductId)
                         .then(isFav => {
                           const icon = btn.querySelector('i');
                           if(isFav){
@@ -328,6 +610,29 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                             btn.setAttribute('aria-pressed','true');
                             icon?.classList.remove('bi-heart');
                             icon?.classList.add('bi-heart-fill');
+
+                            // Show "Thank you" popup
+                            Swal.fire({
+                                title: '感謝你收藏！',
+                                html: `
+                                    <style>
+                                        .pulse-heart {
+                                            font-size: 4rem;
+                                            animation: pulse-heart-anim 1.2s ease-in-out infinite;
+                                        }
+                                        @@keyframes pulse-heart-anim {
+                                            0% { transform: scale(1); }
+                                            50% { transform: scale(1.3); }
+                                            100% { transform: scale(1); }
+                                        }
+                                    </style>
+                                    <div class="pulse-heart">❤️</div>
+                                `,
+                                showConfirmButton: false,
+                                timer: 1500, // Auto-close after 1.5 seconds
+                                heightAuto: false
+                            });
+
                           }else{
                             btn.classList.remove('text-danger');
                             btn.setAttribute('aria-pressed','false');
@@ -362,6 +667,7 @@ document.getElementById('price').textContent = `NT ${money(x.Price)}`;          
                   // 初始評論與推薦
                   loadReviews(true);
                   loadRelated();
+                  initLightbox(); // 初始化燈箱
                 })();
     </script>
 }

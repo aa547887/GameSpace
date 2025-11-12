@@ -69,10 +69,17 @@ namespace GamiPort.Areas.OnlineStore.Controllers
         /// 取得排行榜（sales/click/favorite）。
         /// </summary>
         [HttpGet("rankings")]
-        public async Task<ActionResult<IEnumerable<ProductCardDto>>> GetRankings(string type = "sales", string period = "daily", int take = 12)
+        public async Task<ActionResult<IEnumerable<ProductCardDto>>> GetRankings(string type = "sales", string period = "daily", int take = 12, [FromQuery] DateTime? date = null)
         {
             try
             {
+                // 當為銷量排行且指定日期時，改用官方快照（僅支援日/週/月）
+                if (string.Equals(type, "sales", StringComparison.OrdinalIgnoreCase) && date.HasValue)
+                {
+                    var itemsByDate = await _service.GetRankingsFromOfficial("purchase", period, date, take);
+                    return Ok(itemsByDate);
+                }
+
                 var items = await _service.GetRankings(type, period, take);
                 return Ok(items);
             }

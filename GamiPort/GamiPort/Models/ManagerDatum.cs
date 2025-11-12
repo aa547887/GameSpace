@@ -39,6 +39,12 @@ public partial class ManagerDatum
 
     public virtual ICollection<PetBackgroundCostSetting> PetBackgroundCostSettings { get; set; } = new List<PetBackgroundCostSetting>();
 
+    public virtual ICollection<SProductInfo> SProductInfoCreatedByNavigations { get; set; } = new List<SProductInfo>();
+
+    public virtual ICollection<SProductInfo> SProductInfoUpdatedByNavigations { get; set; } = new List<SProductInfo>();
+
+    public virtual ICollection<SProductRating> SProductRatings { get; set; } = new List<SProductRating>();
+
     public virtual ICollection<SoOrderStatusHistory> SoOrderStatusHistories { get; set; } = new List<SoOrderStatusHistory>();
 
     public virtual ICollection<SupportTicket> SupportTicketAssignedManagers { get; set; } = new List<SupportTicket>();
