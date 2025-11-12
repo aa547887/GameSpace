@@ -24,13 +24,50 @@ namespace GamiPort.Controllers
 			_newsService = newsService;
 		}
 
+		#region Helpers for Fake Popularity
+		private static uint HashSeed(string s)
+		{
+			uint h = 2166136261;
+			for (int i = 0; i < s.Length; i++)
+			{
+				h ^= s[i];
+				h *= 16777619;
+			}
+			return h;
+		}
+
+		private static int GetStableXorshift32Random(uint seed, int min, int max)
+		{
+			uint x = seed;
+			x ^= x << 13;
+			x ^= x >> 17;
+			x ^= x << 5;
+			double u = (double)x / 0xFFFFFFFF;
+			return (int)Math.Floor(min + u * (max - min + 1));
+		}
+		#endregion
+
 		public async Task<IActionResult> Index()
 		{
-			var forums = (await _forumsService.GetForumsAsync()).Take(12);
+			var allForums = await _forumsService.GetForumsAsync();
+
+			// Calculate popularity and sort the entire list using unified xorshift32 logic
+			var sortedForums = allForums.Select(forum => {
+				var seed = HashSeed(forum.ForumId.ToString());
+				var fakeViews = GetStableXorshift32Random(seed, 3000, 500000);
+				var fakeThreads = GetStableXorshift32Random(seed * 7, 30, 800);
+				var popularityScore = (fakeViews * 0.8) + (fakeThreads * 100 * 0.2);
+				return new { Forum = forum, Popularity = popularityScore };
+			})
+			.OrderByDescending(x => x.Popularity)
+			.Select(x => x.Forum);
+
+			var featuredForums = sortedForums.Take(12);
+
 			var pageSize = 4;
-			var totalForums = forums.Count();
+			var totalForums = featuredForums.Count();
 			var totalPages = (int)Math.Ceiling(totalForums / (double)pageSize);
-			var paginatedForums = forums.Take(pageSize).ToList();
+			var paginatedForums = featuredForums.Take(pageSize).ToList();
 
 			ViewData["FeaturedForums"] = paginatedForums;
 			ViewData["TotalPages"] = totalPages;
@@ -41,11 +78,25 @@ namespace GamiPort.Controllers
 
 		public async Task<IActionResult> _FeaturedForumsPartial(int page = 1)
 		{
-			var forums = (await _forumsService.GetForumsAsync()).Take(12);
+			var allForums = await _forumsService.GetForumsAsync();
+
+			// Calculate popularity and sort the entire list using unified xorshift32 logic
+			var sortedForums = allForums.Select(forum => {
+				var seed = HashSeed(forum.ForumId.ToString());
+				var fakeViews = GetStableXorshift32Random(seed, 3000, 500000);
+				var fakeThreads = GetStableXorshift32Random(seed * 7, 30, 800);
+				var popularityScore = (fakeViews * 0.8) + (fakeThreads * 100 * 0.2);
+				return new { Forum = forum, Popularity = popularityScore };
+			})
+			.OrderByDescending(x => x.Popularity)
+			.Select(x => x.Forum);
+
+			var featuredForums = sortedForums.Take(12);
+
 			var pageSize = 4;
-			var totalForums = forums.Count();
+			var totalForums = featuredForums.Count();
 			var totalPages = (int)Math.Ceiling(totalForums / (double)pageSize);
-			var paginatedForums = forums.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+			var paginatedForums = featuredForums.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
 			ViewData["FeaturedForums"] = paginatedForums;
 			ViewData["TotalPages"] = totalPages;

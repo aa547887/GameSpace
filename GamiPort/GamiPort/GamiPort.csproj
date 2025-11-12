@@ -58,7 +58,9 @@
     <Folder Include="Areas\OnlineStore\Models\" />
     <Folder Include="Areas\social_hub\Data\" />
     <Folder Include="Areas\social_hub\Models\" />
+    <Folder Include="Areas\social_hub\Views\Shared\" />
     <Folder Include="wwwroot\images\forum\" />
+    <Folder Include="wwwroot\images\top2\" />
     <Folder Include="wwwroot\images\onlinestoreProduct\Game\" />
     <Folder Include="wwwroot\images\onlinestoreProduct\1點數卡\" />
     <Folder Include="wwwroot\images\onlinestoreProduct\2娃娃\" />
